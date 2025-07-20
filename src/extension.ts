@@ -9,6 +9,7 @@
 import * as vscode from 'vscode';
 import { registerCreateSourceHeaderPairCommand } from './create-source-header-pair';
 import { activateSwitchSourceHeader } from './switch-header-source';
+import { activatePairingRuleManager } from './pairing-rule-manager';
 import { ErrorHandler } from './common/error-handler';
 import { COMMANDS, UI_CONSTANTS } from './common/constants';
 
@@ -50,6 +51,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register the switch header/source functionality
     activateSwitchSourceHeader(clothoContext);
+
+    // Register the pairing rule management functionality
+    activatePairingRuleManager(clothoContext);
 
     // Show welcome message on first activation
     showWelcomeMessage(context);

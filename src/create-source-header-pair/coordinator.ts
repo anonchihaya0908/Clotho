@@ -8,7 +8,6 @@
 
 import * as vscode from 'vscode';
 
-import { showConfigurationWizard } from '../pairing-rule-manager';
 import { COMMANDS } from '../common/constants';
 
 import { PairCreatorService } from './service';
@@ -25,7 +24,6 @@ export class PairCoordinator implements vscode.Disposable {
   } as const;
 
   private newPairCommand: vscode.Disposable;
-  private configureRulesCommand: vscode.Disposable;
 
   // Constructor with dependency injection - receives pre-configured instances
   constructor(private readonly service: PairCreatorService,
@@ -33,14 +31,11 @@ export class PairCoordinator implements vscode.Disposable {
     // Register commands
     this.newPairCommand = vscode.commands.registerCommand(
       COMMANDS.NEW_SOURCE_PAIR, this.create, this);
-    this.configureRulesCommand = vscode.commands.registerCommand(
-      COMMANDS.CONFIGURE_RULES, this.configureRules, this);
   }
 
   // Dispose method for cleanup when extension is deactivated
   dispose() {
     this.newPairCommand.dispose();
-    this.configureRulesCommand.dispose();
   }
 
   // Main workflow orchestration
@@ -97,10 +92,5 @@ export class PairCoordinator implements vscode.Disposable {
       vscode.window.activeTextEditor?.document?.uri.fsPath,
       vscode.workspace.workspaceFolders) ??
       await this.ui.showWorkspaceFolderPicker();
-  }
-
-  // Opens the configuration wizard for pairing rules
-  public async configureRules(): Promise<void> {
-    await showConfigurationWizard();
   }
 }

@@ -37,8 +37,14 @@ type CustomRuleSelection =
 // It manages dialogs, input validation, and user choices.
 export class PairCreatorUI {
   private service: PairCreatorService;
+  private pairingRuleService: PairingRuleService;
+  private pairingRuleUI: PairingRuleUI;
 
-  constructor(service: PairCreatorService) { this.service = service; }
+  constructor(service: PairCreatorService) {
+    this.service = service;
+    this.pairingRuleService = new PairingRuleService();
+    this.pairingRuleUI = new PairingRuleUI(this.pairingRuleService);
+  }
 
   // ===============================
   // UI ADAPTERS - Data to View Conversion
@@ -401,10 +407,10 @@ export class PairCreatorUI {
     if (!saveLocation) { return undefined; }
 
     const saveRule = ErrorHandler.wrapAsync(async () => {
-      const existingRules = PairingRuleService.getRules(
+      const existingRules = this.pairingRuleService.getRules(
         saveLocation.value as 'workspace' | 'user') ||
         [];
-      await PairingRuleService.writeRules([...existingRules, customRule],
+      await this.pairingRuleService.writeRules([...existingRules, customRule],
         saveLocation.value as 'workspace' |
         'user');
 
@@ -468,7 +474,7 @@ export class PairCreatorUI {
     // If a C++ template was chosen and no custom C++ rules are configured,
     // prompt the user for extensions for this one-time operation.
     if (templateChoice.language === 'cpp' && cppRules.length === 0) {
-      const extensionChoice = await PairingRuleUI.promptForFileExtensions();
+      const extensionChoice = await this.pairingRuleUI.promptForFileExtensions();
       if (!extensionChoice) { return undefined; }
 
       // Apply the chosen extensions to the template to create a temporary rule

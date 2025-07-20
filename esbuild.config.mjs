@@ -1,35 +1,54 @@
-// esbuild.config.mjs
-import esbuild from 'esbuild';
+import * as esbuild from 'esbuild';
 
-const isWatch = process.argv.includes('--watch');
+const production = process.argv.includes('--production');
+const watch = process.argv.includes('--watch');
 
-/** @type {import('esbuild').BuildOptions} */
-const config = {
-    entryPoints: ['./src/extension.ts'], // <== 只有一个入口
-    bundle: true,                        // <== 开启打包！这会把依赖包含进来
-    outfile: './out/extension.js',       // <== 输出到这一个文件
-    external: ['vscode'],                // <== vscode是运行时提供的，必须排除
-    format: 'cjs',
-    platform: 'node',
-    sourcemap: true,
-    minify: !isWatch,
+/**
+ * @type {import('esbuild').Plugin}
+ */
+const esbuildProblemMatcherPlugin = {
+    name: 'esbuild-problem-matcher',
+
+    setup(build) {
+        build.onStart(() => {
+            console.log('[watch] build started');
+        });
+        build.onEnd((result) => {
+            result.errors.forEach(({ text, location }) => {
+                console.error(`✘ [ERROR] ${text}`);
+                console.error(`    ${location.file}:${location.line}:${location.column}:`);
+            });
+            console.log('[watch] build finished');
+        });
+    },
 };
 
-async function build() {
-    try {
-        const context = await esbuild.context(config);
-        if (isWatch) {
-            await context.watch();
-            console.log('esbuild is watching for changes...');
-        } else {
-            await context.rebuild();
-            await context.dispose();
-            console.log('esbuild build complete.');
-        }
-    } catch (error) {
-        console.error('esbuild failed:', error);
-        process.exit(1);
+async function main() {
+    const ctx = await esbuild.context({
+        entryPoints: ['src/extension.ts'],
+        bundle: true,
+        format: 'cjs',
+        minify: production,
+        sourcemap: !production,
+        sourcesContent: false,
+        platform: 'node',
+        outfile: 'out/bundle.js',
+        external: ['vscode'],
+        logLevel: 'silent',
+        plugins: [
+            esbuildProblemMatcherPlugin,
+        ],
+    });
+
+    if (watch) {
+        await ctx.watch();
+    } else {
+        await ctx.rebuild();
+        await ctx.dispose();
     }
 }
 
-build();
+main().catch(e => {
+    console.error(e);
+    process.exit(1);
+});

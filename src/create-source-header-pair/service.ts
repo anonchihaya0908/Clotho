@@ -42,6 +42,8 @@ export class PairCreatorService {
     cpp: new Set(['.cpp', '.cc', '.cxx', '.hh', '.hpp', '.hxx'])
   } as const;
 
+  constructor(private readonly pairingRuleService: PairingRuleService) { }
+
   /**
    * Creates file paths for header and source files
    * @param targetDirectory Target directory URI
@@ -179,8 +181,8 @@ export class PairCreatorService {
   // Gets all available pairing rules (custom + workspace + user)
   public getAllPairingRules(): PairingRule[] {
     return [
-      ...(PairingRuleService.getRules('workspace') ?? []),
-      ...(PairingRuleService.getRules('user') ?? [])
+      ...(this.pairingRuleService.getRules('workspace') ?? []),
+      ...(this.pairingRuleService.getRules('user') ?? [])
     ];
   }
 
@@ -410,8 +412,6 @@ export class PairCreatorService {
 
   // Saves a rule as the default configuration with user choice of scope
   public async saveRuleAsDefault(rule: PairingRule): Promise<void> {
-    const { PairingRuleService } = await import('../pairing-rule-manager');
-
     const scopeChoice = await vscode.window.showQuickPick(
       [
         {
@@ -443,11 +443,11 @@ export class PairCreatorService {
         description: `Creates a ${rule.headerExt}/${rule.sourceExt} file pair with header guards.`
       };
 
-      await PairingRuleService.writeRules(
+      await this.pairingRuleService.writeRules(
         [cleanRule], scopeChoice.scope as 'workspace' | 'user');
 
       vscode.window.showInformationMessage(`Successfully saved '${rule.headerExt}/${rule.sourceExt}' as the default extension for ${scopeChoice.scope === 'workspace' ? 'this workspace'
-          : 'all projects'}.`);
+        : 'all projects'}.`);
     }, {
       operation: 'saveConfiguration',
       module: 'PairCreatorService',
