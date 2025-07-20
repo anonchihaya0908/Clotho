@@ -90,6 +90,10 @@ export interface CpuMonitorConfig {
     warningThreshold?: number;
     /** CPU threshold percentage for errors (default: 80) */
     errorThreshold?: number;
+    /** Whether to normalize CPU usage by core count for display (default: true) */
+    normalizeCpu?: boolean;
+    /** Whether to show raw CPU values in tooltip (default: true) */
+    showRawCpuInTooltip?: boolean;
 }
 
 /**

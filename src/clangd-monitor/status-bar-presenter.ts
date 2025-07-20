@@ -5,7 +5,8 @@
  */
 
 import * as vscode from 'vscode';
-import { CpuUsage, MemoryUsage } from '../clangd-monitor/types';
+import * as os from 'os';
+import { CpuUsage, MemoryUsage } from './types';
 
 export interface StatusBarConfig {
     updateInterval?: number;
@@ -13,6 +14,10 @@ export interface StatusBarConfig {
     priority?: number;
     showDetailedTooltip?: boolean;
     compactMode?: boolean;
+    /** Whether to normalize CPU usage by core count (default: true) */
+    normalizeCpu?: boolean;
+    /** Whether to show raw CPU values in tooltip (default: true) */
+    showRawCpuInTooltip?: boolean;
 }
 
 /**
@@ -25,7 +30,9 @@ export class StatusBarPresenter {
         position: vscode.StatusBarAlignment.Right,
         priority: 100, // Higher priority than individual monitors
         showDetailedTooltip: true,
-        compactMode: false
+        compactMode: true,
+        normalizeCpu: true,  // Normalize CPU by core count for user-friendly display
+        showRawCpuInTooltip: true  // Show raw CPU values for technical users
     };
 
     private statusBarItem: vscode.StatusBarItem | undefined;
@@ -33,9 +40,11 @@ export class StatusBarPresenter {
     private lastMemoryUsage: MemoryUsage | undefined;
     private lastCpuUsage: CpuUsage | undefined;
     private isActive = false;
+    private readonly coreCount: number;
 
     constructor(config: StatusBarConfig = {}) {
         this.config = { ...StatusBarPresenter.DEFAULT_CONFIG, ...config };
+        this.coreCount = os.cpus().length;
         this.createStatusBarItem();
     }
 
@@ -121,7 +130,7 @@ export class StatusBarPresenter {
             : '---';
 
         const cpuText = this.lastCpuUsage
-            ? `${this.lastCpuUsage.cpu.toFixed(0)}%`
+            ? this.formatCpuUsage(this.lastCpuUsage, 0)  // No decimal places in compact mode
             : '---';
 
         const icon = this.getStatusIcon();
@@ -142,7 +151,7 @@ export class StatusBarPresenter {
             : '---';
 
         const cpuText = this.lastCpuUsage
-            ? `${this.lastCpuUsage.cpu.toFixed(1)}%`
+            ? this.formatCpuUsage(this.lastCpuUsage, 1)  // 1 decimal place in standard mode
             : '---';
 
         const icon = this.getStatusIcon();
@@ -157,12 +166,14 @@ export class StatusBarPresenter {
      */
     private getStatusIcon(): string {
         // Priority: CPU warnings > Memory warnings > Normal
-        if (this.lastCpuUsage && this.lastCpuUsage.cpu >= 80) {
-            return "$(flame)"; // High CPU
-        }
-
-        if (this.lastCpuUsage && this.lastCpuUsage.cpu >= 50) {
-            return "$(warning)"; // Medium CPU
+        if (this.lastCpuUsage) {
+            const normalizedCpu = this.getNormalizedCpu(this.lastCpuUsage.cpu);
+            if (normalizedCpu >= 80) {
+                return "$(flame)"; // High CPU
+            }
+            if (normalizedCpu >= 50) {
+                return "$(warning)"; // Medium CPU
+            }
         }
 
         if (this.lastMemoryUsage && this.lastMemoryUsage.memory >= 500 * 1024 * 1024) { // 500MB
@@ -177,12 +188,14 @@ export class StatusBarPresenter {
      */
     private getStatusColor(): string {
         // Priority: CPU errors > CPU warnings > Memory warnings > Normal
-        if (this.lastCpuUsage && this.lastCpuUsage.cpu >= 80) {
-            return "#ff4444"; // Red for high CPU
-        }
-
-        if (this.lastCpuUsage && this.lastCpuUsage.cpu >= 50) {
-            return "#ffaa00"; // Orange for medium CPU
+        if (this.lastCpuUsage) {
+            const normalizedCpu = this.getNormalizedCpu(this.lastCpuUsage.cpu);
+            if (normalizedCpu >= 80) {
+                return "#ff4444"; // Red for high CPU
+            }
+            if (normalizedCpu >= 50) {
+                return "#ffaa00"; // Orange for medium CPU
+            }
         }
 
         if (this.lastMemoryUsage && this.lastMemoryUsage.memory >= 500 * 1024 * 1024) { // 500MB
@@ -215,8 +228,17 @@ export class StatusBarPresenter {
             }
 
             if (this.lastCpuUsage) {
-                lines.push(`CPU Usage: ${this.lastCpuUsage.cpu.toFixed(1)}%`);
-                lines.push(`Last updated: ${new Date(this.lastCpuUsage.timestamp).toLocaleTimeString()}`);
+                const normalizedCpu = this.getNormalizedCpu(this.lastCpuUsage.cpu);
+                lines.push(`CPU Usage (System): ${normalizedCpu.toFixed(2)}%`);
+
+                // Show raw CPU values for technical users
+                if (this.config.showRawCpuInTooltip) {
+                    lines.push(`CPU Usage (Cores): ${this.lastCpuUsage.cpu.toFixed(2)}%`);
+                    lines.push(`  Core Count: ${this.coreCount}`);
+                }
+
+                lines.push(`  Process ID: ${this.lastCpuUsage.pid}`);
+                lines.push(`  Last updated: ${new Date(this.lastCpuUsage.timestamp).toLocaleTimeString()}`);
             } else {
                 lines.push("CPU Usage: Unavailable");
             }
@@ -242,6 +264,29 @@ export class StatusBarPresenter {
         const size = bytes / Math.pow(1024, i);
 
         return `${size.toFixed(i === 0 ? 0 : 1)} ${sizes[i]}`;
+    }
+
+    /**
+     * Get normalized CPU usage for display
+     * @param rawCpu Raw CPU usage (can exceed 100% on multi-core systems)
+     * @returns Normalized CPU usage relative to total system capacity
+     */
+    private getNormalizedCpu(rawCpu: number): number {
+        if (!this.config.normalizeCpu) {
+            return rawCpu;
+        }
+        return rawCpu / this.coreCount;
+    }
+
+    /**
+     * Format CPU usage for display
+     * @param cpuUsage CPU usage object
+     * @param precision Decimal places for display
+     * @returns Formatted CPU string
+     */
+    private formatCpuUsage(cpuUsage: CpuUsage, precision: number = 1): string {
+        const cpu = this.getNormalizedCpu(cpuUsage.cpu);
+        return `${cpu.toFixed(precision)}%`;
     }
 
     /**

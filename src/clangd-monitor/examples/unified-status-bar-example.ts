@@ -5,7 +5,7 @@
  */
 
 import * as vscode from 'vscode';
-import { StatusBarPresenter } from '../../common/status-bar-presenter';
+import { StatusBarPresenter } from '../status-bar-presenter';
 import { MemoryMonitor } from '../monitors/memory-monitor';
 import { CpuMonitor } from '../monitors/cpu-monitor';
 import { MemoryUsage, CpuUsage } from '../types';

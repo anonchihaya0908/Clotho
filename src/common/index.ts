@@ -20,6 +20,3 @@ export * from './process-runner';
 
 // Process detection and analysis services
 export * from './process-detector';
-
-// Status bar presentation
-export * from './status-bar-presenter';

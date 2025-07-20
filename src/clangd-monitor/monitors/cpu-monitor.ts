@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode';
+import * as os from 'os';
 import { IMonitor, CpuUsage, CpuMonitorConfig } from '../types';
 import { ErrorHandler } from '../../common/error-handler';
 import { ProcessDetector } from '../../common/process-detector';
@@ -18,7 +19,9 @@ export class CpuMonitor implements IMonitor {
     private static readonly DEFAULT_CONFIG: Required<CpuMonitorConfig> = {
         updateInterval: 3000,  // 3 seconds for responsive CPU monitoring
         warningThreshold: 50,  // 50% CPU usage
-        errorThreshold: 80     // 80% CPU usage
+        errorThreshold: 80,    // 80% CPU usage
+        normalizeCpu: true,    // Normalize CPU by core count for user-friendly display
+        showRawCpuInTooltip: true  // Show raw CPU values for technical users
     };
 
     private statusBarItem: vscode.StatusBarItem | undefined;
@@ -28,9 +31,11 @@ export class CpuMonitor implements IMonitor {
     private lastCpuUsage: CpuUsage | undefined;
     private lastPidUsageStats: any | undefined; // For pidusage state tracking
     private config: Required<CpuMonitorConfig>;
+    private readonly coreCount: number;
 
     constructor(config: CpuMonitorConfig = {}) {
         this.config = { ...CpuMonitor.DEFAULT_CONFIG, ...config };
+        this.coreCount = os.cpus().length;
         this.createStatusBarItem();
     }
 
@@ -176,15 +181,16 @@ export class CpuMonitor implements IMonitor {
             return;
         }
 
-        const cpuPercent = cpuUsage.cpu;
+        const rawCpuPercent = cpuUsage.cpu;
+        const normalizedCpuPercent = this.getNormalizedCpu(rawCpuPercent);
         let icon = "$(pulse)";
         let color = "";
 
-        // Set icon and color based on thresholds
-        if (cpuPercent >= this.config.errorThreshold) {
+        // Set icon and color based on normalized thresholds
+        if (normalizedCpuPercent >= this.config.errorThreshold) {
             icon = "$(flame)";
             color = "#ff4444"; // Red
-        } else if (cpuPercent >= this.config.warningThreshold) {
+        } else if (normalizedCpuPercent >= this.config.warningThreshold) {
             icon = "$(warning)";
             color = "#ffaa00"; // Orange
         } else {
@@ -192,7 +198,8 @@ export class CpuMonitor implements IMonitor {
             color = "#44ff44"; // Green
         }
 
-        this.statusBarItem.text = `${icon} Clangd CPU: ${cpuPercent.toFixed(1)}%`;
+        // Display normalized CPU value for user-friendly experience
+        this.statusBarItem.text = `${icon} Clangd CPU: ${this.formatCpuUsage(rawCpuPercent, 1)}`;
         this.statusBarItem.color = color;
         this.statusBarItem.tooltip = this.buildTooltip(cpuUsage);
     }
@@ -211,18 +218,51 @@ export class CpuMonitor implements IMonitor {
     }
 
     /**
+     * Get normalized CPU usage for display
+     * @param rawCpu Raw CPU usage (can exceed 100% on multi-core systems)
+     * @returns Normalized CPU usage relative to total system capacity
+     */
+    private getNormalizedCpu(rawCpu: number): number {
+        if (!this.config.normalizeCpu) {
+            return rawCpu;
+        }
+        return rawCpu / this.coreCount;
+    }
+
+    /**
+     * Format CPU usage for display
+     * @param rawCpu Raw CPU usage
+     * @param precision Decimal places for display
+     * @returns Formatted CPU string
+     */
+    private formatCpuUsage(rawCpu: number, precision: number = 1): string {
+        const cpu = this.getNormalizedCpu(rawCpu);
+        return `${cpu.toFixed(precision)}%`;
+    }
+
+    /**
      * Build detailed tooltip for status bar
      */
     private buildTooltip(cpuUsage: CpuUsage): string {
+        const normalizedCpu = this.getNormalizedCpu(cpuUsage.cpu);
         const lines = [
-            `Clangd CPU Usage: ${cpuUsage.cpu.toFixed(1)}%`,
+            `Clangd CPU Usage (System): ${normalizedCpu.toFixed(2)}%`,
+        ];
+
+        // Show raw CPU values for technical users
+        if (this.config.showRawCpuInTooltip) {
+            lines.push(`Clangd CPU Usage (Cores): ${cpuUsage.cpu.toFixed(2)}%`);
+            lines.push(`Core Count: ${this.coreCount}`);
+        }
+
+        lines.push(
             `Process ID: ${this.currentPid}`,
             `Last updated: ${new Date(cpuUsage.timestamp).toLocaleTimeString()}`,
             '',
             `Warning threshold: ${this.config.warningThreshold}%`,
             `Error threshold: ${this.config.errorThreshold}%`,
             `Update interval: ${this.config.updateInterval / 1000}s`
-        ];
+        );
 
         return lines.join('\n');
     }
