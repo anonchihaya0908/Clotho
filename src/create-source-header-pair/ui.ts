@@ -36,14 +36,18 @@ type CustomRuleSelection =
 // PairCreatorUI handles all user interface interactions for file pair creation.
 // It manages dialogs, input validation, and user choices.
 export class PairCreatorUI {
-  private service: PairCreatorService;
-  private pairingRuleService: PairingRuleService;
-  private pairingRuleUI: PairingRuleUI;
+  private readonly service: PairCreatorService;
+  private readonly pairingRuleService: PairingRuleService;
+  private readonly pairingRuleUI: PairingRuleUI;
 
-  constructor(service: PairCreatorService) {
+  constructor(
+    service: PairCreatorService,
+    pairingRuleService: PairingRuleService,
+    pairingRuleUI: PairingRuleUI
+  ) {
     this.service = service;
-    this.pairingRuleService = new PairingRuleService();
-    this.pairingRuleUI = new PairingRuleUI(this.pairingRuleService);
+    this.pairingRuleService = pairingRuleService;
+    this.pairingRuleUI = pairingRuleUI;
   }
 
   // ===============================
@@ -439,6 +443,25 @@ export class PairCreatorUI {
 
   public async promptForPairingRule(language: 'c' | 'cpp', uncertain: boolean):
     Promise<PairingRule | undefined> {
+
+    const workspaceRules = this.pairingRuleService.getRules('workspace') || [];
+    const cppWorkspaceRules = workspaceRules.filter(r => r.language === 'cpp');
+
+    if (cppWorkspaceRules.length > 1) {
+      const choice = await vscode.window.showWarningMessage(
+        `Multiple C++ pairing rules were found in your workspace settings. This can cause unexpected behavior.`,
+        { modal: false },
+        'Clear and Reconfigure',
+        'Cancel'
+      );
+
+      if (choice === 'Clear and Reconfigure') {
+        await this.pairingRuleService.resetRules('workspace');
+        // Re-run the command to start with a clean state
+        return this.promptForPairingRule(language, uncertain);
+      }
+      return undefined; // User cancelled
+    }
 
     const allRules = this.service.getAllPairingRules();
     const cppRules = allRules.filter(rule => rule.language === 'cpp');

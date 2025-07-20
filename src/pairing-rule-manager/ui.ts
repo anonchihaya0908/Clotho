@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode';
+import { ErrorHandler } from '../common/error-handler';
 import { PairingRule, PairingRuleService } from './service';
 
 // Type aliases for QuickPick items
@@ -157,7 +158,12 @@ export class PairingRuleUI {
 
         if (!selection) { return; }
 
-        await this.service.writeRules([rule], selection.scope as 'workspace' | 'user');
+        const scope = selection.scope as 'workspace' | 'user';
+        const existingRules = this.service.getRules(scope) || [];
+        const otherLanguageRules = existingRules.filter(r => r.language !== rule.language);
+        const newRules = [...otherLanguageRules, rule];
+
+        await this.service.writeRules(newRules, scope);
         vscode.window.showInformationMessage(
             `Successfully set '${rule.label}' as the default extension for the ${selection.scope}.`
         );
@@ -218,6 +224,52 @@ export class PairingRuleUI {
      * Main configuration wizard - entry point for setting up pairing rules
      */
     async showConfigurationWizard(): Promise<void> {
+        const workspaceRules = this.service.getRules('workspace') || [];
+        const globalRules = this.service.getRules('user') || [];
+
+        const cppWorkspaceRules = workspaceRules.filter(r => r.language === 'cpp');
+        const cppGlobalRules = globalRules.filter(r => r.language === 'cpp');
+
+        if (cppWorkspaceRules.length > 1) {
+            const choice = await vscode.window.showWarningMessage(
+                `Multiple C++ pairing rules were found in your workspace settings. This can cause unexpected behavior.`,
+                { modal: false },
+                'Clear and Reconfigure',
+                'Cancel'
+            );
+
+            if (choice === 'Clear and Reconfigure') {
+                await this.service.resetRules('workspace');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                await this.showConfigurationWizard();
+            }
+            return;
+        }
+
+        if (cppGlobalRules.length > 1) {
+            const choice = await vscode.window.showWarningMessage(
+                `Multiple C++ pairing rules were found in your global settings. This can cause unexpected behavior.`,
+                { modal: false },
+                'Clear and Reconfigure',
+                'Cancel'
+            );
+
+            if (choice === 'Clear and Reconfigure') {
+                await this.service.resetRules('user');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                await this.showConfigurationWizard();
+            }
+            return;
+        }
+
+        // If a workspace rule exists, it overrides the global one. This is a valid state.
+        // Inform the user and proceed with the wizard.
+        if (cppWorkspaceRules.length === 1 && cppGlobalRules.length === 1) {
+            vscode.window.showInformationMessage(
+                'A workspace-specific C++ rule is active and overrides the global setting.'
+            );
+        }
+
         const quickPick =
             vscode.window.createQuickPick<RuleQuickPickItem | ActionQuickPickItem>();
         quickPick.title = 'Quick Setup: Choose File Extensions';
@@ -225,6 +277,12 @@ export class PairingRuleUI {
             'Choose file extension combination for this workspace, or go to advanced options.';
         quickPick.items = [
             ...this.createRuleChoices(),
+            {
+                label: '$(add) Create New Custom Rule...',
+                key: 'create_custom_rule',
+                description: 'Define your own header/source extension pair',
+                detail: 'Manually enter your desired header and source file extensions.'
+            },
             ...this.createAdvancedOptions()
         ];
 
@@ -237,13 +295,14 @@ export class PairingRuleUI {
                 await this.handleRuleSelection(item.rule);
             } else if (item.key === 'advanced_options') {
                 await this.showAdvancedManagementMenu();
+            } else if (item.key === 'create_custom_rule') {
+                await this.createCustomRules('cpp');
             }
         });
 
         quickPick.onDidHide(() => quickPick.dispose());
         quickPick.show();
     }
-
     /**
      * Advanced management menu for editing and resetting pairing rules
      */
@@ -255,6 +314,96 @@ export class PairingRuleUI {
 
         if (selection?.key) {
             await this.handleAdvancedMenuSelection(selection.key);
+        }
+    }
+
+    /**
+     * Guides the user through creating custom pairing rules for C++
+     * Offers common extension combinations or allows custom input
+     * Saves the rule to workspace or global settings
+     * Returns the created custom rule or undefined if cancelled
+     */
+    public async createCustomRules(language: 'c' |
+        'cpp'): Promise<PairingRule | undefined> {
+        if (language === 'c') { return undefined; }
+
+        const validateExt = (text: string) =>
+            (!text || !text.startsWith('.') || text.length < 2)
+                ? 'Please enter a valid file extension starting with a dot (e.g., .h)'
+                : null;
+
+        const headerExt = await vscode.window.showInputBox({
+            prompt: 'Enter header file extension (e.g., .h, .hh, .hpp)',
+            placeHolder: '.h',
+            value: '', // Ensure the input box is empty initially
+            validateInput: validateExt
+        }) || '';
+
+        if (!headerExt) { return undefined; }
+
+        const sourceExt = await vscode.window.showInputBox({
+            prompt: 'Enter source file extension for C++ (e.g., .cpp, .cc, .cxx)',
+            placeHolder: '.cpp',
+            value: '', // Ensure the input box is empty initially
+            validateInput: validateExt
+        }) || '';
+
+        if (!sourceExt) { return undefined; }
+
+        const customRule: PairingRule = {
+            key: `custom_cpp_${Date.now()}`,
+            label: `$(new-file) C++ Pair (${headerExt}/${sourceExt})`,
+            description:
+                `Creates a ${headerExt}/${sourceExt} file pair with header guards.`,
+            language: 'cpp',
+            headerExt,
+            sourceExt
+        };
+
+        const saveLocation = await vscode.window.showQuickPick(
+            [
+                {
+                    label: 'Workspace Settings',
+                    description: 'Save to current workspace only',
+                    value: 'workspace'
+                },
+                {
+                    label: 'Global Settings',
+                    description: 'Save to user settings (available in all workspaces)',
+                    value: 'user'
+                }
+            ],
+            {
+                placeHolder: 'Where would you like to save this custom rule?',
+                title: 'Save Location'
+            });
+
+        if (!saveLocation) { return undefined; }
+
+        const saveRule = ErrorHandler.wrapAsync(async () => {
+            const scope = saveLocation.value as 'workspace' | 'user';
+            const existingRules = this.service.getRules(scope) || [];
+            const otherLanguageRules = existingRules.filter(r => r.language !== customRule.language);
+            const newRules = [...otherLanguageRules, customRule];
+
+            await this.service.writeRules(newRules, scope);
+
+            const locationText =
+                saveLocation.value === 'workspace' ? 'workspace' : 'global';
+            vscode.window.showInformationMessage(
+                `Custom pairing rule saved to ${locationText} settings.`);
+
+            return customRule;
+        }, {
+            operation: 'saveCustomRule',
+            module: 'PairingRuleUI',
+            showToUser: true
+        });
+
+        try {
+            return await saveRule();
+        } catch {
+            return undefined;
         }
     }
 }

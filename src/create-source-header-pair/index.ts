@@ -35,7 +35,7 @@
 import * as vscode from 'vscode';
 
 import { ExtensionContext } from '../extension';
-import { PairingRuleService } from '../pairing-rule-manager/service';
+import { PairingRuleService, PairingRuleUI } from '../pairing-rule-manager';
 
 import { PairCoordinator } from './coordinator';
 import { PairCreatorService } from './service';
@@ -46,8 +46,9 @@ import { PairCreatorUI } from './ui';
 export function registerCreateSourceHeaderPairCommand(context: ExtensionContext) {
   // Create instances with proper dependencies
   const pairingRuleService = new PairingRuleService();
+  const pairingRuleUI = new PairingRuleUI(pairingRuleService);
   const service = new PairCreatorService(pairingRuleService);
-  const ui = new PairCreatorUI(service);
+  const ui = new PairCreatorUI(service, pairingRuleService, pairingRuleUI);
   const coordinator = new PairCoordinator(service, ui);
 
   context.subscriptions.push(coordinator);
