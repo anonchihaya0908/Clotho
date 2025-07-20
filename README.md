@@ -23,6 +23,13 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 - **Global Settings**: Set up default preferences for all projects
 - **Template Customization**: Adapts templates based on your file extension preferences
 
+### 📊 Clangd Memory Monitoring
+- **Real-time Memory Usage**: Monitor clangd server memory consumption in the status bar
+- **Process Information**: View detailed clangd process information including PID and version
+- **Configurable Thresholds**: Set custom warning and error memory thresholds
+- **Smart Detection**: Automatically detects clangd process through extension API
+- **Cross-platform Support**: Works on Windows, macOS, and Linux
+
 ## 📦 Installation
 
 1. Open Visual Studio Code

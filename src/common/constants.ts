@@ -39,7 +39,8 @@ export const CONFIG_KEYS = {
 export const COMMANDS = {
     NEW_SOURCE_PAIR: 'clotho.newSourcePair',
     SWITCH_HEADER_SOURCE: 'clotho.switchHeaderSource',
-    CONFIGURE_RULES: 'clotho.configureRules'
+    CONFIGURE_RULES: 'clotho.configureRules',
+    SHOW_CLANGD_DETAILS: 'clotho.showClangdDetails'
 } as const;
 
 // ===============================

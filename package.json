@@ -46,6 +46,16 @@
                 "command": "clotho.configureRules",
                 "title": "Configure C++ File Extension Rules",
                 "category": "Clotho"
+            },
+            {
+                "command": "clotho.showClangdDetails",
+                "title": "Show Clangd Process Details",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.debugClangdDetection",
+                "title": "Debug Clangd Detection (开发调试)",
+                "category": "Clotho"
             }
         ],
         "menus": {
@@ -73,6 +83,12 @@
                 },
                 {
                     "command": "clotho.configureRules"
+                },
+                {
+                    "command": "clotho.showClangdDetails"
+                },
+                {
+                    "command": "clotho.debugClangdDetection"
                 }
             ]
         },
@@ -196,6 +212,37 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "clotho.clangdMonitor.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable clangd memory monitoring in the status bar"
+                },
+                "clotho.clangdMonitor.updateInterval": {
+                    "type": "number",
+                    "default": 5000,
+                    "description": "Update interval for memory monitoring in milliseconds",
+                    "minimum": 1000,
+                    "maximum": 60000
+                },
+                "clotho.clangdMonitor.showCpu": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show CPU usage percentage in the status bar"
+                },
+                "clotho.clangdMonitor.warningThreshold": {
+                    "type": "number",
+                    "default": 1000,
+                    "description": "Memory usage warning threshold in MB",
+                    "minimum": 100,
+                    "maximum": 10000
+                },
+                "clotho.clangdMonitor.errorThreshold": {
+                    "type": "number",
+                    "default": 2000,
+                    "description": "Memory usage error threshold in MB",
+                    "minimum": 500,
+                    "maximum": 20000
                 }
             }
         }
@@ -222,6 +269,7 @@
     "devDependencies": {
         "@types/mocha": "^10.0.10",
         "@types/node": "16.x",
+        "@types/pidusage": "^2.0.5",
         "@types/vscode": "^1.74.0",
         "@typescript-eslint/eslint-plugin": "^6.21.0",
         "@typescript-eslint/parser": "^6.21.0",
@@ -242,6 +290,7 @@
     "homepage": "https://github.com/your-username/clotho#readme",
     "license": "Apache-2.0",
     "dependencies": {
+        "pidusage": "^4.0.1",
         "vscode-languageclient": "^9.0.1"
     }
 }

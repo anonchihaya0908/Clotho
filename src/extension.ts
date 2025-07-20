@@ -10,6 +10,7 @@ import * as vscode from 'vscode';
 import { registerCreateSourceHeaderPairCommand } from './create-source-header-pair';
 import { activateSwitchSourceHeader } from './switch-header-source';
 import { activatePairingRuleManager } from './pairing-rule-manager';
+import { activateClangdMonitor, deactivateClangdMonitor } from './clangd-monitor';
 import { ErrorHandler } from './common/error-handler';
 import { COMMANDS, UI_CONSTANTS } from './common/constants';
 
@@ -55,6 +56,21 @@ export function activate(context: vscode.ExtensionContext) {
     // Register the pairing rule management functionality
     activatePairingRuleManager(clothoContext);
 
+    // Activate clangd monitoring functionality
+    const config = vscode.workspace.getConfiguration('clotho.clangdMonitor');
+    const isMonitoringEnabled = config.get<boolean>('enabled', true);
+
+    if (isMonitoringEnabled) {
+      activateClangdMonitor(clothoContext, {
+        memory: {
+          updateInterval: config.get<number>('updateInterval', 3000),
+          showCpu: config.get<boolean>('showCpu', false),
+          warningThreshold: config.get<number>('warningThreshold', 1000),
+          errorThreshold: config.get<number>('errorThreshold', 2000)
+        }
+      });
+    }
+
     // Show welcome message on first activation
     showWelcomeMessage(context);
 
@@ -73,6 +89,9 @@ export function activate(context: vscode.ExtensionContext) {
  */
 export function deactivate() {
   console.log('Clotho extension has been deactivated');
+
+  // Clean up clangd monitoring
+  deactivateClangdMonitor();
 }
 
 /**
