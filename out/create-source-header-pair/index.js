@@ -33,7 +33,8 @@
 // Integrates with VS Code file system and editor APIs
 //
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PairCreatorUI = exports.PairCreatorService = exports.PairCoordinator = exports.registerCreateSourceHeaderPairCommand = void 0;
+exports.PairCreatorUI = exports.PairCreatorService = exports.PairCoordinator = void 0;
+exports.registerCreateSourceHeaderPairCommand = registerCreateSourceHeaderPairCommand;
 const coordinator_1 = require("./coordinator");
 const service_1 = require("./service");
 const ui_1 = require("./ui");
@@ -46,7 +47,6 @@ function registerCreateSourceHeaderPairCommand(context) {
     const coordinator = new coordinator_1.PairCoordinator(service, ui);
     context.subscriptions.push(coordinator);
 }
-exports.registerCreateSourceHeaderPairCommand = registerCreateSourceHeaderPairCommand;
 // Re-export main types and classes for external usage
 var coordinator_2 = require("./coordinator");
 Object.defineProperty(exports, "PairCoordinator", { enumerable: true, get: function () { return coordinator_2.PairCoordinator; } });

@@ -3,16 +3,6 @@
     "tasks": [
         {
             "type": "npm",
-            "script": "watch",
-            "group": "build",
-            "presentation": {
-                "reveal": "never"
-            },
-            "isBackground": true,
-            "problemMatcher": "$tsc-watch"
-        },
-        {
-            "type": "npm",
             "script": "compile",
             "group": {
                 "kind": "build",
@@ -25,10 +15,21 @@
             "problemMatcher": "$tsc"
         },
         {
+            "type": "npm",
+            "script": "watch",
+            "group": "build",
+            "presentation": {
+                "reveal": "never"
+            },
+            "isBackground": true,
+            "problemMatcher": "$tsc-watch"
+        },
+        {
             "label": "Package Extension",
             "type": "shell",
-            "command": "vsce",
+            "command": "npm",
             "args": [
+                "run",
                 "package"
             ],
             "group": "build",
@@ -37,6 +38,19 @@
                 "clear": true
             },
             "dependsOn": "npm: compile"
+        },
+        {
+            "label": "Install Extension Dependencies",
+            "type": "shell",
+            "command": "npm",
+            "args": [
+                "install"
+            ],
+            "group": "build",
+            "presentation": {
+                "panel": "shared",
+                "clear": true
+            }
         }
     ]
 }

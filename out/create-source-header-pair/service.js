@@ -23,13 +23,23 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PairCreatorService = void 0;
 const path = __importStar(require("path"));
@@ -38,6 +48,14 @@ const pairing_rule_manager_1 = require("../pairing-rule-manager");
 const templates_1 = require("./templates");
 // Service Layer - Core business logic
 class PairCreatorService {
+    // Cache for expensive file system operations with TTL
+    static fileStatCache = new Map();
+    static CACHE_TTL = 5000; // 5 seconds
+    // Definitive file extensions for fast lookup
+    static DEFINITIVE_EXTENSIONS = {
+        c: new Set(['.c']),
+        cpp: new Set(['.cpp', '.cc', '.cxx', '.hh', '.hpp', '.hxx'])
+    };
     /**
      * Creates file paths for header and source files
      * @param targetDirectory Target directory URI
@@ -104,8 +122,9 @@ class PairCreatorService {
         // Special handling for .h files with companion file detection
         if (ext === '.h') {
             const result = await this.detectLanguageForHeaderFile(filePath);
-            if (result)
+            if (result) {
                 return result;
+            }
         }
         // Fallback to language ID
         return { language: languageId === 'c' ? 'c' : 'cpp', uncertain: true };
@@ -362,12 +381,4 @@ class PairCreatorService {
     }
 }
 exports.PairCreatorService = PairCreatorService;
-// Cache for expensive file system operations with TTL
-PairCreatorService.fileStatCache = new Map();
-PairCreatorService.CACHE_TTL = 5000; // 5 seconds
-// Definitive file extensions for fast lookup
-PairCreatorService.DEFINITIVE_EXTENSIONS = {
-    c: new Set(['.c']),
-    cpp: new Set(['.cpp', '.cc', '.cxx', '.hh', '.hpp', '.hxx'])
-};
 //# sourceMappingURL=service.js.map

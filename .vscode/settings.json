@@ -1,0 +1,66 @@
+{
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    "eslint.validate": [
+        "typescript"
+    ],
+    "typescript.preferences.quoteStyle": "single",
+    "typescript.format.semicolons": "insert",
+    "typescript.format.insertSpaceAfterFunctionKeywordForAnonymousFunctions": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "search.exclude": {
+        "out": true,
+        "node_modules": true,
+        "*.vsix": true
+    },
+    "typescript.tsc.autoDetect": "on",
+    "typescript.preferences.useLabelDetailsInCompletionEntries": true,
+    "commentTranslate.multiLineMerge": true,
+    "clotho.createPair.rules": [
+        {
+            "key": "cpp_class_default",
+            "label": "C++ Class (.h/.cpp)",
+            "description": "Creates a C++ class with constructor and destructor",
+            "language": "cpp",
+            "headerExt": ".h",
+            "sourceExt": ".cpp",
+            "isClass": true,
+            "isStruct": false
+        },
+        {
+            "key": "cpp_struct_default",
+            "label": "C++ Struct (.h/.cpp)",
+            "description": "Creates a C++ struct with member variables",
+            "language": "cpp",
+            "headerExt": ".h",
+            "sourceExt": ".cpp",
+            "isClass": false,
+            "isStruct": true
+        },
+        {
+            "key": "cpp_basic_default",
+            "label": "C++ Basic Pair (.h/.cpp)",
+            "description": "Creates a basic C++ header/source file pair",
+            "language": "cpp",
+            "headerExt": ".h",
+            "sourceExt": ".cpp",
+            "isClass": false,
+            "isStruct": false
+        },
+        {
+            "key": "c_default",
+            "label": "C File Pair (.h/.c)",
+            "description": "Creates a C header/source file pair",
+            "language": "c",
+            "headerExt": ".h",
+            "sourceExt": ".c",
+            "isClass": false,
+            "isStruct": false
+        }
+    ]
+}

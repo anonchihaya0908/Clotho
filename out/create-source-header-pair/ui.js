@@ -23,13 +23,23 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PairCreatorUI = void 0;
 const path = __importStar(require("path"));
@@ -45,7 +55,11 @@ const templates_1 = require("./templates");
 // PairCreatorUI handles all user interface interactions for file pair creation.
 // It manages dialogs, input validation, and user choices.
 class PairCreatorUI {
+    service;
     constructor(service) { this.service = service; }
+    // ===============================
+    // UI ADAPTERS - Data to View Conversion
+    // ===============================
     adaptRuleForTemplateDisplay(rule) {
         const categoryDesc = rule.isClass ? 'Includes constructor, destructor, and basic structure'
             : rule.isStruct
@@ -76,6 +90,9 @@ class PairCreatorUI {
             isSpecial: true
         };
     }
+    // ===============================
+    // DATA PREPARATION - Small, Focused Functions
+    // ===============================
     // Gets custom rules for the specified language
     getCustomRulesForLanguage(allRules, language) {
         return allRules.filter((rule) => rule.language === language);
@@ -191,6 +208,9 @@ class PairCreatorUI {
             cleanedCustomRules
         };
     }
+    // ===============================
+    // UI CONTROLLERS - User Interaction Logic
+    // ===============================
     // - Returns 'cancelled' if the user presses ESC to cancel, and the operation
     // should be terminated
     // - Returns 'use_default' if the user selects "Use Default Templates", and
@@ -212,33 +232,25 @@ class PairCreatorUI {
             matchOnDescription: true,
             matchOnDetail: true
         });
-        if (!result)
-            return { type: 'cancelled' }; // User pressed ESC or cancelled
-        if ('isSpecial' in result && result.isSpecial)
-            return { type: 'use_default' }; // User chose "Use Default Templates"
+        if (!result) {
+            return { type: 'cancelled' };
+        } // User pressed ESC or cancelled
+        if ('isSpecial' in result && result.isSpecial) {
+            return { type: 'use_default' };
+        } // User chose "Use Default Templates"
         return {
             type: 'rule',
             rule: result
         }; // User selected a specific rule
-    }
-    // Shows a dialog offering to create custom pairing rules for C++.
-    // Only applicable for C++ since C uses standard .c/.h extensions.
-    // Returns true to create rules, false to dismiss, or null if cancelled.
-    async offerToCreateCustomRules(language) {
-        if (language === 'c')
-            return false;
-        const result = await vscode.window.showInformationMessage(`No custom pairing rules found for C++. Would you like to create custom rules to use different file extensions (e.g., .cc/.hh instead of .cpp/.h)?`, { modal: false }, 'Create Custom Rules', 'Dismiss');
-        return result === 'Create Custom Rules' ? true
-            : result === 'Dismiss' ? false
-                : null;
     }
     // Guides the user through creating custom pairing rules for C++
     // Offers common extension combinations or allows custom input
     // Saves the rule to workspace or global settings
     // Returns the created custom rule or undefined if cancelled
     async createCustomRules(language) {
-        if (language === 'c')
+        if (language === 'c') {
             return undefined;
+        }
         const commonExtensions = [
             { label: '.h / .cpp (Default)', headerExt: '.h', sourceExt: '.cpp' },
             { label: '.hh / .cc (Alternative)', headerExt: '.hh', sourceExt: '.cc' }, {
@@ -250,11 +262,12 @@ class PairCreatorUI {
             { label: 'Custom Extensions', headerExt: '', sourceExt: '' }
         ];
         const selectedExtension = await vscode.window.showQuickPick(commonExtensions, {
-            placeHolder: `Select file extensions for C++ files`,
+            placeHolder: 'Select file extensions for C++ files',
             title: 'Choose File Extensions'
         });
-        if (!selectedExtension)
+        if (!selectedExtension) {
             return undefined;
+        }
         let { headerExt, sourceExt } = selectedExtension;
         if (!headerExt || !sourceExt) {
             const validateExt = (text) => (!text || !text.startsWith('.') || text.length < 2)
@@ -265,15 +278,17 @@ class PairCreatorUI {
                 placeHolder: '.h',
                 validateInput: validateExt
             }) || '';
-            if (!headerExt)
+            if (!headerExt) {
                 return undefined;
+            }
             sourceExt = await vscode.window.showInputBox({
-                prompt: `Enter source file extension for C++ (e.g., .cpp, .cc, .cxx)`,
+                prompt: 'Enter source file extension for C++ (e.g., .cpp, .cc, .cxx)',
                 placeHolder: '.cpp',
                 validateInput: validateExt
             }) || '';
-            if (!sourceExt)
+            if (!sourceExt) {
                 return undefined;
+            }
         }
         const customRule = {
             key: `custom_cpp_${Date.now()}`,
@@ -298,8 +313,9 @@ class PairCreatorUI {
             placeHolder: 'Where would you like to save this custom rule?',
             title: 'Save Location'
         });
-        if (!saveLocation)
+        if (!saveLocation) {
             return undefined;
+        }
         try {
             const existingRules = pairing_rule_manager_1.PairingRuleService.getRules(saveLocation.value) ||
                 [];
@@ -314,55 +330,53 @@ class PairCreatorUI {
             return undefined;
         }
     }
-    // Prompts the user to select a pairing rule from available options
-    // IMPROVED FLOW:
-    // 1. Check for existing custom rules first
-    // 2. If no custom rules, show template choice (C/C++ types)
-    // 3. If C++ selected, then choose extensions
-    // 4. After successful creation, offer to save as default
-    // Returns selected pairing rule or undefined if cancelled
+    // ===============================
+    // MAIN ORCHESTRATOR - The Core Workflow
+    // ===============================
     async promptForPairingRule(language, uncertain) {
-        // First check if there are existing custom rules
-        if (language === 'cpp') {
-            const allRules = this.service.getAllPairingRules();
-            const languageRules = allRules.filter((rule) => rule.language === language);
-            if (languageRules.length > 0) {
-                // Use existing flow for custom rules with clear intent handling
-                const result = await this.selectFromCustomRules(allRules, language);
-                if (result.type === 'cancelled')
-                    return undefined; // 用户明确取消操作
-                if (result.type === 'use_default') {
-                    // 用户选择使用默认模板，继续到常规流程（不return，让代码继续执行）
-                }
-                else if (result.type === 'rule') {
-                    return result.rule; // 用户选择了具体的自定义规则
-                }
-            }
-        }
-        // New improved flow: Choose template type first (C/C++ language and type)
-        const templateChoice = await this.promptForTemplateTypeFirst(language, uncertain);
-        if (!templateChoice)
-            return undefined;
-        // If C++ template was selected and no custom rules exist, ask for
-        // extensions
-        if (templateChoice.language === 'cpp') {
-            const allRules = this.service.getAllPairingRules();
-            const cppRules = allRules.filter((rule) => rule.language === 'cpp');
-            if (cppRules.length === 0) {
-                // No custom C++ rules, let user choose extensions
-                const extensionChoice = await pairing_rule_manager_1.PairingRuleUI.promptForFileExtensions();
-                if (!extensionChoice)
+        const allRules = this.service.getAllPairingRules();
+        const cppRules = allRules.filter(rule => rule.language === 'cpp');
+        // If custom C++ rules exist, show the advanced selection UI
+        if (language === 'cpp' && cppRules.length > 0) {
+            const selection = await this.selectFromCustomRules(allRules, language);
+            switch (selection.type) {
+                case 'cancelled':
+                    // User pressed ESC, terminate the entire operation
                     return undefined;
-                // Apply the chosen extensions to the template
-                return {
-                    ...templateChoice,
-                    key: `${templateChoice.key}_custom`,
-                    headerExt: extensionChoice.headerExt,
-                    sourceExt: extensionChoice.sourceExt,
-                    description: templateChoice.description.replace(/\.h\/\.cpp/g, `${extensionChoice.headerExt}/${extensionChoice.sourceExt}`)
-                };
+                case 'rule':
+                    // User selected a specific rule, so we're done. Return it.
+                    return selection.rule;
+                case 'use_default':
+                    // User wants to proceed to the default template selection.
+                    // We do nothing here and let the code "fall through" to the next section.
+                    break;
             }
         }
+        // This section is reached if:
+        // 1. There are no custom rules.
+        // 2. The user explicitly chose "Use Default Templates" in the previous step.
+        const templateChoice = await this.promptForTemplateTypeFirst(language, uncertain);
+        if (!templateChoice) {
+            return undefined;
+        }
+        // If a C++ template was chosen and no custom C++ rules are configured,
+        // prompt the user for extensions for this one-time operation.
+        if (templateChoice.language === 'cpp' && cppRules.length === 0) {
+            const extensionChoice = await pairing_rule_manager_1.PairingRuleUI.promptForFileExtensions();
+            if (!extensionChoice) {
+                return undefined;
+            }
+            // Apply the chosen extensions to the template to create a temporary rule
+            return {
+                ...templateChoice,
+                key: `${templateChoice.key}_custom`,
+                headerExt: extensionChoice.headerExt,
+                sourceExt: extensionChoice.sourceExt,
+                description: templateChoice.description.replace(/\.h\/\.cpp/g, `${extensionChoice.headerExt}/${extensionChoice.sourceExt}`)
+            };
+        }
+        // For all other cases (e.g., C language, or C++ with existing rules where default was chosen),
+        // return the selected base template.
         return templateChoice;
     }
     // Simplified template selection with adapter pattern
@@ -375,16 +389,18 @@ class PairCreatorUI {
             matchOnDescription: true,
             matchOnDetail: true
         });
-        if (!result)
-            return null; // User cancelled
+        if (!result) {
+            return null;
+        } // User cancelled
         if (result && !uncertain && language !== result.language) {
             const shouldShowWarning = await this.shouldShowLanguageMismatchWarning(language, result);
             if (shouldShowWarning) {
                 const detectedLangName = language === 'c' ? 'C' : 'C++';
                 const selectedLangName = result.language === 'c' ? 'C' : 'C++';
                 const shouldContinue = await vscode.window.showWarningMessage(`You're working in a ${detectedLangName} file but selected a ${selectedLangName} template. This may create files with incompatible extensions or content.`, 'Continue', 'Cancel');
-                if (shouldContinue !== 'Continue')
+                if (shouldContinue !== 'Continue') {
                     return null;
+                }
             }
         }
         return result;
@@ -403,9 +419,6 @@ class PairCreatorUI {
         return selected?.folder.uri;
     }
     // Prompts the user to enter a name for the new file pair
-    // Validates input as a valid C/C++ identifier and provides
-    // context-appropriate prompts Returns the entered file name or undefined if
-    // cancelled
     async promptForFileName(rule) {
         const prompt = rule.isClass ? 'Please enter the name for the new C++ class.'
             : rule.isStruct

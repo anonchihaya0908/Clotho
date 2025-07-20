@@ -58,11 +58,11 @@ export class PairCoordinator implements vscode.Disposable {
         await this.service.detectLanguageFromEditor();
       const rule = await this.ui.promptForPairingRule(language, uncertain);
       if (!rule)
-        return;
+      {return;}
 
       const fileName = await this.ui.promptForFileName(rule);
       if (!fileName)
-        return;
+      {return;}
 
       // 3. Prepare file paths and check for conflicts
       const { headerPath, sourcePath } =

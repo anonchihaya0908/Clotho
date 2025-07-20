@@ -15,18 +15,29 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.showConfigurationWizard = exports.PairingRuleUI = exports.PairingRuleService = void 0;
 const vscode = __importStar(require("vscode"));
 // Configuration management service class
 class PairingRuleService {
+    static CONFIG_KEY = 'createPair.rules';
     // Validate a single pairing rule to ensure it has all required fields
     static validateRule(rule) {
         if (!rule.key || !rule.language || !rule.headerExt || !rule.sourceExt) {
@@ -59,8 +70,9 @@ class PairingRuleService {
     // Write pairing rules to the specified scope (workspace or user)
     static async writeRules(rules, scope) {
         try {
-            if (!Array.isArray(rules))
+            if (!Array.isArray(rules)) {
                 throw new Error('Rules must be an array');
+            }
             rules.forEach(PairingRuleService.validateRule);
             const target = scope === 'workspace'
                 ? vscode.ConfigurationTarget.Workspace
@@ -85,9 +97,43 @@ class PairingRuleService {
     }
 }
 exports.PairingRuleService = PairingRuleService;
-PairingRuleService.CONFIG_KEY = 'createPair.rules';
 // User interface management class
 class PairingRuleUI {
+    // Predefined extension combinations for C++ file pairs
+    static EXTENSION_OPTIONS = [
+        {
+            label: '$(file-code) .h / .cpp',
+            description: 'Standard C++ extensions',
+            detail: 'Widely used, compatible with most tools and IDEs.',
+            headerExt: '.h',
+            sourceExt: '.cpp',
+            language: 'cpp',
+        },
+        {
+            label: '$(file-code) .hh / .cc',
+            description: 'Alternative C++ extensions',
+            detail: 'Used by Google style guide and some projects.',
+            headerExt: '.hh',
+            sourceExt: '.cc',
+            language: 'cpp',
+        },
+        {
+            label: '$(file-code) .hpp / .cpp',
+            description: 'Header Plus Plus style',
+            detail: 'Explicitly indicates C++ headers.',
+            headerExt: '.hpp',
+            sourceExt: '.cpp',
+            language: 'cpp',
+        },
+        {
+            label: '$(file-code) .hxx / .cxx',
+            description: 'Extended C++ extensions',
+            detail: 'Less common but explicit C++ indicator.',
+            headerExt: '.hxx',
+            sourceExt: '.cxx',
+            language: 'cpp',
+        },
+    ];
     // Create rule choices from extension options for QuickPick display
     static createRuleChoices() {
         return PairingRuleUI.EXTENSION_OPTIONS.map((option, index) => ({
@@ -170,8 +216,9 @@ class PairingRuleUI {
             placeHolder: 'Where would you like to save this rule?',
             title: 'Save Configuration Scope',
         });
-        if (!selection)
+        if (!selection) {
             return;
+        }
         await PairingRuleService.writeRules([rule], selection.scope);
         vscode.window.showInformationMessage(`Successfully set '${rule.label}' as the default extension for the ${selection.scope}.`);
     }
@@ -190,8 +237,9 @@ class PairingRuleUI {
             },
         };
         const action = actions[key];
-        if (action)
+        if (action) {
             await action();
+        }
     }
     // Public method to prompt for file extensions only
     static async promptForFileExtensions() {
@@ -222,8 +270,9 @@ class PairingRuleUI {
             ...PairingRuleUI.createAdvancedOptions()
         ];
         quickPick.onDidChangeSelection(async (selection) => {
-            if (!selection[0])
+            if (!selection[0]) {
                 return;
+            }
             quickPick.hide();
             const item = selection[0];
             if ('rule' in item) {
@@ -247,41 +296,6 @@ class PairingRuleUI {
     }
 }
 exports.PairingRuleUI = PairingRuleUI;
-// Predefined extension combinations for C++ file pairs
-PairingRuleUI.EXTENSION_OPTIONS = [
-    {
-        label: '$(file-code) .h / .cpp',
-        description: 'Standard C++ extensions',
-        detail: 'Widely used, compatible with most tools and IDEs.',
-        headerExt: '.h',
-        sourceExt: '.cpp',
-        language: 'cpp',
-    },
-    {
-        label: '$(file-code) .hh / .cc',
-        description: 'Alternative C++ extensions',
-        detail: 'Used by Google style guide and some projects.',
-        headerExt: '.hh',
-        sourceExt: '.cc',
-        language: 'cpp',
-    },
-    {
-        label: '$(file-code) .hpp / .cpp',
-        description: 'Header Plus Plus style',
-        detail: 'Explicitly indicates C++ headers.',
-        headerExt: '.hpp',
-        sourceExt: '.cpp',
-        language: 'cpp',
-    },
-    {
-        label: '$(file-code) .hxx / .cxx',
-        description: 'Extended C++ extensions',
-        detail: 'Less common but explicit C++ indicator.',
-        headerExt: '.hxx',
-        sourceExt: '.cxx',
-        language: 'cpp',
-    },
-];
 // Backward compatibility export for the main configuration wizard
 exports.showConfigurationWizard = PairingRuleUI.showConfigurationWizard;
 //# sourceMappingURL=pairing-rule-manager.js.map

@@ -65,7 +65,7 @@ export class PairingRuleService {
     scope: 'workspace' | 'user'): Promise<void> {
     try {
       if (!Array.isArray(rules))
-        throw new Error('Rules must be an array');
+      {throw new Error('Rules must be an array');}
       rules.forEach(PairingRuleService.validateRule);
 
       const target = scope === 'workspace'
@@ -187,11 +187,11 @@ export class PairingRuleUI {
       kind: vscode.QuickPickItemKind.Separator,
       key: 'separator_global',
     },
-      {
-        label: '$(edit) Edit Global Rules...',
-        description: 'Opens your global settings.json',
-        key: 'edit_global',
-      });
+    {
+      label: '$(edit) Edit Global Rules...',
+      description: 'Opens your global settings.json',
+      key: 'edit_global',
+    });
 
     if (PairingRuleService.hasCustomRules('user')) {
       items.push({
@@ -225,7 +225,7 @@ export class PairingRuleUI {
       });
 
     if (!selection)
-      return;
+    {return;}
 
     await PairingRuleService.writeRules([rule], selection.scope as 'workspace' |
       'user');
@@ -253,7 +253,7 @@ export class PairingRuleUI {
 
     const action = actions[key as keyof typeof actions];
     if (action)
-      await action();
+    {await action();}
   }
 
   // Public method to prompt for file extensions only
@@ -293,7 +293,7 @@ export class PairingRuleUI {
 
     quickPick.onDidChangeSelection(async (selection) => {
       if (!selection[0])
-        return;
+      {return;}
       quickPick.hide();
 
       const item = selection[0];
@@ -312,8 +312,8 @@ export class PairingRuleUI {
   public static async showAdvancedManagementMenu(): Promise<void> {
     const selection = await vscode.window.showQuickPick(
       PairingRuleUI.createAdvancedMenuItems(), {
-      title: 'Advanced Rule Management',
-    });
+        title: 'Advanced Rule Management',
+      });
 
     if (selection?.key) {
       await PairingRuleUI.handleAdvancedMenuSelection(selection.key);

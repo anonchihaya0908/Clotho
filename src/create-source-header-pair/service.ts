@@ -39,13 +39,13 @@ export class PairCreatorService {
    * @returns Object with headerPath and sourcePath URIs
    */
   public createFilePaths(targetDirectory: vscode.Uri, fileName: string,
-                         rule: PairingRule):
+    rule: PairingRule):
       {headerPath: vscode.Uri; sourcePath: vscode.Uri;} {
     return {
       headerPath: vscode.Uri.file(
-          path.join(targetDirectory.fsPath, `${fileName}${rule.headerExt}`)),
+        path.join(targetDirectory.fsPath, `${fileName}${rule.headerExt}`)),
       sourcePath: vscode.Uri.file(
-          path.join(targetDirectory.fsPath, `${fileName}${rule.sourceExt}`))
+        path.join(targetDirectory.fsPath, `${fileName}${rule.sourceExt}`))
     };
   }
 
@@ -57,7 +57,7 @@ export class PairCreatorService {
 
     const promise =
         Promise.resolve(vscode.workspace.fs.stat(vscode.Uri.file(filePath))
-                            .then(() => true, () => false));
+          .then(() => true, () => false));
 
     this.fileStatCache.set(filePath, promise);
 
@@ -77,8 +77,8 @@ export class PairCreatorService {
     const activeEditor = vscode.window.activeTextEditor;
     const languageId = activeEditor?.document?.languageId;
     const filePath = activeEditor?.document && !activeEditor.document.isUntitled
-                         ? activeEditor.document.uri.fsPath
-                         : undefined;
+      ? activeEditor.document.uri.fsPath
+      : undefined;
 
     return this.detectLanguage(languageId, filePath);
   }
@@ -116,7 +116,7 @@ export class PairCreatorService {
     if (ext === '.h') {
       const result = await this.detectLanguageForHeaderFile(filePath);
       if (result)
-        return result;
+      {return result;}
     }
 
     // Fallback to language ID
@@ -157,7 +157,7 @@ export class PairCreatorService {
     const cppExtensions = ['.cpp', '.cc', '.cxx'];
     const cppChecks =
         cppExtensions.map(ext => PairCreatorService.fileExists(
-                              path.join(dirPath, `${baseName}${ext}`)));
+          path.join(dirPath, `${baseName}${ext}`)));
 
     const results = await Promise.all(cppChecks);
     if (results.some((exists: boolean) => exists)) {
@@ -184,14 +184,14 @@ export class PairCreatorService {
       headerExt: cppCustomRule.headerExt,
       sourceExt: cppCustomRule.sourceExt
     }
-                         : null;
+      : null;
   }
 
   // Converts string to PascalCase efficiently (pure function)
   public toPascalCase(input: string): string {
     return input.split(/[-_]+/)
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join('');
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
   }
 
   // Generates header guard macro based on filename and extension
@@ -205,9 +205,9 @@ export class PairCreatorService {
       {headerContent: string; sourceContent: string;} {
     const templateKey: TemplateKey =
         rule.isClass    ? 'CPP_CLASS'
-        : rule.isStruct ? (rule.language === 'cpp' ? 'CPP_STRUCT' : 'C_STRUCT')
-        : rule.language === 'c' ? 'C_EMPTY'
-                                : 'CPP_EMPTY';
+          : rule.isStruct ? (rule.language === 'cpp' ? 'CPP_STRUCT' : 'C_STRUCT')
+            : rule.language === 'c' ? 'C_EMPTY'
+              : 'CPP_EMPTY';
 
     const templates = FILE_TEMPLATES[templateKey];
     const context = {
@@ -232,11 +232,11 @@ export class PairCreatorService {
 
     if (rule.isStruct) {
       return rule.language === 'cpp' ? DEFAULT_PLACEHOLDERS.CPP_STRUCT
-                                     : DEFAULT_PLACEHOLDERS.C_STRUCT;
+        : DEFAULT_PLACEHOLDERS.C_STRUCT;
     }
 
     return rule.language === 'c' ? DEFAULT_PLACEHOLDERS.C_EMPTY
-                                 : DEFAULT_PLACEHOLDERS.CPP_EMPTY;
+      : DEFAULT_PLACEHOLDERS.CPP_EMPTY;
   }
 
   // Optimized line ending detection based on VS Code settings and platform
@@ -245,20 +245,20 @@ export class PairCreatorService {
         vscode.workspace.getConfiguration('files').get<string>('eol');
 
     return eolSetting === '\n' || eolSetting === '\r\n' ? eolSetting
-           : process.platform === 'win32'               ? '\r\n'
-                                                        : '\n';
+      : process.platform === 'win32'               ? '\r\n'
+        : '\n';
   }
 
   // Optimized template variable substitution using regex replacement
   private applyTemplate(template: string,
-                        context: Record<string, string>): string {
+    context: Record<string, string>): string {
     // Pre-compile regex for better performance if used frequently
     return template.replace(/\{\{(\w+)\}\}/g, (_, key) => context[key] ?? '');
   }
 
   // File existence check with parallel processing for multiple files
   public async checkFileExistence(headerPath: vscode.Uri,
-                                  sourcePath: vscode.Uri):
+    sourcePath: vscode.Uri):
       Promise<string|null> {
     const checks = [headerPath, sourcePath].map(async (uri) => {
       try {
@@ -275,25 +275,25 @@ export class PairCreatorService {
 
   // Optimized file writing with error handling and parallel writes
   public async writeFiles(headerPath: vscode.Uri, sourcePath: vscode.Uri,
-                          headerContent: string,
-                          sourceContent: string): Promise<void> {
+    headerContent: string,
+    sourceContent: string): Promise<void> {
     try {
       await Promise.all([
         vscode.workspace.fs.writeFile(headerPath,
-                                      Buffer.from(headerContent, 'utf8')),
+          Buffer.from(headerContent, 'utf8')),
         vscode.workspace.fs.writeFile(sourcePath,
-                                      Buffer.from(sourceContent, 'utf8'))
+          Buffer.from(sourceContent, 'utf8'))
       ]);
     } catch (error) {
       throw new Error(`Failed to create files: ${
-          error instanceof Error ? error.message : 'Unknown error'}`);
+        error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   // Smart target directory detection (pure business logic)
   public async getTargetDirectory(activeDocumentPath?: string,
-                                  workspaceFolders
-                                  ?: readonly vscode.WorkspaceFolder[]):
+    workspaceFolders
+    ?: readonly vscode.WorkspaceFolder[]):
       Promise<vscode.Uri|undefined> {
     // Prefer current file's directory
     if (activeDocumentPath) {
@@ -311,10 +311,10 @@ export class PairCreatorService {
 
   // Language mismatch warning logic (pure business logic)
   public async shouldShowLanguageMismatchWarning(language: Language,
-                                                 result: PairingRule,
-                                                 currentDir?: string,
-                                                 activeFilePath
-                                                 ?: string): Promise<boolean> {
+    result: PairingRule,
+    currentDir?: string,
+    activeFilePath
+    ?: string): Promise<boolean> {
     if (!currentDir || !activeFilePath) {
       return true;
     }
@@ -324,7 +324,7 @@ export class PairCreatorService {
     }
 
     return this.checkForCorrespondingSourceFiles(currentDir, activeFilePath,
-                                                 language);
+      language);
   }
 
   // Check for C++ files in directory to inform language mismatch warnings
@@ -334,9 +334,9 @@ export class PairCreatorService {
           await vscode.workspace.fs.readDirectory(vscode.Uri.file(dirPath));
       const hasCppFiles =
           entries.some(([fileName, fileType]) =>
-                           fileType === vscode.FileType.File &&
+            fileType === vscode.FileType.File &&
                            PairCreatorService.DEFINITIVE_EXTENSIONS.cpp.has(
-                               path.extname(fileName)));
+                             path.extname(fileName)));
       return !hasCppFiles; // Show warning if NO C++ files found
     } catch {
       return true; // Show warning if can't check
@@ -345,18 +345,18 @@ export class PairCreatorService {
 
   // Check for corresponding source files to inform language mismatch warnings
   private async checkForCorrespondingSourceFiles(
-      dirPath: string, filePath: string, language: Language): Promise<boolean> {
+    dirPath: string, filePath: string, language: Language): Promise<boolean> {
     const baseName = path.basename(filePath, path.extname(filePath));
     const extensions = language === 'c' ? ['.c'] : ['.cpp', '.cc', '.cxx'];
 
     const checks = extensions.map(ext => PairCreatorService.fileExists(
-                                      path.join(dirPath, `${baseName}${ext}`)));
+      path.join(dirPath, `${baseName}${ext}`)));
 
     try {
       const results = await Promise.all(checks);
       return !results.some(
-          (exists: boolean) =>
-              exists); // Show warning if NO corresponding files found
+        (exists: boolean) =>
+          exists); // Show warning if NO corresponding files found
     } catch {
       return true; // Show warning if can't check
     }
@@ -366,7 +366,7 @@ export class PairCreatorService {
    * Checks if should offer to save rule as default and handles the save process
    */
   public async handleOfferToSaveAsDefault(rule: PairingRule,
-                                          language: 'c'|'cpp'): Promise<void> {
+    language: 'c'|'cpp'): Promise<void> {
     // Only offer for C++ rules
     if (language !== 'cpp') {
       return;
@@ -387,10 +387,10 @@ export class PairCreatorService {
     }
 
     const choice = await vscode.window.showInformationMessage(
-        `Files created successfully! Would you like to save "${
-            rule.headerExt}/${
-            rule.sourceExt}" as your default C++ extensions for this workspace?`,
-        'Save as Default', 'Not Now');
+      `Files created successfully! Would you like to save "${
+        rule.headerExt}/${
+        rule.sourceExt}" as your default C++ extensions for this workspace?`,
+      'Save as Default', 'Not Now');
 
     if (choice === 'Save as Default') {
       await this.saveRuleAsDefault(rule);
@@ -402,22 +402,22 @@ export class PairCreatorService {
     const {PairingRuleService} = await import('../pairing-rule-manager');
 
     const scopeChoice = await vscode.window.showQuickPick(
-        [
-          {
-            label: 'Save for this Workspace',
-            description: 'Recommended. Creates a .vscode/settings.json file.',
-            scope: 'workspace'
-          },
-          {
-            label: 'Save for all my Projects (Global)',
-            description: 'Modifies your global user settings.',
-            scope: 'user'
-          }
-        ],
+      [
         {
-          placeHolder: 'Where would you like to save this configuration?',
-          title: 'Save Configuration Scope'
-        });
+          label: 'Save for this Workspace',
+          description: 'Recommended. Creates a .vscode/settings.json file.',
+          scope: 'workspace'
+        },
+        {
+          label: 'Save for all my Projects (Global)',
+          description: 'Modifies your global user settings.',
+          scope: 'user'
+        }
+      ],
+      {
+        placeHolder: 'Where would you like to save this configuration?',
+        title: 'Save Configuration Scope'
+      });
 
     if (!scopeChoice) {
       return;
@@ -429,28 +429,28 @@ export class PairCreatorService {
         ...rule,
         key: rule.key.replace('_custom', ''),
         label: `${rule.language.toUpperCase()} Pair (${rule.headerExt}/${
-            rule.sourceExt})`,
+          rule.sourceExt})`,
         description: `Creates a ${rule.headerExt}/${
-            rule.sourceExt} file pair with header guards.`
+          rule.sourceExt} file pair with header guards.`
       };
 
       await PairingRuleService.writeRules(
-          [cleanRule], scopeChoice.scope as 'workspace' | 'user');
+        [cleanRule], scopeChoice.scope as 'workspace' | 'user');
 
       vscode.window.showInformationMessage(`Successfully saved '${
-          rule.headerExt}/${rule.sourceExt}' as the default extension for ${
-          scopeChoice.scope === 'workspace' ? 'this workspace'
-                                            : 'all projects'}.`);
+        rule.headerExt}/${rule.sourceExt}' as the default extension for ${
+        scopeChoice.scope === 'workspace' ? 'this workspace'
+          : 'all projects'}.`);
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to save configuration: ${
-          error instanceof Error ? error.message : 'Unknown error'}`);
+        error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   // Generates file content and writes both header and source files
   public async generateAndWriteFiles(fileName: string, rule: PairingRule,
-                                     headerPath: vscode.Uri,
-                                     sourcePath: vscode.Uri): Promise<void> {
+    headerPath: vscode.Uri,
+    sourcePath: vscode.Uri): Promise<void> {
     const eol = this.getLineEnding();
     const {headerContent, sourceContent} =
         this.generateFileContent(fileName, eol, rule);
