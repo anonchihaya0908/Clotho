@@ -24,7 +24,7 @@
     ],
     "activationEvents": [
         "onCommand:clotho.newSourcePair",
-        "onCommand:clotho.switchHeaderSource", 
+        "onCommand:clotho.switchHeaderSource",
         "onCommand:clotho.configureRules",
         "onLanguage:c",
         "onLanguage:cpp"
@@ -156,6 +156,44 @@
                         "./src"
                     ],
                     "description": "Additional paths to search for corresponding header/source files",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "clotho.switch.sourceDirs": {
+                    "type": "array",
+                    "default": [
+                        "src",
+                        "source",
+                        "lib"
+                    ],
+                    "description": "Directory names to search for source files",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "clotho.switch.headerDirs": {
+                    "type": "array",
+                    "default": [
+                        "include",
+                        "inc",
+                        "headers",
+                        "api"
+                    ],
+                    "description": "Directory names to search for header files",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "clotho.switch.testDirs": {
+                    "type": "array",
+                    "default": [
+                        "test",
+                        "tests",
+                        "spec",
+                        "unittest"
+                    ],
+                    "description": "Directory names to search for test files",
                     "items": {
                         "type": "string"
                     }

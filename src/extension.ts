@@ -8,7 +8,7 @@
 
 import * as vscode from 'vscode';
 import { registerCreateSourceHeaderPairCommand } from './create-source-header-pair';
-import { activateSwitchSourceHeader } from './switch-source-header';
+import { activateSwitchSourceHeader } from './switch-header-source';
 
 // Extension context interface for dependency injection
 export interface ExtensionContext {
@@ -72,10 +72,9 @@ export function deactivate() {
  */
 function showWelcomeMessage(context: vscode.ExtensionContext) {
   const hasShownWelcome = context.globalState.get<boolean>('clotho.hasShownWelcome', false);
-
   if (!hasShownWelcome) {
     vscode.window.showInformationMessage(
-      'Welcome to Clotho! Create C/C++ header/source pairs with Ctrl+Alt+N or switch between files with Alt+O.',
+      'Welcome to Clotho! This is a tool that enhances C++ development efficiency, and it works even better when used with clangd.',
       'Configure Rules',
       'Don\'t Show Again'
     ).then((selection: string | undefined) => {
