@@ -63,10 +63,9 @@ export function activate(context: vscode.ExtensionContext) {
     if (isMonitoringEnabled) {
       activateClangdMonitor(clothoContext, {
         memory: {
-          updateInterval: config.get<number>('updateInterval', 3000),
-          showCpu: config.get<boolean>('showCpu', false),
-          warningThreshold: config.get<number>('warningThreshold', 1000),
-          errorThreshold: config.get<number>('errorThreshold', 2000)
+          updateInterval: config.get<number>('updateInterval', 5000),
+          warningThreshold: config.get<number>('warningThreshold', 2048),
+          errorThreshold: config.get<number>('errorThreshold', 4096)
         }
       });
     }

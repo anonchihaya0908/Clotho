@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode';
+import * as os from 'os';
 import { IMonitor, MemoryUsage, MemoryMonitorConfig } from '../types';
 import { ErrorHandler } from '../../common/error-handler';
 
@@ -16,9 +17,8 @@ const pidusage = require('pidusage');
 export class MemoryMonitor implements IMonitor {
     private static readonly DEFAULT_CONFIG: Required<MemoryMonitorConfig> = {
         updateInterval: 5000,  // 5 seconds for responsive monitoring
-        showCpu: true,         // Show CPU by default
-        warningThreshold: 1000, // 1GB
-        errorThreshold: 2000   // 2GB
+        warningThreshold: 2048, // 2GB
+        errorThreshold: 4096    // 4GB
     };
 
     private statusBarItem: vscode.StatusBarItem | undefined;
@@ -370,29 +370,11 @@ export class MemoryMonitor implements IMonitor {
                 }
             }
 
-            // Get process usage statistics
-            let stats = await pidusage(this.currentPid);
-            
-            // On Windows, pidusage sometimes returns 0 CPU on first call
-            // Wait a bit and try again if CPU is 0
-            if (stats.cpu === 0) {
-                console.debug('Clotho MemoryMonitor: CPU usage is 0, waiting for proper sampling...');
-                await new Promise(resolve => setTimeout(resolve, 500));
-                try {
-                    const retryStats = await pidusage(this.currentPid);
-                    // Use retry stats if CPU is non-zero, otherwise keep original
-                    if (retryStats.cpu > 0) {
-                        stats = retryStats;
-                        console.debug(`Clotho MemoryMonitor: Retry sampling successful - CPU: ${stats.cpu.toFixed(2)}%`);
-                    }
-                } catch (retryError) {
-                    console.debug('Clotho MemoryMonitor: Retry sampling failed, using original stats');
-                }
-            }
+            // Get memory usage statistics
+            const stats = await pidusage(this.currentPid);
 
             const memoryUsage: MemoryUsage = {
                 memory: stats.memory,
-                cpu: stats.cpu, // Always use the latest CPU reading
                 pid: this.currentPid,
                 timestamp: new Date()
             };
@@ -400,19 +382,19 @@ export class MemoryMonitor implements IMonitor {
             this.lastMemoryUsage = memoryUsage;
             this.updateStatusBar(memoryUsage);
 
-            console.debug(`Clotho MemoryMonitor: Updated - Memory: ${Math.round(stats.memory / 1024 / 1024)}MB, CPU: ${stats.cpu.toFixed(2)}%`);
+            console.debug(`Clotho MemoryMonitor: Updated - Memory: ${Math.round(memoryUsage.memory / 1024 / 1024)}MB`);
 
         } catch (error) {
-            // The process might have died or the PID changed.
-            // Clear the PID to trigger a re-scan on the next tick.
-            this.currentPid = undefined; 
+            // The process might have died. Clear PID and usage data.
+            this.currentPid = undefined;
+            this.lastMemoryUsage = undefined;
             this.updateStatusBarNoClangd();
 
             ErrorHandler.handle(error, {
                 operation: 'updateMemoryUsage',
                 module: 'MemoryMonitor',
                 showToUser: false,
-                logLevel: 'debug' // Log as debug since this can happen normally
+                logLevel: 'debug'
             });
         }
     }
@@ -426,6 +408,7 @@ export class MemoryMonitor implements IMonitor {
         }
 
         const memoryMB = Math.round(usage.memory / 1024 / 1024);
+
         let icon = "$(pulse)";
         let color: string | vscode.ThemeColor | undefined;
 
@@ -439,10 +422,7 @@ export class MemoryMonitor implements IMonitor {
         }
 
         // Build status text
-        let text = `${icon} Clangd: ${memoryMB}MB`;
-        if (this.config.showCpu) {
-            text += ` (${usage.cpu.toFixed(1)}%)`;
-        }
+        const text = `${icon} Clangd: ${memoryMB}MB`;
 
         this.statusBarItem.text = text;
         this.statusBarItem.color = color;
@@ -451,7 +431,6 @@ export class MemoryMonitor implements IMonitor {
         const tooltip = new vscode.MarkdownString();
         tooltip.appendMarkdown(`**Clangd Process Monitor**\n\n`);
         tooltip.appendMarkdown(`- **Memory**: ${memoryMB} MB\n`);
-        tooltip.appendMarkdown(`- **CPU**: ${usage.cpu.toFixed(2)}%\n`);
         tooltip.appendMarkdown(`- **PID**: ${usage.pid}\n`);
         tooltip.appendMarkdown(`- **Last Updated**: ${usage.timestamp.toLocaleTimeString()}\n\n`);
         tooltip.appendMarkdown(`*Click for more details*`);

@@ -36,8 +36,6 @@ export interface IMonitor extends vscode.Disposable {
 export interface MemoryUsage {
     /** Memory usage in bytes */
     memory: number;
-    /** CPU usage percentage (0-100) */
-    cpu: number;
     /** Process ID */
     pid: number;
     /** Timestamp when the data was collected */
@@ -64,8 +62,6 @@ export interface ClangdStatus {
 export interface MemoryMonitorConfig {
     /** Update interval in milliseconds (default: 3000) */
     updateInterval?: number;
-    /** Whether to show CPU usage as well (default: false) */
-    showCpu?: boolean;
     /** Memory threshold in MB for warnings (default: 1000) */
     warningThreshold?: number;
     /** Memory threshold in MB for errors (default: 2000) */

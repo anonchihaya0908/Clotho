@@ -265,10 +265,6 @@ export class MonitorCoordinator implements vscode.Disposable {
                             <span>${Math.round(memoryUsage.memory / 1024 / 1024)} MB</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">CPU:</span>
-                            <span>${memoryUsage.cpu.toFixed(2)}%</span>
-                        </div>
-                        <div class="info-item">
                             <span class="info-label">Process ID:</span>
                             <span>${memoryUsage.pid}</span>
                         </div>
@@ -315,10 +311,6 @@ export class MonitorCoordinator implements vscode.Disposable {
                         <div class="info-item">
                             <span class="info-label">Error Threshold:</span>
                             <span>${config.errorThreshold} MB</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Show CPU:</span>
-                            <span>${config.showCpu ? 'Yes' : 'No'}</span>
                         </div>
                     </div>
                 </div>

@@ -222,24 +222,19 @@
                     "type": "number",
                     "default": 5000,
                     "description": "Update interval for memory monitoring in milliseconds",
-                    "minimum": 1000,
-                    "maximum": 60000
-                },
-                "clotho.clangdMonitor.showCpu": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Show CPU usage percentage in the status bar"
+                    "minimum": 5000,
+                    "maximum": 300000
                 },
                 "clotho.clangdMonitor.warningThreshold": {
                     "type": "number",
-                    "default": 1000,
+                    "default": 2048,
                     "description": "Memory usage warning threshold in MB",
                     "minimum": 100,
                     "maximum": 10000
                 },
                 "clotho.clangdMonitor.errorThreshold": {
                     "type": "number",
-                    "default": 2000,
+                    "default": 4096,
                     "description": "Memory usage error threshold in MB",
                     "minimum": 500,
                     "maximum": 20000
