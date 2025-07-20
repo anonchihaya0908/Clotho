@@ -4,12 +4,12 @@
  */
 
 import * as vscode from 'vscode';
-import * as os from 'os';
 import { IMonitor, MemoryUsage, MemoryMonitorConfig } from '../types';
 import { ErrorHandler } from '../../common/error-handler';
+import { ProcessDetector } from '../../common/process-detector';
 
 // Import pidusage with proper typing
-const pidusage = require('pidusage');
+import pidusage from 'pidusage';
 
 /**
  * Memory monitoring implementation that tracks clangd memory usage
@@ -93,6 +93,22 @@ export class MemoryMonitor implements IMonitor {
     }
 
     /**
+     * Reset PID and force re-detection on next update
+     * Used when clangd is restarted or when we want to avoid stale process locks
+     */
+    public async resetPid(): Promise<void> {
+        console.log('Clotho MemoryMonitor: Resetting PID and forcing re-detection (anti-stale mode)');
+        this.currentPid = undefined;
+        this.lastMemoryUsage = undefined;
+
+        // If monitoring is running, trigger immediate update with fresh detection
+        if (this.running) {
+            console.log('Clotho MemoryMonitor: Triggering immediate smart process re-detection...');
+            await this.updateMemoryUsage();
+        }
+    }
+
+    /**
      * Check if the monitor is currently running
      */
     public isRunning(): boolean {
@@ -118,16 +134,16 @@ export class MemoryMonitor implements IMonitor {
     }
 
     /**
-     * Find clangd process ID through VS Code's language client
-     * Uses the same reliable method as switch-header-source module
+     * Find clangd process ID through VS Code's language client API
+     * This method only attempts API-based detection and returns undefined if not available
      */
-    private async findClangdPid(): Promise<number | undefined> {
+    private async findClangdPidViaApi(): Promise<number | undefined> {
         try {
             // Step 1: Check if clangd extension is available
             const clangdExtension = vscode.extensions.getExtension('llvm-vs-code-extensions.vscode-clangd');
             if (!clangdExtension) {
                 console.debug('Clotho MemoryMonitor: clangd extension not found');
-                return await this.findClangdByProcessName();
+                return undefined;
             }
 
             // Step 2: Ensure the extension is activated
@@ -137,7 +153,7 @@ export class MemoryMonitor implements IMonitor {
                     console.debug('Clotho MemoryMonitor: clangd extension activated');
                 } catch (error) {
                     console.debug('Clotho MemoryMonitor: Failed to activate clangd extension');
-                    return await this.findClangdByProcessName();
+                    return undefined;
                 }
             }
 
@@ -145,18 +161,17 @@ export class MemoryMonitor implements IMonitor {
             const api = clangdExtension.exports;
             if (!api?.getClient) {
                 console.debug('Clotho MemoryMonitor: clangd API not available');
-                return await this.findClangdByProcessName();
+                return undefined;
             }
 
             // Step 4: Get the language client
             const client = api.getClient();
             if (!client || client.state !== 2) { // 2 = Running state
                 console.debug(`Clotho MemoryMonitor: clangd client not running (state: ${client?.state})`);
-                return await this.findClangdByProcessName();
+                return undefined;
             }
 
             // Step 5: Extract PID from the client's server process
-            // For clangd extension, try to access the process information
             let pid: number | undefined;
 
             // Debug: Log all available properties
@@ -196,149 +211,52 @@ export class MemoryMonitor implements IMonitor {
             }
 
             if (pid) {
-                console.log(`Clotho MemoryMonitor: Successfully found clangd PID: ${pid}`);
+                console.log(`Clotho MemoryMonitor: Successfully found clangd PID via API: ${pid}`);
                 return pid;
             }
 
-            console.debug('Clotho MemoryMonitor: Could not extract PID from clangd client, trying process name search');
-            return await this.findClangdByProcessName();
+            console.debug('Clotho MemoryMonitor: Could not extract PID from clangd client');
+            return undefined;
 
         } catch (error) {
-            console.error('Clotho MemoryMonitor: Error in findClangdPid:', error);
+            console.error('Clotho MemoryMonitor: Error in API-based PID detection:', error);
             ErrorHandler.handle(error, {
-                operation: 'findClangdPid',
+                operation: 'findClangdPidViaApi',
                 module: 'MemoryMonitor',
                 showToUser: false,
                 logLevel: 'debug'
             });
-
-            // Fallback to process name search
-            return await this.findClangdByProcessName();
+            return undefined;
         }
     }
 
     /**
-     * Fallback method to find clangd by process name
-     * Improved Windows support with multiple detection strategies
+     * Main PID detection coordinator - now much simpler!
+     * Leverages the "Ace Detective" ProcessDetector for all the heavy lifting
      */
-    private async findClangdByProcessName(): Promise<number | undefined> {
-        try {
-            console.debug('Clotho MemoryMonitor: Searching for clangd process by name...');
-
-            const { exec } = require('child_process');
-            const util = require('util');
-            const execAsync = util.promisify(exec);
-
-            if (process.platform === 'win32') {
-                // Try multiple Windows commands for better reliability
-                const commands = [
-                    // Method 1: tasklist with CSV format
-                    'tasklist /FI "IMAGENAME eq clangd.exe" /FO CSV',
-                    // Method 2: tasklist with table format  
-                    'tasklist /FI "IMAGENAME eq clangd.exe"',
-                    // Method 3: wmic process
-                    'wmic process where "name=\'clangd.exe\'" get processid /format:csv',
-                    // Method 4: PowerShell Get-Process
-                    'powershell "Get-Process -Name clangd -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"'
-                ];
-
-                for (const command of commands) {
-                    try {
-                        console.debug(`Clotho MemoryMonitor: Trying command: ${command}`);
-                        const { stdout } = await execAsync(command);
-                        console.debug(`Clotho MemoryMonitor: Command output: ${stdout}`);
-
-                        let pid: number | undefined;
-
-                        if (command.includes('CSV')) {
-                            // Parse CSV format
-                            const lines = stdout.split('\n');
-                            for (const line of lines) {
-                                if (line.includes('clangd.exe')) {
-                                    const parts = line.split(',');
-                                    if (parts.length >= 2) {
-                                        pid = parseInt(parts[1].replace(/"/g, ''));
-                                        if (!isNaN(pid)) {
-                                            console.log(`Clotho MemoryMonitor: Found clangd PID via tasklist CSV: ${pid}`);
-                                            return pid;
-                                        }
-                                    }
-                                }
-                            }
-                        } else if (command.includes('wmic')) {
-                            // Parse WMIC output
-                            const lines = stdout.split('\n');
-                            for (const line of lines) {
-                                const match = line.match(/,(\d+)$/);
-                                if (match) {
-                                    pid = parseInt(match[1]);
-                                    if (!isNaN(pid)) {
-                                        console.log(`Clotho MemoryMonitor: Found clangd PID via wmic: ${pid}`);
-                                        return pid;
-                                    }
-                                }
-                            }
-                        } else if (command.includes('powershell')) {
-                            // Parse PowerShell output
-                            const lines = stdout.trim().split('\n');
-                            for (const line of lines) {
-                                pid = parseInt(line.trim());
-                                if (!isNaN(pid)) {
-                                    console.log(`Clotho MemoryMonitor: Found clangd PID via PowerShell: ${pid}`);
-                                    return pid;
-                                }
-                            }
-                        } else {
-                            // Parse table format
-                            const lines = stdout.split('\n');
-                            for (const line of lines) {
-                                if (line.includes('clangd.exe')) {
-                                    const parts = line.split(/\s+/);
-                                    if (parts.length >= 2) {
-                                        pid = parseInt(parts[1]);
-                                        if (!isNaN(pid)) {
-                                            console.log(`Clotho MemoryMonitor: Found clangd PID via tasklist table: ${pid}`);
-                                            return pid;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } catch (cmdError) {
-                        console.debug(`Clotho MemoryMonitor: Command failed: ${command}`, cmdError);
-                        continue;
-                    }
-                }
-            } else {
-                // Unix/Linux/macOS
-                const commands = [
-                    'pgrep -f clangd',
-                    'ps aux | grep clangd | grep -v grep | awk \'{print $2}\'',
-                    'pidof clangd'
-                ];
-
-                for (const command of commands) {
-                    try {
-                        const { stdout } = await execAsync(command);
-                        const pid = parseInt(stdout.trim());
-                        if (!isNaN(pid)) {
-                            console.log(`Clotho MemoryMonitor: Found clangd PID via ${command}: ${pid}`);
-                            return pid;
-                        }
-                    } catch (cmdError) {
-                        console.debug(`Clotho MemoryMonitor: Command failed: ${command}`, cmdError);
-                        continue;
-                    }
-                }
-            }
-
-            console.debug('Clotho MemoryMonitor: No clangd process found via command line');
-            return undefined;
-        } catch (error) {
-            console.error('Clotho MemoryMonitor: Error in findClangdByProcessName:', error);
-            return undefined;
+    private async findClangdPid(): Promise<number | undefined> {
+        // Strategy 1: Try to get PID via clangd extension API (most reliable)
+        const pidFromApi = await this.findClangdPidViaApi();
+        if (pidFromApi) {
+            console.log(`Clotho MemoryMonitor: ✅ PID detected via API: ${pidFromApi}`);
+            return pidFromApi;
         }
-    }
+
+        console.log('Clotho MemoryMonitor: 🔄 API detection failed, delegating to ProcessDetector...');
+
+        // Strategy 2: Delegate to ProcessDetector - our "Ace Detective"
+        const mainProcess = await ProcessDetector.findMainProcessByName('clangd');
+        if (mainProcess) {
+            console.log(`Clotho MemoryMonitor: ✅ ProcessDetector found PID: ${mainProcess.pid}`);
+            return mainProcess.pid;
+        }
+
+        console.log('Clotho MemoryMonitor: ❌ All detection strategies failed');
+        return undefined;
+    }    /**
+     * 🧬 Perform the "DNA Test" - find our children and select the main one
+     * This is the core logic that identifies legitimate children vs stale processes
+     */
 
     /**
      * Start the update loop that periodically checks memory usage
@@ -354,6 +272,7 @@ export class MemoryMonitor implements IMonitor {
 
     /**
      * Update memory usage information
+     * Coordinates between API detection and process scanning strategies
      */
     private async updateMemoryUsage(): Promise<void> {
         if (!this.running) {
@@ -361,13 +280,24 @@ export class MemoryMonitor implements IMonitor {
         }
 
         try {
-            // If we don't have a PID, try to find it
+            // If we don't have a PID, try to find it using coordinated detection
             if (!this.currentPid) {
-                this.currentPid = await this.findClangdPid();
+                // Strategy 1: Try API detection first (most reliable)
+                this.currentPid = await this.findClangdPidViaApi();
+
+                if (!this.currentPid) {
+                    console.log('Clotho MemoryMonitor: 🔄 API detection failed, delegating to ProcessDetector...');
+                    // Strategy 2: Delegate to ProcessDetector
+                    const mainProcess = await ProcessDetector.findMainProcessByName('clangd');
+                    this.currentPid = mainProcess?.pid;
+                }
+
                 if (!this.currentPid) {
                     this.updateStatusBarNoClangd();
                     return;
                 }
+
+                console.log(`Clotho MemoryMonitor: ✅ Using PID ${this.currentPid} for monitoring`);
             }
 
             // Get memory usage statistics
@@ -527,10 +457,10 @@ export class MemoryMonitor implements IMonitor {
         const pid = await this.findClangdPid();
         console.log('Final detected PID:', pid);
 
-        // Test fallback method
-        console.log('--- Testing Fallback Method ---');
-        const fallbackPid = await this.findClangdByProcessName();
-        console.log('Fallback PID:', fallbackPid);
+        // Test ProcessDetector method
+        console.log('--- Testing ProcessDetector Method ---');
+        const fallbackProcess = await ProcessDetector.findMainProcessByName('clangd');
+        console.log('ProcessDetector result:', fallbackProcess);
 
         // Show result to user
         if (pid) {

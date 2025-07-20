@@ -4,8 +4,10 @@
  */
 
 import * as vscode from 'vscode';
+import { exec } from 'child_process';
 import { IMonitor, MonitorConfig } from './types';
 import { MemoryMonitor } from './monitors/memory-monitor';
+import { CpuMonitor } from './monitors/cpu-monitor';
 import { StatusMonitor } from './monitors/status-monitor';
 import { ErrorHandler } from '../common/error-handler';
 
@@ -16,6 +18,7 @@ export class MonitorCoordinator implements vscode.Disposable {
     private readonly monitors: Map<string, IMonitor> = new Map();
     private readonly config: MonitorConfig;
     private showDetailsCommand: vscode.Disposable | undefined;
+    private disposables: vscode.Disposable[] = [];
 
     constructor(config: MonitorConfig = {}) {
         this.config = config;
@@ -32,9 +35,18 @@ export class MonitorCoordinator implements vscode.Disposable {
             const memoryMonitor = new MemoryMonitor(this.config.memory);
             this.monitors.set('memory', memoryMonitor);
 
+            // Initialize CPU monitor - now powered by ProcessDetector!
+            const cpuMonitor = new CpuMonitor(this.config.cpu);
+            this.monitors.set('cpu', cpuMonitor);
+
             // Initialize status monitor (for future use)
             const statusMonitor = new StatusMonitor();
             this.monitors.set('status', statusMonitor);
+
+            console.log('Clotho MonitorCoordinator: All monitors initialized successfully');
+            console.log(`  - Memory Monitor: ${memoryMonitor.getName()}`);
+            console.log(`  - CPU Monitor: ${cpuMonitor.getName()}`);
+            console.log(`  - Status Monitor: ${statusMonitor.getName()}`);
 
         } catch (error) {
             ErrorHandler.handle(error, {
@@ -56,15 +68,81 @@ export class MonitorCoordinator implements vscode.Disposable {
             this
         );
 
-        // Register debug command
-        const debugCommand = vscode.commands.registerCommand(
-            'clotho.debugClangdDetection',
-            this.debugClangdDetection,
-            this
+        vscode.commands.registerCommand(
+            'clotho.restartClangd',
+            () => this.restartClangd()
         );
+    }
 
-        // Store debug command for cleanup (you'll need to add this property)
-        (this as any).debugCommand = debugCommand;
+    /**
+     * Restarts the clangd language server by executing its restart command.
+     */
+    private async restartClangd(): Promise<void> {
+        try {
+            // First, kill all clangd processes manually to ensure clean restart
+            await this.killAllClangdProcesses();
+
+            // Wait a moment for processes to fully terminate
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Then use VS Code's restart command
+            await vscode.commands.executeCommand('clangd.restart');
+
+            // Wait for clangd to start up
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Force all monitors to reset and re-detect PID (should now pick the main process)
+            const memoryMonitor = this.getMemoryMonitor();
+            if (memoryMonitor) {
+                await (memoryMonitor as any).resetPid();
+            }
+
+            const cpuMonitor = this.getCpuMonitor();
+            if (cpuMonitor) {
+                await (cpuMonitor as any).resetPid();
+            }
+
+            // Force status monitor to update
+            const statusMonitor = this.getStatusMonitor();
+            if (statusMonitor) {
+                await (statusMonitor as any).updateStatus();
+            }
+
+            vscode.window.showInformationMessage('Clangd has been restarted (all processes killed, monitors re-initialized).');
+
+            // Refresh the details panel after a delay to allow restart to complete
+            setTimeout(() => this.showClangdDetails(), 3000);
+        } catch (error) {
+            ErrorHandler.handle(error, {
+                operation: 'restartClangd',
+                module: 'MonitorCoordinator',
+                showToUser: true,
+                logLevel: 'error'
+            });
+        }
+    }
+
+    /**
+     * Kill all clangd processes on the system (Windows-specific)
+     */
+    private async killAllClangdProcesses(): Promise<void> {
+        try {
+            // Use Windows taskkill command to forcefully terminate all clangd processes
+            await new Promise<void>((resolve, reject) => {
+                exec('taskkill /f /im clangd.exe', (error: any, stdout: string, stderr: string) => {
+                    if (error && !error.message.includes('not found')) {
+                        // Only reject if it's not a "process not found" error
+                        reject(error);
+                    } else {
+                        console.log(`Clotho: Killed clangd processes - ${stdout}`);
+                        resolve();
+                    }
+                });
+            });
+        } catch (error) {
+            console.warn('Clotho: Failed to kill clangd processes:', error);
+            // Don't throw - this is not critical
+        }
     }
 
     /**
@@ -120,6 +198,13 @@ export class MonitorCoordinator implements vscode.Disposable {
     }
 
     /**
+     * Get CPU monitor specifically
+     */
+    public getCpuMonitor(): CpuMonitor | undefined {
+        return this.getMonitor<CpuMonitor>('cpu');
+    }
+
+    /**
      * Get status monitor specifically
      */
     public getStatusMonitor(): StatusMonitor | undefined {
@@ -156,19 +241,31 @@ export class MonitorCoordinator implements vscode.Disposable {
             // Generate HTML content
             panel.webview.html = this.generateDetailsHtml(lastMemoryUsage, currentStatus, memoryMonitor.getConfig());
 
-            // Handle messages from webview (for future interactive features)
+            // Handle messages from webview
             panel.webview.onDidReceiveMessage(
-                (message) => {
+                async (message) => {
                     switch (message.command) {
                         case 'refresh':
-                            panel.webview.html = this.generateDetailsHtml(
-                                memoryMonitor.getLastMemoryUsage(),
-                                statusMonitor.getCurrentStatus(),
-                                memoryMonitor.getConfig()
-                            );
-                            break;
+                            // Re-generate and set the HTML content
+                            panel.webview.html = await this.getGeneratedHtml();
+                            return;
+                        case 'restartClangd':
+                            await this.restartClangd();
+                            // After restart, refresh the panel multiple times to show progress
+                            setTimeout(async () => {
+                                panel.webview.html = await this.getGeneratedHtml();
+                            }, 1000);
+                            setTimeout(async () => {
+                                panel.webview.html = await this.getGeneratedHtml();
+                            }, 3000);
+                            setTimeout(async () => {
+                                panel.webview.html = await this.getGeneratedHtml();
+                            }, 5000);
+                            return;
                     }
-                }
+                },
+                undefined,
+                this.disposables
             );
 
         } catch (error) {
@@ -179,6 +276,24 @@ export class MonitorCoordinator implements vscode.Disposable {
                 logLevel: 'error'
             });
         }
+    }
+
+    private async getGeneratedHtml(): Promise<string> {
+        const memoryMonitor = this.getMemoryMonitor();
+        const statusMonitor = this.getStatusMonitor();
+
+        if (!memoryMonitor || !statusMonitor) {
+            return this.generateDetailsHtml(null, null, {});
+        }
+
+        // Ensure status is up-to-date before rendering
+        await (statusMonitor as any).updateStatus();
+
+        const lastMemoryUsage = memoryMonitor.getLastMemoryUsage();
+        const currentStatus = statusMonitor.getCurrentStatus();
+        const config = memoryMonitor.getConfig();
+
+        return this.generateDetailsHtml(lastMemoryUsage, currentStatus, config);
     }
 
     /**
@@ -249,12 +364,36 @@ export class MonitorCoordinator implements vscode.Disposable {
                     color: var(--vscode-descriptionForeground);
                     font-style: italic;
                 }
+                .button-container {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 20px;
+                }
+                .button {
+                    background-color: var(--vscode-button-background);
+                    color: var(--vscode-button-foreground);
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 3px;
+                    cursor: pointer;
+                    font-size: 14px;
+                }
+                .button-danger {
+                    background-color: var(--vscode-dangerForeground);
+                    color: var(--vscode-dangerBackground);
+                }
+                .button:hover {
+                    background-color: var(--vscode-button-hoverBackground);
+                }
             </style>
         </head>
         <body>
             <h1>🔍 Clangd Process Monitor</h1>
             
-            <button class="refresh-button" onclick="refresh()">🔄 Refresh Data</button>
+            <div class="button-container">
+                <button class="button" onclick="refresh()">🔄 Refresh Data</button>
+                <button class="button button-danger" onclick="restartClangd()">💀 Kill All & Restart Clangd</button>
+            </div>
             
             ${hasData ? `
                 <div class="section">
@@ -331,9 +470,11 @@ export class MonitorCoordinator implements vscode.Disposable {
                 const vscode = acquireVsCodeApi();
                 
                 function refresh() {
-                    vscode.postMessage({
-                        command: 'refresh'
-                    });
+                    vscode.postMessage({ command: 'refresh' });
+                }
+
+                function restartClangd() {
+                    vscode.postMessage({ command: 'restartClangd' });
                 }
             </script>
         </body>

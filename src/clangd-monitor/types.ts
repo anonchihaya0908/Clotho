@@ -43,6 +43,18 @@ export interface MemoryUsage {
 }
 
 /**
+ * CPU usage statistics for a process
+ */
+export interface CpuUsage {
+    /** CPU usage percentage (0-100) */
+    cpu: number;
+    /** Process ID */
+    pid: number;
+    /** Timestamp when the data was collected */
+    timestamp: Date;
+}
+
+/**
  * Clangd server status information
  */
 export interface ClangdStatus {
@@ -69,10 +81,23 @@ export interface MemoryMonitorConfig {
 }
 
 /**
+ * Configuration options for CPU monitoring
+ */
+export interface CpuMonitorConfig {
+    /** Update interval in milliseconds (default: 3000) */
+    updateInterval?: number;
+    /** CPU threshold percentage for warnings (default: 50) */
+    warningThreshold?: number;
+    /** CPU threshold percentage for errors (default: 80) */
+    errorThreshold?: number;
+}
+
+/**
  * Events emitted by monitors
  */
 export interface MonitorEvents {
     'memory-updated': MemoryUsage;
+    'cpu-updated': CpuUsage;
     'status-changed': ClangdStatus;
     'error': Error;
     'warning': string;
@@ -83,6 +108,7 @@ export interface MonitorEvents {
  */
 export interface MonitorConfig {
     memory?: MemoryMonitorConfig;
+    cpu?: CpuMonitorConfig;
     // Future monitor configs can be added here
 }
 

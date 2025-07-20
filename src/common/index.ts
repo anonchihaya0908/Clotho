@@ -14,3 +14,12 @@ export * from './utils';
 
 // Error handling
 export * from './error-handler';
+
+// Process execution utilities
+export * from './process-runner';
+
+// Process detection and analysis services
+export * from './process-detector';
+
+// Status bar presentation
+export * from './status-bar-presenter';

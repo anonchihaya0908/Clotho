@@ -56,6 +56,11 @@
                 "command": "clotho.debugClangdDetection",
                 "title": "Debug Clangd Detection (开发调试)",
                 "category": "Clotho"
+            },
+            {
+                "command": "clotho.restartClangd",
+                "title": "Restart Clangd Server",
+                "category": "Clotho"
             }
         ],
         "menus": {
@@ -89,6 +94,9 @@
                 },
                 {
                     "command": "clotho.debugClangdDetection"
+                },
+                {
+                    "command": "clotho.restartClangd"
                 }
             ]
         },

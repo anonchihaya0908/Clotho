@@ -61,6 +61,9 @@ export function activate(context: vscode.ExtensionContext) {
     const isMonitoringEnabled = config.get<boolean>('enabled', true);
 
     if (isMonitoringEnabled) {
+      // Check for stale clangd processes before starting monitoring
+      checkForStaleClangdProcesses();
+
       activateClangdMonitor(clothoContext, {
         memory: {
           updateInterval: config.get<number>('updateInterval', 5000),
@@ -111,5 +114,59 @@ function showWelcomeMessage(context: vscode.ExtensionContext) {
         context.globalState.update(UI_CONSTANTS.WELCOME_MESSAGE_KEY, true);
       }
     });
+  }
+}
+
+/**
+ * Check for stale clangd processes that might interfere with monitoring
+ */
+async function checkForStaleClangdProcesses(): Promise<void> {
+  try {
+    const { exec } = require('child_process');
+    const util = require('util');
+    const execAsync = util.promisify(exec);
+
+    if (process.platform === 'win32') {
+      // Check for clangd processes and their ages
+      const command = 'powershell "Get-Process -Name clangd -ErrorAction SilentlyContinue | Select-Object Id,WorkingSet,StartTime | ConvertTo-Json"';
+      const { stdout } = await execAsync(command);
+
+      if (stdout.trim()) {
+        let processes = JSON.parse(stdout);
+        if (!Array.isArray(processes)) {
+          processes = [processes];
+        }
+
+        // Check for processes older than 10 minutes
+        const now = new Date();
+        const staleProcesses = processes.filter((p: any) => {
+          const startTime = new Date(p.StartTime);
+          const ageMinutes = (now.getTime() - startTime.getTime()) / (1000 * 60);
+          return ageMinutes > 10;
+        });
+
+        if (staleProcesses.length > 0) {
+          const memoryTotal = staleProcesses.reduce((sum: number, p: any) => sum + Math.round(p.WorkingSet / 1024 / 1024), 0);
+
+          const action = await vscode.window.showWarningMessage(
+            `Found ${staleProcesses.length} stale clangd process(es) using ${memoryTotal}MB that might interfere with monitoring. Clean them up?`,
+            'Kill Stale Processes',
+            'Ignore'
+          );
+
+          if (action === 'Kill Stale Processes') {
+            try {
+              await execAsync('taskkill /f /im clangd.exe');
+              vscode.window.showInformationMessage('Stale clangd processes cleaned up. Fresh monitoring will start.');
+            } catch (error) {
+              console.warn('Failed to kill stale processes:', error);
+            }
+          }
+        }
+      }
+    }
+  } catch (error) {
+    // Silently ignore - this is just a helpful check
+    console.debug('Clotho: Stale process check failed:', error);
   }
 }

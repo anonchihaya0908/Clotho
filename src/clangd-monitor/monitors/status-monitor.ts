@@ -73,63 +73,59 @@ export class StatusMonitor implements IMonitor {
     private async updateStatus(): Promise<void> {
         try {
             const clangdExtension = vscode.extensions.getExtension('llvm-vs-code-extensions.vscode-clangd');
+            const status: ClangdStatus = { isRunning: false };
 
-            const status: ClangdStatus = {
-                isRunning: false
-            };
+            if (!clangdExtension) {
+                status.statusMessage = 'Clangd extension not found';
+                this.currentStatus = status;
+                return;
+            }
 
-            if (clangdExtension) {
-                console.debug('Clotho StatusMonitor: Clangd extension found');
+            // If the extension is not active, it cannot have an API.
+            // We can try to activate it, but we won't wait.
+            if (!clangdExtension.isActive) {
+                status.statusMessage = 'Clangd extension is not active';
+                // Attempt to activate it for the next check
+                clangdExtension.activate().then(
+                    () => { console.debug('Clotho: Clangd extension activation requested.'); },
+                    (err: any) => { console.error("Clotho: Failed to activate clangd extension", err); }
+                );
+                this.currentStatus = status;
+                return;
+            }
 
-                if (!clangdExtension.isActive) {
-                    try {
-                        await clangdExtension.activate();
-                        console.debug('Clotho StatusMonitor: Clangd extension activated');
-                    } catch (error) {
-                        status.statusMessage = 'Failed to activate clangd extension';
-                        this.currentStatus = status;
-                        return;
-                    }
+            const api = clangdExtension.exports;
+            if (!api || typeof api.getClient !== 'function') {
+                status.statusMessage = 'Clangd API not available (extension may be starting)';
+                this.currentStatus = status;
+                return;
+            }
+
+            const client = api.getClient();
+            if (!client) {
+                status.statusMessage = 'Language client not available';
+                this.currentStatus = status;
+                return;
+            }
+
+            // State 2 is 'Running'
+            if (client.state === 2) {
+                status.isRunning = true;
+                status.statusMessage = 'Connected and running';
+
+                // Try to get version info from the initializeResult
+                if (client.initializeResult?.serverInfo?.version) {
+                    status.version = client.initializeResult.serverInfo.version;
+                } else if (client.initializeResult?.serverInfo?.name) {
+                    status.version = client.initializeResult.serverInfo.name;
                 }
 
-                const api = clangdExtension.exports;
-                console.debug('Clotho StatusMonitor: Extension API available:', !!api);
-                console.debug('Clotho StatusMonitor: getClient method available:', !!api?.getClient);
-
-                if (api?.getClient) {
-                    const client = api.getClient();
-                    console.debug('Clotho StatusMonitor: Client available:', !!client);
-                    console.debug('Clotho StatusMonitor: Client state:', client?.state);
-
-                    if (client && client.state === 2) { // 2 = Running state
-                        status.isRunning = true;
-                        status.statusMessage = 'Connected and running';
-
-                        // Try to extract PID using same methods as memory monitor
-                        if (client._serverProcess?.pid) {
-                            status.pid = client._serverProcess.pid;
-                        } else if (client._childProcess?.pid) {
-                            status.pid = client._childProcess.pid;
-                        } else if (client.initializeResult?.serverInfo?.processId) {
-                            status.pid = client.initializeResult.serverInfo.processId;
-                        }
-
-                        // Try to get version info
-                        if (client.initializeResult?.serverInfo?.version) {
-                            status.version = client.initializeResult.serverInfo.version;
-                        } else if (client.initializeResult?.serverInfo?.name) {
-                            status.version = client.initializeResult.serverInfo.name;
-                        }
-                    } else if (client) {
-                        status.statusMessage = `Language client state: ${client.state} (not running)`;
-                    } else {
-                        status.statusMessage = 'Language client not available';
-                    }
-                } else {
-                    status.statusMessage = 'Clangd API not available';
+                // Try to extract PID
+                if (client._serverProcess?.pid) {
+                    status.pid = client._serverProcess.pid;
                 }
             } else {
-                status.statusMessage = 'Clangd extension not found';
+                status.statusMessage = `Client not running (State: ${client.state === 1 ? 'Starting' : 'Stopped'})`;
             }
 
             this.currentStatus = status;
@@ -140,16 +136,11 @@ export class StatusMonitor implements IMonitor {
                 isRunning: false,
                 statusMessage: 'Error updating status: ' + (error instanceof Error ? error.message : 'Unknown error')
             };
-
             console.error('Clotho StatusMonitor: Error updating status:', error);
-            ErrorHandler.handle(error, {
-                operation: 'updateStatus',
-                module: 'StatusMonitor',
-                showToUser: false,
-                logLevel: 'debug'
-            });
         }
-    }    /**
+    }
+
+    /**
      * Get the current status information
      */
     public getCurrentStatus(): ClangdStatus {
