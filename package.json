@@ -1,7 +1,7 @@
 {
     "name": "clotho",
-    "displayName": "Clotho - C/C++ Header Source Pair Creator",
-    "description": "A powerful VS Code extension for creating and managing C/C++ header/source file pairs with intelligent language detection and custom templates",
+    "displayName": "Clotho - C/C++ clangd enhancer",
+    "description": "A powerful VS Code extension for enhancing C/C++ development with clangd.",
     "version": "1.0.0",
     "publisher": "your-publisher-name",
     "engines": {
