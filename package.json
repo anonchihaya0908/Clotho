@@ -1,0 +1,192 @@
+{
+    "name": "clotho",
+    "displayName": "Clotho - C/C++ Header Source Pair Creator",
+    "description": "A powerful VS Code extension for creating and managing C/C++ header/source file pairs with intelligent language detection and custom templates",
+    "version": "1.0.0",
+    "publisher": "your-publisher-name",
+    "engines": {
+        "vscode": "^1.74.0"
+    },
+    "categories": [
+        "Other",
+        "Snippets"
+    ],
+    "keywords": [
+        "c",
+        "cpp",
+        "c++",
+        "header",
+        "source",
+        "file",
+        "pair",
+        "template",
+        "clangd"
+    ],
+    "activationEvents": [
+        "onLanguage:c",
+        "onLanguage:cpp"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "clotho.newSourcePair",
+                "title": "New C/C++ Header/Source Pair",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.switchHeaderSource",
+                "title": "Switch Between Header/Source",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.configureRules",
+                "title": "Configure File Extension Rules",
+                "category": "Clotho"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "command": "clotho.newSourcePair",
+                    "when": "explorerResourceIsFolder",
+                    "group": "2_workspace"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "clotho.switchHeaderSource",
+                    "when": "resourceExtname == .h || resourceExtname == .hpp || resourceExtname == .hh || resourceExtname == .hxx || resourceExtname == .c || resourceExtname == .cpp || resourceExtname == .cc || resourceExtname == .cxx",
+                    "group": "navigation"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "clotho.newSourcePair",
+                    "when": "workspaceFolderCount > 0"
+                },
+                {
+                    "command": "clotho.switchHeaderSource",
+                    "when": "editorLangId == c || editorLangId == cpp"
+                },
+                {
+                    "command": "clotho.configureRules"
+                }
+            ]
+        },
+        "keybindings": [
+            {
+                "command": "clotho.switchHeaderSource",
+                "key": "alt+o",
+                "when": "editorTextFocus && (editorLangId == c || editorLangId == cpp)"
+            },
+            {
+                "command": "clotho.newSourcePair",
+                "key": "ctrl+alt+n",
+                "when": "workspaceFolderCount > 0"
+            }
+        ],
+        "configuration": {
+            "title": "Clotho",
+            "properties": {
+                "clotho.createPair.rules": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Custom pairing rules for C/C++ file extensions",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "key": {
+                                "type": "string",
+                                "description": "Unique identifier for the rule"
+                            },
+                            "label": {
+                                "type": "string",
+                                "description": "Display name for the rule"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Description of what the rule does"
+                            },
+                            "language": {
+                                "type": "string",
+                                "enum": [
+                                    "c",
+                                    "cpp"
+                                ],
+                                "description": "Target programming language"
+                            },
+                            "headerExt": {
+                                "type": "string",
+                                "description": "Header file extension (e.g., .h, .hpp)"
+                            },
+                            "sourceExt": {
+                                "type": "string",
+                                "description": "Source file extension (e.g., .c, .cpp)"
+                            },
+                            "isClass": {
+                                "type": "boolean",
+                                "description": "Whether this rule creates class templates"
+                            },
+                            "isStruct": {
+                                "type": "boolean",
+                                "description": "Whether this rule creates struct templates"
+                            }
+                        },
+                        "required": [
+                            "key",
+                            "label",
+                            "description",
+                            "language",
+                            "headerExt",
+                            "sourceExt"
+                        ]
+                    }
+                },
+                "clotho.switchHeaderSource.searchPaths": {
+                    "type": "array",
+                    "default": [
+                        ".",
+                        "../include",
+                        "../src",
+                        "./include",
+                        "./src"
+                    ],
+                    "description": "Additional paths to search for corresponding header/source files",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js",
+        "package": "@vscode/vsce package"
+    },
+    "devDependencies": {
+        "@types/node": "16.x",
+        "@types/vscode": "^1.74.0",
+        "@typescript-eslint/eslint-plugin": "^5.45.0",
+        "@typescript-eslint/parser": "^5.45.0",
+        "@vscode/test-electron": "^2.2.0",
+        "@vscode/vsce": "^3.6.0",
+        "eslint": "^8.28.0",
+        "typescript": "^4.9.4",
+        "vsce": "^2.15.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/your-username/clotho.git"
+    },
+    "bugs": {
+        "url": "https://github.com/your-username/clotho/issues"
+    },
+    "homepage": "https://github.com/your-username/clotho#readme",
+    "license": "Apache-2.0"
+}

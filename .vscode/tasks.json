@@ -1,0 +1,42 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "npm",
+            "script": "watch",
+            "group": "build",
+            "presentation": {
+                "reveal": "never"
+            },
+            "isBackground": true,
+            "problemMatcher": "$tsc-watch"
+        },
+        {
+            "type": "npm",
+            "script": "compile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": "$tsc"
+        },
+        {
+            "label": "Package Extension",
+            "type": "shell",
+            "command": "vsce",
+            "args": [
+                "package"
+            ],
+            "group": "build",
+            "presentation": {
+                "panel": "shared",
+                "clear": true
+            },
+            "dependsOn": "npm: compile"
+        }
+    ]
+}
