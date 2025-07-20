@@ -26,7 +26,7 @@
         "onLanguage:c",
         "onLanguage:cpp"
     ],
-    "main": "./out/src/extension.js",
+    "main": "./out/extension.js",
     "contributes": {
         "commands": [
             {
@@ -201,7 +201,6 @@
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
         "pretest": "npm run compile && npm run lint",
         "lint": "eslint src --ext ts",
         "lint:fix": "eslint src --ext ts --fix",
@@ -211,7 +210,8 @@
         "clean": "rimraf out",
         "dev": "npm run compile && code --extensionDevelopmentPath=. --new-window",
         "dev:watch": "npm run watch & code --extensionDevelopmentPath=. --new-window",
-        "build": "npm run clean && npm run compile",
+        "build": "node ./esbuild.config.mjs",
+        "watch": "node ./esbuild.config.mjs --watch",
         "start": "npm run build && npm run dev"
     },
     "devDependencies": {
@@ -222,7 +222,9 @@
         "@typescript-eslint/parser": "^6.21.0",
         "@vscode/test-electron": "^2.2.0",
         "@vscode/vsce": "^3.6.0",
+        "esbuild": "^0.25.8",
         "eslint": "^8.28.0",
+        "glob": "^11.0.3",
         "typescript": "^5.0.0"
     },
     "repository": {
@@ -233,5 +235,8 @@
         "url": "https://github.com/your-username/clotho/issues"
     },
     "homepage": "https://github.com/your-username/clotho#readme",
-    "license": "Apache-2.0"
+    "license": "Apache-2.0",
+    "dependencies": {
+        "vscode-languageclient": "^9.0.1"
+    }
 }
