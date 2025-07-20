@@ -6,7 +6,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import {
-    ExtensionContext,
     ErrorHandler,
     COMMANDS,
     ERROR_MESSAGES,
@@ -21,9 +20,10 @@ import { SwitchConfigService } from './config-manager';
  * Main coordinator class that orchestrates the switch functionality.
  * Uses dependency injection and comprehensive error handling.
  */
-export class SwitchCoordinator {
+export class SwitchCoordinator implements vscode.Disposable {
     private readonly service: SwitchService;
     private readonly ui: SwitchUI;
+    private readonly switchCommand: vscode.Disposable;
 
     constructor(
         service?: SwitchService,
@@ -32,6 +32,19 @@ export class SwitchCoordinator {
         // Allow dependency injection for testing
         this.service = service ?? new SwitchService();
         this.ui = ui ?? new SwitchUI();
+
+        // Register the switch command
+        this.switchCommand = vscode.commands.registerCommand(
+            COMMANDS.SWITCH_HEADER_SOURCE,
+            ErrorHandler.wrapAsync(
+                () => this.switchHeaderSource(),
+                {
+                    operation: 'switchHeaderSource command',
+                    module: 'SwitchCoordinator',
+                    showToUser: true
+                }
+            )
+        );
     }
 
     /**
@@ -123,58 +136,7 @@ export class SwitchCoordinator {
      * Disposes of resources
      */
     public dispose(): void {
-        // Clean up any resources if needed
+        // Clean up command registration
+        this.switchCommand.dispose();
     }
 }
-
-/**
- * Factory function for creating and configuring the coordinator
- */
-export function createSwitchCoordinator(): SwitchCoordinator {
-    return new SwitchCoordinator();
-}
-
-/**
- * Activates the switch header/source functionality with improved error handling
- */
-export function activateSwitchSourceHeader(context: ExtensionContext): void {
-    const errorHandler = (operation: string) => (error: unknown) => {
-        ErrorHandler.handle(error, {
-            operation,
-            module: 'SwitchCoordinator',
-            showToUser: true,
-            logLevel: 'error'
-        });
-    };
-
-    try {
-        // Create coordinator instance
-        const coordinator = createSwitchCoordinator();
-
-        // Register the main switch command with error handling
-        const switchCommand = vscode.commands.registerCommand(
-            COMMANDS.SWITCH_HEADER_SOURCE,
-            ErrorHandler.wrapAsync(
-                () => coordinator.switchHeaderSource(),
-                {
-                    operation: 'switchHeaderSource command',
-                    module: 'SwitchCoordinator',
-                    showToUser: true
-                }
-            )
-        );
-
-        // Add to subscriptions for proper cleanup
-        context.subscriptions.push(
-            switchCommand,
-            coordinator
-        );
-
-        console.log('Clotho: Switch header/source functionality activated');
-    } catch (error) {
-        errorHandler('activateSwitchSourceHeader')(error);
-    }
-}
-
-// Re-export ExtensionContext for external usage
-export type { ExtensionContext };
