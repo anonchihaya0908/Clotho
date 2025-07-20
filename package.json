@@ -23,10 +23,13 @@
         "clangd"
     ],
     "activationEvents": [
+        "onCommand:clotho.newSourcePair",
+        "onCommand:clotho.switchHeaderSource", 
+        "onCommand:clotho.configureRules",
         "onLanguage:c",
         "onLanguage:cpp"
     ],
-    "main": "./out/extension.js",
+    "main": "./out/src/extension.js",
     "contributes": {
         "commands": [
             {
@@ -170,7 +173,11 @@
         "test": "node ./out/test/runTest.js",
         "package": "@vscode/vsce package",
         "format": "npx prettier --write \"src/**/*.ts\"",
-        "clean": "rimraf out"
+        "clean": "rimraf out",
+        "dev": "npm run compile && code --extensionDevelopmentPath=. --new-window",
+        "dev:watch": "npm run watch & code --extensionDevelopmentPath=. --new-window",
+        "build": "npm run clean && npm run compile",
+        "start": "npm run build && npm run dev"
     },
     "devDependencies": {
         "@types/mocha": "^10.0.10",

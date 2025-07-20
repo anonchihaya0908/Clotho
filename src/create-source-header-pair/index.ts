@@ -32,6 +32,8 @@
 // Integrates with VS Code file system and editor APIs
 //
 
+import * as vscode from 'vscode';
+
 import { ExtensionContext } from '../extension';
 
 import { PairCoordinator } from './coordinator';

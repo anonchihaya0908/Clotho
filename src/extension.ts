@@ -12,8 +12,8 @@ import { activateSwitchSourceHeader } from './switch-source-header';
 
 // Extension context interface for dependency injection
 export interface ExtensionContext {
-    subscriptions: vscode.Disposable[];
-    extensionContext: vscode.ExtensionContext;
+  subscriptions: vscode.Disposable[];
+  extensionContext: vscode.ExtensionContext;
 }
 
 // Implementation of the extension context
