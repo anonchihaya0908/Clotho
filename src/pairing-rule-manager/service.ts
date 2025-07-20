@@ -6,19 +6,7 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../common/error-handler';
 import { CONFIG_KEYS } from '../common/constants';
-import { Language } from '../common/types';
-
-// Public interface for pairing rules
-export interface PairingRule {
-    key: string;
-    label: string;
-    description: string;
-    language: Language;
-    headerExt: string;
-    sourceExt: string;
-    isClass?: boolean;
-    isStruct?: boolean;
-}
+import { Language, PairingRule } from '../common/types';
 
 /**
  * Service class for managing pairing rules configuration

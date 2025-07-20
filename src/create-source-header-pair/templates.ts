@@ -9,8 +9,7 @@
 // - Validation patterns
 //
 
-import { PairingRule } from '../pairing-rule-manager';
-import { Language } from '../common/types';
+import { PairingRule, Language } from '../common/types';
 
 // Types for better type safety
 export type TemplateKey =

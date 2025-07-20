@@ -25,5 +25,6 @@
 
 // Export main types and classes for external usage
 export { PairingRuleCoordinator } from './coordinator';
-export { PairingRuleService, type PairingRule } from './service';
+export { PairingRuleService } from './service';
 export { PairingRuleUI } from './ui';
+export type { PairingRule } from '../common/types';

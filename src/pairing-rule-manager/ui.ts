@@ -5,7 +5,8 @@
 
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../common/error-handler';
-import { PairingRule, PairingRuleService } from './service';
+import { PairingRule } from '../common/types';
+import { PairingRuleService } from './service';
 
 // Type aliases for QuickPick items
 type RuleQuickPickItem = vscode.QuickPickItem & { rule: PairingRule };
