@@ -1,1 +1,18 @@
-node_modules
+# Dependencies
+/node_modules
+
+# Compiled output
+/out
+
+# Packaged extension file
+*.vsix
+
+# Log files
+*.log
+
+# Development-specific VSCode settings (optional, but good practice)
+.vscode/launch.json
+.vscode/tasks.json
+
+# Test results
+coverage/
