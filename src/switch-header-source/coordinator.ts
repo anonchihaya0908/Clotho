@@ -1,5 +1,5 @@
 /**
- * Refactored Switch Coordinator - Example of improved architecture
+ * Switch Coordinator - Example of improved architecture
  * Demonstrates best practices for error handling, type safety, and code organization
  */
 
