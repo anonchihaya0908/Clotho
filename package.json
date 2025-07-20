@@ -23,9 +23,6 @@
         "clangd"
     ],
     "activationEvents": [
-        "onCommand:clotho.newSourcePair",
-        "onCommand:clotho.switchHeaderSource",
-        "onCommand:clotho.configureRules",
         "onLanguage:c",
         "onLanguage:cpp"
     ],
@@ -44,7 +41,7 @@
             },
             {
                 "command": "clotho.configureRules",
-                "title": "Configure File Extension Rules",
+                "title": "Configure C++ File Extension Rules",
                 "category": "Clotho"
             }
         ],

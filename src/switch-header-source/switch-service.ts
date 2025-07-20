@@ -42,6 +42,7 @@ const SOURCE_EXTENSIONS = ['.c', '.cpp', '.cc', '.cxx'];
 /**
  * Core service class for switch header/source functionality.
  * Provides pure logic without any UI dependencies.
+ * Uses instance-based pattern for consistency with other modules and better testability.
  */
 export class SwitchService {
 
@@ -49,12 +50,16 @@ export class SwitchService {
     // RegEx Cache for Performance Optimization
     // ===============================
 
-    private static regexCache = new Map<string, RegExp>();
+    private regexCache = new Map<string, RegExp>();
+
+    constructor() {
+        // Initialize any required state here if needed
+    }
 
     /**
      * Gets a cached regex or creates and caches a new one.
      */
-    private static getCachedRegex(pattern: string): RegExp {
+    private getCachedRegex(pattern: string): RegExp {
         if (!this.regexCache.has(pattern)) {
             this.regexCache.set(pattern, new RegExp(pattern));
         }
@@ -69,7 +74,7 @@ export class SwitchService {
      * Finds partner files for the given file.
      * Returns null if no files found, array of URIs if found.
      */
-    public static async findPartnerFile(currentFile: vscode.Uri): Promise<SearchResult | null> {
+    public async findPartnerFile(currentFile: vscode.Uri): Promise<SearchResult | null> {
         const currentPath = currentFile.fsPath;
         const baseName = path.basename(currentPath, path.extname(currentPath));
         const isHeader = this.isHeaderFile(currentPath);
@@ -87,7 +92,7 @@ export class SwitchService {
     /**
      * Checks if a file is a header file based on its extension.
      */
-    public static isHeaderFile(filePath: string): boolean {
+    public isHeaderFile(filePath: string): boolean {
         const ext = path.extname(filePath).toLowerCase();
         return HEADER_EXTENSIONS.includes(ext);
     }
@@ -95,7 +100,7 @@ export class SwitchService {
     /**
      * Checks if a file is a source file based on its extension.
      */
-    public static isSourceFile(filePath: string): boolean {
+    public isSourceFile(filePath: string): boolean {
         const ext = path.extname(filePath).toLowerCase();
         return SOURCE_EXTENSIONS.includes(ext);
     }
@@ -103,14 +108,14 @@ export class SwitchService {
     /**
      * Checks if a file is a valid C/C++ file.
      */
-    public static isValidCppFile(filePath: string): boolean {
+    public isValidCppFile(filePath: string): boolean {
         return this.isHeaderFile(filePath) || this.isSourceFile(filePath);
     }
 
     /**
      * Cleans test file basename (removes test prefixes/suffixes).
      */
-    public static cleanTestBaseName(baseName: string): string {
+    public cleanTestBaseName(baseName: string): string {
         // Remove common test prefixes and suffixes
         const testPatterns = [
             /^test_(.+)$/i,     // test_my_class -> my_class
@@ -137,24 +142,49 @@ export class SwitchService {
 
     /**
      * Step 1: Attempts to use clangd LSP for precise file switching.
+     * Uses the official clangd extension API for better compatibility and maintainability.
+     * 
+     * This approach follows the standard pattern recommended in VS Code extension documentation:
+     * 1. Get extension by ID
+     * 2. Activate to get API
+     * 3. Access the client through the official API
+     * 
+     * Benefits over the previous `languageClients` array approach:
+     * - Uses the documented public API instead of internal APIs
+     * - Better error handling and state checking
+     * - More future-proof as it aligns with official documentation
+     * - Clearer debugging output
      */
-    private static async tryClangdSwitch(currentFile: vscode.Uri): Promise<SearchResult> {
+    private async tryClangdSwitch(currentFile: vscode.Uri): Promise<SearchResult> {
         try {
-            const clients = vscode.extensions.getExtension('llvm-vs-code-extensions.vscode-clangd')?.exports?.languageClients;
-            if (!clients || clients.length === 0) {
+            // Get the clangd extension using the official extension ID
+            const clangdExtension = vscode.extensions.getExtension('llvm-vs-code-extensions.vscode-clangd');
+            if (!clangdExtension) {
+                console.debug('Clotho: clangd extension not found');
                 return { files: [], method: 'clangd' };
             }
 
-            const client = clients[0];
-            if (!client || client.state !== vscodelc.State.Running) {
+            // Activate the extension to get its API
+            const api = await clangdExtension.activate();
+            if (!api?.client) {
+                console.debug('Clotho: clangd extension API or client not available');
                 return { files: [], method: 'clangd' };
             }
 
+            // Ensure the client is running
+            const client: vscodelc.LanguageClient = api.client;
+            if (client.state !== vscodelc.State.Running) {
+                console.debug('Clotho: clangd client is not running');
+                return { files: [], method: 'clangd' };
+            }
+
+            // Send the switch request using the official API
             const textDocument = vscodelc.TextDocumentIdentifier.create(currentFile.toString());
             const result = await client.sendRequest(SwitchSourceHeaderRequest.type, textDocument);
 
             if (result && typeof result === 'string') {
                 const targetUri = vscode.Uri.parse(result);
+                console.debug(`Clotho: clangd found partner file: ${targetUri.fsPath}`);
                 return { files: [targetUri], method: 'clangd' };
             }
         } catch (error) {
@@ -171,7 +201,7 @@ export class SwitchService {
     /**
      * Step 2: Tries multiple heuristic search strategies in order of priority.
      */
-    private static async tryExplorerMode(
+    private async tryExplorerMode(
         currentFile: vscode.Uri,
         baseName: string,
         isHeader: boolean
@@ -226,7 +256,7 @@ export class SwitchService {
     /**
      * Strategy 1: Search in the same directory - the most common case.
      */
-    private static async searchSameDirectory(
+    private async searchSameDirectory(
         directory: string,
         baseName: string,
         targetExtensions: string[]
@@ -248,7 +278,7 @@ export class SwitchService {
     /**
      * Strategy 2: Search in classic src/include structures.
      */
-    private static async searchSrcIncludeStructure(
+    private async searchSrcIncludeStructure(
         currentPath: string,
         baseName: string,
         targetExtensions: string[]
@@ -295,7 +325,7 @@ export class SwitchService {
     /**
      * Strategy 3: Search in parallel src/tests structures.
      */
-    private static async searchParallelTestsStructure(
+    private async searchParallelTestsStructure(
         currentPath: string,
         baseName: string,
         targetExtensions: string[]
@@ -331,7 +361,7 @@ export class SwitchService {
     /**
      * Strategy 4: Global workspace search - the last resort.
      */
-    private static async searchGlobal(baseName: string, targetExtensions: string[]): Promise<SearchResult> {
+    private async searchGlobal(baseName: string, targetExtensions: string[]): Promise<SearchResult> {
         const config = SwitchConfigService.getConfig();
         const extensionPattern = `{${targetExtensions.map(ext => ext.substring(1)).join(',')}}`;
         const searchPattern = `**/${baseName}.${extensionPattern}`;
@@ -357,7 +387,7 @@ export class SwitchService {
      * Common logic for finding files across multiple directory patterns.
      * Reduces code duplication between different search strategies.
      */
-    private static async findFilesAcrossDirs(
+    private async findFilesAcrossDirs(
         patterns: Array<{ rootPath: string, subPath: string, targetDirs: string[] }>,
         baseName: string,
         targetExtensions: string[]

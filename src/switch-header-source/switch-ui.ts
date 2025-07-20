@@ -11,13 +11,18 @@ import * as path from 'path';
 /**
  * UI service class for switch header/source functionality.
  * Handles all user interactions including dialogs, messages, and file opening.
+ * Uses instance-based pattern for consistency with other modules and better testability.
  */
 export class SwitchUI {
+
+    constructor() {
+        // Initialize any required state here if needed
+    }
 
     /**
      * Shows an informational message when no files are found.
      */
-    public static showNoFilesFoundMessage(currentFileName: string, isHeader: boolean): void {
+    public showNoFilesFoundMessage(currentFileName: string, isHeader: boolean): void {
         const fileType = isHeader ? 'source' : 'header';
         const message = `No corresponding ${fileType} file found for '${currentFileName}'. You may need to create it manually.`;
         vscode.window.showInformationMessage(message);
@@ -26,7 +31,7 @@ export class SwitchUI {
     /**
      * Shows a warning when the current file is not a valid C/C++ file.
      */
-    public static showInvalidFileTypeWarning(fileName: string): void {
+    public showInvalidFileTypeWarning(fileName: string): void {
         vscode.window.showWarningMessage(
             `File '${fileName}' is not a recognized C/C++ source or header file.`
         );
@@ -35,14 +40,14 @@ export class SwitchUI {
     /**
      * Shows a warning when no active editor is found.
      */
-    public static showNoActiveEditorWarning(): void {
+    public showNoActiveEditorWarning(): void {
         vscode.window.showWarningMessage('No active editor found. Please open a C/C++ file first.');
     }
 
     /**
      * Shows an error message when switching fails.
      */
-    public static showSwitchError(error: Error): void {
+    public showSwitchError(error: Error): void {
         console.error('Clotho: Error in switchHeaderSource command:', error);
         vscode.window.showErrorMessage(
             `Failed to switch header/source: ${error.message}`
@@ -52,14 +57,14 @@ export class SwitchUI {
     /**
      * Shows debug information about the search method used.
      */
-    public static showDebugInfo(method: string, foundCount: number): void {
+    public showDebugInfo(method: string, foundCount: number): void {
         console.debug(`Clotho: Found ${foundCount} file(s) using method: ${method}`);
     }
 
     /**
      * Displays a QuickPick dialog when multiple candidate files are found.
      */
-    public static async showFileSelectionDialog(
+    public async showFileSelectionDialog(
         files: vscode.Uri[],
         baseName: string,
         isHeader: boolean
@@ -93,7 +98,7 @@ export class SwitchUI {
     /**
      * Opens a file in the editor with improved error handling.
      */
-    public static async openFile(fileUri: vscode.Uri): Promise<void> {
+    public async openFile(fileUri: vscode.Uri): Promise<void> {
         try {
             const document = await vscode.workspace.openTextDocument(fileUri);
             await vscode.window.showTextDocument(document);
@@ -114,7 +119,7 @@ export class SwitchUI {
      * Handles the result of a file search operation.
      * Decides whether to open a single file, show selection dialog, or display no results message.
      */
-    public static async handleSearchResult(
+    public async handleSearchResult(
         files: vscode.Uri[],
         baseName: string,
         isHeader: boolean,

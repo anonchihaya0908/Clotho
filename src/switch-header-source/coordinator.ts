@@ -11,22 +11,31 @@ import { SwitchConfigService } from './config-manager';
 
 // Extension context interface for dependency injection
 export interface ExtensionContext {
-    subscriptions: vscode.Disposable[];
-    extensionContext: vscode.ExtensionContext;
+  subscriptions: vscode.Disposable[];
+  extensionContext: vscode.ExtensionContext;
 }
 
 /**
  * Main coordinator class that orchestrates the switch functionality.
+ * Uses instance-based pattern for consistency with other modules and better testability.
  */
 export class SwitchCoordinator {
+
+    private service: SwitchService;
+    private ui: SwitchUI;
+
+    constructor() {
+        this.service = new SwitchService();
+        this.ui = new SwitchUI();
+    }
 
     /**
      * Main switch operation - orchestrates Service and UI interactions.
      */
-    public static async switchHeaderSource(): Promise<void> {
+    public async switchHeaderSource(): Promise<void> {
         const activeEditor = vscode.window.activeTextEditor;
         if (!activeEditor) {
-            SwitchUI.showNoActiveEditorWarning();
+            this.ui.showNoActiveEditorWarning();
             return;
         }
 
@@ -35,51 +44,51 @@ export class SwitchCoordinator {
         const fileName = path.basename(currentPath);
 
         // Validate file type
-        if (!SwitchService.isValidCppFile(currentPath)) {
-            SwitchUI.showInvalidFileTypeWarning(fileName);
+        if (!this.service.isValidCppFile(currentPath)) {
+            this.ui.showInvalidFileTypeWarning(fileName);
             return;
         }
 
         try {
             // Use the service to find partner files
-            const result = await SwitchService.findPartnerFile(currentFile);
-
+            const result = await this.service.findPartnerFile(currentFile);
+            
             if (!result) {
                 const baseName = path.basename(currentPath, path.extname(currentPath));
-                const isHeader = SwitchService.isHeaderFile(currentPath);
-                SwitchUI.showNoFilesFoundMessage(baseName, isHeader);
+                const isHeader = this.service.isHeaderFile(currentPath);
+                this.ui.showNoFilesFoundMessage(baseName, isHeader);
                 return;
             }
 
             // Let the UI handle the results
             const baseName = path.basename(currentPath, path.extname(currentPath));
-            const isHeader = SwitchService.isHeaderFile(currentPath);
-            await SwitchUI.handleSearchResult(result.files, baseName, isHeader, result.method);
+            const isHeader = this.service.isHeaderFile(currentPath);
+            await this.ui.handleSearchResult(result.files, baseName, isHeader, result.method);
 
         } catch (error) {
-            SwitchUI.showSwitchError(error instanceof Error ? error : new Error('Unknown error'));
+            this.ui.showSwitchError(error instanceof Error ? error : new Error('Unknown error'));
         }
     }
 
     /**
      * Shows the configuration template selector.
      */
-    public static async showConfigTemplate(): Promise<void> {
+    public async showConfigTemplate(): Promise<void> {
         try {
             await SwitchConfigService.showTemplateSelector();
         } catch (error) {
-            SwitchUI.showSwitchError(error instanceof Error ? error : new Error('Configuration error'));
+            this.ui.showSwitchError(error instanceof Error ? error : new Error('Configuration error'));
         }
     }
 
     /**
      * Shows the current configuration.
      */
-    public static showCurrentConfig(): void {
+    public showCurrentConfig(): void {
         try {
             SwitchConfigService.showCurrentConfig();
         } catch (error) {
-            SwitchUI.showSwitchError(error instanceof Error ? error : new Error('Configuration error'));
+            this.ui.showSwitchError(error instanceof Error ? error : new Error('Configuration error'));
         }
     }
 }
@@ -89,11 +98,14 @@ export class SwitchCoordinator {
  * Registers the commands and sets up the necessary infrastructure.
  */
 export function activateSwitchSourceHeader(context: ExtensionContext): void {
+    // Create a single coordinator instance to share across commands
+    const coordinator = new SwitchCoordinator();
+
     // Register the main switch command
     const switchCommand = vscode.commands.registerCommand(
         'clotho.switchHeaderSource',
         async () => {
-            await SwitchCoordinator.switchHeaderSource();
+            await coordinator.switchHeaderSource();
         }
     );
 
@@ -101,7 +113,7 @@ export function activateSwitchSourceHeader(context: ExtensionContext): void {
     const configTemplateCommand = vscode.commands.registerCommand(
         'clotho.switchConfigTemplate',
         async () => {
-            await SwitchCoordinator.showConfigTemplate();
+            await coordinator.showConfigTemplate();
         }
     );
 
@@ -109,7 +121,7 @@ export function activateSwitchSourceHeader(context: ExtensionContext): void {
     const showConfigCommand = vscode.commands.registerCommand(
         'clotho.showSwitchConfig',
         () => {
-            SwitchCoordinator.showCurrentConfig();
+            coordinator.showCurrentConfig();
         }
     );
 
