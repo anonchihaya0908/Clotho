@@ -10,9 +10,9 @@
 # Log files
 *.log
 
-# Development-specific VSCode settings (optional, but good practice)
+# Development-specific VSCode settings.vscode/settings.json
+.vscode/settings.json
 .vscode/launch.json
 .vscode/tasks.json
-
 # Test results
 coverage/
