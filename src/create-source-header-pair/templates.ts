@@ -9,12 +9,12 @@
 // - Validation patterns
 //
 
-import {PairingRule} from '../pairing-rule-manager';
+import { PairingRule } from '../pairing-rule-manager';
+import { Language } from '../common/types';
 
 // Types for better type safety
-export type Language = 'c'|'cpp';
 export type TemplateKey =
-    'CPP_CLASS'|'CPP_STRUCT'|'C_STRUCT'|'C_EMPTY'|'CPP_EMPTY';
+  'CPP_CLASS' | 'CPP_STRUCT' | 'C_STRUCT' | 'C_EMPTY' | 'CPP_EMPTY';
 
 // Regular expression patterns to validate C/C++ identifiers
 export const VALIDATION_PATTERNS = {
@@ -44,7 +44,7 @@ export const TEMPLATE_RULES: PairingRule[] = [
     key: 'cpp_class',
     label: '$(symbol-class) C++ Class',
     description:
-        'Creates a Header/Source file pair with a boilerplate class definition.',
+      'Creates a Header/Source file pair with a boilerplate class definition.',
     language: 'cpp' as const,
     headerExt: '.h',
     sourceExt: '.cpp',
@@ -54,7 +54,7 @@ export const TEMPLATE_RULES: PairingRule[] = [
     key: 'cpp_struct',
     label: '$(symbol-struct) C++ Struct',
     description:
-        'Creates a Header/Source file pair with a boilerplate struct definition.',
+      'Creates a Header/Source file pair with a boilerplate struct definition.',
     language: 'cpp' as const,
     headerExt: '.h',
     sourceExt: '.cpp',
@@ -155,3 +155,6 @@ typedef struct {
     source: '{{includeLine}}'
   }
 };
+
+// Re-export Language type for backward compatibility
+export { Language };

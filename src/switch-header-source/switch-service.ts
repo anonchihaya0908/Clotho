@@ -7,7 +7,6 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as vscodelc from 'vscode-languageclient/node';
 import { SwitchConfigService } from './config-manager';
 
 // ===============================
@@ -20,16 +19,6 @@ import { SwitchConfigService } from './config-manager';
 export interface SearchResult {
     files: vscode.Uri[];
     method: 'clangd' | 'same-directory' | 'src-include' | 'parallel-tests' | 'global-search';
-}
-
-/**
- * Defines the custom LSP request type for switching between source and header.
- */
-namespace SwitchSourceHeaderRequest {
-    export const type =
-        new vscodelc
-            .RequestType<vscodelc.TextDocumentIdentifier, string | undefined, void>(
-                'textDocument/switchSourceHeader');
 }
 
 // ===============================
@@ -142,55 +131,12 @@ export class SwitchService {
 
     /**
      * Step 1: Attempts to use clangd LSP for precise file switching.
-     * Uses the official clangd extension API for better compatibility and maintainability.
-     * 
-     * This approach follows the standard pattern recommended in VS Code extension documentation:
-     * 1. Get extension by ID
-     * 2. Activate to get API
-     * 3. Access the client through the official API
-     * 
-     * Benefits over the previous `languageClients` array approach:
-     * - Uses the documented public API instead of internal APIs
-     * - Better error handling and state checking
-     * - More future-proof as it aligns with official documentation
-     * - Clearer debugging output
+     * Currently simplified - clangd integration is temporarily disabled
+     * to ensure basic functionality works properly.
      */
     private async tryClangdSwitch(currentFile: vscode.Uri): Promise<SearchResult> {
-        try {
-            // Get the clangd extension using the official extension ID
-            const clangdExtension = vscode.extensions.getExtension('llvm-vs-code-extensions.vscode-clangd');
-            if (!clangdExtension) {
-                console.debug('Clotho: clangd extension not found');
-                return { files: [], method: 'clangd' };
-            }
-
-            // Activate the extension to get its API
-            const api = await clangdExtension.activate();
-            if (!api?.client) {
-                console.debug('Clotho: clangd extension API or client not available');
-                return { files: [], method: 'clangd' };
-            }
-
-            // Ensure the client is running
-            const client: vscodelc.LanguageClient = api.client;
-            if (client.state !== vscodelc.State.Running) {
-                console.debug('Clotho: clangd client is not running');
-                return { files: [], method: 'clangd' };
-            }
-
-            // Send the switch request using the official API
-            const textDocument = vscodelc.TextDocumentIdentifier.create(currentFile.toString());
-            const result = await client.sendRequest(SwitchSourceHeaderRequest.type, textDocument);
-
-            if (result && typeof result === 'string') {
-                const targetUri = vscode.Uri.parse(result);
-                console.debug(`Clotho: clangd found partner file: ${targetUri.fsPath}`);
-                return { files: [targetUri], method: 'clangd' };
-            }
-        } catch (error) {
-            console.debug('Clotho: clangd switch request failed, falling back to heuristics:', error);
-        }
-
+        // TODO: Re-implement clangd integration with proper error handling
+        console.debug('Clotho: clangd integration temporarily disabled, using heuristic search');
         return { files: [], method: 'clangd' };
     }
 

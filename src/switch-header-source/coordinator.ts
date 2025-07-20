@@ -1,132 +1,180 @@
 /**
- * Coordinator for switch header/source functionality.
- * Handles command registration and orchestrates the interaction between Service and UI layers.
+ * Refactored Switch Coordinator - Example of improved architecture
+ * Demonstrates best practices for error handling, type safety, and code organization
  */
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import {
+    ExtensionContext,
+    ErrorHandler,
+    COMMANDS,
+    ERROR_MESSAGES,
+    isValidCppFile,
+    getFileType
+} from '../common';
 import { SwitchService } from './switch-service';
 import { SwitchUI } from './switch-ui';
 import { SwitchConfigService } from './config-manager';
 
-// Extension context interface for dependency injection
-export interface ExtensionContext {
-  subscriptions: vscode.Disposable[];
-  extensionContext: vscode.ExtensionContext;
-}
-
 /**
  * Main coordinator class that orchestrates the switch functionality.
- * Uses instance-based pattern for consistency with other modules and better testability.
+ * Uses dependency injection and comprehensive error handling.
  */
 export class SwitchCoordinator {
+    private readonly service: SwitchService;
+    private readonly ui: SwitchUI;
 
-    private service: SwitchService;
-    private ui: SwitchUI;
-
-    constructor() {
-        this.service = new SwitchService();
-        this.ui = new SwitchUI();
+    constructor(
+        service?: SwitchService,
+        ui?: SwitchUI
+    ) {
+        // Allow dependency injection for testing
+        this.service = service ?? new SwitchService();
+        this.ui = ui ?? new SwitchUI();
     }
 
     /**
-     * Main switch operation - orchestrates Service and UI interactions.
+     * Main switch operation with comprehensive error handling
      */
     public async switchHeaderSource(): Promise<void> {
-        const activeEditor = vscode.window.activeTextEditor;
-        if (!activeEditor) {
-            this.ui.showNoActiveEditorWarning();
-            return;
-        }
-
-        const currentFile = activeEditor.document.uri;
-        const currentPath = currentFile.fsPath;
-        const fileName = path.basename(currentPath);
-
-        // Validate file type
-        if (!this.service.isValidCppFile(currentPath)) {
-            this.ui.showInvalidFileTypeWarning(fileName);
-            return;
-        }
-
         try {
-            // Use the service to find partner files
-            const result = await this.service.findPartnerFile(currentFile);
-            
-            if (!result) {
-                const baseName = path.basename(currentPath, path.extname(currentPath));
-                const isHeader = this.service.isHeaderFile(currentPath);
-                this.ui.showNoFilesFoundMessage(baseName, isHeader);
+            // Validate preconditions
+            const activeEditor = this.validateActiveEditor();
+            if (!activeEditor) return;
+
+            const currentFile = activeEditor.document.uri;
+            const currentPath = currentFile.fsPath;
+            const fileName = path.basename(currentPath);
+
+            // Validate file type
+            if (!isValidCppFile(currentPath)) {
+                this.ui.showInvalidFileTypeWarning(fileName);
                 return;
             }
 
-            // Let the UI handle the results
-            const baseName = path.basename(currentPath, path.extname(currentPath));
-            const isHeader = this.service.isHeaderFile(currentPath);
-            await this.ui.handleSearchResult(result.files, baseName, isHeader, result.method);
+            // Perform the search
+            const result = await this.service.findPartnerFile(currentFile);
 
+            if (!result || result.files.length === 0) {
+                const baseName = path.basename(currentPath, path.extname(currentPath));
+                const fileType = getFileType(currentPath);
+                this.ui.showNoFilesFoundMessage(baseName, fileType === 'header');
+                return;
+            }
+
+            // Handle the results
+            const baseName = path.basename(currentPath, path.extname(currentPath));
+            const isHeader = getFileType(currentPath) === 'header';
+            await this.ui.handleSearchResult(result.files, baseName, isHeader, result.method);
         } catch (error) {
-            this.ui.showSwitchError(error instanceof Error ? error : new Error('Unknown error'));
+            ErrorHandler.handle(error, {
+                operation: 'switchHeaderSource',
+                module: 'SwitchCoordinator',
+                showToUser: true,
+                logLevel: 'error'
+            });
         }
     }
 
     /**
-     * Shows the configuration template selector.
+     * Shows the configuration template selector with error handling
      */
     public async showConfigTemplate(): Promise<void> {
         try {
             await SwitchConfigService.showTemplateSelector();
         } catch (error) {
-            this.ui.showSwitchError(error instanceof Error ? error : new Error('Configuration error'));
+            ErrorHandler.handle(error, {
+                operation: 'showConfigTemplate',
+                module: 'SwitchCoordinator',
+                showToUser: true
+            });
         }
     }
 
     /**
-     * Shows the current configuration.
+     * Shows the current configuration with error handling
      */
     public showCurrentConfig(): void {
         try {
             SwitchConfigService.showCurrentConfig();
         } catch (error) {
-            this.ui.showSwitchError(error instanceof Error ? error : new Error('Configuration error'));
+            ErrorHandler.handle(error, {
+                operation: 'showCurrentConfig',
+                module: 'SwitchCoordinator',
+                showToUser: true
+            });
         }
+    }
+
+    /**
+     * Validates that there is an active editor
+     */
+    private validateActiveEditor(): vscode.TextEditor | null {
+        const activeEditor = vscode.window.activeTextEditor;
+        if (!activeEditor) {
+            this.ui.showNoActiveEditorWarning();
+            return null;
+        }
+        return activeEditor;
+    }
+
+    /**
+     * Disposes of resources
+     */
+    public dispose(): void {
+        // Clean up any resources if needed
     }
 }
 
 /**
- * Activates the switch header/source functionality.
- * Registers the commands and sets up the necessary infrastructure.
+ * Factory function for creating and configuring the coordinator
+ */
+export function createSwitchCoordinator(): SwitchCoordinator {
+    return new SwitchCoordinator();
+}
+
+/**
+ * Activates the switch header/source functionality with improved error handling
  */
 export function activateSwitchSourceHeader(context: ExtensionContext): void {
-    // Create a single coordinator instance to share across commands
-    const coordinator = new SwitchCoordinator();
+    const errorHandler = (operation: string) => (error: unknown) => {
+        ErrorHandler.handle(error, {
+            operation,
+            module: 'SwitchCoordinator',
+            showToUser: true,
+            logLevel: 'error'
+        });
+    };
 
-    // Register the main switch command
-    const switchCommand = vscode.commands.registerCommand(
-        'clotho.switchHeaderSource',
-        async () => {
-            await coordinator.switchHeaderSource();
-        }
-    );
+    try {
+        // Create coordinator instance
+        const coordinator = createSwitchCoordinator();
 
-    // Register the configuration template selector command
-    const configTemplateCommand = vscode.commands.registerCommand(
-        'clotho.switchConfigTemplate',
-        async () => {
-            await coordinator.showConfigTemplate();
-        }
-    );
+        // Register the main switch command with error handling
+        const switchCommand = vscode.commands.registerCommand(
+            COMMANDS.SWITCH_HEADER_SOURCE,
+            ErrorHandler.wrapAsync(
+                () => coordinator.switchHeaderSource(),
+                {
+                    operation: 'switchHeaderSource command',
+                    module: 'SwitchCoordinator',
+                    showToUser: true
+                }
+            )
+        );
 
-    // Register the show current config command
-    const showConfigCommand = vscode.commands.registerCommand(
-        'clotho.showSwitchConfig',
-        () => {
-            coordinator.showCurrentConfig();
-        }
-    );
+        // Add to subscriptions for proper cleanup
+        context.subscriptions.push(
+            switchCommand,
+            coordinator
+        );
 
-    // Add to subscriptions for proper cleanup
-    context.subscriptions.push(switchCommand, configTemplateCommand, showConfigCommand);
-
-    console.log('Clotho: Switch header/source functionality activated');
+        console.log('Clotho: Switch header/source functionality activated');
+    } catch (error) {
+        errorHandler('activateSwitchSourceHeader')(error);
+    }
 }
+
+// Re-export ExtensionContext for external usage
+export type { ExtensionContext };

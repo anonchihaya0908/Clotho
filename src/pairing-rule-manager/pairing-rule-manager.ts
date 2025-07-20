@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
+import { ErrorHandler } from '../common/error-handler';
+import { Language } from '../common/types';
+import { validateIdentifier } from '../common/utils';
 
 // Public interface for pairing rules
 export interface PairingRule {
   key: string;
   label: string;
   description: string;
-  language: 'c' | 'cpp';
+  language: Language;
   headerExt: string;
   sourceExt: string;
   isClass?: boolean;
@@ -23,16 +26,15 @@ export class PairingRuleService {
   // Validate a single pairing rule to ensure it has all required fields
   private static validateRule(rule: PairingRule): void {
     if (!rule.key || !rule.language || !rule.headerExt || !rule.sourceExt) {
-      throw new Error(`Invalid rule: ${JSON.stringify(rule)}`);
+      throw ErrorHandler.handle(
+        new Error(`Invalid rule: ${JSON.stringify(rule)}`),
+        {
+          operation: 'validateRule',
+          module: 'PairingRuleService',
+          showToUser: true
+        }
+      );
     }
-  }
-
-  // Show error message and re-throw the error for proper error handling
-  private static handleError(error: unknown, operation: string,
-    scope: string): never {
-    const message = `Failed to ${operation} pairing rules for ${scope}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    vscode.window.showErrorMessage(message);
-    throw error;
   }
 
   // Get the currently active pairing rules from configuration
@@ -63,9 +65,8 @@ export class PairingRuleService {
   // Write pairing rules to the specified scope (workspace or user)
   public static async writeRules(rules: PairingRule[],
     scope: 'workspace' | 'user'): Promise<void> {
-    try {
-      if (!Array.isArray(rules))
-      {throw new Error('Rules must be an array');}
+    const saveRules = ErrorHandler.wrapAsync(async () => {
+      if (!Array.isArray(rules)) { throw new Error('Rules must be an array'); }
       rules.forEach(PairingRuleService.validateRule);
 
       const target = scope === 'workspace'
@@ -73,22 +74,30 @@ export class PairingRuleService {
         : vscode.ConfigurationTarget.Global;
       await vscode.workspace.getConfiguration('clotho').update(
         PairingRuleService.CONFIG_KEY, rules, target);
-    } catch (error) {
-      PairingRuleService.handleError(error, 'save', scope);
-    }
+    }, {
+      operation: 'writeRules',
+      module: 'PairingRuleService',
+      showToUser: true
+    });
+
+    await saveRules();
   }
 
   // Reset pairing rules for the specified scope (remove custom rules)
   public static async resetRules(scope: 'workspace' | 'user'): Promise<void> {
-    try {
+    const resetRules = ErrorHandler.wrapAsync(async () => {
       const target = scope === 'workspace'
         ? vscode.ConfigurationTarget.Workspace
         : vscode.ConfigurationTarget.Global;
       await vscode.workspace.getConfiguration('clotho').update(
         PairingRuleService.CONFIG_KEY, undefined, target);
-    } catch (error) {
-      PairingRuleService.handleError(error, 'reset', scope);
-    }
+    }, {
+      operation: 'resetRules',
+      module: 'PairingRuleService',
+      showToUser: true
+    });
+
+    await resetRules();
   }
 }
 
@@ -187,11 +196,11 @@ export class PairingRuleUI {
       kind: vscode.QuickPickItemKind.Separator,
       key: 'separator_global',
     },
-    {
-      label: '$(edit) Edit Global Rules...',
-      description: 'Opens your global settings.json',
-      key: 'edit_global',
-    });
+      {
+        label: '$(edit) Edit Global Rules...',
+        description: 'Opens your global settings.json',
+        key: 'edit_global',
+      });
 
     if (PairingRuleService.hasCustomRules('user')) {
       items.push({
@@ -224,8 +233,7 @@ export class PairingRuleUI {
         title: 'Save Configuration Scope',
       });
 
-    if (!selection)
-    {return;}
+    if (!selection) { return; }
 
     await PairingRuleService.writeRules([rule], selection.scope as 'workspace' |
       'user');
@@ -252,8 +260,7 @@ export class PairingRuleUI {
     };
 
     const action = actions[key as keyof typeof actions];
-    if (action)
-    {await action();}
+    if (action) { await action(); }
   }
 
   // Public method to prompt for file extensions only
@@ -292,8 +299,7 @@ export class PairingRuleUI {
     ];
 
     quickPick.onDidChangeSelection(async (selection) => {
-      if (!selection[0])
-      {return;}
+      if (!selection[0]) { return; }
       quickPick.hide();
 
       const item = selection[0];
@@ -312,8 +318,8 @@ export class PairingRuleUI {
   public static async showAdvancedManagementMenu(): Promise<void> {
     const selection = await vscode.window.showQuickPick(
       PairingRuleUI.createAdvancedMenuItems(), {
-        title: 'Advanced Rule Management',
-      });
+      title: 'Advanced Rule Management',
+    });
 
     if (selection?.key) {
       await PairingRuleUI.handleAdvancedMenuSelection(selection.key);
