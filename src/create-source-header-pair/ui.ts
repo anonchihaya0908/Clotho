@@ -94,6 +94,19 @@ export class PairCreatorUI {
   }
 
   // Gets adapted built-in templates with custom extensions
+  /**
+   * Finds built-in templates that don't have an exact custom rule counterpart
+   * (same language, type, and extensions), so they can be offered with adapted extensions.
+   *
+   * Business Logic:
+   * - For C++: Applies custom extensions to built-in templates that don't conflict with existing custom rules
+   * - Filters out templates that match existing custom rules by class/struct type
+   * - For other languages: Filters out templates with identical extensions and types
+   *
+   * @param customRules - Existing custom rules to avoid conflicts with
+   * @param language - Target language ('c' or 'cpp')
+   * @returns Array of adapted built-in templates with custom extensions applied
+   */
   private getAdaptedBuiltinTemplates(customRules: PairingRule[],
     language: 'c' | 'cpp'): PairingRule[] {
     const customExt = customRules.length > 0 ? customRules[0] : null;
@@ -102,6 +115,8 @@ export class PairCreatorUI {
       return TEMPLATE_RULES
         .filter(template =>
           template.language === 'cpp' &&
+          // Complex filtering logic: exclude templates that have an exact custom rule match
+          // by checking if any custom rule has the same class/struct characteristics
           !customRules.some(
             customRule =>
               customRule.isClass === template.isClass &&
@@ -127,20 +142,21 @@ export class PairCreatorUI {
       return TEMPLATE_RULES
         .filter(template =>
           template.language === language &&
+          // For non-C++ languages: exclude templates with identical extensions and types
           !customRules.some(
             customRule =>
               customRule.headerExt === template.headerExt &&
               customRule.sourceExt === template.sourceExt &&
               customRule.isClass === template.isClass &&
               customRule.isStruct === template.isStruct))
-        .map(template => this.adaptRuleForDisplay(template));
+        .map(template => this.adaptRuleForDisplayWithExtensions(template, undefined));
     }
   }
 
   // Gets cross-language template options
   private getCrossLanguageTemplates(language: 'c' | 'cpp'): PairingRule[] {
     return TEMPLATE_RULES.filter(template => template.language !== language)
-      .map(template => this.adaptRuleForDisplay(template));
+      .map(template => this.adaptRuleForDisplayWithExtensions(template, undefined));
   }
 
   // Cleans up custom rules with proper labels and descriptions
@@ -191,13 +207,13 @@ export class PairCreatorUI {
   }
 
   // Adapts template rules for display in UI based on custom extensions
-  private adaptRuleForDisplay(rule: PairingRule): PairingRule {
-    if (rule.language !== 'cpp') {
-      return rule;
-    }
-
-    const customExtensions = this.service.getCustomCppExtensions();
-    if (!customExtensions) {
+  /**
+   * Pure function version that accepts custom extensions as parameter
+   * to avoid redundant service calls and improve logic cohesion
+   */
+  private adaptRuleForDisplayWithExtensions(rule: PairingRule,
+    customExtensions?: { headerExt: string, sourceExt: string; }): PairingRule {
+    if (rule.language !== 'cpp' || !customExtensions) {
       return rule;
     }
 
@@ -210,6 +226,12 @@ export class PairCreatorUI {
       replacementPattern, `${headerExt}/${sourceExt}`);
 
     return { ...rule, description: newDescription, headerExt, sourceExt };
+  }
+
+  // Legacy method for backward compatibility - delegates to service
+  private adaptRuleForDisplay(rule: PairingRule): PairingRule {
+    const customExtensions = this.service.getCustomCppExtensions();
+    return this.adaptRuleForDisplayWithExtensions(rule, customExtensions || undefined);
   }
 
   // Prepares template choices for UI display with proper ordering and
