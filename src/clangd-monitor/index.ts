@@ -26,64 +26,6 @@
  * Find clangd PID → Poll memory usage → Update status bar → Handle user clicks
  */
 
-import { ExtensionContext } from '../extension';
-import { MonitorCoordinator } from './coordinator';
-import { MonitorConfig } from './types';
-
-let monitorCoordinator: MonitorCoordinator | undefined;
-
-/**
- * Activates the clangd monitoring functionality
- * @param context The extension context for registering disposables
- * @param config Optional configuration for the monitors
- */
-export function activateClangdMonitor(
-    context: ExtensionContext,
-    config: MonitorConfig = {}
-): MonitorCoordinator {
-
-    console.log('Clotho: Activating clangd monitor...');
-
-    try {
-        // Create the monitor coordinator
-        monitorCoordinator = new MonitorCoordinator(config);
-
-        // Register for cleanup when extension is deactivated
-        context.subscriptions.push(monitorCoordinator);
-
-        // Start monitoring
-        monitorCoordinator.startMonitoring().then(() => {
-            console.log('Clotho: Clangd monitoring started successfully');
-        }).catch((error) => {
-            console.error('Clotho: Failed to start clangd monitoring:', error);
-        });
-
-        return monitorCoordinator;
-
-    } catch (error) {
-        console.error('Clotho: Failed to activate clangd monitor:', error);
-        throw error;
-    }
-}
-
-/**
- * Deactivates the clangd monitoring functionality
- */
-export function deactivateClangdMonitor(): void {
-    if (monitorCoordinator) {
-        monitorCoordinator.stopMonitoring();
-        monitorCoordinator = undefined;
-        console.log('Clotho: Clangd monitor deactivated');
-    }
-}
-
-/**
- * Gets the current monitor coordinator instance
- */
-export function getMonitorCoordinator(): MonitorCoordinator | undefined {
-    return monitorCoordinator;
-}
-
 // Export types and classes for external usage
 export { MonitorCoordinator } from './coordinator';
 export { MemoryMonitor } from './monitors/memory-monitor';

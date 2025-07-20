@@ -9,6 +9,7 @@ import { IMonitor, MonitorConfig } from './types';
 import { MemoryMonitor } from './monitors/memory-monitor';
 import { CpuMonitor } from './monitors/cpu-monitor';
 import { StatusMonitor } from './monitors/status-monitor';
+import { StatusBarPresenter } from './status-bar-presenter';
 import { ErrorHandler } from '../common/error-handler';
 
 /**
@@ -17,11 +18,18 @@ import { ErrorHandler } from '../common/error-handler';
 export class MonitorCoordinator implements vscode.Disposable {
     private readonly monitors: Map<string, IMonitor> = new Map();
     private readonly config: MonitorConfig;
+    private readonly statusBarPresenter: StatusBarPresenter;
     private showDetailsCommand: vscode.Disposable | undefined;
     private disposables: vscode.Disposable[] = [];
+    private updateInterval: NodeJS.Timeout | undefined;
 
     constructor(config: MonitorConfig = {}) {
         this.config = config;
+        this.statusBarPresenter = new StatusBarPresenter({
+            updateInterval: config.memory?.updateInterval || 5000,
+            compactMode: true,
+            normalizeCpu: true  // Show normalized CPU (system-wide perspective)
+        });
         this.initializeMonitors();
         this.registerCommands();
     }
@@ -31,12 +39,12 @@ export class MonitorCoordinator implements vscode.Disposable {
      */
     private initializeMonitors(): void {
         try {
-            // Initialize memory monitor
-            const memoryMonitor = new MemoryMonitor(this.config.memory);
+            // Initialize memory monitor without status bar (we use unified presenter)
+            const memoryMonitor = new MemoryMonitor(this.config.memory, true);
             this.monitors.set('memory', memoryMonitor);
 
-            // Initialize CPU monitor - now powered by ProcessDetector!
-            const cpuMonitor = new CpuMonitor(this.config.cpu);
+            // Initialize CPU monitor without status bar (we use unified presenter)
+            const cpuMonitor = new CpuMonitor(this.config.cpu, true);
             this.monitors.set('cpu', cpuMonitor);
 
             // Initialize status monitor (for future use)
@@ -150,10 +158,15 @@ export class MonitorCoordinator implements vscode.Disposable {
      */
     public async startMonitoring(): Promise<void> {
         try {
+            // Start all individual monitors
             for (const [name, monitor] of this.monitors) {
                 await monitor.start();
                 console.log(`Clotho: Started ${monitor.getName()}`);
             }
+
+            // Start the update loop to feed data to status bar presenter
+            this.startStatusBarUpdateLoop();
+
         } catch (error) {
             ErrorHandler.handle(error, {
                 operation: 'startMonitoring',
@@ -165,14 +178,77 @@ export class MonitorCoordinator implements vscode.Disposable {
     }
 
     /**
+     * Start the status bar update loop
+     */
+    private startStatusBarUpdateLoop(): void {
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+        }
+
+        const updateFrequency = this.config.memory?.updateInterval || 5000;
+
+        this.updateInterval = setInterval(() => {
+            this.updateStatusBarData();
+        }, updateFrequency);
+
+        // Initial update
+        this.updateStatusBarData();
+    }
+
+    /**
+     * Update status bar with latest data from monitors
+     */
+    private updateStatusBarData(): void {
+        try {
+            const memoryMonitor = this.getMemoryMonitor();
+            const cpuMonitor = this.getCpuMonitor();
+            const statusMonitor = this.getStatusMonitor();
+
+            // Get latest data from monitors
+            const memoryUsage = memoryMonitor?.getLastMemoryUsage();
+            const cpuUsage = cpuMonitor?.getCurrentUsage();
+
+            // Update status monitor status
+            if (statusMonitor) {
+                (statusMonitor as any).updateStatus();
+            }
+            const currentStatus = statusMonitor?.getCurrentStatus();
+
+            // Update status bar presenter
+            this.statusBarPresenter.updateMemoryUsage(memoryUsage);
+            this.statusBarPresenter.updateCpuUsage(cpuUsage);
+
+            // Set active state based on clangd running status OR whether we have monitoring data
+            const isClangdRunning = currentStatus?.isRunning || false;
+            const hasMonitoringData = !!(memoryUsage || cpuUsage);
+            const isActive = isClangdRunning || hasMonitoringData;
+            this.statusBarPresenter.setActive(isActive);
+
+        } catch (error) {
+            console.warn('Clotho MonitorCoordinator: Failed to update status bar:', error);
+        }
+    }
+
+    /**
      * Stop all monitors
      */
     public stopMonitoring(): void {
         try {
+            // Stop the status bar update loop
+            if (this.updateInterval) {
+                clearInterval(this.updateInterval);
+                this.updateInterval = undefined;
+            }
+
+            // Stop all individual monitors
             for (const [name, monitor] of this.monitors) {
                 monitor.stop();
                 console.log(`Clotho: Stopped ${monitor.getName()}`);
             }
+
+            // Set status bar to inactive
+            this.statusBarPresenter.setActive(false);
+
         } catch (error) {
             ErrorHandler.handle(error, {
                 operation: 'stopMonitoring',
@@ -427,10 +503,14 @@ export class MonitorCoordinator implements vscode.Disposable {
                             <span class="info-label">Message:</span>
                             <span>${status.statusMessage || 'N/A'}</span>
                         </div>
-                        ${status.version ? `
                         <div class="info-item">
-                            <span class="info-label">Version:</span>
-                            <span>${status.version}</span>
+                            <span class="info-label">Backend Version:</span>
+                            <span>${status.version || '未检测到版本信息'}</span>
+                        </div>
+                        ${status.pid ? `
+                        <div class="info-item">
+                            <span class="info-label">Server Process ID:</span>
+                            <span>${status.pid}</span>
                         </div>
                         ` : ''}
                     </div>
@@ -507,11 +587,17 @@ export class MonitorCoordinator implements vscode.Disposable {
      * Clean up all resources
      */
     public dispose(): void {
+        // Stop monitoring first
+        this.stopMonitoring();
+
         // Dispose all monitors
         for (const monitor of this.monitors.values()) {
             monitor.dispose();
         }
         this.monitors.clear();
+
+        // Dispose status bar presenter
+        this.statusBarPresenter.dispose();
 
         // Dispose commands
         if (this.showDetailsCommand) {

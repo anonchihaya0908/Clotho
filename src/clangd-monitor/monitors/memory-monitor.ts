@@ -17,8 +17,8 @@ import pidusage from 'pidusage';
 export class MemoryMonitor implements IMonitor {
     private static readonly DEFAULT_CONFIG: Required<MemoryMonitorConfig> = {
         updateInterval: 5000,  // 5 seconds for responsive monitoring
-        warningThreshold: 2048, // 2GB
-        errorThreshold: 4096    // 4GB
+        warningThreshold: 2048, // 2GB (yellow)
+        errorThreshold: 3072    // 3GB (red)
     };
 
     private statusBarItem: vscode.StatusBarItem | undefined;
@@ -28,9 +28,11 @@ export class MemoryMonitor implements IMonitor {
     private lastMemoryUsage: MemoryUsage | undefined;
     private config: Required<MemoryMonitorConfig>;
 
-    constructor(config: MemoryMonitorConfig = {}) {
+    constructor(config: MemoryMonitorConfig = {}, hideStatusBar = false) {
         this.config = { ...MemoryMonitor.DEFAULT_CONFIG, ...config };
-        this.createStatusBarItem();
+        if (!hideStatusBar) {
+            this.createStatusBarItem();
+        }
     }
 
     /**
@@ -343,12 +345,15 @@ export class MemoryMonitor implements IMonitor {
         let color: string | vscode.ThemeColor | undefined;
 
         // Determine icon and color based on memory usage
-        if (memoryMB >= this.config.errorThreshold) {
+        if (memoryMB >= this.config.errorThreshold) { // 3GB+
             icon = "$(error)";
-            color = new vscode.ThemeColor('errorForeground');
-        } else if (memoryMB >= this.config.warningThreshold) {
+            color = "#ff4444"; // Red
+        } else if (memoryMB >= this.config.warningThreshold) { // 2-3GB
             icon = "$(warning)";
-            color = new vscode.ThemeColor('warningForeground');
+            color = "#ffaa00"; // Yellow
+        } else { // <2GB
+            icon = "$(pulse)";
+            color = ""; // White (default)
         }
 
         // Build status text

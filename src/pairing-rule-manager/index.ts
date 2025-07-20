@@ -23,29 +23,6 @@
  * Command triggered → Coordinator → UI (show wizard) → Service (save configuration)
  */
 
-import { ExtensionContext } from '../extension';
-import { PairingRuleCoordinator } from './coordinator';
-import { PairingRuleService } from './service';
-import { PairingRuleUI } from './ui';
-
-/**
- * Registers the pairing rule management functionality with the VS Code extension context
- * Uses dependency injection to create properly configured instances
- */
-export function activatePairingRuleManager(context: ExtensionContext): PairingRuleCoordinator {
-    // Create instances with proper dependencies
-    const service = new PairingRuleService();
-    const ui = new PairingRuleUI(service);
-    const coordinator = new PairingRuleCoordinator(service, ui);
-
-    // Add to subscriptions for proper cleanup
-    context.subscriptions.push(coordinator);
-
-    console.log('Clotho: Pairing rule management functionality activated');
-
-    return coordinator;
-}
-
 // Export main types and classes for external usage
 export { PairingRuleCoordinator } from './coordinator';
 export { PairingRuleService, type PairingRule } from './service';

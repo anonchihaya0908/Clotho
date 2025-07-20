@@ -10,8 +10,7 @@
 // - templates.ts: Template rules and file content templates
 // - service.ts: Business logic layer (language detection, file operations)
 // - ui.ts: User interface layer (dialogs, input validation)
-// - coordinator.ts: Main coordinator (orchestrates workflow, registers
-// commands)
+// - coordinator.ts: Main coordinator (orchestrates workflow, registers commands)
 //
 // WORKFLOW:
 // Command triggered → Detect target directory → Analyze language context →
@@ -31,28 +30,6 @@
 // Uses PairingRuleManager for custom extension configurations
 // Integrates with VS Code file system and editor APIs
 //
-
-import * as vscode from 'vscode';
-
-import { ExtensionContext } from '../extension';
-import { PairingRuleService, PairingRuleUI } from '../pairing-rule-manager';
-
-import { PairCoordinator } from './coordinator';
-import { PairCreatorService } from './service';
-import { PairCreatorUI } from './ui';
-
-// Registers the create source/header pair command with the VS Code extension
-// context Uses dependency injection to create properly configured instances
-export function registerCreateSourceHeaderPairCommand(context: ExtensionContext) {
-  // Create instances with proper dependencies
-  const pairingRuleService = new PairingRuleService();
-  const pairingRuleUI = new PairingRuleUI(pairingRuleService);
-  const service = new PairCreatorService(pairingRuleService);
-  const ui = new PairCreatorUI(service, pairingRuleService, pairingRuleUI);
-  const coordinator = new PairCoordinator(service, ui);
-
-  context.subscriptions.push(coordinator);
-}
 
 // Re-export main types and classes for external usage
 export { PairCoordinator } from './coordinator';

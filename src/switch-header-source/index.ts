@@ -25,17 +25,8 @@
  * Command triggered → Coordinator → Service (clangd → heuristics) → UI (display results)
  */
 
-// Export main coordinator function
-export { activateSwitchSourceHeader, SwitchCoordinator } from './coordinator';
-
-// Export service layer
+// Export main coordinator and service classes
+export { SwitchCoordinator } from './coordinator';
 export { SwitchService, type SearchResult } from './switch-service';
-
-// Export UI layer
 export { SwitchUI } from './switch-ui';
-
-// Export configuration management
 export { SwitchConfigService, CONFIG_TEMPLATES, type SwitchConfig } from './config-manager';
-
-// Re-export for external usage
-export type { ExtensionContext } from './coordinator';

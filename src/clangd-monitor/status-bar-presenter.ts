@@ -31,7 +31,7 @@ export class StatusBarPresenter {
         priority: 100, // Higher priority than individual monitors
         showDetailedTooltip: true,
         compactMode: true,
-        normalizeCpu: true,  // Normalize CPU by core count for user-friendly display
+        normalizeCpu: true,  // Show normalized CPU (system-wide perspective) by default
         showRawCpuInTooltip: true  // Show raw CPU values for technical users
     };
 
@@ -114,7 +114,7 @@ export class StatusBarPresenter {
     private displayInactive(): void {
         if (!this.statusBarItem) return;
 
-        this.statusBarItem.text = "$(pulse) Clangd: ---";
+        this.statusBarItem.text = "$(pulse) clangd: --- | ---";
         this.statusBarItem.color = "#888888"; // Gray
         this.statusBarItem.tooltip = "Clangd process not detected\nMonitoring inactive";
     }
@@ -130,13 +130,14 @@ export class StatusBarPresenter {
             : '---';
 
         const cpuText = this.lastCpuUsage
-            ? this.formatCpuUsage(this.lastCpuUsage, 0)  // No decimal places in compact mode
+            ? this.formatCpuUsage(this.lastCpuUsage, 1)  // 1 decimal place for better precision
             : '---';
 
         const icon = this.getStatusIcon();
         const color = this.getStatusColor();
 
-        this.statusBarItem.text = `${icon} ${memoryText} | ${cpuText}`;
+        // Beautiful format: $(icon) clangd: 500MB | 3.1%
+        this.statusBarItem.text = `${icon} clangd: ${memoryText} | ${cpuText}`;
         this.statusBarItem.color = color;
     }
 
@@ -157,7 +158,8 @@ export class StatusBarPresenter {
         const icon = this.getStatusIcon();
         const color = this.getStatusColor();
 
-        this.statusBarItem.text = `${icon} Clangd: ${memoryText} / ${cpuText}`;
+        // Beautiful format: $(icon) clangd: 500MB | 3.1%
+        this.statusBarItem.text = `${icon} clangd: ${memoryText} | ${cpuText}`;
         this.statusBarItem.color = color;
     }
 
@@ -165,44 +167,53 @@ export class StatusBarPresenter {
      * Get appropriate status icon based on current metrics
      */
     private getStatusIcon(): string {
-        // Priority: CPU warnings > Memory warnings > Normal
+        // Always use heart rate icon, color will differentiate status
+        return "$(pulse)"; // Heart rate icon for all states
+    }
+
+    /**
+     * Get the current status level based on metrics
+     */
+    private getStatusLevel(): 'error' | 'warning' | 'normal' {
+        // Check CPU usage first (higher priority)
         if (this.lastCpuUsage) {
             const normalizedCpu = this.getNormalizedCpu(this.lastCpuUsage.cpu);
-            if (normalizedCpu >= 80) {
-                return "$(flame)"; // High CPU
+            if (normalizedCpu >= 80) { // 80%+ CPU
+                return 'error';
             }
-            if (normalizedCpu >= 50) {
-                return "$(warning)"; // Medium CPU
+            if (normalizedCpu >= 50) { // 50-80% CPU
+                return 'warning';
             }
         }
 
-        if (this.lastMemoryUsage && this.lastMemoryUsage.memory >= 500 * 1024 * 1024) { // 500MB
-            return "$(warning)"; // High memory
+        // Check memory usage second
+        if (this.lastMemoryUsage) {
+            const memoryMB = this.lastMemoryUsage.memory / 1024 / 1024;
+            if (memoryMB >= 4096) { // 4GB+ memory
+                return 'error';
+            }
+            if (memoryMB >= 2048) { // 2-4GB memory
+                return 'warning';
+            }
         }
 
-        return "$(pulse)"; // Normal
+        return 'normal';
     }
 
     /**
      * Get appropriate status color based on current metrics
      */
     private getStatusColor(): string {
-        // Priority: CPU errors > CPU warnings > Memory warnings > Normal
-        if (this.lastCpuUsage) {
-            const normalizedCpu = this.getNormalizedCpu(this.lastCpuUsage.cpu);
-            if (normalizedCpu >= 80) {
-                return "#ff4444"; // Red for high CPU
-            }
-            if (normalizedCpu >= 50) {
-                return "#ffaa00"; // Orange for medium CPU
-            }
-        }
+        const statusLevel = this.getStatusLevel();
 
-        if (this.lastMemoryUsage && this.lastMemoryUsage.memory >= 500 * 1024 * 1024) { // 500MB
-            return "#ffaa00"; // Orange for high memory
+        switch (statusLevel) {
+            case 'error':
+                return "#ff4444"; // Red for critical issues
+            case 'warning':
+                return "#ffaa00"; // Yellow for warnings
+            default:
+                return ""; // White (default) for normal operation
         }
-
-        return "#44ff44"; // Green for normal
     }
 
     /**
@@ -267,26 +278,44 @@ export class StatusBarPresenter {
     }
 
     /**
-     * Get normalized CPU usage for display
+     * Get appropriate CPU usage for display
      * @param rawCpu Raw CPU usage (can exceed 100% on multi-core systems)
-     * @returns Normalized CPU usage relative to total system capacity
+     * @returns CPU usage for display with intelligent formatting
      */
     private getNormalizedCpu(rawCpu: number): number {
-        if (!this.config.normalizeCpu) {
+        if (this.config.normalizeCpu) {
+            // Normalize by core count for system-wide perspective
+            return rawCpu / this.coreCount;
+        } else {
+            // Return raw value, let formatting handle the display
             return rawCpu;
         }
-        return rawCpu / this.coreCount;
     }
 
     /**
-     * Format CPU usage for display
+     * Format CPU usage for display with intelligent scaling
      * @param cpuUsage CPU usage object
      * @param precision Decimal places for display
-     * @returns Formatted CPU string
+     * @returns Formatted CPU string with appropriate scaling
      */
     private formatCpuUsage(cpuUsage: CpuUsage, precision: number = 1): string {
-        const cpu = this.getNormalizedCpu(cpuUsage.cpu);
-        return `${cpu.toFixed(precision)}%`;
+        const rawCpu = cpuUsage.cpu;
+
+        if (this.config.normalizeCpu) {
+            // Show normalized CPU (system-wide perspective)
+            const normalizedCpu = rawCpu / this.coreCount;
+            return `${normalizedCpu.toFixed(precision)}%`;
+        } else {
+            // Intelligent formatting for raw CPU
+            if (rawCpu <= 100) {
+                // Normal case: show percentage
+                return `${rawCpu.toFixed(precision)}%`;
+            } else {
+                // High usage case: show both raw and core equivalent
+                const coreEquivalent = rawCpu / 100;
+                return `${rawCpu.toFixed(0)}% (${coreEquivalent.toFixed(1)}核)`;
+            }
+        }
     }
 
     /**

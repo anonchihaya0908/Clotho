@@ -20,3 +20,6 @@ export * from './process-runner';
 
 // Process detection and analysis services
 export * from './process-detector';
+
+// Service container for dependency injection
+export * from './service-container';

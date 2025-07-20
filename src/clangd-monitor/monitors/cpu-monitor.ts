@@ -18,9 +18,9 @@ import pidusage from 'pidusage';
 export class CpuMonitor implements IMonitor {
     private static readonly DEFAULT_CONFIG: Required<CpuMonitorConfig> = {
         updateInterval: 3000,  // 3 seconds for responsive CPU monitoring
-        warningThreshold: 50,  // 50% CPU usage
-        errorThreshold: 80,    // 80% CPU usage
-        normalizeCpu: true,    // Normalize CPU by core count for user-friendly display
+        warningThreshold: 50,  // 50% CPU usage (yellow)
+        errorThreshold: 80,    // 80% CPU usage (red)
+        normalizeCpu: true,    // Show normalized CPU (system-wide perspective) by default
         showRawCpuInTooltip: true  // Show raw CPU values for technical users
     };
 
@@ -33,10 +33,12 @@ export class CpuMonitor implements IMonitor {
     private config: Required<CpuMonitorConfig>;
     private readonly coreCount: number;
 
-    constructor(config: CpuMonitorConfig = {}) {
+    constructor(config: CpuMonitorConfig = {}, hideStatusBar = false) {
         this.config = { ...CpuMonitor.DEFAULT_CONFIG, ...config };
         this.coreCount = os.cpus().length;
-        this.createStatusBarItem();
+        if (!hideStatusBar) {
+            this.createStatusBarItem();
+        }
     }
 
     /**
@@ -138,8 +140,8 @@ export class CpuMonitor implements IMonitor {
             // Get CPU usage using pidusage
             const stats = await pidusage(this.currentPid);
 
-            // pidusage returns percentage directly
-            const cpuPercent = Math.round(stats.cpu * 100) / 100; // Round to 2 decimal places
+            // pidusage already returns percentage, just round to 2 decimal places
+            const cpuPercent = Math.round(stats.cpu * 100) / 100;
 
             // Create our CPU usage structure
             const cpuUsage: CpuUsage = {
@@ -187,15 +189,15 @@ export class CpuMonitor implements IMonitor {
         let color = "";
 
         // Set icon and color based on normalized thresholds
-        if (normalizedCpuPercent >= this.config.errorThreshold) {
+        if (normalizedCpuPercent >= this.config.errorThreshold) { // 80%+
             icon = "$(flame)";
             color = "#ff4444"; // Red
-        } else if (normalizedCpuPercent >= this.config.warningThreshold) {
+        } else if (normalizedCpuPercent >= this.config.warningThreshold) { // 50-80%
             icon = "$(warning)";
-            color = "#ffaa00"; // Orange
-        } else {
+            color = "#ffaa00"; // Yellow
+        } else { // <50%
             icon = "$(pulse)";
-            color = "#44ff44"; // Green
+            color = ""; // White (default)
         }
 
         // Display normalized CPU value for user-friendly experience
@@ -218,26 +220,42 @@ export class CpuMonitor implements IMonitor {
     }
 
     /**
-     * Get normalized CPU usage for display
+     * Get appropriate CPU usage for display
      * @param rawCpu Raw CPU usage (can exceed 100% on multi-core systems)
-     * @returns Normalized CPU usage relative to total system capacity
+     * @returns CPU usage for display with intelligent handling
      */
     private getNormalizedCpu(rawCpu: number): number {
-        if (!this.config.normalizeCpu) {
+        if (this.config.normalizeCpu) {
+            // Normalize by core count for system-wide perspective
+            return rawCpu / this.coreCount;
+        } else {
+            // Return raw value, let formatting handle the display
             return rawCpu;
         }
-        return rawCpu / this.coreCount;
     }
 
     /**
-     * Format CPU usage for display
+     * Format CPU usage for display with intelligent scaling
      * @param rawCpu Raw CPU usage
      * @param precision Decimal places for display
-     * @returns Formatted CPU string
+     * @returns Formatted CPU string with appropriate scaling
      */
     private formatCpuUsage(rawCpu: number, precision: number = 1): string {
-        const cpu = this.getNormalizedCpu(rawCpu);
-        return `${cpu.toFixed(precision)}%`;
+        if (this.config.normalizeCpu) {
+            // Show normalized CPU (system-wide perspective)
+            const normalizedCpu = rawCpu / this.coreCount;
+            return `${normalizedCpu.toFixed(precision)}%`;
+        } else {
+            // Intelligent formatting for raw CPU
+            if (rawCpu <= 100) {
+                // Normal case: show percentage
+                return `${rawCpu.toFixed(precision)}%`;
+            } else {
+                // High usage case: show both raw and core equivalent
+                const coreEquivalent = rawCpu / 100;
+                return `${rawCpu.toFixed(0)}% (${coreEquivalent.toFixed(1)}核)`;
+            }
+        }
     }
 
     /**
