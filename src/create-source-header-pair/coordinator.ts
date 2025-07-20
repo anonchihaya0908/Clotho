@@ -9,6 +9,7 @@
 import * as vscode from 'vscode';
 
 import { showConfigurationWizard } from '../pairing-rule-manager';
+import { COMMANDS } from '../common/constants';
 
 import { PairCreatorService } from './service';
 import { PairCreatorUI } from './ui';
@@ -31,9 +32,9 @@ export class PairCoordinator implements vscode.Disposable {
     private readonly ui: PairCreatorUI) {
     // Register commands
     this.newPairCommand = vscode.commands.registerCommand(
-      'clotho.newSourcePair', this.create, this);
+      COMMANDS.NEW_SOURCE_PAIR, this.create, this);
     this.configureRulesCommand = vscode.commands.registerCommand(
-      'clotho.configureRules', this.configureRules, this);
+      COMMANDS.CONFIGURE_RULES, this.configureRules, this);
   }
 
   // Dispose method for cleanup when extension is deactivated

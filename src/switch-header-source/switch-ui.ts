@@ -7,6 +7,8 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { ERROR_MESSAGES } from '../common/constants';
+import { ErrorHandler } from '../common/error-handler';
 
 /**
  * UI service class for switch header/source functionality.
@@ -46,12 +48,15 @@ export class SwitchUI {
 
     /**
      * Shows an error message when switching fails.
+     * Uses the standardized error handling pattern.
      */
     public showSwitchError(error: Error): void {
-        console.error('Clotho: Error in switchHeaderSource command:', error);
-        vscode.window.showErrorMessage(
-            `Failed to switch header/source: ${error.message}`
-        );
+        ErrorHandler.handle(error, {
+            operation: 'switchHeaderSource',
+            module: 'SwitchUI',
+            showToUser: true,
+            logLevel: 'error'
+        });
     }
 
     /**

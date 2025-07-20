@@ -8,6 +8,13 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { SwitchConfigService } from './config-manager';
+import { ErrorHandler } from '../common/error-handler';
+import {
+    HEADER_EXTENSIONS,
+    SOURCE_EXTENSIONS,
+    TEST_PATTERNS
+} from '../common/constants';
+import { LRUCache } from '../common/utils';
 
 // ===============================
 // Interfaces and Type Definitions
@@ -21,13 +28,6 @@ export interface SearchResult {
     method: 'clangd' | 'same-directory' | 'src-include' | 'parallel-tests' | 'global-search';
 }
 
-// ===============================
-// Constants
-// ===============================
-
-const HEADER_EXTENSIONS = ['.h', '.hpp', '.hh', '.hxx'];
-const SOURCE_EXTENSIONS = ['.c', '.cpp', '.cc', '.cxx'];
-
 /**
  * Core service class for switch header/source functionality.
  * Provides pure logic without any UI dependencies.
@@ -39,7 +39,7 @@ export class SwitchService {
     // RegEx Cache for Performance Optimization
     // ===============================
 
-    private regexCache = new Map<string, RegExp>();
+    private regexCache = new LRUCache<string, RegExp>(50); // Limit cache size
 
     constructor() {
         // Initialize any required state here if needed
@@ -49,10 +49,14 @@ export class SwitchService {
      * Gets a cached regex or creates and caches a new one.
      */
     private getCachedRegex(pattern: string): RegExp {
-        if (!this.regexCache.has(pattern)) {
-            this.regexCache.set(pattern, new RegExp(pattern));
+        const cached = this.regexCache.get(pattern);
+        if (cached) {
+            return cached;
         }
-        return this.regexCache.get(pattern)!;
+
+        const regex = new RegExp(pattern);
+        this.regexCache.set(pattern, regex);
+        return regex;
     }
 
     // ===============================
@@ -82,7 +86,7 @@ export class SwitchService {
      * Checks if a file is a header file based on its extension.
      */
     public isHeaderFile(filePath: string): boolean {
-        const ext = path.extname(filePath).toLowerCase();
+        const ext = path.extname(filePath).toLowerCase() as any;
         return HEADER_EXTENSIONS.includes(ext);
     }
 
@@ -90,7 +94,7 @@ export class SwitchService {
      * Checks if a file is a source file based on its extension.
      */
     public isSourceFile(filePath: string): boolean {
-        const ext = path.extname(filePath).toLowerCase();
+        const ext = path.extname(filePath).toLowerCase() as any;
         return SOURCE_EXTENSIONS.includes(ext);
     }
 
@@ -102,20 +106,30 @@ export class SwitchService {
     }
 
     /**
+     * Checks if clangd extension is available and ready.
+     * This can be used by UI components to show status information.
+     */
+    public isClangdAvailable(): boolean {
+        const clangdExtension = vscode.extensions.getExtension('llvm-vs-code-extensions.vscode-clangd');
+        if (!clangdExtension?.isActive) {
+            return false;
+        }
+
+        const api = clangdExtension.exports;
+        if (!api?.getClient) {
+            return false;
+        }
+
+        const client = api.getClient();
+        return client && client.state === 2; // 2 = Running state
+    }
+
+    /**
      * Cleans test file basename (removes test prefixes/suffixes).
      */
     public cleanTestBaseName(baseName: string): string {
-        // Remove common test prefixes and suffixes
-        const testPatterns = [
-            /^test_(.+)$/i,     // test_my_class -> my_class
-            /^(.+)_test$/i,     // my_class_test -> my_class
-            /^(.+)_tests$/i,    // my_class_tests -> my_class
-            /^(.+)_spec$/i,     // my_class_spec -> my_class
-            /^(.+)Test$/,       // MyClassTest -> MyClass
-            /^Test(.+)$/        // TestMyClass -> MyClass
-        ];
-
-        for (const pattern of testPatterns) {
+        // Use centralized test patterns from constants
+        for (const pattern of TEST_PATTERNS) {
             const match = baseName.match(pattern);
             if (match) {
                 return match[1];
@@ -131,13 +145,80 @@ export class SwitchService {
 
     /**
      * Step 1: Attempts to use clangd LSP for precise file switching.
-     * Currently simplified - clangd integration is temporarily disabled
-     * to ensure basic functionality works properly.
+     * Uses a safe approach that gracefully falls back to heuristics if clangd is unavailable.
+     * 
+     * This implementation:
+     * - Checks if clangd extension is available and activated
+     * - Uses the official API instead of internal methods
+     * - Has comprehensive error handling
+     * - Never blocks or crashes the extension
      */
     private async tryClangdSwitch(currentFile: vscode.Uri): Promise<SearchResult> {
-        // TODO: Re-implement clangd integration with proper error handling
-        console.debug('Clotho: clangd integration temporarily disabled, using heuristic search');
-        return { files: [], method: 'clangd' };
+        try {
+            // Step 1: Check if clangd extension is available
+            const clangdExtension = vscode.extensions.getExtension('llvm-vs-code-extensions.vscode-clangd');
+            if (!clangdExtension) {
+                console.debug('Clotho: clangd extension not found, using heuristic search');
+                return { files: [], method: 'clangd' };
+            }
+
+            // Step 2: Ensure the extension is activated
+            if (!clangdExtension.isActive) {
+                try {
+                    await clangdExtension.activate();
+                    console.debug('Clotho: clangd extension activated');
+                } catch (error) {
+                    console.debug('Clotho: Failed to activate clangd extension, using heuristic search');
+                    return { files: [], method: 'clangd' };
+                }
+            }
+
+            // Step 3: Check if the API is available
+            const api = clangdExtension.exports;
+            if (!api?.getClient) {
+                console.debug('Clotho: clangd API not available, using heuristic search');
+                return { files: [], method: 'clangd' };
+            }
+
+            // Step 4: Get the language client
+            const client = api.getClient();
+            if (!client || client.state !== 2) { // 2 = Running state
+                console.debug('Clotho: clangd client not running, using heuristic search');
+                return { files: [], method: 'clangd' };
+            }
+
+            // Step 5: Send the switch request with timeout
+            const textDocument = { uri: currentFile.toString() };
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('clangd request timeout')), 3000)
+            );
+
+            const result = await Promise.race([
+                client.sendRequest('textDocument/switchSourceHeader', textDocument),
+                timeoutPromise
+            ]);
+
+            if (result && typeof result === 'string') {
+                const targetUri = vscode.Uri.parse(result);
+                console.debug(`Clotho: clangd found partner file: ${targetUri.fsPath}`);
+
+                // Verify the file exists
+                try {
+                    await vscode.workspace.fs.stat(targetUri);
+                    console.info('Clotho: Successfully used clangd for precise file switching');
+                    return { files: [targetUri], method: 'clangd' };
+                } catch {
+                    console.debug('Clotho: clangd result file does not exist, using heuristic search');
+                    return { files: [], method: 'clangd' };
+                }
+            }
+
+            console.debug('Clotho: clangd returned no result, using heuristic search');
+            return { files: [], method: 'clangd' };
+        } catch (error) {
+            console.debug('Clotho: clangd integration failed, using heuristic search:', error);
+            return { files: [], method: 'clangd' };
+        }
     }
 
     // ===============================
@@ -154,7 +235,7 @@ export class SwitchService {
     ): Promise<SearchResult> {
         const currentPath = currentFile.fsPath;
         const directory = path.dirname(currentPath);
-        const targetExtensions = isHeader ? SOURCE_EXTENSIONS : HEADER_EXTENSIONS;
+        const targetExtensions = isHeader ? [...SOURCE_EXTENSIONS] : [...HEADER_EXTENSIONS];
 
         // Also try with cleaned basename for test files
         const cleanedBaseName = this.cleanTestBaseName(baseName);

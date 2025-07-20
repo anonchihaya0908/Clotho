@@ -15,6 +15,7 @@ import {
   PairingRuleService,
   PairingRuleUI
 } from '../pairing-rule-manager';
+import { ErrorHandler } from '../common/error-handler';
 
 import { PairCreatorService } from './service';
 import { Language, TEMPLATE_RULES, VALIDATION_PATTERNS } from './templates';
@@ -399,7 +400,7 @@ export class PairCreatorUI {
 
     if (!saveLocation) { return undefined; }
 
-    try {
+    const saveRule = ErrorHandler.wrapAsync(async () => {
       const existingRules = PairingRuleService.getRules(
         saveLocation.value as 'workspace' | 'user') ||
         [];
@@ -413,11 +414,15 @@ export class PairCreatorUI {
         `Custom pairing rule saved to ${locationText} settings.`);
 
       return customRule;
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred';
-      vscode.window.showErrorMessage(
-        `Failed to save custom rule: ${errorMessage}`);
+    }, {
+      operation: 'saveCustomRule',
+      module: 'PairCreatorUI',
+      showToUser: true
+    });
+
+    try {
+      return await saveRule();
+    } catch {
       return undefined;
     }
   }
@@ -558,29 +563,28 @@ export class PairCreatorUI {
   // Shows success message and opens the newly created header file
   public async showSuccessAndOpenFile(headerPath: vscode.Uri,
     sourcePath: vscode.Uri): Promise<void> {
-    try {
+    const openFile = ErrorHandler.wrapAsync(async () => {
       const document = await vscode.workspace.openTextDocument(headerPath);
+      await vscode.window.showTextDocument(document);
+    }, {
+      operation: 'openCreatedFile',
+      module: 'PairCreatorUI',
+      showToUser: false // Don't show error to user for this non-critical operation
+    });
 
-      // Use setTimeout to make this non-blocking and avoid hanging
-      setTimeout(async () => {
-        try {
-          await vscode.window.showTextDocument(document);
-        } catch (error) {
-          // Silently handle file opening errors
-        }
-      }, 100);
+    // Try to open the file, but don't let failure block the success message
+    setTimeout(async () => {
+      try {
+        await openFile();
+      } catch {
+        // Silently handle file opening errors
+      }
+    }, 100);
 
-      // Show success message with slight delay to allow other dialogs to appear
-      setTimeout(() => {
-        vscode.window.showInformationMessage(
-          `Successfully created ${path.basename(headerPath.fsPath)} and ${path.basename(sourcePath.fsPath)}.`);
-      }, 50);
-    } catch (error) {
-      // Still show success message even if file opening fails
-      setTimeout(() => {
-        vscode.window.showInformationMessage(
-          `Successfully created ${path.basename(headerPath.fsPath)} and ${path.basename(sourcePath.fsPath)}.`);
-      }, 50);
-    }
+    // Show success message
+    setTimeout(() => {
+      vscode.window.showInformationMessage(
+        `Successfully created ${path.basename(headerPath.fsPath)} and ${path.basename(sourcePath.fsPath)}.`);
+    }, 50);
   }
 }

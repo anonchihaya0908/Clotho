@@ -9,6 +9,8 @@
 import * as vscode from 'vscode';
 import { registerCreateSourceHeaderPairCommand } from './create-source-header-pair';
 import { activateSwitchSourceHeader } from './switch-header-source';
+import { ErrorHandler } from './common/error-handler';
+import { COMMANDS, UI_CONSTANTS } from './common/constants';
 
 // Extension context interface for dependency injection
 export interface ExtensionContext {
@@ -53,10 +55,12 @@ export function activate(context: vscode.ExtensionContext) {
     showWelcomeMessage(context);
 
   } catch (error) {
-    console.error('Failed to activate Clotho extension:', error);
-    vscode.window.showErrorMessage(
-      `Failed to activate Clotho extension: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
+    ErrorHandler.handle(error, {
+      operation: 'activateExtension',
+      module: 'Extension',
+      showToUser: true,
+      logLevel: 'error'
+    });
   }
 }
 
@@ -71,7 +75,7 @@ export function deactivate() {
  * Shows welcome message for first-time users
  */
 function showWelcomeMessage(context: vscode.ExtensionContext) {
-  const hasShownWelcome = context.globalState.get<boolean>('clotho.hasShownWelcome', false);
+  const hasShownWelcome = context.globalState.get<boolean>(UI_CONSTANTS.WELCOME_MESSAGE_KEY, false);
   if (!hasShownWelcome) {
     vscode.window.showInformationMessage(
       'Welcome to Clotho! This is a tool that enhances C++ development efficiency, and it works even better when used with clangd.',
@@ -79,10 +83,10 @@ function showWelcomeMessage(context: vscode.ExtensionContext) {
       'Don\'t Show Again'
     ).then((selection: string | undefined) => {
       if (selection === 'Configure Rules') {
-        vscode.commands.executeCommand('clotho.configureRules');
+        vscode.commands.executeCommand(COMMANDS.CONFIGURE_RULES);
       }
       if (selection === 'Don\'t Show Again' || selection === 'Configure Rules') {
-        context.globalState.update('clotho.hasShownWelcome', true);
+        context.globalState.update(UI_CONSTANTS.WELCOME_MESSAGE_KEY, true);
       }
     });
   }
