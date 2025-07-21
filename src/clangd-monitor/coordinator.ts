@@ -80,6 +80,11 @@ export class MonitorCoordinator implements vscode.Disposable {
             'clotho.restartClangd',
             () => this.restartClangd()
         );
+
+        vscode.commands.registerCommand(
+            'clotho.debugClangdDetection',
+            () => this.debugClangdDetection()
+        );
     }
 
     /**
@@ -127,6 +132,18 @@ export class MonitorCoordinator implements vscode.Disposable {
                 showToUser: true,
                 logLevel: 'error'
             });
+        }
+    }
+
+    /**
+     * Debug clangd detection process by delegating to memory monitor
+     */
+    private async debugClangdDetection(): Promise<void> {
+        const memoryMonitor = this.getMemoryMonitor();
+        if (memoryMonitor && 'debugClangdDetection' in memoryMonitor) {
+            await (memoryMonitor as any).debugClangdDetection();
+        } else {
+            vscode.window.showErrorMessage('Memory monitor not available for debugging');
         }
     }
 

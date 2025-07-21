@@ -59,6 +59,11 @@
                 "category": "Clotho"
             },
             {
+                "command": "clotho.debugClangdDetection",
+                "title": "Debug Clangd Detection",
+                "category": "Clotho"
+            },
+            {
                 "command": "clotho.restartClangd",
                 "title": "Restart Clangd Server",
                 "category": "Clotho"
