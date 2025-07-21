@@ -313,70 +313,136 @@ body {
 .hljs {
     background: transparent !important;
     color: var(--vscode-editor-foreground, #d4d4d4) !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
-/* C++ 语法高亮颜色 - 增强版，增加备用颜色 */
+/* 确保代码容器保持 language-cpp class */
+.language-cpp.hljs {
+    background: transparent !important;
+}
+
+/* C++ 语法高亮颜色 - 完整覆盖，确保主题兼容性 */
+
+/* 关键字：class, public, private, int, void, const, auto 等 */
 .hljs-keyword,
 .hljs-built_in,
 .hljs-type {
     color: var(--vscode-symbolIcon-keywordForeground, #569cd6) !important;
-    font-weight: bold !important;
+    font-weight: normal !important;
 }
 
+/* 字符串和字符：双引号字符串 */
 .hljs-string,
-.hljs-char {
+.hljs-char,
+.hljs-string .hljs-subst {
     color: var(--vscode-symbolIcon-stringForeground, #ce9178) !important;
 }
 
+/* 注释：单行和多行注释 */
 .hljs-comment {
     color: var(--vscode-symbolIcon-textForeground, #6a9955) !important;
     font-style: italic !important;
 }
 
+/* 数字：整数、浮点数 */
 .hljs-number,
 .hljs-literal {
     color: var(--vscode-symbolIcon-numberForeground, #b5cea8) !important;
 }
 
+/* 函数名：函数定义和调用 */
 .hljs-function .hljs-title,
-.hljs-title.function_ {
+.hljs-title.function_,
+.hljs-title.class_,
+.hljs-class .hljs-title {
     color: var(--vscode-symbolIcon-functionForeground, #dcdcaa) !important;
-    font-weight: bold !important;
+    font-weight: normal !important;
 }
 
+/* 变量名：参数、局部变量 */
 .hljs-variable,
+.hljs-template-variable,
 .hljs-params {
     color: var(--vscode-symbolIcon-variableForeground, #9cdcfe) !important;
 }
 
-.hljs-class .hljs-title,
-.hljs-title.class_ {
-    color: var(--vscode-symbolIcon-classForeground, #4ec9b0) !important;
-    font-weight: bold !important;
-}
-
+/* 预处理器：#include, #define 等 */
 .hljs-meta,
+.hljs-meta-keyword,
+.hljs-meta-string,
 .hljs-preprocessor {
     color: var(--vscode-symbolIcon-keywordForeground, #c586c0) !important;
-    font-weight: bold !important;
 }
 
+/* 操作符：+, -, *, /, =, ==, != 等 */
 .hljs-operator {
     color: var(--vscode-editor-foreground, #d4d4d4) !important;
 }
 
+/* 标点符号：{, }, (, ), ;, , 等 */
 .hljs-punctuation {
     color: var(--vscode-editor-foreground, #d4d4d4) !important;
 }
 
-/* 额外的 C++ 特定语法高亮 */
+/* 属性和标签 */
 .hljs-name,
-.hljs-attr {
+.hljs-attr,
+.hljs-tag {
     color: var(--vscode-symbolIcon-variableForeground, #9cdcfe) !important;
 }
 
-.hljs-symbol {
+/* 属性值 */
+.hljs-attribute {
+    color: var(--vscode-symbolIcon-propertyForeground, #9cdcfe) !important;
+}
+
+/* 节标题 */
+.hljs-section,
+.hljs-title {
+    color: var(--vscode-symbolIcon-classForeground, #4ec9b0) !important;
+}
+
+/* 符号和标记 */
+.hljs-symbol,
+.hljs-bullet {
+    color: var(--vscode-symbolIcon-numberForeground, #b5cea8) !important;
+}
+
+/* 强调样式 */
+.hljs-emphasis {
+    font-style: italic !important;
+}
+
+.hljs-strong {
+    font-weight: bold !important;
+}
+
+/* 确保所有高亮元素都有正确的字体 */
+.hljs * {
+    font-family: inherit !important;
+}
+
+/* 专门针对 C++ 的额外规则 */
+.language-cpp .hljs-keyword {
     color: var(--vscode-symbolIcon-keywordForeground, #569cd6) !important;
+}
+
+.language-cpp .hljs-string {
+    color: var(--vscode-symbolIcon-stringForeground, #ce9178) !important;
+}
+
+.language-cpp .hljs-comment {
+    color: var(--vscode-symbolIcon-textForeground, #6a9955) !important;
+    font-style: italic !important;
+}
+
+.language-cpp .hljs-number {
+    color: var(--vscode-symbolIcon-numberForeground, #b5cea8) !important;
+}
+
+.language-cpp .hljs-title {
+    color: var(--vscode-symbolIcon-functionForeground, #dcdcaa) !important;
 }
 
 /* Status Bar */

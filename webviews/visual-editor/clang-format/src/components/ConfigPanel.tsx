@@ -16,17 +16,30 @@ const MicroPreview: React.FC<{ code: string }> = ({ code }) => {
     const codeRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
-        if (codeRef.current && code) {
-            // 清除之前的高亮
-            codeRef.current.removeAttribute('data-highlighted');
-            codeRef.current.textContent = code;
+        if (codeRef.current) {
+            if (code) {
+                try {
+                    // 强制清除之前的内容和属性
+                    codeRef.current.removeAttribute('data-highlighted');
+                    codeRef.current.className = 'language-cpp hljs';
 
-            try {
-                // 应用 C++ 语法高亮
-                hljs.highlightElement(codeRef.current);
-                console.log('Highlight.js applied to micro preview:', codeRef.current.classList);
-            } catch (error) {
-                console.error('Highlight.js error in micro preview:', error);
+                    // 使用 highlight.js 高亮代码
+                    const result = hljs.highlight(code, {
+                        language: 'cpp',
+                        ignoreIllegals: true
+                    });
+
+                    // 设置高亮后的 HTML
+                    codeRef.current.innerHTML = result.value;
+
+                    console.log('Micro preview highlight applied successfully');
+                } catch (error) {
+                    console.error('Micro preview highlight error:', error);
+                    // 降级到普通文本
+                    codeRef.current.textContent = code;
+                }
+            } else {
+                codeRef.current.innerHTML = '';
             }
         }
     }, [code]);
@@ -39,7 +52,7 @@ const MicroPreview: React.FC<{ code: string }> = ({ code }) => {
                     ref={codeRef}
                     className="language-cpp"
                 >
-                    {code}
+                    {/* 内容将通过 innerHTML 设置 */}
                 </code>
             </pre>
         </div>
