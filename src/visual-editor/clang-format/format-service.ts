@@ -133,7 +133,10 @@ export class ClangFormatService {
         for (const key of sortedKeys) {
             const value = config[key];
 
-            if (value !== undefined && value !== null) {
+            // 跳过 undefined、null 或特殊的 "inherit" 标记
+            // 当用户选择"继承默认值"时，我们使用特殊标记 "inherit" 来表示应该省略该行
+            if (value !== undefined && value !== null && value !== 'inherit') {
+                // "None" 是一个有效的 clang-format 值，表示明确禁用功能
                 lines.push(`${key}: ${this.formatConfigValue(value)}`);
             }
         }

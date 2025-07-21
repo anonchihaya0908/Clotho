@@ -156,7 +156,9 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         onChange={(e) => onConfigChange(option.key, e.target.value)}
                     >
                         {option.possibleValues?.map((val: string) => (
-                            <option key={val} value={val}>{val}</option>
+                            <option key={val} value={val}>
+                                {val === 'inherit' ? '← Inherit from BasedOnStyle' : val}
+                            </option>
                         ))}
                     </select>
                 );

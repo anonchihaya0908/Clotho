@@ -24,8 +24,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         name: 'Align Consecutive Assignments',
         description: 'If true, aligns consecutive assignments.',
         type: 'enum',
-        defaultValue: 'None',
-        possibleValues: ['None', 'Consecutive', 'AcrossEmptyLines', 'AcrossComments', 'AcrossEmptyLinesAndComments'],
+        defaultValue: 'inherit',
+        possibleValues: ['inherit', 'None', 'Consecutive', 'AcrossEmptyLines', 'AcrossComments', 'AcrossEmptyLinesAndComments'],
         category: ConfigCategories.ALIGNMENT,
         microPreviewCode: `int a = 1;
 int bb = 2;
@@ -36,8 +36,8 @@ int ccc = 3;`
         name: 'Align Consecutive Declarations',
         description: 'If true, aligns consecutive declarations.',
         type: 'enum',
-        defaultValue: 'None',
-        possibleValues: ['None', 'Consecutive', 'AcrossEmptyLines', 'AcrossComments', 'AcrossEmptyLinesAndComments'],
+        defaultValue: 'inherit',
+        possibleValues: ['inherit', 'None', 'Consecutive', 'AcrossEmptyLines', 'AcrossComments', 'AcrossEmptyLinesAndComments'],
         category: ConfigCategories.ALIGNMENT,
         microPreviewCode: `int a;
 double bb;
@@ -48,8 +48,8 @@ char* ccc;`
         name: 'Align Consecutive Macros',
         description: 'If true, aligns consecutive C/C++ preprocessor macros.',
         type: 'enum',
-        defaultValue: 'None',
-        possibleValues: ['None', 'Consecutive', 'AcrossEmptyLines', 'AcrossComments', 'AcrossEmptyLinesAndComments'],
+        defaultValue: 'inherit',
+        possibleValues: ['inherit', 'None', 'Consecutive', 'AcrossEmptyLines', 'AcrossComments', 'AcrossEmptyLinesAndComments'],
         category: ConfigCategories.ALIGNMENT,
         microPreviewCode: `#define A 1
 #define BB 22
@@ -152,8 +152,8 @@ if ( condition ) {}`
         name: 'Allow Short Functions On A Single Line',
         description: 'Dependent on the value, short functions can be put on a single line.',
         type: 'enum',
-        defaultValue: 'All',
-        possibleValues: ['None', 'InlineOnly', 'Empty', 'Inline', 'All'],
+        defaultValue: 'inherit',
+        possibleValues: ['inherit', 'None', 'InlineOnly', 'Empty', 'Inline', 'All'],
         category: ConfigCategories.WRAPPING,
         microPreviewCode: `void shortFunction() { return; }
 
@@ -278,11 +278,11 @@ export const DEFAULT_CLANG_FORMAT_CONFIG: Record<string, any> = {
     UseTab: 'Never',
     BreakBeforeBraces: 'Attach',
     AlignAfterOpenBracket: 'Align',
-    AlignConsecutiveAssignments: 'None',
-    AlignConsecutiveDeclarations: 'None',
-    AlignConsecutiveMacros: 'None',
+    AlignConsecutiveAssignments: 'inherit',
+    AlignConsecutiveDeclarations: 'inherit',
+    AlignConsecutiveMacros: 'inherit',
     AlignTrailingComments: true,
-    AllowShortFunctionsOnASingleLine: 'All',
+    AllowShortFunctionsOnASingleLine: 'inherit',
     AllowShortIfStatementsOnASingleLine: 'Never',
     SpaceBeforeParens: 'ControlStatements',
     SpacesInParentheses: false
