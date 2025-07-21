@@ -49,7 +49,11 @@ export enum WebviewMessageType {
 
     // 验证相关
     VALIDATION_RESULT = 'validationResult',
-    VALIDATION_ERROR = 'validationError'
+    VALIDATION_ERROR = 'validationError',
+
+    // 设置相关
+    UPDATE_SETTINGS = 'updateSettings',
+    SETTINGS_UPDATED = 'settingsUpdated'
 }
 
 // Webview 消息接口
@@ -90,5 +94,12 @@ export interface ValidationMessage extends WebviewMessage {
         isValid?: boolean;
         error?: string;
         warnings?: string[];
+    };
+}
+
+export interface SettingsMessage extends WebviewMessage {
+    type: WebviewMessageType.UPDATE_SETTINGS | WebviewMessageType.SETTINGS_UPDATED;
+    payload: {
+        showGuideButton?: boolean;
     };
 }

@@ -8,6 +8,7 @@ import { ConfigPanel } from './components/ConfigPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import { Toolbar } from './components/Toolbar';
 import { StatusBar } from './components/StatusBar';
+import { ResizableSplitter } from './components/ResizableSplitter';
 
 export interface AppProps {
     vscode: any;
@@ -26,6 +27,9 @@ export interface AppState {
         error?: string;
         warnings?: string[];
     };
+    settings: {
+        showGuideButton: boolean;
+    };
 }
 
 export const App: React.FC<AppProps> = ({ vscode }) => {
@@ -37,7 +41,8 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         macroPreview: '',
         isLoading: true,
         error: null,
-        validationState: { isValid: true }
+        validationState: { isValid: true },
+        settings: { showGuideButton: true }
     });
 
     // 发送消息到 VS Code
@@ -53,6 +58,16 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         }));
 
         sendMessage('configChanged', { key, value });
+    }, [sendMessage]);
+
+    // 处理设置变更
+    const handleSettingsChange = useCallback((setting: string, value: any) => {
+        setState(prev => ({
+            ...prev,
+            settings: { ...prev.settings, [setting]: value }
+        }));
+
+        sendMessage('updateSettings', { [setting]: value });
     }, [sendMessage]);
 
     // 处理工具栏操作
@@ -91,6 +106,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                         options: message.payload.options,
                         categories: message.payload.categories,
                         currentConfig: message.payload.currentConfig,
+                        settings: message.payload.settings || prev.settings,
                         isLoading: false
                     }));
                     break;
@@ -136,6 +152,16 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     }));
                     break;
 
+                case 'settingsUpdated':
+                    setState(prev => ({
+                        ...prev,
+                        settings: {
+                            ...prev.settings,
+                            ...message.payload
+                        }
+                    }));
+                    break;
+
                 default:
                     console.warn('Unknown message type:', message.type);
             }
@@ -166,22 +192,28 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
             <Toolbar onAction={handleToolbarAction} />
 
             <div className="app-content">
-                <div className="left-panel">
-                    <ConfigPanel
-                        options={state.options}
-                        categories={state.categories}
-                        currentConfig={state.currentConfig}
-                        microPreviews={state.microPreviews}
-                        onConfigChange={handleConfigChange}
-                    />
-                </div>
-
-                <div className="right-panel">
-                    <PreviewPanel
-                        macroPreview={state.macroPreview}
-                        isValid={state.validationState.isValid}
-                    />
-                </div>
+                <ResizableSplitter
+                    leftPanel={
+                        <ConfigPanel
+                            options={state.options}
+                            categories={state.categories}
+                            currentConfig={state.currentConfig}
+                            microPreviews={state.microPreviews}
+                            settings={state.settings}
+                            onConfigChange={handleConfigChange}
+                            onSettingsChange={handleSettingsChange}
+                        />
+                    }
+                    rightPanel={
+                        <PreviewPanel
+                            macroPreview={state.macroPreview}
+                            isValid={state.validationState.isValid}
+                        />
+                    }
+                    initialLeftWidth={45}
+                    minLeftWidth={25}
+                    maxLeftWidth={75}
+                />
             </div>
 
             <StatusBar

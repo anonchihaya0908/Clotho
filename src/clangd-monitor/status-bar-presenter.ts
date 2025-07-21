@@ -7,6 +7,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import { CpuUsage, MemoryUsage } from './types';
+import { HeartbeatAnimation, createInitializingHeartbeat } from '../common';
 
 export interface StatusBarConfig {
     updateInterval?: number;
@@ -41,10 +42,12 @@ export class StatusBarPresenter {
     private lastCpuUsage: CpuUsage | undefined;
     private isActive = false;
     private readonly coreCount: number;
+    private heartbeatAnimation: HeartbeatAnimation;
 
     constructor(config: StatusBarConfig = {}) {
         this.config = { ...StatusBarPresenter.DEFAULT_CONFIG, ...config };
         this.coreCount = os.cpus().length;
+        this.heartbeatAnimation = createInitializingHeartbeat();
         this.createStatusBarItem();
     }
 
@@ -82,7 +85,19 @@ export class StatusBarPresenter {
      * Set the active state (whether clangd is detected)
      */
     public setActive(active: boolean): void {
+        const wasActive = this.isActive;
         this.isActive = active;
+
+        // 如果从非活跃变为活跃，停止心跳动画
+        if (!wasActive && active) {
+            this.heartbeatAnimation.stop(() => {
+                // 恢复默认颜色
+                if (this.statusBarItem) {
+                    this.statusBarItem.color = undefined;
+                }
+            });
+        }
+
         this.updateDisplay();
     }
 
@@ -114,9 +129,26 @@ export class StatusBarPresenter {
     private displayInactive(): void {
         if (!this.statusBarItem) return;
 
-        this.statusBarItem.text = "$(pulse) clangd: --- | ---";
-        this.statusBarItem.color = "#888888"; // Gray
-        this.statusBarItem.tooltip = "Clangd process not detected\nMonitoring inactive";
+        // 如果动画还没开始，启动心跳动画
+        if (!this.heartbeatAnimation.isAnimating()) {
+            this.heartbeatAnimation.start((isVisible: boolean) => {
+                if (this.statusBarItem) {
+                    // 文本内容永远不变，确保宽度恒定！
+                    this.statusBarItem.text = `$(pulse) clangd: Initializing...`;
+
+                    // 只改变颜色来实现闪烁效果
+                    if (isVisible) {
+                        // 设置为默认前景色 (可见)
+                        this.statusBarItem.color = "#888888"; // Gray but visible
+                    } else {
+                        // 设置为更暗的颜色 (几乎不可见)
+                        this.statusBarItem.color = "#333333"; // Much darker
+                    }
+                }
+            });
+        }
+
+        this.statusBarItem.tooltip = "Clangd process not detected\nMonitoring inactive\nSearching for clangd process...";
     }
 
     /**
@@ -387,6 +419,12 @@ export class StatusBarPresenter {
      * Reset all data and display inactive state
      */
     public reset(): void {
+        this.heartbeatAnimation.stop(() => {
+            // 恢复默认颜色
+            if (this.statusBarItem) {
+                this.statusBarItem.color = undefined;
+            }
+        });
         this.lastMemoryUsage = undefined;
         this.lastCpuUsage = undefined;
         this.isActive = false;
@@ -415,6 +453,7 @@ export class StatusBarPresenter {
      * Clean up resources
      */
     public dispose(): void {
+        this.heartbeatAnimation.dispose();
         if (this.statusBarItem) {
             this.statusBarItem.dispose();
             this.statusBarItem = undefined;

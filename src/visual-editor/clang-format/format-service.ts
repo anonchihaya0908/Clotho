@@ -9,6 +9,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { ProcessRunner, CommandResult } from '../../common/process-runner';
 import { ErrorHandler, ErrorContext } from '../../common/error-handler';
+import { getLineEnding } from '../../common/platform-utils';
 import { MACRO_PREVIEW_CODE, DEFAULT_CLANG_FORMAT_CONFIG } from './config-options';
 
 export interface FormatResult {
@@ -141,8 +142,9 @@ export class ClangFormatService {
             }
         }
 
-        // 不添加 YAML 结束标记，clang-format 不需要
-        return lines.join('\n');
+        // 使用平台感知的行尾序列
+        const eol = getLineEnding();
+        return lines.join(eol);
     }
 
     /**

@@ -140,13 +140,18 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
     // 私有方法
 
     private async initializeEditor(): Promise<void> {
+        // 获取当前设置
+        const config = vscode.workspace.getConfiguration('clotho.clangFormat');
+        const showGuideButton = config.get<boolean>('showGuideButton', true);
+
         // 发送初始配置选项
         await this.sendMessage({
             type: WebviewMessageType.INITIALIZE,
             payload: {
                 options: CLANG_FORMAT_OPTIONS,
                 categories: Object.values(ConfigCategories),
-                currentConfig: this.currentConfig
+                currentConfig: this.currentConfig,
+                settings: { showGuideButton }
             }
         });
 
@@ -186,6 +191,10 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
 
                     case WebviewMessageType.VALIDATE_CONFIG:
                         await this.handleValidateConfig();
+                        break;
+
+                    case WebviewMessageType.UPDATE_SETTINGS:
+                        await this.handleUpdateSettings(message.payload);
                         break;
 
                     default:
@@ -328,6 +337,33 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             type: WebviewMessageType.VALIDATION_RESULT,
             payload: validation
         });
+    }
+
+    private async handleUpdateSettings(payload: any): Promise<void> {
+        try {
+            const { showGuideButton } = payload;
+
+            if (typeof showGuideButton === 'boolean') {
+                // 更新 VS Code 配置
+                const config = vscode.workspace.getConfiguration('clotho.clangFormat');
+                await config.update('showGuideButton', showGuideButton, vscode.ConfigurationTarget.Global);
+
+                // 通知 webview 设置已更新
+                await this.sendMessage({
+                    type: WebviewMessageType.SETTINGS_UPDATED,
+                    payload: { showGuideButton }
+                });
+
+                vscode.window.showInformationMessage('Settings updated successfully');
+            }
+        } catch (error) {
+            ErrorHandler.handle(error, {
+                operation: 'updateSettings',
+                module: 'ClangFormatEditorCoordinator',
+                showToUser: true,
+                logLevel: 'error'
+            });
+        }
     }
 
     private async updatePreview(changedKey?: string): Promise<void> {

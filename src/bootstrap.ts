@@ -14,6 +14,7 @@ import { PairingRuleService, PairingRuleUI, PairingRuleCoordinator } from './pai
 import { SwitchCoordinator, SwitchService, SwitchUI } from './switch-header-source';
 import { MonitorCoordinator } from './clangd-monitor';
 import { ClangFormatVisualEditorCoordinator } from './visual-editor';
+import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
 
 export let serviceContainer: ServiceContainer;
 
@@ -87,7 +88,7 @@ function registerServices(context: vscode.ExtensionContext): void {
             memory: {
                 updateInterval: config.get<number>('updateInterval', 5000),
                 warningThreshold: config.get<number>('warningThreshold', 2048), // 2GB (yellow)
-                errorThreshold: config.get<number>('errorThreshold', 3072) // 3GB (red)
+                errorThreshold: config.get<number>('errorThreshold', 4096) // 4GB (red)
             },
             cpu: {
                 updateInterval: config.get<number>('updateInterval', 3000),
@@ -103,6 +104,11 @@ function registerServices(context: vscode.ExtensionContext): void {
     serviceContainer.register('clangFormatVisualEditorCoordinator', () =>
         new ClangFormatVisualEditorCoordinator(context.extensionUri)
     );
+
+    // Clang-Format Guide Service
+    serviceContainer.register('clangFormatGuideService', () =>
+        new ClangFormatGuideService()
+    );
 }
 
 /**
@@ -116,6 +122,7 @@ async function initializeCoordinators(): Promise<void> {
     serviceContainer.get('pairCoordinator');
     serviceContainer.get('switchCoordinator');
     serviceContainer.get('clangFormatVisualEditorCoordinator');
+    serviceContainer.get('clangFormatGuideService');
 
     // Initialize and start the monitor coordinator
     const monitorCoordinator = serviceContainer.get('monitorCoordinator');

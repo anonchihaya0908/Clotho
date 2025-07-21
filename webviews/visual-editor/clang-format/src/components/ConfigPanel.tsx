@@ -64,7 +64,9 @@ export interface ConfigPanelProps {
     categories: string[];
     currentConfig: Record<string, any>;
     microPreviews: Record<string, string>;
+    settings: { showGuideButton: boolean };
     onConfigChange: (key: string, value: any) => void;
+    onSettingsChange: (setting: string, value: any) => void;
 }
 
 export const ConfigPanel: React.FC<ConfigPanelProps> = ({
@@ -72,50 +74,63 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
     categories,
     currentConfig,
     microPreviews,
-    onConfigChange
+    settings,
+    onConfigChange,
+    onSettingsChange
 }) => {
     const [selectedCategory, setSelectedCategory] = useState<string>(categories[0] || '');
-    const [expandedOptions, setExpandedOptions] = useState<Set<string>>(new Set());
 
     const filteredOptions = options.filter(option =>
         option.category === selectedCategory
     );
 
-    const toggleOptionExpansion = (key: string) => {
-        const newExpanded = new Set(expandedOptions);
-        if (newExpanded.has(key)) {
-            newExpanded.delete(key);
-        } else {
-            newExpanded.add(key);
+    const generateDefaultPreview = (option: any) => {
+        // 根据选项类型生成相应的示例代码
+        switch (option.key) {
+            case 'AlignAfterOpenBracket':
+                return `function(argument1, argument2, argument3);`;
+            case 'AlignConsecutiveAssignments':
+                return `int a   = 1;\nint bb  = 2;\nint ccc = 3;`;
+            case 'AlignConsecutiveDeclarations':
+                return `int    a;\ndouble bb;\nchar  *ccc;`;
+            case 'AlignConsecutiveMacros':
+                return `#define SHORT_NAME       42\n#define LONGER_NAME      3.14\n#define VERY_LONG_NAME   "string"`;
+            case 'IndentWidth':
+                return `if (condition) {\n    doSomething();\n    if (nested) {\n        doMore();\n    }\n}`;
+            case 'TabWidth':
+                return `function() {\n\treturn value;\n}`;
+            case 'UseTab':
+                return `class MyClass {\npublic:\n\tvoid method();\n};`;
+            case 'ColumnLimit':
+                return `void longFunctionNameWithManyParameters(int param1, int param2, int param3, int param4);`;
+            case 'BreakBeforeBraces':
+                return `if (condition)\n{\n    statement;\n}`;
+            case 'SpaceBeforeParens':
+                return `if (condition)\nfor (int i = 0; i < 10; ++i)\nfunctionCall();`;
+            default:
+                return `// ${option.name} formatting example\nclass Example {\npublic:\n    void method();\n};`;
         }
-        setExpandedOptions(newExpanded);
     };
 
     const renderConfigControl = (option: any) => {
         const value = currentConfig[option.key];
-        const preview = microPreviews[option.key];
-        const isExpanded = expandedOptions.has(option.key);
+        const preview = microPreviews[option.key] || generateDefaultPreview(option);
 
         return (
             <div key={option.key} className="config-option">
-                <div className="option-header" onClick={() => toggleOptionExpansion(option.key)}>
+                <div className="option-header">
                     <div className="option-title">
                         <span className="option-name">{option.name}</span>
-                        <span className="expand-icon">{isExpanded ? '▼' : '▶'}</span>
                     </div>
                     <div className="option-control">
                         {renderControl(option, value)}
                     </div>
                 </div>
 
-                {isExpanded && (
-                    <div className="option-details">
-                        <p className="option-description">{option.description}</p>
-                        {preview && (
-                            <MicroPreview code={preview} />
-                        )}
-                    </div>
-                )}
+                <div className="option-details">
+                    <p className="option-description">{option.description}</p>
+                    <MicroPreview code={preview} />
+                </div>
             </div>
         );
     };
@@ -183,6 +198,35 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
             </div>
 
             <div className="config-options">
+                {/* 在 General 分类中渲染设置选项 */}
+                {selectedCategory === 'General' && (
+                    <div className="settings-section">
+                        <h3 className="settings-title">Editor Settings</h3>
+                        <div className="config-option">
+                            <div className="option-header">
+                                <div className="option-title">
+                                    <span className="option-name">CodeLens Guide</span>
+                                </div>
+                                <div className="option-control">
+                                    <label className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={settings.showGuideButton}
+                                            onChange={(e) => onSettingsChange('showGuideButton', e.target.checked)}
+                                        />
+                                        <span className="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div className="option-details">
+                                <p className="option-description">
+                                    Show the "Visual Editor" and "Reference" links at the top of .clang-format files.
+                                </p>
+                            </div>
+                        </div>
+                        <hr className="settings-separator" />
+                    </div>
+                )}
                 {filteredOptions.map(renderConfigControl)}
             </div>
         </div>

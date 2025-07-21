@@ -25,6 +25,7 @@ import { PairingRuleService, PairingRuleUI, PairingRuleCoordinator } from '../pa
 import { SwitchCoordinator, SwitchService, SwitchUI } from '../switch-header-source';
 import { MonitorCoordinator } from '../clangd-monitor';
 import { ClangFormatVisualEditorCoordinator } from '../visual-editor';
+import { ClangFormatGuideService } from '../visual-editor/clang-format/guide-service';
 
 // A collection of factory functions for creating services
 type ServiceFactory<T> = (container: ServiceContainer) => T;
@@ -54,6 +55,7 @@ export interface ServiceCollection {
 
     // Clang-Format Visual Editor
     clangFormatVisualEditorCoordinator: ClangFormatVisualEditorCoordinator;
+    clangFormatGuideService: ClangFormatGuideService;
 }// A mapping of service names to their instances
 type ServiceCache = Map<keyof ServiceCollection, ServiceCollection[keyof ServiceCollection]>;
 

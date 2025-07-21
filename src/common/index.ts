@@ -12,6 +12,9 @@ export * from './constants';
 // Utilities
 export * from './utils';
 
+// Heartbeat animation utilities
+export * from './heartbeat-animation';
+
 // Error handling
 export * from './error-handler';
 

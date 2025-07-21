@@ -59,11 +59,6 @@
                 "category": "Clotho"
             },
             {
-                "command": "clotho.debugClangdDetection",
-                "title": "Debug Clangd Detection (开发调试)",
-                "category": "Clotho"
-            },
-            {
                 "command": "clotho.restartClangd",
                 "title": "Restart Clangd Server",
                 "category": "Clotho"
@@ -71,7 +66,8 @@
             {
                 "command": "clotho.openClangFormatEditor",
                 "title": "Open Clang-Format Visual Editor",
-                "category": "Clotho"
+                "category": "Clotho",
+                "icon": "$(edit)"
             }
         ],
         "menus": {
@@ -80,6 +76,14 @@
                     "command": "clotho.newSourcePair",
                     "when": "explorerResourceIsFolder",
                     "group": "2_workspace"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "clotho.openClangFormatEditor",
+                    "when": "clotho.isClangFormatFile",
+                    "group": "navigation",
+                    "alt": "clotho.openClangFormatEditor"
                 }
             ],
             "editor/context": [
@@ -260,6 +264,11 @@
                     "description": "Memory usage error threshold in MB",
                     "minimum": 500,
                     "maximum": 20000
+                },
+                "clotho.clangFormat.showGuideButton": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show guide button in status bar when editing .clang-format files"
                 }
             }
         }
