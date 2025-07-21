@@ -195,8 +195,15 @@ int ccc = 3;// comment`
         defaultValue: 'LLVM',
         possibleValues: ['LLVM', 'Google', 'Chromium', 'Mozilla', 'WebKit', 'Microsoft', 'GNU'],
         category: ConfigCategories.GENERAL,
-        microPreviewCode: `// Base style affects all formatting
+        microPreviewCode: `// LLVM/Google: Attach braces
 class Example {
+public:
+    void method();
+};
+
+// Microsoft: Allman braces
+class Example
+{
 public:
     void method();
 };`
@@ -204,86 +211,114 @@ public:
 ];
 
 // 完整的示例代码，用于宏观预览
-export const MACRO_PREVIEW_CODE = `#include <iostream>
+export const MACRO_PREVIEW_CODE = `// This file is designed to demonstrate the effects of most clang-format options.
+
 #include <vector>
 #include <string>
+#include <iostream>
+#include <map>
 
-namespace example {
-
-class LongNamedExampleClass {
+// Namespace and Class Definitions
+namespace my_very_long_namespace_name {
+class LongNamedExampleClass : public AnotherBase {
 public:
     LongNamedExampleClass(int value, const std::string& name) : value_(value), name_(name) {}
-    
+
     void processData(const std::vector<int>& data, bool shouldSort = true) {
         if (data.empty()) return;
-        
         for (auto it = data.begin(); it != data.end(); ++it) {
-            if (*it > 0) {
-                processPositiveValue(*it);
-            } else {
-                processNegativeValue(*it);
-            }
+            if (*it > 0) { processPositiveValue(*it); } else { processNegativeValue(*it); }
         }
-        
-        if (shouldSort) {
-            sortData();
-        }
+        if (shouldSort) { sortData(); }
     }
-    
-    template<typename T>
-    void templateMethod(T&& value) {
-        auto result = longFunctionNameThatExceedsColumnLimit(std::forward<T>(value), anotherParameter, yetAnotherParameter);
-        if (result.has_value()) {
-            handleResult(result.value());
-        }
+
+    // Short function for single-line formatting
+    int getValue() { return value_; }
+
+    template<typename T> void templateMethod(T&& value) {
+        auto result = aVeryVeryVeryVeryLongFunctionNameThatExceedsTheColumnLimit(std::forward<T>(value), anotherParameter, yetAnotherParameter);
+        if (result.has_value()) { handleResult(result.value()); }
     }
 
 private:
-    int value_;             // Member variable 1
-    std::string name_;      // Member variable 2
-    bool isValid_;          // Member variable 3
-    
-    void processPositiveValue(int val) { /* implementation */ }
-    void processNegativeValue(int val) { /* implementation */ }
-    void sortData() { /* implementation */ }
-    void handleResult(const auto& result) { /* implementation */ }
-    
-    auto longFunctionNameThatExceedsColumnLimit(auto&& param1, int param2, bool param3) -> std::optional<int> {
-        return std::nullopt;
-    }
-};
+    int value_; // Member variable 1
+    std::string name_;   // Member variable 2
+    bool isValid_; // Member variable 3
 
-// Function with multiple parameters
-void globalFunction(int first, int second, int third, int fourth, int fifth, bool shouldProcess) {
-    if (shouldProcess) {
-        std::cout << "Processing: " << first << ", " << second << ", " << third << std::endl;
+    void processPositiveValue(int val) { /* ... */ }
+    void processNegativeValue(int val) { /* ... */ }
+    void sortData() { /* ... */ }
+};
+} // namespace my_very_long_namespace_name
+
+// Pointer and Reference Alignment
+void pointerAlignmentExample(int* left, int * middle, int *right, const std::string& ref) {
+    int* a=nullptr;
+    char & b = ref[0];
+}
+
+// Consecutive Assignments and Declarations
+void alignmentExample() {
+    int         firstValue  = 1;
+    double      secondValue = 2.0;
+    const char* thirdValue  = "three";
+
+    int alpha;
+    double beta;
+    const char* gamma;
+}
+
+// Control Statements and Braces
+void controlStatements(bool condition1, bool condition2) {
+    if (condition1) { std::cout << "Condition 1"; }
+    else { std::cout << "Not Condition 1"; }
+
+    while (condition2)
+    {
+        doSomething();
+    }
+
+    switch (an_enum_variable) {
+    case A:
+        statement;
+        break;
+    case B: {
+        statement;
+        break;
+    }
     }
 }
 
-// Macro definitions
+// C-Style Casts and Parentheses Spacing
+int castExample() {
+    return ( int ) ( 2.0 * ( 3.0 + 4.0) );
+}
+
+// Lambda Expressions
+auto lambda = [] (int x, int y) -> int { return x + y; };
+
+// Macro Definitions
 #define MAX_SIZE 100
 #define MIN_VALUE 0
 #define DEFAULT_NAME "example"
 
-// Array initialization
-int array[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+// C++11 Braced List Initialization
+std::vector<int> list = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+std::map<std::string, int> map = { {"key1", 1}, {"long_key_2", 2} };
 
-} // namespace example`;
+// Concept (C++20)
+template<typename T>
+concept MyConcept = requires(T t) {
+    { t.foo() } -> std::same_as<int>;
+};
 
-// 默认的 clang-format 配置
+int main() {
+    std::cout << "Clotho .clang-format Editor Preview" << std::endl;
+    return 0;
+}`;
+
+// 默认的 clang-format 配置 - 最小化配置，让其他选项从预设风格继承
 export const DEFAULT_CLANG_FORMAT_CONFIG: Record<string, any> = {
-    BasedOnStyle: 'LLVM',
-    IndentWidth: 2,
-    ColumnLimit: 80,
-    UseTab: 'Never',
-    BreakBeforeBraces: 'Attach',
-    AlignAfterOpenBracket: 'Align',
-    AlignConsecutiveAssignments: 'inherit',
-    AlignConsecutiveDeclarations: 'inherit',
-    AlignConsecutiveMacros: 'inherit',
-    AlignTrailingComments: true,
-    AllowShortFunctionsOnASingleLine: 'inherit',
-    AllowShortIfStatementsOnASingleLine: 'Never',
-    SpaceBeforeParens: 'ControlStatements',
-    SpacesInParentheses: false
+    BasedOnStyle: 'LLVM'
+    // 其他配置项应该从选定的预设风格继承，而不是预先设定
 };

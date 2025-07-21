@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { ClangFormatService, FormatResult, ConfigValidationResult } from './format-service';
 import { WebviewMessage, WebviewMessageType, ConfigCategories } from './types';
 import { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG, MACRO_PREVIEW_CODE } from './config-options';
@@ -219,7 +218,12 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         const { key, value } = payload;
 
         // 更新当前配置
-        this.currentConfig[key] = value;
+        if (value === 'inherit' || value === undefined || value === null) {
+            // 如果值设为inherit或undefined，则从配置中移除该项，让其从基础风格继承
+            delete this.currentConfig[key];
+        } else {
+            this.currentConfig[key] = value;
+        }
 
         // 验证配置
         const validation = await this.formatService.validateConfig(this.currentConfig);
