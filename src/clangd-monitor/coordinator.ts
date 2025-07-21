@@ -563,27 +563,6 @@ export class MonitorCoordinator implements vscode.Disposable {
     }
 
     /**
-     * Debug clangd detection for troubleshooting
-     */
-    private async debugClangdDetection(): Promise<void> {
-        try {
-            const memoryMonitor = this.getMemoryMonitor();
-            if (memoryMonitor) {
-                await memoryMonitor.debugClangdDetection();
-            } else {
-                vscode.window.showErrorMessage('Memory monitor not available');
-            }
-        } catch (error) {
-            ErrorHandler.handle(error, {
-                operation: 'debugClangdDetection',
-                module: 'MonitorCoordinator',
-                showToUser: true,
-                logLevel: 'error'
-            });
-        }
-    }
-
-    /**
      * Clean up all resources
      */
     public dispose(): void {
