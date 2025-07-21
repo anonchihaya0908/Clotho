@@ -1,0 +1,408 @@
+/**
+ * Clang-Format Editor Coordinator
+ * 管理 clang-format 图形化编辑器的业务逻辑
+ */
+
+import * as vscode from 'vscode';
+import * as path from 'path';
+import { ClangFormatService, FormatResult, ConfigValidationResult } from './format-service';
+import { WebviewMessage, WebviewMessageType, ConfigCategories } from './types';
+import { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG } from './config-options';
+import { ErrorHandler } from '../../common/error-handler';
+import { COMMANDS } from '../../common/constants';
+
+export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
+    private panel: vscode.WebviewPanel | undefined;
+    private formatService: ClangFormatService;
+    private currentConfig: Record<string, any>;
+    private readonly extensionUri: vscode.Uri;
+    private readonly disposables: vscode.Disposable[] = [];
+
+    constructor(extensionUri: vscode.Uri) {
+        this.extensionUri = extensionUri;
+        this.formatService = new ClangFormatService();
+        this.currentConfig = { ...DEFAULT_CLANG_FORMAT_CONFIG };
+
+        // Register command
+        this.disposables.push(
+            vscode.commands.registerCommand(
+                COMMANDS.OPEN_CLANG_FORMAT_EDITOR,
+                () => this.showEditor()
+            )
+        );
+    }
+
+    /**
+     * Dispose of all resources
+     */
+    dispose(): void {
+        this.disposables.forEach(d => d.dispose());
+        if (this.panel) {
+            this.panel.dispose();
+        }
+        this.formatService.cleanup();
+    }
+
+    /**
+     * 显示 clang-format 编辑器
+     */
+    async showEditor(): Promise<void> {
+        try {
+            // 如果面板已存在，则聚焦
+            if (this.panel) {
+                this.panel.reveal(vscode.ViewColumn.One);
+                return;
+            }
+
+            // 创建 webview 面板
+            this.panel = vscode.window.createWebviewPanel(
+                'clangFormatEditor',
+                'Clang-Format Editor',
+                vscode.ViewColumn.One,
+                {
+                    enableScripts: true,
+                    retainContextWhenHidden: true,
+                    localResourceRoots: [
+                        vscode.Uri.joinPath(this.extensionUri, 'webviews')
+                    ]
+                }
+            );
+
+            // 设置图标
+            this.panel.iconPath = {
+                light: vscode.Uri.joinPath(this.extensionUri, 'resources', 'light', 'format.svg'),
+                dark: vscode.Uri.joinPath(this.extensionUri, 'resources', 'dark', 'format.svg')
+            };
+
+            // 设置 HTML 内容
+            this.panel.webview.html = await this.getWebviewContent();
+
+            // 监听消息
+            this.setupMessageHandling();
+
+            // 监听面板销毁
+            this.panel.onDidDispose(() => {
+                this.panel = undefined;
+                this.formatService.cleanup();
+            });
+
+            // 初始化编辑器
+            await this.initializeEditor();
+
+        } catch (error) {
+            ErrorHandler.handle(error, {
+                operation: 'showEditor',
+                module: 'ClangFormatEditorCoordinator',
+                showToUser: true,
+                logLevel: 'error'
+            });
+        }
+    }
+
+    /**
+     * 关闭编辑器
+     */
+    closeEditor(): void {
+        if (this.panel) {
+            this.panel.dispose();
+        }
+    }
+
+    /**
+     * 从工作区加载现有配置
+     */
+    async loadWorkspaceConfig(): Promise<void> {
+        try {
+            const configPath = this.formatService.getWorkspaceConfigPath();
+            if (configPath) {
+                this.currentConfig = await this.formatService.loadConfigFromFile(configPath);
+
+                // 通知 webview 更新配置
+                await this.sendMessage({
+                    type: WebviewMessageType.CONFIG_LOADED,
+                    payload: { config: this.currentConfig }
+                });
+
+                vscode.window.showInformationMessage('Workspace clang-format configuration loaded');
+            } else {
+                vscode.window.showInformationMessage('No .clang-format file found in workspace');
+            }
+        } catch (error) {
+            ErrorHandler.handle(error, {
+                operation: 'loadWorkspaceConfig',
+                module: 'ClangFormatEditorCoordinator',
+                showToUser: true,
+                logLevel: 'error'
+            });
+        }
+    }
+
+    // 私有方法
+
+    private async initializeEditor(): Promise<void> {
+        // 发送初始配置选项
+        await this.sendMessage({
+            type: WebviewMessageType.INITIALIZE,
+            payload: {
+                options: CLANG_FORMAT_OPTIONS,
+                categories: Object.values(ConfigCategories),
+                currentConfig: this.currentConfig
+            }
+        });
+
+        // 生成初始预览
+        await this.updatePreview();
+    }
+
+    private setupMessageHandling(): void {
+        if (!this.panel) return;
+
+        this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
+            try {
+                switch (message.type) {
+                    case WebviewMessageType.CONFIG_CHANGED:
+                        await this.handleConfigChange(message.payload);
+                        break;
+
+                    case WebviewMessageType.LOAD_WORKSPACE_CONFIG:
+                        await this.loadWorkspaceConfig();
+                        break;
+
+                    case WebviewMessageType.SAVE_CONFIG:
+                        await this.handleSaveConfig(message.payload);
+                        break;
+
+                    case WebviewMessageType.EXPORT_CONFIG:
+                        await this.handleExportConfig();
+                        break;
+
+                    case WebviewMessageType.IMPORT_CONFIG:
+                        await this.handleImportConfig();
+                        break;
+
+                    case WebviewMessageType.RESET_CONFIG:
+                        await this.handleResetConfig();
+                        break;
+
+                    case WebviewMessageType.VALIDATE_CONFIG:
+                        await this.handleValidateConfig();
+                        break;
+
+                    default:
+                        console.warn('Unknown message type:', message.type);
+                }
+            } catch (error) {
+                ErrorHandler.handle(error, {
+                    operation: 'handleWebviewMessage',
+                    module: 'ClangFormatEditorCoordinator',
+                    showToUser: true,
+                    logLevel: 'error'
+                });
+            }
+        });
+    }
+
+    private async handleConfigChange(payload: any): Promise<void> {
+        const { key, value } = payload;
+
+        // 更新当前配置
+        this.currentConfig[key] = value;
+
+        // 验证配置
+        const validation = await this.formatService.validateConfig(this.currentConfig);
+        if (!validation.isValid) {
+            await this.sendMessage({
+                type: WebviewMessageType.VALIDATION_ERROR,
+                payload: { error: validation.error }
+            });
+            return;
+        }
+
+        // 更新预览
+        await this.updatePreview(key);
+    }
+
+    private async handleSaveConfig(payload: any): Promise<void> {
+        try {
+            await this.formatService.applyConfigToWorkspace(this.currentConfig);
+
+            await this.sendMessage({
+                type: WebviewMessageType.CONFIG_SAVED,
+                payload: { success: true }
+            });
+        } catch (error) {
+            await this.sendMessage({
+                type: WebviewMessageType.CONFIG_SAVED,
+                payload: {
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Failed to save configuration'
+                }
+            });
+        }
+    }
+
+    private async handleExportConfig(): Promise<void> {
+        try {
+            const saveUri = await vscode.window.showSaveDialog({
+                defaultUri: vscode.Uri.file('.clang-format'),
+                filters: {
+                    'Clang-Format Config': ['clang-format'],
+                    'YAML Files': ['yaml', 'yml'],
+                    'All Files': ['*']
+                }
+            });
+
+            if (saveUri) {
+                await this.formatService.saveConfigToFile(this.currentConfig, saveUri.fsPath);
+                vscode.window.showInformationMessage(`Configuration exported to ${saveUri.fsPath}`);
+            }
+        } catch (error) {
+            ErrorHandler.handle(error, {
+                operation: 'exportConfig',
+                module: 'ClangFormatEditorCoordinator',
+                showToUser: true,
+                logLevel: 'error'
+            });
+        }
+    }
+
+    private async handleImportConfig(): Promise<void> {
+        try {
+            const openUri = await vscode.window.showOpenDialog({
+                canSelectFiles: true,
+                canSelectFolders: false,
+                canSelectMany: false,
+                filters: {
+                    'Clang-Format Config': ['clang-format'],
+                    'YAML Files': ['yaml', 'yml'],
+                    'All Files': ['*']
+                }
+            });
+
+            if (openUri && openUri[0]) {
+                const importedConfig = await this.formatService.loadConfigFromFile(openUri[0].fsPath);
+                this.currentConfig = { ...DEFAULT_CLANG_FORMAT_CONFIG, ...importedConfig };
+
+                await this.sendMessage({
+                    type: WebviewMessageType.CONFIG_LOADED,
+                    payload: { config: this.currentConfig }
+                });
+
+                await this.updatePreview();
+                vscode.window.showInformationMessage(`Configuration imported from ${openUri[0].fsPath}`);
+            }
+        } catch (error) {
+            ErrorHandler.handle(error, {
+                operation: 'importConfig',
+                module: 'ClangFormatEditorCoordinator',
+                showToUser: true,
+                logLevel: 'error'
+            });
+        }
+    }
+
+    private async handleResetConfig(): Promise<void> {
+        const choice = await vscode.window.showWarningMessage(
+            'Reset configuration to default values?',
+            { modal: true },
+            'Reset',
+            'Cancel'
+        );
+
+        if (choice === 'Reset') {
+            this.currentConfig = { ...DEFAULT_CLANG_FORMAT_CONFIG };
+
+            await this.sendMessage({
+                type: WebviewMessageType.CONFIG_LOADED,
+                payload: { config: this.currentConfig }
+            });
+
+            await this.updatePreview();
+        }
+    }
+
+    private async handleValidateConfig(): Promise<void> {
+        const validation = await this.formatService.validateConfig(this.currentConfig);
+
+        await this.sendMessage({
+            type: WebviewMessageType.VALIDATION_RESULT,
+            payload: validation
+        });
+    }
+
+    private async updatePreview(changedKey?: string): Promise<void> {
+        try {
+            // 更新宏观预览
+            const macroResult = await this.formatService.formatMacroPreview(this.currentConfig);
+
+            await this.sendMessage({
+                type: WebviewMessageType.MACRO_PREVIEW_UPDATE,
+                payload: {
+                    formattedCode: macroResult.formattedCode,
+                    success: macroResult.success,
+                    error: macroResult.error
+                }
+            });
+
+            // 如果有特定的配置项变更，更新对应的微观预览
+            if (changedKey) {
+                const option = CLANG_FORMAT_OPTIONS.find(opt => opt.key === changedKey);
+                if (option && option.microPreviewCode) {
+                    const microResult = await this.formatService.formatMicroPreview(
+                        option.microPreviewCode,
+                        this.currentConfig
+                    );
+
+                    await this.sendMessage({
+                        type: WebviewMessageType.MICRO_PREVIEW_UPDATE,
+                        payload: {
+                            key: changedKey,
+                            formattedCode: microResult.formattedCode,
+                            success: microResult.success,
+                            error: microResult.error
+                        }
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Failed to update preview:', error);
+        }
+    }
+
+    private async sendMessage(message: WebviewMessage): Promise<void> {
+        if (this.panel) {
+            await this.panel.webview.postMessage(message);
+        }
+    }
+
+    private async getWebviewContent(): Promise<string> {
+        if (!this.panel) {
+            throw new Error('Panel not initialized');
+        }
+
+        const webview = this.panel.webview;
+
+        // 获取资源路径
+        const scriptUri = webview.asWebviewUri(
+            vscode.Uri.joinPath(this.extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist', 'index.js')
+        );
+        const styleUri = webview.asWebviewUri(
+            vscode.Uri.joinPath(this.extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist', 'index.css')
+        );
+
+        // 生成 HTML
+        return `<!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Clang-Format Editor</title>
+            <link href="${styleUri}" rel="stylesheet">
+        </head>
+        <body>
+            <div id="app"></div>
+            <script src="${scriptUri}"></script>
+        </body>
+        </html>`;
+    }
+}

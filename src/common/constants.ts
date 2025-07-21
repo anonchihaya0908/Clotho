@@ -40,7 +40,8 @@ export const COMMANDS = {
     NEW_SOURCE_PAIR: 'clotho.newSourcePair',
     SWITCH_HEADER_SOURCE: 'clotho.switchHeaderSource',
     CONFIGURE_RULES: 'clotho.configureRules',
-    SHOW_CLANGD_DETAILS: 'clotho.showClangdDetails'
+    SHOW_CLANGD_DETAILS: 'clotho.showClangdDetails',
+    OPEN_CLANG_FORMAT_EDITOR: 'clotho.openClangFormatEditor'
 } as const;
 
 // ===============================

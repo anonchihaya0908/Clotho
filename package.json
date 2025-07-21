@@ -4,6 +4,11 @@
     "description": "A powerful VS Code extension for enhancing C/C++ development with clangd.",
     "version": "1.0.0",
     "publisher": "your-publisher-name",
+    "private": true,
+    "workspaces": [
+        ".",
+        "webviews/visual-editor/clang-format"
+    ],
     "engines": {
         "vscode": "^1.74.0"
     },
@@ -61,6 +66,11 @@
                 "command": "clotho.restartClangd",
                 "title": "Restart Clangd Server",
                 "category": "Clotho"
+            },
+            {
+                "command": "clotho.openClangFormatEditor",
+                "title": "Open Clang-Format Visual Editor",
+                "category": "Clotho"
             }
         ],
         "menus": {
@@ -97,6 +107,9 @@
                 },
                 {
                     "command": "clotho.restartClangd"
+                },
+                {
+                    "command": "clotho.openClangFormatEditor"
                 }
             ]
         },
@@ -265,9 +278,21 @@
         "clean": "rimraf out",
         "dev": "npm run compile && code --extensionDevelopmentPath=. --new-window",
         "dev:watch": "npm run esbuild:watch & code --extensionDevelopmentPath=. --new-window",
+        "workspace:install": "npm install",
+        "workspace:clean": "npm run clean && npm run webview:clean",
+        "workspace:build": "npm run compile && npm run webview:build",
+        "workspace:dev": "npm run compile && npm run webview:dev",
+        "webview:install": "npm install --workspace=visual-editor-clang-format-webview",
+        "webview:build": "npm run build --workspace=visual-editor-clang-format-webview",
+        "webview:dev": "npm run dev --workspace=visual-editor-clang-format-webview",
+        "webview:clean": "npm run clean --workspace=visual-editor-clang-format-webview",
         "build": "npm run esbuild",
         "watch": "npm run esbuild:watch",
-        "start": "npm run build && npm run dev"
+        "start": "npm run build && npm run dev",
+        "build:all": "npm run compile && npm run webview:build",
+        "clean:all": "npm run clean && npm run webview:clean",
+        "install:all": "npm install",
+        "dev:full": "npm run webview:build && npm run dev"
     },
     "devDependencies": {
         "@types/mocha": "^10.0.10",

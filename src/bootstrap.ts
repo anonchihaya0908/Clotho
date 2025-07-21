@@ -13,6 +13,7 @@ import { PairCoordinator, PairCreatorService, PairCreatorUI } from './create-sou
 import { PairingRuleService, PairingRuleUI, PairingRuleCoordinator } from './pairing-rule-manager';
 import { SwitchCoordinator, SwitchService, SwitchUI } from './switch-header-source';
 import { MonitorCoordinator } from './clangd-monitor';
+import { ClangFormatVisualEditorCoordinator } from './visual-editor';
 
 export let serviceContainer: ServiceContainer;
 
@@ -97,6 +98,11 @@ function registerServices(context: vscode.ExtensionContext): void {
             }
         });
     });
+
+    // Clang-Format Visual Editor
+    serviceContainer.register('clangFormatVisualEditorCoordinator', () =>
+        new ClangFormatVisualEditorCoordinator(context.extensionUri)
+    );
 }
 
 /**
@@ -109,6 +115,7 @@ async function initializeCoordinators(): Promise<void> {
     serviceContainer.get('pairingRuleCoordinator');
     serviceContainer.get('pairCoordinator');
     serviceContainer.get('switchCoordinator');
+    serviceContainer.get('clangFormatVisualEditorCoordinator');
 
     // Initialize and start the monitor coordinator
     const monitorCoordinator = serviceContainer.get('monitorCoordinator');

@@ -1,20 +1,57 @@
-# Dependencies
+# Dependencies - npm workspaces 统一管理
 /node_modules
+**/node_modules
+# 在 workspaces 中，所有依赖都安装在根目录的 node_modules
+# 但为了安全起见，我们也忽略子目录中可能出现的 node_modules
+
+# Package lock files - 只保留根目录的 lock 文件
+package-lock.json
+# 子项目的 lock 文件不需要，因为 workspaces 会统一管理
+webviews/**/package-lock.json
 
 # Compiled output
 /out
+# Webview 构建输出
+webviews/**/dist
+webviews/**/build
 
 # Packaged extension file
 *.vsix
 
 # Log files
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Development-specific VSCode settings.vscode/settings.json
+# Development-specific VSCode settings
 .vscode/settings.json
 .vscode/launch.json
 .vscode/tasks.json
+
 # Test results
 coverage/
+.nyc_output/
 
+# Temporary files
+.tmp/
+*.tmp
+.cache/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Editor specific
+*.swp
+*.swo
+*~
+
+# Development tools
 .VSCodeCounter
+
+# clang-format temporary files
+.clang-format-temp*
+
+# TypeScript build info
+*.tsbuildinfo

@@ -7,7 +7,15 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 
 ## 🚀 Features
 
-### 🎯 Smart File Pair Creation
+### � **NEW!** Visual Clang-Format Editor
+- **Three-Pane Interface**: Configuration panel, micro previews, and macro preview
+- **Real-time Preview**: See formatting changes instantly as you adjust settings
+- **Category Organization**: Options grouped by Alignment, Braces, Spacing, Indentation, etc.
+- **Import/Export**: Load existing configurations or save custom presets
+- **Workspace Integration**: Seamlessly manage `.clang-format` files in your projects
+- **Live Validation**: Instant feedback on configuration validity
+
+### �🎯 Smart File Pair Creation
 - **Intelligent Language Detection**: Automatically detects C vs C++ context from your current workspace
 - **Multiple Template Types**: Choose from class, struct, or empty file templates
 - **Custom File Extensions**: Support for various C/C++ file extensions (.h/.cpp, .hh/.cc, .hpp/.cxx, etc.)
@@ -38,6 +46,29 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 4. Restart VS Code if prompted
 
 ## 🎮 Usage
+
+### 🎨 Using the Visual Clang-Format Editor
+
+#### Opening the Editor
+1. Open Command Palette (`Ctrl+Shift+P`)
+2. Type "Clotho: Open Clang-Format Visual Editor"
+3. The editor opens in a new tab with three panels:
+   - **Left**: Configuration options organized by category
+   - **Right**: Live preview of formatted code
+   - **Toolbar**: Import, export, save, and management options
+
+#### Configuring Format Options
+1. **Browse Categories**: Click category tabs (Alignment, Braces, Spacing, etc.)
+2. **Expand Options**: Click any option to see description and micro preview
+3. **Adjust Settings**: Use controls to modify values
+4. **Real-time Preview**: See changes instantly in the preview panel
+
+#### Managing Configurations
+- **Load Existing**: Click "📁 Load" to import workspace `.clang-format`
+- **Save to Workspace**: Click "💾 Save" to apply settings to your project
+- **Import/Export**: Use "📥 Import" and "📤 Export" for configuration files
+- **Reset**: Click "🔄 Reset" to restore default settings
+- **Validate**: Click "✓ Validate" to check configuration syntax
 
 ### Creating New File Pairs
 
