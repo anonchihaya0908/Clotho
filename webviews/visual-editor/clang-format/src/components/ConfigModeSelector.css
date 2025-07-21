@@ -1,0 +1,101 @@
+.config-mode-selector {
+    border-bottom: 1px solid var(--vscode-widget-border);
+    background: var(--vscode-editor-background);
+    padding: 8px 16px;
+}
+
+.mode-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.mode-tab {
+    background: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-border, transparent);
+    color: var(--vscode-button-secondaryForeground);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    position: relative;
+    min-width: 100px;
+    justify-content: center;
+}
+
+.mode-tab:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
+    transform: translateY(-1px);
+}
+
+.mode-tab.active {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mode-tab.active::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--vscode-focusBorder);
+    border-radius: 1px;
+}
+
+.tab-icon {
+    font-size: 14px;
+}
+
+.search-container {
+    margin-top: 8px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 6px;
+    color: var(--vscode-input-foreground);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.search-input:focus {
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+}
+
+.search-input::placeholder {
+    color: var(--vscode-input-placeholderForeground);
+}
+
+.search-tips {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+}
+
+/* Mode-specific styling */
+.config-mode-selector[data-mode="quick"] .mode-tab:first-child {
+    background: var(--vscode-button-background);
+}
+
+.config-mode-selector[data-mode="full"] .mode-tab:nth-child(2) {
+    background: var(--vscode-button-background);
+}
+
+.config-mode-selector[data-mode="search"] .mode-tab:last-child {
+    background: var(--vscode-button-background);
+}

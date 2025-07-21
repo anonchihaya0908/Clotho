@@ -195,9 +195,6 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                 <ResizableSplitter
                     leftPanel={
                         <ConfigPanel
-                            options={state.options}
-                            categories={state.categories}
-                            currentConfig={state.currentConfig}
                             microPreviews={state.microPreviews}
                             settings={state.settings}
                             onConfigChange={handleConfigChange}

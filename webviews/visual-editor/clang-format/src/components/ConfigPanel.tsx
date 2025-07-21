@@ -5,6 +5,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import hljs from 'highlight.js/lib/core';
 import cpp from 'highlight.js/lib/languages/cpp';
+import { ConfigModeSelector, ConfigMode } from './ConfigModeSelector';
+import { QuickSetup } from './QuickSetup';
+import { SearchConfig } from './SearchConfig';
+import { CLANG_FORMAT_OPTIONS, CLANG_FORMAT_CATEGORIES, ClangFormatOption, getOptionsByCategory } from '../data/clangFormatOptions';
+import './ConfigPanel.css';
 
 // 确保 C++ 语言已注册
 if (!hljs.getLanguage('cpp')) {
@@ -60,9 +65,6 @@ const MicroPreview: React.FC<{ code: string }> = ({ code }) => {
 };
 
 export interface ConfigPanelProps {
-    options: any[];
-    categories: string[];
-    currentConfig: Record<string, any>;
     microPreviews: Record<string, string>;
     settings: { showGuideButton: boolean };
     onConfigChange: (key: string, value: any) => void;
@@ -70,88 +72,148 @@ export interface ConfigPanelProps {
 }
 
 export const ConfigPanel: React.FC<ConfigPanelProps> = ({
-    options,
-    categories,
-    currentConfig,
     microPreviews,
     settings,
     onConfigChange,
     onSettingsChange
 }) => {
-    const [selectedCategory, setSelectedCategory] = useState<string>(categories[0] || '');
+    const [configMode, setConfigMode] = useState<ConfigMode>('quick');
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [selectedCategory, setSelectedCategory] = useState<string>(CLANG_FORMAT_CATEGORIES[0] || '');
+    const [currentConfig, setCurrentConfig] = useState<Record<string, any>>({});
 
-    const filteredOptions = options.filter(option =>
-        option.category === selectedCategory
-    );
+    // 内部配置变更处理器
+    const handleConfigChange = (key: string, value: any) => {
+        setCurrentConfig(prev => ({ ...prev, [key]: value }));
+        onConfigChange(key, value);
+    };
 
-    const generateDefaultPreview = (option: any) => {
-        // 根据选项类型生成相应的示例代码
-        switch (option.key) {
-            case 'AlignAfterOpenBracket':
-                return `function(argument1, argument2, argument3);`;
-            case 'AlignConsecutiveAssignments':
-                return `int a   = 1;\nint bb  = 2;\nint ccc = 3;`;
-            case 'AlignConsecutiveDeclarations':
-                return `int    a;\ndouble bb;\nchar  *ccc;`;
-            case 'AlignConsecutiveMacros':
-                return `#define SHORT_NAME       42\n#define LONGER_NAME      3.14\n#define VERY_LONG_NAME   "string"`;
-            case 'IndentWidth':
-                return `if (condition) {\n    doSomething();\n    if (nested) {\n        doMore();\n    }\n}`;
-            case 'TabWidth':
-                return `function() {\n\treturn value;\n}`;
-            case 'UseTab':
-                return `class MyClass {\npublic:\n\tvoid method();\n};`;
-            case 'ColumnLimit':
-                return `void longFunctionNameWithManyParameters(int param1, int param2, int param3, int param4);`;
-            case 'BreakBeforeBraces':
-                return `if (condition)\n{\n    statement;\n}`;
-            case 'SpaceBeforeParens':
-                return `if (condition)\nfor (int i = 0; i < 10; ++i)\nfunctionCall();`;
+    // 根据模式渲染不同的内容
+    const renderConfigContent = () => {
+        switch (configMode) {
+            case 'quick':
+                return (
+                    <QuickSetup
+                        config={currentConfig}
+                        onChange={handleConfigChange}
+                    />
+                );
+
+            case 'search':
+                return (
+                    <SearchConfig
+                        options={CLANG_FORMAT_OPTIONS}
+                        searchQuery={searchQuery}
+                        config={currentConfig}
+                        onChange={handleConfigChange}
+                    />
+                );
+
+            case 'full':
             default:
-                return `// ${option.name} formatting example\nclass Example {\npublic:\n    void method();\n};`;
+                return renderFullConfiguration();
         }
     };
 
-    const renderConfigControl = (option: any) => {
-        const value = currentConfig[option.key];
-        const preview = microPreviews[option.key] || generateDefaultPreview(option);
+    // 完整配置模式的渲染函数
+    const renderFullConfiguration = () => {
+        const filteredOptions = getOptionsByCategory(selectedCategory);
 
         return (
-            <div key={option.key} className="config-option">
-                <div className="option-header">
-                    <div className="option-title">
-                        <span className="option-name">{option.name}</span>
-                    </div>
-                    <div className="option-control">
-                        {renderControl(option, value)}
+            <div className="full-configuration">
+                <div className="full-config-header">
+                    <h3>⚙️ 完整配置</h3>
+                    <p>所有可用的 clang-format 配置选项</p>
+
+                    {/* 设置面板 */}
+                    <div className="config-settings">
+                        <label className="guide-toggle">
+                            <input
+                                type="checkbox"
+                                checked={settings.showGuideButton}
+                                onChange={(e) => onSettingsChange('showGuideButton', e.target.checked)}
+                            />
+                            <span className="toggle-slider"></span>
+                            <span className="toggle-label">显示引导按钮</span>
+                        </label>
                     </div>
                 </div>
 
-                <div className="option-details">
-                    <p className="option-description">{option.description}</p>
-                    <MicroPreview code={preview} />
+                {/* 类别选择器 */}
+                <div className="category-selector">
+                    <div className="category-tabs">
+                        {CLANG_FORMAT_CATEGORIES.map((category: string) => (
+                            <button
+                                key={category}
+                                className={`category-tab ${selectedCategory === category ? 'active' : ''}`}
+                                onClick={() => setSelectedCategory(category)}
+                                title={`切换到 ${category} 配置`}
+                            >
+                                {category}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 配置选项列表 */}
+                <div className="config-options-list">
+                    {filteredOptions.map((option: ClangFormatOption) => (
+                        <div key={option.key} className="config-option">
+                            <div className="option-header">
+                                <label className="option-label">
+                                    {option.key}
+                                    {option.type && <span className="option-type">({option.type})</span>}
+                                </label>
+                                <div className="option-value">
+                                    {renderOptionInput(option)}
+                                </div>
+                            </div>
+
+                            {option.description && (
+                                <div className="option-description">
+                                    {option.description}
+                                </div>
+                            )}
+
+                            {/* 微观预览 - 默认显示 */}
+                            <MicroPreview
+                                code={microPreviews[option.key] || generateDefaultPreview(option)}
+                            />
+                        </div>
+                    ))}
                 </div>
             </div>
         );
     };
 
-    const renderControl = (option: any, value: any) => {
+    // 渲染选项输入控件
+    const renderOptionInput = (option: ClangFormatOption) => {
+        const value = currentConfig[option.key];
+
         switch (option.type) {
             case 'boolean':
                 return (
-                    <input
-                        type="checkbox"
-                        checked={value || false}
-                        onChange={(e) => onConfigChange(option.key, e.target.checked)}
-                    />
+                    <label className="full-checkbox-label">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(value)}
+                            onChange={(e) => handleConfigChange(option.key, e.target.checked)}
+                        />
+                        <span className="full-checkbox-custom"></span>
+                        <span className="checkbox-text">{value ? '启用' : '禁用'}</span>
+                    </label>
                 );
 
-            case 'integer':
+            case 'number':
                 return (
                     <input
                         type="number"
-                        value={value || 0}
-                        onChange={(e) => onConfigChange(option.key, parseInt(e.target.value, 10))}
+                        value={value || ''}
+                        onChange={(e) => handleConfigChange(option.key, parseInt(e.target.value) || 0)}
+                        className="full-number-input"
+                        min={option.min}
+                        max={option.max}
+                        placeholder={option.defaultValue?.toString() || ''}
                     />
                 );
 
@@ -160,74 +222,144 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                     <input
                         type="text"
                         value={value || ''}
-                        onChange={(e) => onConfigChange(option.key, e.target.value)}
+                        onChange={(e) => handleConfigChange(option.key, e.target.value)}
+                        className="full-text-input"
+                        placeholder={option.defaultValue?.toString() || "输入值..."}
                     />
                 );
 
             case 'enum':
                 return (
                     <select
-                        value={value || option.defaultValue}
-                        onChange={(e) => onConfigChange(option.key, e.target.value)}
+                        value={value !== undefined ? value : (option.defaultValue || '')}
+                        onChange={(e) => handleConfigChange(option.key, e.target.value)}
+                        className="full-select-input"
                     >
-                        {option.possibleValues?.map((val: string) => (
-                            <option key={val} value={val}>
-                                {val === 'inherit' ? '← Inherit from BasedOnStyle' : val}
+                        {option.enumValues?.map((enumValue: string) => (
+                            <option key={enumValue} value={enumValue}>
+                                {enumValue}
                             </option>
                         ))}
                     </select>
                 );
 
             default:
-                return <span>Unknown type: {option.type}</span>;
+                return <span className="unknown-input">未知类型</span>;
         }
+    };
+
+    const generateDefaultPreview = (option: ClangFormatOption) => {
+        // 获取当前选择的语言
+        const currentLanguage = currentConfig['Language'] || 'Cpp';
+
+        // 根据语言和选项生成示例代码
+        const generateLanguageSpecificExample = (baseKey: string) => {
+            switch (currentLanguage) {
+                case 'CSharp':
+                    switch (baseKey) {
+                        case 'AlignAfterOpenBracket':
+                            return `Method(argument1, argument2, argument3);`;
+                        case 'AlignConsecutiveAssignments':
+                            return `int a   = 1;\nint bb  = 2;\nint ccc = 3;`;
+                        case 'IndentWidth':
+                            return `if (condition)\n{\n    DoSomething();\n    if (nested)\n    {\n        DoMore();\n    }\n}`;
+                        case 'BreakBeforeBraces':
+                            return `if (condition)\n{\n    statement;\n}`;
+                        case 'SpaceBeforeParens':
+                            return `if (condition)\nfor (int i = 0; i < 10; ++i)\nMethodCall();`;
+                        default:
+                            return `// ${option.key} formatting example\nclass Example\n{\n    public void Method()\n    {\n    }\n}`;
+                    }
+
+                case 'Java':
+                    switch (baseKey) {
+                        case 'AlignAfterOpenBracket':
+                            return `method(argument1, argument2, argument3);`;
+                        case 'AlignConsecutiveAssignments':
+                            return `int a   = 1;\nint bb  = 2;\nint ccc = 3;`;
+                        case 'IndentWidth':
+                            return `if (condition) {\n    doSomething();\n    if (nested) {\n        doMore();\n    }\n}`;
+                        case 'BreakBeforeBraces':
+                            return `if (condition) {\n    statement;\n}`;
+                        case 'SpaceBeforeParens':
+                            return `if (condition)\nfor (int i = 0; i < 10; ++i)\nmethodCall();`;
+                        default:
+                            return `// ${option.key} formatting example\nclass Example {\n    public void method() {\n    }\n}`;
+                    }
+
+                case 'JavaScript':
+                    switch (baseKey) {
+                        case 'AlignAfterOpenBracket':
+                            return `function(argument1, argument2, argument3);`;
+                        case 'AlignConsecutiveAssignments':
+                            return `let a   = 1;\nlet bb  = 2;\nlet ccc = 3;`;
+                        case 'IndentWidth':
+                            return `if (condition) {\n    doSomething();\n    if (nested) {\n        doMore();\n    }\n}`;
+                        case 'BreakBeforeBraces':
+                            return `if (condition) {\n    statement;\n}`;
+                        case 'SpaceBeforeParens':
+                            return `if (condition)\nfor (let i = 0; i < 10; ++i)\nfunctionCall();`;
+                        default:
+                            return `// ${option.key} formatting example\nclass Example {\n    method() {\n    }\n}`;
+                    }
+
+                case 'Json':
+                    return `{\n  "key": "value",\n  "array": [\n    1,\n    2,\n    3\n  ]\n}`;
+
+                case 'Objective-C':
+                    switch (baseKey) {
+                        case 'AlignAfterOpenBracket':
+                            return `[object method:argument1 withParameter:argument2];`;
+                        case 'IndentWidth':
+                            return `if (condition) {\n    [self doSomething];\n    if (nested) {\n        [self doMore];\n    }\n}`;
+                        case 'BreakBeforeBraces':
+                            return `if (condition)\n{\n    statement;\n}`;
+                        default:
+                            return `// ${option.key} formatting example\n@interface Example : NSObject\n- (void)method;\n@end`;
+                    }
+
+                default: // Cpp
+                    switch (baseKey) {
+                        case 'AlignAfterOpenBracket':
+                            return `function(argument1, argument2, argument3);`;
+                        case 'AlignConsecutiveAssignments':
+                            return `int a   = 1;\nint bb  = 2;\nint ccc = 3;`;
+                        case 'AlignConsecutiveDeclarations':
+                            return `int    a;\ndouble bb;\nchar  *ccc;`;
+                        case 'AlignConsecutiveMacros':
+                            return `#define SHORT_NAME       42\n#define LONGER_NAME      3.14\n#define VERY_LONG_NAME   "string"`;
+                        case 'IndentWidth':
+                            return `if (condition) {\n    doSomething();\n    if (nested) {\n        doMore();\n    }\n}`;
+                        case 'TabWidth':
+                            return `function() {\n\treturn value;\n}`;
+                        case 'UseTab':
+                            return `class MyClass {\npublic:\n\tvoid method();\n};`;
+                        case 'ColumnLimit':
+                            return `void longFunctionNameWithManyParameters(int param1, int param2, int param3, int param4);`;
+                        case 'BreakBeforeBraces':
+                            return `if (condition)\n{\n    statement;\n}`;
+                        case 'SpaceBeforeParens':
+                            return `if (condition)\nfor (int i = 0; i < 10; ++i)\nfunctionCall();`;
+                        default:
+                            return `// ${option.key} formatting example\nclass Example {\npublic:\n    void method();\n};`;
+                    }
+            }
+        };
+
+        return generateLanguageSpecificExample(option.key);
     };
 
     return (
         <div className="config-panel">
-            <div className="category-tabs">
-                {categories.map(category => (
-                    <button
-                        key={category}
-                        className={`category-tab ${selectedCategory === category ? 'active' : ''}`}
-                        onClick={() => setSelectedCategory(category)}
-                    >
-                        {category}
-                    </button>
-                ))}
-            </div>
+            <ConfigModeSelector
+                mode={configMode}
+                onModeChange={setConfigMode}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+            />
 
-            <div className="config-options">
-                {/* 在 General 分类中渲染设置选项 */}
-                {selectedCategory === 'General' && (
-                    <div className="settings-section">
-                        <h3 className="settings-title">Editor Settings</h3>
-                        <div className="config-option">
-                            <div className="option-header">
-                                <div className="option-title">
-                                    <span className="option-name">CodeLens Guide</span>
-                                </div>
-                                <div className="option-control">
-                                    <label className="toggle-switch">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.showGuideButton}
-                                            onChange={(e) => onSettingsChange('showGuideButton', e.target.checked)}
-                                        />
-                                        <span className="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div className="option-details">
-                                <p className="option-description">
-                                    Show the "Visual Editor" and "Reference" links at the top of .clang-format files.
-                                </p>
-                            </div>
-                        </div>
-                        <hr className="settings-separator" />
-                    </div>
-                )}
-                {filteredOptions.map(renderConfigControl)}
+            <div className="config-content">
+                {renderConfigContent()}
             </div>
         </div>
     );

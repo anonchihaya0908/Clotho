@@ -1,0 +1,320 @@
+.search-config {
+    padding: 16px;
+    background: var(--vscode-editor-background);
+    height: 100%;
+    overflow-y: auto;
+}
+
+.search-header {
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--vscode-widget-border);
+}
+
+.search-header h3 {
+    margin: 0 0 8px 0;
+    color: var(--vscode-foreground);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.search-header p {
+    margin: 0;
+    color: var(--vscode-descriptionForeground);
+    font-size: 13px;
+}
+
+.search-header strong {
+    color: var(--vscode-textLink-foreground);
+    font-weight: 600;
+}
+
+.no-results {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    border: 2px dashed var(--vscode-widget-border);
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.no-results-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.no-results-text h4 {
+    margin: 0 0 8px 0;
+    color: var(--vscode-foreground);
+    font-size: 16px;
+}
+
+.no-results-text p {
+    margin: 0 0 12px 0;
+    color: var(--vscode-descriptionForeground);
+    font-size: 14px;
+}
+
+.search-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.suggestion {
+    background: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.suggestion:hover {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    transform: translateY(-1px);
+}
+
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.search-result-item {
+    background: var(--vscode-editor-inactiveSelectionBackground);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+
+.search-result-item:hover {
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: var(--vscode-list-hoverBackground);
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.result-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.result-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.result-name {
+    color: var(--vscode-foreground);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--vscode-editor-font-family);
+    word-break: break-all;
+}
+
+.result-type {
+    background: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.result-value {
+    flex-shrink: 0;
+    min-width: 120px;
+}
+
+/* Improved checkbox styles for search results */
+.search-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--vscode-foreground);
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.search-checkbox-label:hover {
+    background: var(--vscode-list-hoverBackground);
+}
+
+.search-checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.search-checkbox-custom {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--vscode-checkbox-border);
+    border-radius: 3px;
+    background: var(--vscode-checkbox-background);
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.search-checkbox-label:hover .search-checkbox-custom {
+    border-color: var(--vscode-inputOption-activeBorder);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.search-checkbox-label input[type="checkbox"]:checked+.search-checkbox-custom {
+    background: var(--vscode-checkbox-selectBackground);
+    border-color: var(--vscode-checkbox-selectBorder);
+    transform: scale(1.05);
+}
+
+.search-checkbox-label input[type="checkbox"]:checked+.search-checkbox-custom::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--vscode-checkbox-selectForeground);
+    font-size: 11px;
+    font-weight: bold;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.checkbox-text {
+    font-weight: 500;
+    flex: 1;
+    margin-left: 2px;
+}
+
+.search-number-input,
+.search-text-input,
+.search-select-input {
+    padding: 6px 8px;
+    background: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 4px;
+    color: var(--vscode-input-foreground);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s ease;
+    width: 100%;
+    max-width: 120px;
+}
+
+.search-number-input:focus,
+.search-text-input:focus,
+.search-select-input:focus {
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+}
+
+.search-select-input {
+    cursor: pointer;
+    max-width: 150px;
+}
+
+.unknown-type {
+    color: var(--vscode-errorForeground);
+    font-size: 11px;
+    font-style: italic;
+}
+
+.result-description {
+    color: var(--vscode-descriptionForeground);
+    font-size: 12px;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+.result-keywords {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.keywords-label {
+    color: var(--vscode-descriptionForeground);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.keyword-tag {
+    background: var(--vscode-textCodeBlock-background);
+    color: var(--vscode-textLink-foreground);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    border: 1px solid var(--vscode-widget-border);
+}
+
+.search-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--vscode-widget-border);
+}
+
+.search-tip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--vscode-textCodeBlock-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 6px;
+    color: var(--vscode-foreground);
+    font-size: 12px;
+}
+
+.tip-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+    .result-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .result-value {
+        min-width: auto;
+    }
+
+    .search-number-input,
+    .search-text-input,
+    .search-select-input {
+        max-width: 100%;
+    }
+}
