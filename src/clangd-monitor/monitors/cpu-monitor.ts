@@ -348,7 +348,7 @@ export class CpuMonitor implements IMonitor {
     /**
      * Reset all internal state (useful for testing)
      */
-    public reset(): void {
+    public async reset(): Promise<void> {
         this.currentPid = undefined;
         this.lastCpuUsage = undefined;
         this.lastPidUsageStats = undefined;

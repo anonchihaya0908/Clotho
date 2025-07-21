@@ -14,7 +14,7 @@ import {
     SOURCE_EXTENSIONS,
     TEST_PATTERNS
 } from '../common/constants';
-import { LRUCache } from '../common/utils';
+import { LRUCache, isHeaderFile, isSourceFile, isValidCppFile } from '../common/utils';
 
 // ===============================
 // Interfaces and Type Definitions
@@ -70,7 +70,7 @@ export class SwitchService {
     public async findPartnerFile(currentFile: vscode.Uri): Promise<SearchResult | null> {
         const currentPath = currentFile.fsPath;
         const baseName = path.basename(currentPath, path.extname(currentPath));
-        const isHeader = this.isHeaderFile(currentPath);
+        const isHeader = isHeaderFile(currentPath);
 
         // Step 1: Try clangd LSP first (the "omniscient" mode)
         const clangdResult = await this.tryClangdSwitch(currentFile);
@@ -80,29 +80,6 @@ export class SwitchService {
 
         // Step 2: Fallback to explorer mode (heuristic search)
         return await this.tryExplorerMode(currentFile, baseName, isHeader);
-    }
-
-    /**
-     * Checks if a file is a header file based on its extension.
-     */
-    public isHeaderFile(filePath: string): boolean {
-        const ext = path.extname(filePath).toLowerCase() as any;
-        return HEADER_EXTENSIONS.includes(ext);
-    }
-
-    /**
-     * Checks if a file is a source file based on its extension.
-     */
-    public isSourceFile(filePath: string): boolean {
-        const ext = path.extname(filePath).toLowerCase() as any;
-        return SOURCE_EXTENSIONS.includes(ext);
-    }
-
-    /**
-     * Checks if a file is a valid C/C++ file.
-     */
-    public isValidCppFile(filePath: string): boolean {
-        return this.isHeaderFile(filePath) || this.isSourceFile(filePath);
     }
 
     /**

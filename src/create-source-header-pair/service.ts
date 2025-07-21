@@ -198,18 +198,12 @@ export class PairCreatorService {
       : null;
   }
 
-  // Converts string to PascalCase efficiently (pure function)
-  public toPascalCase(input: string): string {
-    return input.split(/[-_]+/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join('');
-  }
-
   // Generates header guard macro based on filename and extension
   private generateHeaderGuard(fileName: string, headerExt: string): string {
-    // Remove leading dot from extension and convert to uppercase
+    // Create a consistent header guard using the utility function
+    const baseName = toHeaderGuardCase(fileName);
     const extPart = headerExt.replace(/^\./, '').toUpperCase();
-    return `${fileName.toUpperCase()}_${extPart}_`;
+    return `${baseName}_${extPart}_`;
   }
   // Generates file content with improved template selection
   public generateFileContent(fileName: string, eol: string, rule: PairingRule): { headerContent: string; sourceContent: string; } {

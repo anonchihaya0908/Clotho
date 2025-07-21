@@ -98,7 +98,7 @@ export class MemoryMonitor implements IMonitor {
      * Reset PID and force re-detection on next update
      * Used when clangd is restarted or when we want to avoid stale process locks
      */
-    public async resetPid(): Promise<void> {
+    public async reset(): Promise<void> {
         console.log('Clotho MemoryMonitor: Resetting PID and forcing re-detection (anti-stale mode)');
         this.currentPid = undefined;
         this.lastMemoryUsage = undefined;

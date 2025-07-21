@@ -28,6 +28,12 @@ export interface IMonitor extends vscode.Disposable {
      * Get a human-readable name for this monitor
      */
     getName(): string;
+
+    /**
+     * Reset the monitor state (optional)
+     * Used when processes need to be re-detected or state cleared
+     */
+    reset?(): Promise<void>;
 }
 
 /**

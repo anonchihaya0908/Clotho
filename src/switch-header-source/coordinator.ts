@@ -48,46 +48,37 @@ export class SwitchCoordinator implements vscode.Disposable {
     }
 
     /**
-     * Main switch operation with comprehensive error handling
+     * Main switch operation
      */
     public async switchHeaderSource(): Promise<void> {
-        try {
-            // Validate preconditions
-            const activeEditor = this.validateActiveEditor();
-            if (!activeEditor) return;
+        // Validate preconditions
+        const activeEditor = this.validateActiveEditor();
+        if (!activeEditor) return;
 
-            const currentFile = activeEditor.document.uri;
-            const currentPath = currentFile.fsPath;
-            const fileName = path.basename(currentPath);
+        const currentFile = activeEditor.document.uri;
+        const currentPath = currentFile.fsPath;
+        const fileName = path.basename(currentPath);
 
-            // Validate file type
-            if (!isValidCppFile(currentPath)) {
-                this.ui.showInvalidFileTypeWarning(fileName);
-                return;
-            }
-
-            // Perform the search
-            const result = await this.service.findPartnerFile(currentFile);
-
-            if (!result || result.files.length === 0) {
-                const baseName = path.basename(currentPath, path.extname(currentPath));
-                const fileType = getFileType(currentPath);
-                this.ui.showNoFilesFoundMessage(baseName, fileType === 'header');
-                return;
-            }
-
-            // Handle the results
-            const baseName = path.basename(currentPath, path.extname(currentPath));
-            const isHeader = getFileType(currentPath) === 'header';
-            await this.ui.handleSearchResult(result.files, baseName, isHeader, result.method);
-        } catch (error) {
-            ErrorHandler.handle(error, {
-                operation: 'switchHeaderSource',
-                module: 'SwitchCoordinator',
-                showToUser: true,
-                logLevel: 'error'
-            });
+        // Validate file type
+        if (!isValidCppFile(currentPath)) {
+            this.ui.showInvalidFileTypeWarning(fileName);
+            return;
         }
+
+        // Perform the search
+        const result = await this.service.findPartnerFile(currentFile);
+
+        if (!result || result.files.length === 0) {
+            const baseName = path.basename(currentPath, path.extname(currentPath));
+            const fileType = getFileType(currentPath);
+            this.ui.showNoFilesFoundMessage(baseName, fileType === 'header');
+            return;
+        }
+
+        // Handle the results
+        const baseName = path.basename(currentPath, path.extname(currentPath));
+        const isHeader = getFileType(currentPath) === 'header';
+        await this.ui.handleSearchResult(result.files, baseName, isHeader, result.method);
     }
 
     /**

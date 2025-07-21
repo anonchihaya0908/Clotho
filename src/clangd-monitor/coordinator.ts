@@ -101,19 +101,19 @@ export class MonitorCoordinator implements vscode.Disposable {
 
             // Force all monitors to reset and re-detect PID (should now pick the main process)
             const memoryMonitor = this.getMemoryMonitor();
-            if (memoryMonitor) {
-                await (memoryMonitor as any).resetPid();
+            if (memoryMonitor?.reset) {
+                await memoryMonitor.reset();
             }
 
             const cpuMonitor = this.getCpuMonitor();
-            if (cpuMonitor) {
-                await (cpuMonitor as any).resetPid();
+            if (cpuMonitor?.reset) {
+                await cpuMonitor.reset();
             }
 
             // Force status monitor to update
             const statusMonitor = this.getStatusMonitor();
-            if (statusMonitor) {
-                await (statusMonitor as any).updateStatus();
+            if (statusMonitor?.reset) {
+                await statusMonitor.reset();
             }
 
             vscode.window.showInformationMessage('Clangd has been restarted (all processes killed, monitors re-initialized).');
@@ -131,18 +131,33 @@ export class MonitorCoordinator implements vscode.Disposable {
     }
 
     /**
-     * Kill all clangd processes on the system (Windows-specific)
+     * Kill all clangd processes on the system (cross-platform)
      */
     private async killAllClangdProcesses(): Promise<void> {
         try {
-            // Use Windows taskkill command to forcefully terminate all clangd processes
+            let command: string;
+
+            // Select command based on platform
+            switch (process.platform) {
+                case 'win32':
+                    command = 'taskkill /f /im clangd.exe';
+                    break;
+                case 'darwin':
+                case 'linux':
+                    command = 'pkill -f clangd';
+                    break;
+                default:
+                    console.warn(`Clotho: Unsupported platform for killing clangd processes: ${process.platform}`);
+                    return;
+            }
+
             await new Promise<void>((resolve, reject) => {
-                exec('taskkill /f /im clangd.exe', (error: any, stdout: string, stderr: string) => {
-                    if (error && !error.message.includes('not found')) {
+                exec(command, (error: any, stdout: string, stderr: string) => {
+                    if (error && !error.message.includes('not found') && !error.message.includes('No matching processes')) {
                         // Only reject if it's not a "process not found" error
                         reject(error);
                     } else {
-                        console.log(`Clotho: Killed clangd processes - ${stdout}`);
+                        console.log(`Clotho: Killed clangd processes on ${process.platform} - ${stdout}`);
                         resolve();
                     }
                 });

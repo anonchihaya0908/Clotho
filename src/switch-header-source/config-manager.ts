@@ -107,7 +107,7 @@ export class SwitchConfigService {
             sourceDirs: config.get<string[]>('switch.sourceDirs', DEFAULT_SWITCH_CONFIG.sourceDirs),
             headerDirs: config.get<string[]>('switch.headerDirs', DEFAULT_SWITCH_CONFIG.headerDirs),
             testDirs: config.get<string[]>('switch.testDirs', DEFAULT_SWITCH_CONFIG.testDirs),
-            searchPaths: config.get<string[]>('switchHeaderSource.searchPaths', DEFAULT_SWITCH_CONFIG.searchPaths),
+            searchPaths: config.get<string[]>('switch.searchPaths', DEFAULT_SWITCH_CONFIG.searchPaths),
             excludePatterns: DEFAULT_SWITCH_CONFIG.excludePatterns
         };
     }
@@ -127,7 +127,7 @@ export class SwitchConfigService {
             config.update('switch.sourceDirs', template.config.sourceDirs, vscode.ConfigurationTarget.Workspace),
             config.update('switch.headerDirs', template.config.headerDirs, vscode.ConfigurationTarget.Workspace),
             config.update('switch.testDirs', template.config.testDirs, vscode.ConfigurationTarget.Workspace),
-            config.update('switchHeaderSource.searchPaths', template.config.searchPaths, vscode.ConfigurationTarget.Workspace)
+            config.update('switch.searchPaths', template.config.searchPaths, vscode.ConfigurationTarget.Workspace)
         ]);
 
         vscode.window.showInformationMessage(`Applied ${template.name} configuration template.`);

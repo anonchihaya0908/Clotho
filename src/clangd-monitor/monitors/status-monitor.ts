@@ -81,6 +81,14 @@ export class StatusMonitor implements IMonitor {
     }
 
     /**
+     * Reset monitor state and force status update
+     */
+    public async reset(): Promise<void> {
+        this.currentStatus = { isRunning: false };
+        await this.updateStatus();
+    }
+
+    /**
      * Update clangd status information
      */
     public async updateStatus(): Promise<void> {

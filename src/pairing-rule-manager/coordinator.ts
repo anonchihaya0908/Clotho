@@ -54,18 +54,4 @@ export class PairingRuleCoordinator implements vscode.Disposable {
             });
         }
     }
-
-    /**
-     * Get the service instance (for external access if needed)
-     */
-    public getService(): PairingRuleService {
-        return this.service;
-    }
-
-    /**
-     * Get the UI instance (for external access if needed)
-     */
-    public getUI(): PairingRuleUI {
-        return this.ui;
-    }
 }
