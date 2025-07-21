@@ -397,7 +397,20 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Clang-Format Editor</title>
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource};">
             <link href="${styleUri}" rel="stylesheet">
+            <style>
+                /* 确保 VS Code 主题变量可用 */
+                body {
+                    font-family: var(--vscode-font-family);
+                    font-size: var(--vscode-font-size);
+                    font-weight: var(--vscode-font-weight);
+                    color: var(--vscode-foreground);
+                    background-color: var(--vscode-editor-background);
+                    margin: 0;
+                    padding: 0;
+                }
+            </style>
         </head>
         <body>
             <div id="app"></div>

@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import hljs from 'highlight.js/lib/core';
 import { ConfigPanel } from './components/ConfigPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import { Toolbar } from './components/Toolbar';
@@ -43,6 +44,20 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
     const sendMessage = useCallback((type: string, payload?: any) => {
         vscode.postMessage({ type, payload });
     }, [vscode]);
+
+    // 调试：检查 CSS 变量是否可用
+    useEffect(() => {
+        console.log('App initialized, checking CSS variables...');
+        const testElement = document.createElement('div');
+        testElement.style.color = 'var(--vscode-editor-foreground)';
+        document.body.appendChild(testElement);
+        const computedColor = getComputedStyle(testElement).color;
+        console.log('VS Code theme variable test:', computedColor);
+        document.body.removeChild(testElement);
+
+        // 检查 highlight.js 是否加载
+        console.log('Highlight.js available:', typeof hljs !== 'undefined');
+    }, []);
 
     // 处理配置变更
     const handleConfigChange = useCallback((key: string, value: any) => {

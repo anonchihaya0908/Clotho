@@ -283,6 +283,102 @@ body {
     margin: 0;
 }
 
+.code-preview code {
+    background: none !important;
+    color: inherit;
+    font-family: inherit;
+}
+
+/* 微观预览样式 */
+.micro-code-preview {
+    background-color: var(--vscode-textCodeBlock-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 4px;
+    padding: 8px;
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    color: var(--vscode-editor-foreground);
+    overflow-x: auto;
+    margin: 8px 0;
+    max-height: 150px;
+}
+
+.micro-code-preview code {
+    background: none !important;
+    color: inherit;
+    font-family: inherit;
+}
+
+/* Highlight.js 主题覆盖以匹配 VS Code */
+.hljs {
+    background: transparent !important;
+    color: var(--vscode-editor-foreground, #d4d4d4) !important;
+}
+
+/* C++ 语法高亮颜色 - 增强版，增加备用颜色 */
+.hljs-keyword,
+.hljs-built_in,
+.hljs-type {
+    color: var(--vscode-symbolIcon-keywordForeground, #569cd6) !important;
+    font-weight: bold !important;
+}
+
+.hljs-string,
+.hljs-char {
+    color: var(--vscode-symbolIcon-stringForeground, #ce9178) !important;
+}
+
+.hljs-comment {
+    color: var(--vscode-symbolIcon-textForeground, #6a9955) !important;
+    font-style: italic !important;
+}
+
+.hljs-number,
+.hljs-literal {
+    color: var(--vscode-symbolIcon-numberForeground, #b5cea8) !important;
+}
+
+.hljs-function .hljs-title,
+.hljs-title.function_ {
+    color: var(--vscode-symbolIcon-functionForeground, #dcdcaa) !important;
+    font-weight: bold !important;
+}
+
+.hljs-variable,
+.hljs-params {
+    color: var(--vscode-symbolIcon-variableForeground, #9cdcfe) !important;
+}
+
+.hljs-class .hljs-title,
+.hljs-title.class_ {
+    color: var(--vscode-symbolIcon-classForeground, #4ec9b0) !important;
+    font-weight: bold !important;
+}
+
+.hljs-meta,
+.hljs-preprocessor {
+    color: var(--vscode-symbolIcon-keywordForeground, #c586c0) !important;
+    font-weight: bold !important;
+}
+
+.hljs-operator {
+    color: var(--vscode-editor-foreground, #d4d4d4) !important;
+}
+
+.hljs-punctuation {
+    color: var(--vscode-editor-foreground, #d4d4d4) !important;
+}
+
+/* 额外的 C++ 特定语法高亮 */
+.hljs-name,
+.hljs-attr {
+    color: var(--vscode-symbolIcon-variableForeground, #9cdcfe) !important;
+}
+
+.hljs-symbol {
+    color: var(--vscode-symbolIcon-keywordForeground, #569cd6) !important;
+}
+
 /* Status Bar */
 .status-bar {
     display: flex;

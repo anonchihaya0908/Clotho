@@ -2,7 +2,49 @@
  * Configuration Panel Component
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import hljs from 'highlight.js/lib/core';
+import cpp from 'highlight.js/lib/languages/cpp';
+
+// 确保 C++ 语言已注册
+if (!hljs.getLanguage('cpp')) {
+    hljs.registerLanguage('cpp', cpp);
+}
+
+// 微观预览组件
+const MicroPreview: React.FC<{ code: string }> = ({ code }) => {
+    const codeRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        if (codeRef.current && code) {
+            // 清除之前的高亮
+            codeRef.current.removeAttribute('data-highlighted');
+            codeRef.current.textContent = code;
+
+            try {
+                // 应用 C++ 语法高亮
+                hljs.highlightElement(codeRef.current);
+                console.log('Highlight.js applied to micro preview:', codeRef.current.classList);
+            } catch (error) {
+                console.error('Highlight.js error in micro preview:', error);
+            }
+        }
+    }, [code]);
+
+    return (
+        <div className="micro-preview">
+            <h4>Preview:</h4>
+            <pre className="micro-code-preview">
+                <code
+                    ref={codeRef}
+                    className="language-cpp"
+                >
+                    {code}
+                </code>
+            </pre>
+        </div>
+    );
+};
 
 export interface ConfigPanelProps {
     options: any[];
@@ -57,10 +99,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                     <div className="option-details">
                         <p className="option-description">{option.description}</p>
                         {preview && (
-                            <div className="micro-preview">
-                                <h4>Preview:</h4>
-                                <pre><code>{preview}</code></pre>
-                            </div>
+                            <MicroPreview code={preview} />
                         )}
                     </div>
                 )}
