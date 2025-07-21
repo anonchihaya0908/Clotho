@@ -33,22 +33,37 @@ const QUICK_CONFIG_CATEGORIES = [
     {
         category: '大括号样式',
         icon: '{}',
-        keys: ['BreakBeforeBraces', 'Cpp11BracedListStyle', 'AllowShortBlocksOnASingleLine']
+        keys: ['BreakBeforeBraces', 'Cpp11BracedListStyle', 'AllowShortBlocksOnASingleLine', 'AllowShortFunctionsOnASingleLine', 'AllowShortIfStatementsOnASingleLine', 'AllowShortLoopsOnASingleLine']
     },
     {
-        category: '行长度',
+        category: '行长度与换行',
         icon: '📏',
-        keys: ['ColumnLimit', 'BreakStringLiterals', 'AllowShortFunctionsOnASingleLine']
+        keys: ['ColumnLimit', 'BreakStringLiterals', 'AlwaysBreakAfterReturnType', 'AlwaysBreakBeforeMultilineStrings', 'BinPackArguments', 'BinPackParameters']
     },
     {
         category: '空格设置',
         icon: '␣',
-        keys: ['SpaceBeforeParens', 'SpaceAfterCStyleCast', 'SpacesInParentheses', 'SpaceBeforeAssignmentOperators']
+        keys: ['SpaceBeforeParens', 'SpaceAfterCStyleCast', 'SpacesInParentheses', 'SpaceBeforeAssignmentOperators', 'SpacesInSquareBrackets', 'SpacesInAngles', 'SpaceAfterTemplateKeyword']
     },
     {
         category: '指针和引用',
         icon: '*&',
         keys: ['PointerAlignment', 'ReferenceAlignment', 'DerivePointerAlignment']
+    },
+    {
+        category: '构造函数和继承',
+        icon: '🏗️',
+        keys: ['BreakConstructorInitializers', 'ConstructorInitializerAllOnOneLineOrOnePerLine', 'ConstructorInitializerIndentWidth', 'BreakInheritanceList']
+    },
+    {
+        category: '注释与文档',
+        icon: '💬',
+        keys: ['AlignTrailingComments', 'ReflowComments', 'FixNamespaceComments', 'SpacesBeforeTrailingComments']
+    },
+    {
+        category: '排序与组织',
+        icon: '📑',
+        keys: ['SortIncludes', 'SortUsingDeclarations', 'IncludeBlocks']
     }
 ];
 
@@ -107,7 +122,7 @@ const MicroPreview: React.FC<{ code: string }> = ({ code }) => {
 export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange }) => {
     // 折叠状态管理
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-        new Set(['基础样式', '缩进设置']) // 默认展开前两个分类
+        new Set(['基础样式', '缩进设置', '大括号样式', '空格设置']) // 默认展开常用分类
     );
 
     // 切换分类展开状态
@@ -161,6 +176,75 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange }) => {
                             : ptrAlign === 'Right'
                                 ? `int *ptr;\nchar *name;`
                                 : `int * ptr;\nchar * name;`;
+                    case 'AllowShortFunctionsOnASingleLine':
+                        const shortFunc = config[option.key] || option.defaultValue;
+                        return shortFunc === 'true' || shortFunc === 'All'
+                            ? `void shortFunc() { return; }`
+                            : `void shortFunc() {\n    return;\n}`;
+                    case 'AllowShortIfStatementsOnASingleLine':
+                        const shortIf = config[option.key] || option.defaultValue;
+                        return shortIf === 'true' || shortIf === 'WithoutElse'
+                            ? `if (condition) doSomething();`
+                            : `if (condition)\n    doSomething();`;
+                    case 'AlignTrailingComments':
+                        const alignComments = config[option.key] || option.defaultValue;
+                        return alignComments === 'true'
+                            ? `int a = 1;     // Comment 1\nint bb = 2;    // Comment 2`
+                            : `int a = 1; // Comment 1\nint bb = 2; // Comment 2`;
+                    case 'BreakConstructorInitializers':
+                        const ctorStyle = config[option.key] || option.defaultValue;
+                        return ctorStyle === 'BeforeColon'
+                            ? `Constructor()\n    : member1(value1)\n    , member2(value2) {}`
+                            : `Constructor() :\n    member1(value1),\n    member2(value2) {}`;
+                    case 'SortIncludes':
+                        const sortInc = config[option.key] || option.defaultValue;
+                        return sortInc === 'true'
+                            ? `#include <algorithm>\n#include <iostream>\n#include <vector>`
+                            : `#include <vector>\n#include <iostream>\n#include <algorithm>`;
+                    case 'BinPackArguments':
+                        const binPack = config[option.key] || option.defaultValue;
+                        return binPack === 'false'
+                            ? `function(\n    arg1,\n    arg2,\n    arg3\n);`
+                            : `function(arg1, arg2, arg3);`;
+                    case 'SpacesInParentheses':
+                        const spacesInParens = config[option.key] || option.defaultValue;
+                        return spacesInParens === 'true'
+                            ? `if ( condition )\nfunc( param );`
+                            : `if (condition)\nfunc(param);`;
+                    case 'SpaceAfterTemplateKeyword':
+                        const spaceAfterTemplate = config[option.key] || option.defaultValue;
+                        return spaceAfterTemplate === 'true'
+                            ? `template <typename T>\nclass Example {};`
+                            : `template<typename T>\nclass Example {};`;
+                    case 'FixNamespaceComments':
+                        const fixNs = config[option.key] || option.defaultValue;
+                        return fixNs === 'true'
+                            ? `namespace Example {\n    void func();\n} // namespace Example`
+                            : `namespace Example {\n    void func();\n}`;
+                    case 'ReflowComments':
+                        const reflow = config[option.key] || option.defaultValue;
+                        return reflow === 'true'
+                            ? `// This is a very long comment that will be\n// reflowed to fit within the column limit.`
+                            : `// This is a very long comment that will not be reflowed to fit within the column limit.`;
+                    case 'AllowShortBlocksOnASingleLine':
+                        const shortBlocks = config[option.key] || option.defaultValue;
+                        return shortBlocks === 'true' || shortBlocks === 'Always'
+                            ? `if (condition) { doSomething(); }`
+                            : `if (condition) {\n    doSomething();\n}`;
+                    case 'Cpp11BracedListStyle':
+                        const cpp11Braces = config[option.key] || option.defaultValue;
+                        return cpp11Braces === 'true'
+                            ? `vector<int> v{1, 2, 3, 4};`
+                            : `vector<int> v{ 1, 2, 3, 4 };`;
+                    case 'BreakStringLiterals':
+                        const breakStrings = config[option.key] || option.defaultValue;
+                        return breakStrings === 'true'
+                            ? `const char* longString = "This is a very "\n                        "long string";`
+                            : `const char* longString = "This is a very long string";`;
+                    case 'ContinuationIndentWidth':
+                        const contIndent = config[option.key] || option.defaultValue || 4;
+                        const contIndentStr = ' '.repeat(Math.max(1, Math.min(8, contIndent)));
+                        return `int result = someVeryLongFunctionName(\n${contIndentStr}parameter1,\n${contIndentStr}parameter2);`;
                     default:
                         return `// ${option.key} example\nclass Example {\npublic:\n    void method();\n};`;
                 }

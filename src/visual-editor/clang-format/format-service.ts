@@ -1,12 +1,14 @@
 /**
  * Clang-Format Service
  * 负责调用 clang-format 生成代码预览和配置文件
+ * 使用 stdin/stdout 流方案，完全避免临时文件和权限问题
  */
 
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { spawn } from 'child_process';
 import { ProcessRunner, CommandResult } from '../../common/process-runner';
 import { ErrorHandler, ErrorContext } from '../../common/error-handler';
 import { getLineEnding } from '../../common/platform-utils';
@@ -25,61 +27,110 @@ export interface ConfigValidationResult {
 }
 
 export class ClangFormatService {
-    private tempConfigPath: string;
-
     constructor() {
-        this.tempConfigPath = path.join(os.tmpdir(), '.clang-format-temp');
+        // 不再需要临时文件路径！
     }
 
     /**
-     * 格式化代码（用于微观预览）
+     * Serializes a configuration object into a YAML-like string for the -style flag.
+     * This is our "native language translator" for clang-format.
+     * @param config The configuration object.
+     * @returns A string like "{BasedOnStyle: Google, IndentWidth: 4}"
+     */
+    private static _serializeConfigToYaml(config: Record<string, any>): string {
+        const parts = Object.entries(config)
+            // 过滤掉那些应该被继承的、未定义的值
+            .filter(([, value]) => value !== undefined && value !== null && value !== 'inherit')
+            .map(([key, value]) => {
+                // 对于字符串值，我们不需要加引号，除非它们是特殊值
+                // 对于布尔值和数字，直接使用它们的值
+                return `${key}: ${value}`;
+            });
+        return `{${parts.join(', ')}}`;
+    }
+
+    /**
+     * Formats a given code snippet using a configuration object.
+     * This is the single, definitive, and most robust implementation.
+     * It uses stdin/stdout streams and communicates with clang-format in its native YAML dialect.
+     * @param code The code to format.
+     * @param config The configuration object.
+     * @returns A promise resolving to a FormatResult.
+     */
+    public async format(code: string, config: Record<string, any>): Promise<FormatResult> {
+        return new Promise(async (resolve) => {
+            try {
+                if (!await ProcessRunner.commandExists('clang-format')) {
+                    return resolve({
+                        success: false,
+                        formattedCode: code,
+                        error: 'clang-format executable not found in PATH.'
+                    });
+                }
+
+                // 1. 使用我们的"母语翻译官"
+                const styleString = ClangFormatService._serializeConfigToYaml(config);
+                const args = [`-style=${styleString}`];
+
+                // 2. 使用无shell的spawn，直接与clang-format.exe对话
+                const clangFormatProcess = spawn('clang-format', args, {
+                    stdio: ['pipe', 'pipe', 'pipe']
+                });
+
+                let formattedCode = '';
+                let errorOutput = '';
+
+                clangFormatProcess.stdout.on('data', (data) => formattedCode += data);
+                clangFormatProcess.stderr.on('data', (data) => errorOutput += data);
+
+                clangFormatProcess.on('close', (exitCode) => {
+                    if (exitCode === 0 && !errorOutput) {
+                        resolve({ success: true, formattedCode });
+                    } else {
+                        const fullError = `clang-format exited with code ${exitCode}.\n--- Config Sent ---\n${styleString}\n--- Error Details ---\n${errorOutput}`;
+                        console.error('Clotho: clang-format error:', fullError);
+                        resolve({ success: false, formattedCode: code, error: fullError });
+                    }
+                });
+
+                clangFormatProcess.on('error', (err) => resolve({
+                    success: false,
+                    formattedCode: code,
+                    error: `Failed to start clang-format: ${err.message}`
+                }));
+
+                clangFormatProcess.stdin.on('error', (err) => resolve({
+                    success: false,
+                    formattedCode: code,
+                    error: `Failed to write to clang-format stdin: ${err.message}`
+                }));
+
+                // 3. 将代码流入stdin
+                clangFormatProcess.stdin.write(code, 'utf8');
+                clangFormatProcess.stdin.end();
+
+            } catch (error) {
+                resolve({
+                    success: false,
+                    formattedCode: code,
+                    error: error instanceof Error ? error.message : 'Unknown error during format execution'
+                });
+            }
+        });
+    }
+
+    /**
+     * 格式化代码（用于微观预览）- 兼容旧接口
      */
     async formatMicroPreview(code: string, config: Record<string, any>): Promise<FormatResult> {
-        try {
-            // 为微观预览创建临时配置
-            await this.writeConfigToFile(config);
-
-            const result = await this.runClangFormat(code, this.tempConfigPath);
-            return result;
-        } catch (error) {
-            ErrorHandler.handle(error, {
-                operation: 'formatMicroPreview',
-                module: 'ClangFormatService',
-                showToUser: false,
-                logLevel: 'error'
-            });
-
-            return {
-                success: false,
-                formattedCode: code,
-                error: error instanceof Error ? error.message : 'Failed to format micro preview'
-            };
-        }
+        return this.format(code, config);
     }
 
     /**
-     * 格式化完整代码（用于宏观预览）
+     * 格式化完整代码（用于宏观预览）- 兼容旧接口
      */
     async formatMacroPreview(config: Record<string, any>): Promise<FormatResult> {
-        try {
-            await this.writeConfigToFile(config);
-
-            const result = await this.runClangFormat(MACRO_PREVIEW_CODE, this.tempConfigPath);
-            return result;
-        } catch (error) {
-            ErrorHandler.handle(error, {
-                operation: 'formatMacroPreview',
-                module: 'ClangFormatService',
-                showToUser: false,
-                logLevel: 'error'
-            });
-
-            return {
-                success: false,
-                formattedCode: MACRO_PREVIEW_CODE,
-                error: error instanceof Error ? error.message : 'Failed to format macro preview'
-            };
-        }
+        return this.format(MACRO_PREVIEW_CODE, config);
     }
 
     /**
@@ -87,12 +138,9 @@ export class ClangFormatService {
      */
     async validateConfig(config: Record<string, any>): Promise<ConfigValidationResult> {
         try {
-            // 写入临时配置文件
-            await this.writeConfigToFile(config);
-
             // 使用简单代码测试配置是否有效
             const testCode = 'int main() { return 0; }';
-            const result = await this.runClangFormat(testCode, this.tempConfigPath);
+            const result = await this.format(testCode, config);
 
             if (result.success) {
                 return { isValid: true };
@@ -135,9 +183,7 @@ export class ClangFormatService {
             const value = config[key];
 
             // 跳过 undefined、null 或特殊的 "inherit" 标记
-            // 当用户选择"继承默认值"时，我们使用特殊标记 "inherit" 来表示应该省略该行
             if (value !== undefined && value !== null && value !== 'inherit') {
-                // "None" 是一个有效的 clang-format 值，表示明确禁用功能
                 lines.push(`${key}: ${this.formatConfigValue(value)}`);
             }
         }
@@ -148,51 +194,26 @@ export class ClangFormatService {
     }
 
     /**
-     * 从文件加载配置
-     */
-    async loadConfigFromFile(filePath: string): Promise<Record<string, any>> {
-        try {
-            if (!fs.existsSync(filePath)) {
-                throw new Error(`Config file not found: ${filePath}`);
-            }
-
-            const content = await fs.promises.readFile(filePath, 'utf8');
-            return this.parseConfigContent(content);
-        } catch (error) {
-            ErrorHandler.handle(error, {
-                operation: 'loadConfigFromFile',
-                module: 'ClangFormatService',
-                showToUser: false,
-                logLevel: 'error'
-            });
-
-            throw error; // Re-throw for caller to handle
-        }
-    }
-
-    /**
      * 保存配置到文件
      */
     async saveConfigToFile(config: Record<string, any>, filePath: string): Promise<void> {
         try {
             const configContent = this.generateConfigFile(config);
-
-            // 确保目录存在
-            const dir = path.dirname(filePath);
-            if (!fs.existsSync(dir)) {
-                await fs.promises.mkdir(dir, { recursive: true });
-            }
-
             await fs.promises.writeFile(filePath, configContent, 'utf8');
         } catch (error) {
-            ErrorHandler.handle(error, {
-                operation: 'saveConfigToFile',
-                module: 'ClangFormatService',
-                showToUser: false,
-                logLevel: 'error'
-            });
+            throw new Error(`Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
 
-            throw error; // Re-throw for caller to handle
+    /**
+     * 从文件加载配置
+     */
+    async loadConfigFromFile(filePath: string): Promise<Record<string, any>> {
+        try {
+            const content = await fs.promises.readFile(filePath, 'utf8');
+            return this.parseConfigContent(content);
+        } catch (error) {
+            throw new Error(`Failed to load configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
@@ -244,78 +265,96 @@ export class ClangFormatService {
     }
 
     /**
-     * 清理临时文件
+     * 运行 clang-format 使用 stdin/stdout 流方案（为向后兼容保留）
+     * 修正版：绕过shell，直接与clang-format对话
      */
-    async cleanup(): Promise<void> {
-        try {
-            if (fs.existsSync(this.tempConfigPath)) {
-                await fs.promises.unlink(this.tempConfigPath);
-            }
-        } catch (error) {
-            // 忽略清理错误
-            console.warn('Failed to cleanup temp config file:', error);
-        }
-    }
-
-    // 私有方法
-
-    private async writeConfigToFile(config: Record<string, any>): Promise<void> {
-        const configContent = this.generateConfigFile(config);
-
-        // 确保使用 UTF-8 编码，避免 BOM 问题
-        const buffer = Buffer.from(configContent, 'utf8');
-        await fs.promises.writeFile(this.tempConfigPath, buffer);
-    }
-
     private async runClangFormat(code: string, configPath: string): Promise<FormatResult> {
-        try {
-            // 创建临时源文件
-            const tempSourcePath = path.join(os.tmpdir(), `temp-source-${Date.now()}.cpp`);
-
-            // 确保使用 UTF-8 编码，避免 BOM 问题
-            const codeBuffer = Buffer.from(code, 'utf8');
-            await fs.promises.writeFile(tempSourcePath, codeBuffer);
-
-            // 运行 clang-format，在 Windows 上使用正确的路径格式
-            let command: string;
-            if (process.platform === 'win32') {
-                // Windows 上使用引号包围路径，避免路径中的空格问题
-                command = `clang-format --style="file:${configPath}" "${tempSourcePath}"`;
-            } else {
-                command = `clang-format --style=file:${configPath} "${tempSourcePath}"`;
-            }
-
-            const result = await ProcessRunner.runCommandWithDetails(command, {
-                timeout: 10000, // 10秒超时
-                cwd: path.dirname(tempSourcePath)
-            });
-
-            // 清理临时文件
+        return new Promise(async (resolve, reject) => {
             try {
-                await fs.promises.unlink(tempSourcePath);
-            } catch (error) {
-                // 忽略清理错误
-            }
+                // 检查 clang-format 命令是否存在
+                const commandExists = await ProcessRunner.commandExists('clang-format');
+                if (!commandExists) {
+                    return resolve({
+                        success: false,
+                        formattedCode: code,
+                        error: 'clang-format executable not found in PATH. Please install clang-format.'
+                    });
+                }
 
-            if (result.exitCode === 0) {
-                return {
-                    success: true,
-                    formattedCode: result.stdout
-                };
-            } else {
-                return {
+                // 构建命令参数
+                const args: string[] = [`--style=file:${configPath}`];
+
+                // 【核心修正】使用 spawn 启动进程，移除 shell: true
+                const clangFormatProcess = spawn('clang-format', args, {
+                    stdio: ['pipe', 'pipe', 'pipe'] // stdin, stdout, stderr
+                });
+
+                let formattedCode = '';
+                let errorOutput = '';
+
+                // 监听标准输出流 (stdout) - 格式化后的代码
+                clangFormatProcess.stdout.on('data', (data) => {
+                    formattedCode += data.toString();
+                });
+
+                // 监听标准错误流 (stderr) - 错误信息
+                clangFormatProcess.stderr.on('data', (data) => {
+                    errorOutput += data.toString();
+                });
+
+                // 监听进程结束事件
+                clangFormatProcess.on('close', (exitCode) => {
+                    if (exitCode === 0) {
+                        // 成功！
+                        resolve({
+                            success: true,
+                            formattedCode: formattedCode
+                        });
+                    } else {
+                        // 失败！
+                        const error = `clang-format exited with code ${exitCode}. Details: ${errorOutput}`;
+                        console.error('Clotho: clang-format failed.', error);
+                        resolve({
+                            success: false,
+                            formattedCode: code, // 返回原始代码
+                            error: error
+                        });
+                    }
+                });
+
+                // 监听进程创建错误
+                clangFormatProcess.on('error', (err) => {
+                    console.error('Clotho: Failed to spawn clang-format process.', err);
+                    resolve({
+                        success: false,
+                        formattedCode: code,
+                        error: `Failed to start clang-format: ${err.message}`
+                    });
+                });
+
+                // 处理进程可能无法接收输入的情况
+                clangFormatProcess.stdin.on('error', (err) => {
+                    console.error('Clotho: stdin error:', err);
+                    resolve({
+                        success: false,
+                        formattedCode: code,
+                        error: `Failed to write to clang-format stdin: ${err.message}`
+                    });
+                });
+
+                // 将代码"流"入 clang-format 的标准输入流 (stdin)
+                // 这是整个方案的核心：无文件、无权限问题、纯内存操作
+                clangFormatProcess.stdin.write(code, 'utf8');
+                clangFormatProcess.stdin.end(); // 告诉进程我们已经写完了
+
+            } catch (error) {
+                resolve({
                     success: false,
-                    formattedCode: code, // 返回原始代码
-                    error: result.stderr || 'clang-format execution failed'
-                };
+                    formattedCode: code,
+                    error: error instanceof Error ? error.message : 'Unknown error in clang-format execution'
+                });
             }
-        } catch (error) {
-            return {
-                success: false,
-                formattedCode: code,
-                error: error instanceof Error ? error.message : 'Unknown error'
-            };
-        }
+        });
     }
 
     private formatConfigValue(value: any): string {
@@ -337,45 +376,42 @@ export class ClangFormatService {
 
     private parseConfigContent(content: string): Record<string, any> {
         const config: Record<string, any> = {};
-        const lines = content.split('\n');
+        const lines = content.split(/\r?\n/);
 
         for (const line of lines) {
-            const trimmed = line.trim();
+            const trimmedLine = line.trim();
 
-            // 跳过注释和空行
-            if (trimmed.startsWith('#') || trimmed === '' || trimmed === '---' || trimmed === '...') {
+            // 跳过注释、空行和 YAML 分隔符
+            if (!trimmedLine || trimmedLine.startsWith('#') || trimmedLine === '---') {
                 continue;
             }
 
-            // 解析配置行
-            const colonIndex = trimmed.indexOf(':');
-            if (colonIndex > 0) {
-                const key = trimmed.substring(0, colonIndex).trim();
-                const value = trimmed.substring(colonIndex + 1).trim();
-
-                config[key] = this.parseConfigValue(value);
+            const colonIndex = trimmedLine.indexOf(':');
+            if (colonIndex === -1) {
+                continue;
             }
+
+            const key = trimmedLine.substring(0, colonIndex).trim();
+            const valueStr = trimmedLine.substring(colonIndex + 1).trim();
+
+            // 解析值
+            let value: any = valueStr;
+
+            // 布尔值
+            if (valueStr === 'true') {
+                value = true;
+            } else if (valueStr === 'false') {
+                value = false;
+            }
+            // 数字
+            else if (/^\d+$/.test(valueStr)) {
+                value = parseInt(valueStr);
+            }
+            // 其他保持为字符串
+
+            config[key] = value;
         }
 
         return config;
-    }
-
-    private parseConfigValue(value: string): any {
-        // 布尔值
-        if (value === 'true') return true;
-        if (value === 'false') return false;
-
-        // 数字
-        if (/^\d+$/.test(value)) {
-            return parseInt(value, 10);
-        }
-
-        // 字符串（移除引号）
-        if (value.startsWith('"') && value.endsWith('"')) {
-            return value.slice(1, -1);
-        }
-
-        // 默认返回字符串
-        return value;
     }
 }

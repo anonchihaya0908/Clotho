@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { ClangFormatService, FormatResult, ConfigValidationResult } from './format-service';
 import { WebviewMessage, WebviewMessageType, ConfigCategories } from './types';
-import { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG } from './config-options';
+import { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG, MACRO_PREVIEW_CODE } from './config-options';
 import { ErrorHandler } from '../../common/error-handler';
 import { COMMANDS } from '../../common/constants';
 
@@ -40,7 +40,7 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         if (this.panel) {
             this.panel.dispose();
         }
-        this.formatService.cleanup();
+        // 不再需要cleanup，新的format服务不使用临时文件
     }
 
     /**
@@ -83,7 +83,7 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             // 监听面板销毁
             this.panel.onDidDispose(() => {
                 this.panel = undefined;
-                this.formatService.cleanup();
+                // 不再需要cleanup，新的format服务不使用临时文件
             });
 
             // 初始化编辑器
@@ -371,7 +371,7 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
     }
 
     /**
-     * 处理动态微观预览请求
+     * 处理动态微观预览请求 - 使用无文件的安全方案
      */
     private async handleGetMicroPreview(payload: any): Promise<void> {
         try {
@@ -381,8 +381,8 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                 throw new Error('Missing required parameters for micro preview');
             }
 
-            // 使用传入的临时配置格式化预览片段
-            const formatResult = await this.formatService.formatMicroPreview(previewSnippet, config);
+            // 使用新的统一format方法，直接传递配置对象
+            const formatResult = await this.formatService.format(previewSnippet, config);
 
             // 发送格式化结果回前端
             await this.sendMessage({
@@ -418,8 +418,8 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
 
     private async updatePreview(changedKey?: string): Promise<void> {
         try {
-            // 更新宏观预览
-            const macroResult = await this.formatService.formatMacroPreview(this.currentConfig);
+            // 更新宏观预览 - 使用新的统一format方法
+            const macroResult = await this.formatService.format(MACRO_PREVIEW_CODE, this.currentConfig);
 
             await this.sendMessage({
                 type: WebviewMessageType.MACRO_PREVIEW_UPDATE,
@@ -434,7 +434,7 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             if (changedKey) {
                 const option = CLANG_FORMAT_OPTIONS.find(opt => opt.key === changedKey);
                 if (option && option.microPreviewCode) {
-                    const microResult = await this.formatService.formatMicroPreview(
+                    const microResult = await this.formatService.format(
                         option.microPreviewCode,
                         this.currentConfig
                     );

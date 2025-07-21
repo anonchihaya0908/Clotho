@@ -93,6 +93,14 @@ export const DynamicMicroPreview: React.FC<DynamicMicroPreviewProps> = ({
                 Preview:
                 {isLoading && <span className="loading-indicator"> ⟳</span>}
                 {error && <span className="error-indicator"> ⚠️</span>}
+                <button
+                    className="copy-markdown-btn"
+                    onClick={() => navigator.clipboard?.writeText(`\`\`\`cpp\n${formattedCode || option.previewSnippet}\n\`\`\``)}
+                    title="复制Markdown代码"
+                    style={{ marginLeft: '8px' }}
+                >
+                    📋 MD
+                </button>
             </h4>
             <pre className="micro-code-preview">
                 <code
@@ -144,7 +152,17 @@ export const StaticMicroPreview: React.FC<{ code: string }> = ({ code }) => {
 
     return (
         <div className="micro-preview">
-            <h4>Preview:</h4>
+            <h4>
+                Preview:
+                <button
+                    className="copy-markdown-btn"
+                    onClick={() => navigator.clipboard?.writeText(`\`\`\`cpp\n${code}\n\`\`\``)}
+                    title="复制Markdown代码"
+                    style={{ marginLeft: '8px' }}
+                >
+                    📋 MD
+                </button>
+            </h4>
             <pre className="micro-code-preview">
                 <code
                     ref={codeRef}
