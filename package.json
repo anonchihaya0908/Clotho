@@ -284,8 +284,7 @@
         "watch": "npm run watch:extension & npm run watch:webview",
         "watch:extension": "npm run esbuild:watch",
         "watch:webview": "npm run dev --workspace=webviews/visual-editor/clang-format",
-        "dev": "npm run build && code --extensionDevelopmentPath=. --new-window",
-        "test:build": "node test-build.js"
+        "dev": "npm run build && code --extensionDevelopmentPath=. --new-window"
     },
     "devDependencies": {
         "@types/mocha": "^10.0.10",
