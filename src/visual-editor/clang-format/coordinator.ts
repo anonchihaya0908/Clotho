@@ -197,6 +197,10 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                         await this.handleUpdateSettings(message.payload);
                         break;
 
+                    case WebviewMessageType.GET_MICRO_PREVIEW:
+                        await this.handleGetMicroPreview(message.payload);
+                        break;
+
                     default:
                         console.warn('Unknown message type:', message.type);
                 }
@@ -362,6 +366,52 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                 module: 'ClangFormatEditorCoordinator',
                 showToUser: true,
                 logLevel: 'error'
+            });
+        }
+    }
+
+    /**
+     * 处理动态微观预览请求
+     */
+    private async handleGetMicroPreview(payload: any): Promise<void> {
+        try {
+            const { optionName, config, previewSnippet } = payload;
+
+            if (!optionName || !previewSnippet) {
+                throw new Error('Missing required parameters for micro preview');
+            }
+
+            // 使用传入的临时配置格式化预览片段
+            const formatResult = await this.formatService.formatMicroPreview(previewSnippet, config);
+
+            // 发送格式化结果回前端
+            await this.sendMessage({
+                type: WebviewMessageType.UPDATE_MICRO_PREVIEW,
+                payload: {
+                    optionName,
+                    formattedCode: formatResult.formattedCode,
+                    success: formatResult.success,
+                    error: formatResult.error
+                }
+            });
+
+        } catch (error) {
+            ErrorHandler.handle(error, {
+                operation: 'handleGetMicroPreview',
+                module: 'ClangFormatEditorCoordinator',
+                showToUser: false,
+                logLevel: 'error'
+            });
+
+            // 发送错误结果
+            await this.sendMessage({
+                type: WebviewMessageType.UPDATE_MICRO_PREVIEW,
+                payload: {
+                    optionName: payload?.optionName || 'unknown',
+                    formattedCode: payload?.previewSnippet || '',
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Failed to generate preview'
+                }
             });
         }
     }

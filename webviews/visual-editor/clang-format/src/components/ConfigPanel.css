@@ -39,23 +39,80 @@
     font-size: 13px;
 }
 
+.full-config-header .title-and-description {
+    margin-bottom: 1rem;
+    text-align: left;
+    width: 100%;
+}
+
+.config-controls-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 1rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.category-selector {
+    flex: 1;
+    display: flex;
+    justify-content: flex-start;
+    min-width: 0;
+}
+
+.category-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    background-color: transparent;
+    border-radius: 8px;
+    padding: 0;
+}
+
+.category-tab {
+    padding: 8px 16px;
+    background: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    border: 1px solid var(--vscode-button-border);
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-width: fit-content;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.category-tab:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.category-tab.active {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
 .config-settings {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 16px;
-    margin-top: 12px;
-    padding: 8px 0;
+    gap: 8px;
 }
 
 .guide-toggle {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--vscode-foreground);
-    font-size: 13px;
     cursor: pointer;
     user-select: none;
+    white-space: nowrap;
 }
 
 .guide-toggle input[type="checkbox"] {
@@ -64,78 +121,40 @@
 
 .toggle-slider {
     position: relative;
-    width: 40px;
-    height: 20px;
-    background: var(--vscode-input-background);
-    border: 1px solid var(--vscode-input-border);
-    border-radius: 10px;
-    transition: all 0.3s ease;
+    width: 44px;
+    height: 24px;
+    background: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-border);
+    border-radius: 12px;
+    transition: 0.2s ease;
     cursor: pointer;
 }
 
-.toggle-slider::before {
-    content: '';
+.toggle-slider:before {
+    content: "";
     position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
     top: 2px;
     left: 2px;
-    width: 14px;
-    height: 14px;
-    background: var(--vscode-input-foreground);
-    border-radius: 50%;
-    transition: all 0.3s ease;
+    background: var(--vscode-button-secondaryForeground);
+    transition: 0.2s ease;
 }
 
 .guide-toggle input[type="checkbox"]:checked+.toggle-slider {
     background: var(--vscode-button-background);
-    border-color: var(--vscode-button-background);
 }
 
-.guide-toggle input[type="checkbox"]:checked+.toggle-slider::before {
-    transform: translateX(18px);
+.guide-toggle input[type="checkbox"]:checked+.toggle-slider:before {
+    transform: translateX(20px);
     background: var(--vscode-button-foreground);
 }
 
 .toggle-label {
-    font-weight: 500;
-}
-
-/* Category selector for full mode */
-.category-selector {
-    margin-bottom: 20px;
-}
-
-.category-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 16px;
-}
-
-.category-tab {
-    background: var(--vscode-button-secondaryBackground);
-    border: 1px solid var(--vscode-button-border, transparent);
-    color: var(--vscode-button-secondaryForeground);
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
     font-size: 12px;
+    color: var(--vscode-foreground);
     font-weight: 500;
-    transition: all 0.15s ease;
-    position: relative;
-    min-width: 80px;
-    text-align: center;
-}
-
-.category-tab:hover {
-    background: var(--vscode-button-secondaryHoverBackground);
-    transform: translateY(-1px);
-}
-
-.category-tab.active {
-    background: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-    border-color: var(--vscode-focusBorder);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Config options list */
@@ -164,7 +183,8 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 16px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
 }
 
 .option-label {
@@ -176,7 +196,9 @@
     align-items: center;
     gap: 8px;
     flex: 1;
-    min-width: 0;
+    min-width: 200px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .option-type {
@@ -192,14 +214,18 @@
 .option-value {
     flex-shrink: 0;
     min-width: 120px;
+    max-width: 200px;
 }
 
 .option-description {
     color: var(--vscode-descriptionForeground);
     font-size: 12px;
-    line-height: 1.4;
-    margin: 8px 0;
+    line-height: 1.5;
+    margin: 12px 0;
     font-style: italic;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 /* Input controls for full configuration */
@@ -316,6 +342,23 @@
     color: var(--vscode-editor-foreground);
 }
 
+.micro-code-preview.no-preview {
+    background: var(--vscode-editor-inactiveSelectionBackground);
+    border: 1px dashed var(--vscode-input-border);
+    text-align: center;
+    padding: 16px;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.no-preview-text {
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+    font-size: 11px;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .config-panel {
@@ -325,11 +368,12 @@
     .option-header {
         flex-direction: column;
         align-items: stretch;
-        gap: 8px;
+        gap: 12px;
     }
 
     .option-value {
         min-width: auto;
+        max-width: 100%;
     }
 
     .full-number-input,
@@ -340,11 +384,83 @@
 
     .category-tabs {
         gap: 4px;
+        justify-content: flex-start;
     }
 
     .category-tab {
-        padding: 6px 12px;
-        font-size: 11px;
-        min-width: 60px;
+        padding: 8px 12px;
+        font-size: 12px;
+        min-width: 80px;
+        flex: 1;
     }
+
+    .config-controls-wrapper {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .option-label {
+        min-width: auto;
+        flex-wrap: wrap;
+    }
+}
+
+/* 错误处理样式 */
+.config-option.error {
+    border: 1px solid var(--vscode-errorForeground);
+    background: var(--vscode-inputValidation-errorBackground);
+}
+
+.error-badge {
+    background: var(--vscode-errorForeground);
+    color: var(--vscode-errorForeground);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-left: 8px;
+}
+
+.preview-error {
+    background: var(--vscode-inputValidation-warningBackground);
+    border: 1px solid var(--vscode-warningForeground);
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 8px;
+    color: var(--vscode-warningForeground);
+    font-size: 12px;
+}
+
+.full-configuration.error {
+    padding: 20px;
+    text-align: center;
+}
+
+.error-message {
+    background: var(--vscode-inputValidation-errorBackground);
+    border: 1px solid var(--vscode-errorForeground);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 600px;
+    color: var(--vscode-errorForeground);
+}
+
+.error-message h3 {
+    margin-top: 0;
+    color: var(--vscode-errorForeground);
+}
+
+.error-message details {
+    margin-top: 12px;
+    text-align: left;
+}
+
+.error-message pre {
+    background: var(--vscode-textCodeBlock-background);
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    overflow-x: auto;
+    max-height: 200px;
+    overflow-y: auto;
 }

@@ -702,3 +702,42 @@ textarea:disabled {
     background-color: var(--vscode-input-background);
     border-left: 3px solid var(--vscode-inputValidation-warningBorder);
 }
+
+/* Dynamic Preview Styles */
+.loading-indicator {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+    color: var(--vscode-progressBar-background);
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.error-indicator {
+    color: var(--vscode-errorForeground);
+}
+
+.preview-error {
+    background-color: var(--vscode-inputValidation-errorBackground);
+    color: var(--vscode-inputValidation-errorForeground);
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+.no-preview {
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+    font-size: 12px;
+    padding: 8px;
+    text-align: center;
+}

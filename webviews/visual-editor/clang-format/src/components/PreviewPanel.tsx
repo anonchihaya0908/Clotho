@@ -20,6 +20,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 }) => {
     const codeRef = useRef<HTMLElement>(null);
 
+    // 生成Markdown格式的代码
+    const generateMarkdownCode = (code: string) => {
+        if (!code) return '';
+        return `\`\`\`cpp\n${code}\n\`\`\``;
+    };
+
     // 应用语法高亮
     useEffect(() => {
         if (codeRef.current) {

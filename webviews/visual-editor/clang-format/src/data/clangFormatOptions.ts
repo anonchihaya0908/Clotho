@@ -14,22 +14,11 @@ export interface ClangFormatOption {
     max?: number;
     defaultValue?: any;
     example?: string;
+    previewSnippet?: string; // 动态预览的原始代码片段
 }
 
 export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
-    // 1. 语言 (Language)
-    {
-        key: 'Language',
-        name: '编程语言',
-        description: '指定要格式化的语言。通常自动检测，但可强制指定。',
-        category: '基础设置',
-        type: 'enum',
-        enumValues: ['Cpp', 'ObjC'],
-        defaultValue: 'Cpp',
-        example: 'Cpp - C/C++完全支持，ObjC - Objective-C/C++完全支持'
-    },
-
-    // 2. 基础风格 (Based On Style)
+    // 1. 基础风格 (Based On Style)
     {
         key: 'BasedOnStyle',
         name: '基础风格',
@@ -60,7 +49,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         category: '对齐设置',
         type: 'enum',
         enumValues: ['Align', 'DontAlign', 'AlwaysBreak', 'BlockIndent'],
-        defaultValue: 'Align'
+        defaultValue: 'Align',
+        previewSnippet: 'function(argument1, argument2, argument3);'
     },
     {
         key: 'AlignConsecutiveAssignments',
@@ -69,7 +59,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         category: '对齐设置',
         type: 'enum',
         enumValues: ['None', 'Consecutive', 'AcrossEmptyLines', 'AcrossComments'],
-        defaultValue: 'None'
+        defaultValue: 'None',
+        previewSnippet: 'int a = 1;\nint bbb = 2;\nint ccccc = 3;'
     },
     {
         key: 'AlignConsecutiveBitFields',
@@ -78,7 +69,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         category: '对齐设置',
         type: 'enum',
         enumValues: ['None', 'Consecutive', 'AcrossEmptyLines', 'AcrossComments'],
-        defaultValue: 'None'
+        defaultValue: 'None',
+        previewSnippet: 'struct {\n  unsigned a : 1;\n  unsigned bbb : 8;\n  unsigned ccccc : 16;\n};'
     },
     {
         key: 'AlignConsecutiveDeclarations',
@@ -87,7 +79,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         category: '对齐设置',
         type: 'enum',
         enumValues: ['None', 'Consecutive', 'AcrossEmptyLines', 'AcrossComments'],
-        defaultValue: 'None'
+        defaultValue: 'None',
+        previewSnippet: 'int a;\ndouble bbb;\nchar* ccccc;'
     },
     {
         key: 'AlignConsecutiveMacros',
@@ -96,7 +89,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         category: '对齐设置',
         type: 'enum',
         enumValues: ['None', 'Consecutive', 'AcrossEmptyLines', 'AcrossComments'],
-        defaultValue: 'None'
+        defaultValue: 'None',
+        previewSnippet: '#define A 1\n#define BBB 2\n#define CCCCC 3'
     },
     {
         key: 'AlignEscapedNewlines',
@@ -258,7 +252,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         category: '大括号设置',
         type: 'enum',
         enumValues: ['Attach', 'Linux', 'Mozilla', 'Stroustrup', 'Allman', 'GNU', 'WebKit', 'Custom'],
-        defaultValue: 'Attach'
+        defaultValue: 'Attach',
+        previewSnippet: 'if (condition) {\n  statement;\n}'
     },
 
     // 9. C++ 相关 (C++ Specific)
@@ -269,7 +264,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         category: 'C++特性',
         type: 'enum',
         enumValues: ['Never', 'Always', 'Allow'],
-        defaultValue: 'Always'
+        defaultValue: 'Always',
+        previewSnippet: 'template<typename T>\nconcept Addable = requires(T a, T b) { a + b; };'
     },
     {
         key: 'BreakConstructorInitializers',
@@ -278,7 +274,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         category: 'C++特性',
         type: 'enum',
         enumValues: ['BeforeColon', 'BeforeComma', 'AfterColon'],
-        defaultValue: 'BeforeColon'
+        defaultValue: 'BeforeColon',
+        previewSnippet: 'Constructor() : member1(value1), member2(value2) {}'
     },
     {
         key: 'BreakStringLiterals',
@@ -377,7 +374,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         type: 'number',
         min: 1,
         max: 16,
-        defaultValue: 2
+        defaultValue: 2,
+        previewSnippet: 'if (condition) {\n  statement;\n  if (nested) {\n    nested_statement;\n  }\n}'
     },
     {
         key: 'IndentWrappedFunctionNames',
@@ -549,7 +547,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         category: '指针和引用',
         type: 'enum',
         enumValues: ['Left', 'Right', 'Middle'],
-        defaultValue: 'Right'
+        defaultValue: 'Right',
+        previewSnippet: 'int* ptr;\nconst char* str;'
     },
     {
         key: 'ReferenceAlignment',
@@ -558,7 +557,8 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         category: '指针和引用',
         type: 'enum',
         enumValues: ['Pointer', 'Left', 'Right', 'Middle'],
-        defaultValue: 'Pointer'
+        defaultValue: 'Pointer',
+        previewSnippet: 'void func(int& ref, const string& str);'
     },
     {
         key: 'SortIncludes',
@@ -682,31 +682,10 @@ export function searchOptions(query: string): ClangFormatOption[] {
     );
 }
 
-// 根据语言确定哪些选项应该被禁用
+// 根据语言确定哪些选项应该被禁用（仅支持 C++）
 export function getDisabledOptionsForLanguage(language: string): string[] {
-    switch (language) {
-        case 'ObjC':
-            // Objective-C不支持的选项
-            return [
-                'Cpp11BracedListStyle',
-                'BreakBeforeConceptDeclarations',
-                'CompactNamespaces',
-                'FixNamespaceComments',
-                'NamespaceIndentation',
-                'SortUsingDeclarations',
-                'SpaceBeforeCtorInitializerColon',
-                'SpaceBeforeInheritanceColon',
-                'SpaceBeforeRangeBasedForLoopColon',
-                'BreakConstructorInitializers',
-                'BreakInheritanceList',
-                'ConstructorInitializerAllOnOneLineOrOnePerLine',
-                'ConstructorInitializerIndentWidth'
-            ];
-        case 'Cpp':
-        default:
-            // C++支持所有选项
-            return [];
-    }
+    // C++ 支持所有选项
+    return [];
 }
 
 // 检查选项是否在当前语言下被禁用

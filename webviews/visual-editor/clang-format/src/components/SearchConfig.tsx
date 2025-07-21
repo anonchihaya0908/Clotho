@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ClangFormatOption, isOptionDisabledForLanguage } from '../data/clangFormatOptions';
+import { ClangFormatOption } from '../data/clangFormatOptions';
 import './SearchConfig.css';
 
 interface SearchConfigProps {
@@ -57,7 +57,6 @@ const CONFIG_SEARCH_MAP: Record<string, string[]> = {
     'JavaScriptQuotes': ['javascript', '引号', 'javascript', 'quotes'],
     'JavaScriptWrapImports': ['javascript', '换行', '导入', 'javascript', 'wrap', 'imports'],
     'KeepEmptyLinesAtTheStartOfBlocks': ['保持', '空行', '块', '开始', 'keep', 'empty', 'lines', 'start', 'blocks'],
-    'Language': ['语言', 'language'],
     'MacroBlockBegin': ['宏', '块', '开始', 'macro', 'block', 'begin'],
     'MacroBlockEnd': ['宏', '块', '结束', 'macro', 'block', 'end'],
     'MaxEmptyLinesToKeep': ['最大', '空行', '保持', 'max', 'empty', 'lines', 'keep'],
@@ -120,8 +119,8 @@ export const SearchConfig: React.FC<SearchConfigProps> = ({
 
     const renderOptionValue = (option: ClangFormatOption) => {
         const value = config[option.key];
-        const currentLanguage = config['Language'] || 'Cpp';
-        const isDisabled = isOptionDisabledForLanguage(option.key, currentLanguage);
+        // 所有选项都支持，因为只使用 C++
+        const isDisabled = false;
 
         switch (option.type) {
             case 'boolean':
@@ -228,8 +227,8 @@ export const SearchConfig: React.FC<SearchConfigProps> = ({
 
             <div className="search-results">
                 {filteredOptions.map((option: ClangFormatOption) => {
-                    const currentLanguage = config['Language'] || 'Cpp';
-                    const isDisabled = isOptionDisabledForLanguage(option.key, currentLanguage);
+                    // 所有选项都支持，因为只使用 C++
+                    const isDisabled = false;
 
                     return (
                         <div key={option.key} className={`search-result-item ${isDisabled ? 'disabled' : ''}`}>
@@ -239,7 +238,6 @@ export const SearchConfig: React.FC<SearchConfigProps> = ({
                                     <span className="result-name">{option.name || option.key}</span>
                                     <span className="result-type">{option.type}</span>
                                     <span className="result-category">{option.category}</span>
-                                    {isDisabled && <span className="disabled-badge">对 {currentLanguage} 不可用</span>}
                                 </div>
                                 <div className="result-value">
                                     {renderOptionValue(option)}

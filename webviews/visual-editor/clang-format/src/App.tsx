@@ -30,6 +30,12 @@ export interface AppState {
     settings: {
         showGuideButton: boolean;
     };
+    dynamicPreviewResult?: {
+        optionName: string;
+        formattedCode: string;
+        success: boolean;
+        error?: string;
+    };
 }
 
 export const App: React.FC<AppProps> = ({ vscode }) => {
@@ -68,6 +74,11 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         }));
 
         sendMessage('updateSettings', { [setting]: value });
+    }, [sendMessage]);
+
+    // 处理动态预览请求
+    const handlePreviewRequest = useCallback((optionName: string, config: Record<string, any>, previewSnippet: string) => {
+        sendMessage('getMicroPreview', { optionName, config, previewSnippet });
     }, [sendMessage]);
 
     // 处理工具栏操作
@@ -162,6 +173,18 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     }));
                     break;
 
+                case 'updateMicroPreview':
+                    setState(prev => ({
+                        ...prev,
+                        dynamicPreviewResult: {
+                            optionName: message.payload.optionName,
+                            formattedCode: message.payload.formattedCode,
+                            success: message.payload.success,
+                            error: message.payload.error
+                        }
+                    }));
+                    break;
+
                 default:
                     console.warn('Unknown message type:', message.type);
             }
@@ -199,6 +222,9 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                             settings={state.settings}
                             onConfigChange={handleConfigChange}
                             onSettingsChange={handleSettingsChange}
+                            onPreviewRequest={handlePreviewRequest}
+                            dynamicPreviewResult={state.dynamicPreviewResult}
+                            currentConfig={state.currentConfig}
                         />
                     }
                     rightPanel={

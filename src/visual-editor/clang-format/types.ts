@@ -38,6 +38,8 @@ export enum WebviewMessageType {
     // 预览相关
     MICRO_PREVIEW_UPDATE = 'microPreviewUpdate',
     MACRO_PREVIEW_UPDATE = 'macroPreviewUpdate',
+    GET_MICRO_PREVIEW = 'getMicroPreview',         // 请求动态微观预览
+    UPDATE_MICRO_PREVIEW = 'updateMicroPreview',   // 返回微观预览结果
 
     // 操作相关
     LOAD_WORKSPACE_CONFIG = 'loadWorkspaceConfig',
