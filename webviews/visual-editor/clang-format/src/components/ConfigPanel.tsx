@@ -8,7 +8,7 @@ import cpp from 'highlight.js/lib/languages/cpp';
 import { ConfigModeSelector, ConfigMode } from './ConfigModeSelector';
 import { QuickSetup } from './QuickSetup';
 import { SearchConfig } from './SearchConfig';
-import { CLANG_FORMAT_OPTIONS, CLANG_FORMAT_CATEGORIES, ClangFormatOption, getOptionsByCategory } from '../data/clangFormatOptions';
+import { CLANG_FORMAT_OPTIONS, CLANG_FORMAT_CATEGORIES, ClangFormatOption, getOptionsByCategory, isOptionDisabledForLanguage } from '../data/clangFormatOptions';
 import './ConfigPanel.css';
 
 // 确保 C++ 语言已注册
@@ -157,30 +157,36 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
 
                 {/* 配置选项列表 */}
                 <div className="config-options-list">
-                    {filteredOptions.map((option: ClangFormatOption) => (
-                        <div key={option.key} className="config-option">
-                            <div className="option-header">
-                                <label className="option-label">
-                                    {option.key}
-                                    {option.type && <span className="option-type">({option.type})</span>}
-                                </label>
-                                <div className="option-value">
-                                    {renderOptionInput(option)}
+                    {filteredOptions.map((option: ClangFormatOption) => {
+                        const currentLanguage = currentConfig['Language'] || 'Cpp';
+                        const isDisabled = isOptionDisabledForLanguage(option.key, currentLanguage);
+
+                        return (
+                            <div key={option.key} className={`config-option ${isDisabled ? 'disabled' : ''}`}>
+                                <div className="option-header">
+                                    <label className="option-label">
+                                        {option.key}
+                                        {option.type && <span className="option-type">({option.type})</span>}
+                                        {isDisabled && <span className="disabled-badge">对 {currentLanguage} 不可用</span>}
+                                    </label>
+                                    <div className="option-value">
+                                        {renderOptionInput(option)}
+                                    </div>
                                 </div>
+
+                                {option.description && (
+                                    <div className="option-description">
+                                        {option.description}
+                                    </div>
+                                )}
+
+                                {/* 微观预览 - 默认显示 */}
+                                <MicroPreview
+                                    code={microPreviews[option.key] || generateDefaultPreview(option)}
+                                />
                             </div>
-
-                            {option.description && (
-                                <div className="option-description">
-                                    {option.description}
-                                </div>
-                            )}
-
-                            {/* 微观预览 - 默认显示 */}
-                            <MicroPreview
-                                code={microPreviews[option.key] || generateDefaultPreview(option)}
-                            />
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         );
@@ -189,14 +195,17 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
     // 渲染选项输入控件
     const renderOptionInput = (option: ClangFormatOption) => {
         const value = currentConfig[option.key];
+        const currentLanguage = currentConfig['Language'] || 'Cpp';
+        const isDisabled = isOptionDisabledForLanguage(option.key, currentLanguage);
 
         switch (option.type) {
             case 'boolean':
                 return (
-                    <label className="full-checkbox-label">
+                    <label className={`full-checkbox-label ${isDisabled ? 'disabled' : ''}`}>
                         <input
                             type="checkbox"
                             checked={Boolean(value)}
+                            disabled={isDisabled}
                             onChange={(e) => handleConfigChange(option.key, e.target.checked)}
                         />
                         <span className="full-checkbox-custom"></span>
@@ -209,8 +218,9 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                     <input
                         type="number"
                         value={value || ''}
+                        disabled={isDisabled}
                         onChange={(e) => handleConfigChange(option.key, parseInt(e.target.value) || 0)}
-                        className="full-number-input"
+                        className={`full-number-input ${isDisabled ? 'disabled' : ''}`}
                         min={option.min}
                         max={option.max}
                         placeholder={option.defaultValue?.toString() || ''}
@@ -222,8 +232,9 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                     <input
                         type="text"
                         value={value || ''}
+                        disabled={isDisabled}
                         onChange={(e) => handleConfigChange(option.key, e.target.value)}
-                        className="full-text-input"
+                        className={`full-text-input ${isDisabled ? 'disabled' : ''}`}
                         placeholder={option.defaultValue?.toString() || "输入值..."}
                     />
                 );
@@ -232,8 +243,9 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                 return (
                     <select
                         value={value !== undefined ? value : (option.defaultValue || '')}
+                        disabled={isDisabled}
                         onChange={(e) => handleConfigChange(option.key, e.target.value)}
-                        className="full-select-input"
+                        className={`full-select-input ${isDisabled ? 'disabled' : ''}`}
                     >
                         {option.enumValues?.map((enumValue: string) => (
                             <option key={enumValue} value={enumValue}>
@@ -255,65 +267,18 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
         // 根据语言和选项生成示例代码
         const generateLanguageSpecificExample = (baseKey: string) => {
             switch (currentLanguage) {
-                case 'CSharp':
+                case 'ObjC':
                     switch (baseKey) {
                         case 'AlignAfterOpenBracket':
-                            return `Method(argument1, argument2, argument3);`;
+                            return `[object methodWithArgument:argument1\n            andSecondArgument:argument2\n            andThirdArgument:argument3];`;
                         case 'AlignConsecutiveAssignments':
                             return `int a   = 1;\nint bb  = 2;\nint ccc = 3;`;
-                        case 'IndentWidth':
-                            return `if (condition)\n{\n    DoSomething();\n    if (nested)\n    {\n        DoMore();\n    }\n}`;
-                        case 'BreakBeforeBraces':
-                            return `if (condition)\n{\n    statement;\n}`;
-                        case 'SpaceBeforeParens':
-                            return `if (condition)\nfor (int i = 0; i < 10; ++i)\nMethodCall();`;
-                        default:
-                            return `// ${option.key} formatting example\nclass Example\n{\n    public void Method()\n    {\n    }\n}`;
-                    }
-
-                case 'Java':
-                    switch (baseKey) {
-                        case 'AlignAfterOpenBracket':
-                            return `method(argument1, argument2, argument3);`;
-                        case 'AlignConsecutiveAssignments':
-                            return `int a   = 1;\nint bb  = 2;\nint ccc = 3;`;
-                        case 'IndentWidth':
-                            return `if (condition) {\n    doSomething();\n    if (nested) {\n        doMore();\n    }\n}`;
-                        case 'BreakBeforeBraces':
-                            return `if (condition) {\n    statement;\n}`;
-                        case 'SpaceBeforeParens':
-                            return `if (condition)\nfor (int i = 0; i < 10; ++i)\nmethodCall();`;
-                        default:
-                            return `// ${option.key} formatting example\nclass Example {\n    public void method() {\n    }\n}`;
-                    }
-
-                case 'JavaScript':
-                    switch (baseKey) {
-                        case 'AlignAfterOpenBracket':
-                            return `function(argument1, argument2, argument3);`;
-                        case 'AlignConsecutiveAssignments':
-                            return `let a   = 1;\nlet bb  = 2;\nlet ccc = 3;`;
-                        case 'IndentWidth':
-                            return `if (condition) {\n    doSomething();\n    if (nested) {\n        doMore();\n    }\n}`;
-                        case 'BreakBeforeBraces':
-                            return `if (condition) {\n    statement;\n}`;
-                        case 'SpaceBeforeParens':
-                            return `if (condition)\nfor (let i = 0; i < 10; ++i)\nfunctionCall();`;
-                        default:
-                            return `// ${option.key} formatting example\nclass Example {\n    method() {\n    }\n}`;
-                    }
-
-                case 'Json':
-                    return `{\n  "key": "value",\n  "array": [\n    1,\n    2,\n    3\n  ]\n}`;
-
-                case 'Objective-C':
-                    switch (baseKey) {
-                        case 'AlignAfterOpenBracket':
-                            return `[object method:argument1 withParameter:argument2];`;
                         case 'IndentWidth':
                             return `if (condition) {\n    [self doSomething];\n    if (nested) {\n        [self doMore];\n    }\n}`;
                         case 'BreakBeforeBraces':
-                            return `if (condition)\n{\n    statement;\n}`;
+                            return `@interface Example : NSObject\n@end\n\n@implementation Example\n- (void)method {\n    statement;\n}\n@end`;
+                        case 'SpaceBeforeParens':
+                            return `if (condition)\nfor (int i = 0; i < 10; ++i)\n[object method];`;
                         default:
                             return `// ${option.key} formatting example\n@interface Example : NSObject\n- (void)method;\n@end`;
                     }

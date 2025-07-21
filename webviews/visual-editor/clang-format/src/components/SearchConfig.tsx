@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ClangFormatOption } from '../data/clangFormatOptions';
+import { ClangFormatOption, isOptionDisabledForLanguage } from '../data/clangFormatOptions';
 import './SearchConfig.css';
 
 interface SearchConfigProps {
@@ -120,14 +120,17 @@ export const SearchConfig: React.FC<SearchConfigProps> = ({
 
     const renderOptionValue = (option: ClangFormatOption) => {
         const value = config[option.key];
+        const currentLanguage = config['Language'] || 'Cpp';
+        const isDisabled = isOptionDisabledForLanguage(option.key, currentLanguage);
 
         switch (option.type) {
             case 'boolean':
                 return (
-                    <label className="search-checkbox-label">
+                    <label className={`search-checkbox-label ${isDisabled ? 'disabled' : ''}`}>
                         <input
                             type="checkbox"
                             checked={Boolean(value)}
+                            disabled={isDisabled}
                             onChange={(e) => onChange(option.key, e.target.checked)}
                         />
                         <span className="search-checkbox-custom"></span>
@@ -142,8 +145,9 @@ export const SearchConfig: React.FC<SearchConfigProps> = ({
                     <input
                         type="number"
                         value={value || ''}
+                        disabled={isDisabled}
                         onChange={(e) => onChange(option.key, parseInt(e.target.value) || 0)}
-                        className="search-number-input"
+                        className={`search-number-input ${isDisabled ? 'disabled' : ''}`}
                         min={option.min}
                         max={option.max}
                         placeholder={option.defaultValue?.toString() || ''}
@@ -155,8 +159,9 @@ export const SearchConfig: React.FC<SearchConfigProps> = ({
                     <input
                         type="text"
                         value={value || ''}
+                        disabled={isDisabled}
                         onChange={(e) => onChange(option.key, e.target.value)}
-                        className="search-text-input"
+                        className={`search-text-input ${isDisabled ? 'disabled' : ''}`}
                         placeholder="输入值..."
                     />
                 );
@@ -165,8 +170,9 @@ export const SearchConfig: React.FC<SearchConfigProps> = ({
                 return (
                     <select
                         value={value !== undefined ? value : (option.defaultValue || '')}
+                        disabled={isDisabled}
                         onChange={(e) => onChange(option.key, e.target.value)}
-                        className="search-select-input"
+                        className={`search-select-input ${isDisabled ? 'disabled' : ''}`}
                     >
                         {option.enumValues?.map((enumValue: string) => (
                             <option key={enumValue} value={enumValue}>
@@ -221,45 +227,51 @@ export const SearchConfig: React.FC<SearchConfigProps> = ({
             )}
 
             <div className="search-results">
-                {filteredOptions.map((option: ClangFormatOption) => (
-                    <div key={option.key} className="search-result-item">
-                        <div className="result-header">
-                            <div className="result-title">
-                                <span className="result-icon">{getSearchResultIcon(option)}</span>
-                                <span className="result-name">{option.name || option.key}</span>
-                                <span className="result-type">{option.type}</span>
-                                <span className="result-category">{option.category}</span>
+                {filteredOptions.map((option: ClangFormatOption) => {
+                    const currentLanguage = config['Language'] || 'Cpp';
+                    const isDisabled = isOptionDisabledForLanguage(option.key, currentLanguage);
+
+                    return (
+                        <div key={option.key} className={`search-result-item ${isDisabled ? 'disabled' : ''}`}>
+                            <div className="result-header">
+                                <div className="result-title">
+                                    <span className="result-icon">{getSearchResultIcon(option)}</span>
+                                    <span className="result-name">{option.name || option.key}</span>
+                                    <span className="result-type">{option.type}</span>
+                                    <span className="result-category">{option.category}</span>
+                                    {isDisabled && <span className="disabled-badge">对 {currentLanguage} 不可用</span>}
+                                </div>
+                                <div className="result-value">
+                                    {renderOptionValue(option)}
+                                </div>
                             </div>
-                            <div className="result-value">
-                                {renderOptionValue(option)}
-                            </div>
+
+                            {option.description && (
+                                <div className="result-description">
+                                    {option.description}
+                                </div>
+                            )}
+
+                            {/* 显示搜索匹配的关键词 */}
+                            {searchQuery.trim() && (
+                                <div className="result-keywords">
+                                    <span className="keywords-label">相关关键词:</span>
+                                    {(CONFIG_SEARCH_MAP[option.key] || [])
+                                        .filter(keyword =>
+                                            keyword.toLowerCase().includes(searchQuery.toLowerCase())
+                                        )
+                                        .slice(0, 3)
+                                        .map((keyword, index) => (
+                                            <span key={index} className="keyword-tag">
+                                                {keyword}
+                                            </span>
+                                        ))
+                                    }
+                                </div>
+                            )}
                         </div>
-
-                        {option.description && (
-                            <div className="result-description">
-                                {option.description}
-                            </div>
-                        )}
-
-                        {/* 显示搜索匹配的关键词 */}
-                        {searchQuery.trim() && (
-                            <div className="result-keywords">
-                                <span className="keywords-label">相关关键词:</span>
-                                {(CONFIG_SEARCH_MAP[option.key] || [])
-                                    .filter(keyword =>
-                                        keyword.toLowerCase().includes(searchQuery.toLowerCase())
-                                    )
-                                    .slice(0, 3)
-                                    .map((keyword, index) => (
-                                        <span key={index} className="keyword-tag">
-                                            {keyword}
-                                        </span>
-                                    ))
-                                }
-                            </div>
-                        )}
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {filteredOptions.length > 0 && (

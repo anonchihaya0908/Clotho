@@ -24,9 +24,9 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
         description: '指定要格式化的语言。通常自动检测，但可强制指定。',
         category: '基础设置',
         type: 'enum',
-        enumValues: ['Cpp', 'CSharp', 'Java', 'JavaScript', 'Json', 'Objective-C', 'Proto', 'TableGen', 'TextProto'],
+        enumValues: ['Cpp', 'ObjC'],
         defaultValue: 'Cpp',
-        example: 'Cpp - C/C++完全支持，CSharp - 基本支持，Java - 基本支持，JavaScript - 基本支持，Json - 完全支持，Objective-C - 基本支持，Proto - Protocol Buffers支持，TableGen - LLVM TableGen支持，TextProto - 文本格式Protocol Buffers支持'
+        example: 'Cpp - C/C++完全支持，ObjC - Objective-C/C++完全支持'
     },
 
     // 2. 基础风格 (Based On Style)
@@ -680,4 +680,37 @@ export function searchOptions(query: string): ClangFormatOption[] {
         option.name.toLowerCase().includes(lowerQuery) ||
         option.description.toLowerCase().includes(lowerQuery)
     );
+}
+
+// 根据语言确定哪些选项应该被禁用
+export function getDisabledOptionsForLanguage(language: string): string[] {
+    switch (language) {
+        case 'ObjC':
+            // Objective-C不支持的选项
+            return [
+                'Cpp11BracedListStyle',
+                'BreakBeforeConceptDeclarations',
+                'CompactNamespaces',
+                'FixNamespaceComments',
+                'NamespaceIndentation',
+                'SortUsingDeclarations',
+                'SpaceBeforeCtorInitializerColon',
+                'SpaceBeforeInheritanceColon',
+                'SpaceBeforeRangeBasedForLoopColon',
+                'BreakConstructorInitializers',
+                'BreakInheritanceList',
+                'ConstructorInitializerAllOnOneLineOrOnePerLine',
+                'ConstructorInitializerIndentWidth'
+            ];
+        case 'Cpp':
+        default:
+            // C++支持所有选项
+            return [];
+    }
+}
+
+// 检查选项是否在当前语言下被禁用
+export function isOptionDisabledForLanguage(optionKey: string, language: string): boolean {
+    const disabledOptions = getDisabledOptionsForLanguage(language);
+    return disabledOptions.includes(optionKey);
 }

@@ -611,3 +611,94 @@ body {
 .resizable-splitter.dragging .splitter-handle {
     opacity: 0.6;
 }
+
+/* Disabled Option Styles */
+.config-option.disabled {
+    opacity: 0.6;
+    background-color: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 4px;
+    position: relative;
+}
+
+.config-option.disabled::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(45deg,
+            transparent,
+            transparent 2px,
+            var(--vscode-input-border) 2px,
+            var(--vscode-input-border) 4px);
+    opacity: 0.1;
+    pointer-events: none;
+    border-radius: 4px;
+}
+
+.disabled-badge {
+    background-color: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 8px;
+    font-weight: 500;
+}
+
+/* Disabled input states */
+input:disabled,
+select:disabled,
+textarea:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-descriptionForeground);
+}
+
+.disabled input,
+.disabled select,
+.disabled textarea {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.disabled .full-checkbox-label,
+.disabled .quick-checkbox-wrapper,
+.disabled .search-checkbox-label {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.disabled .full-checkbox-custom,
+.disabled .quick-checkbox,
+.disabled .search-checkbox-custom {
+    background-color: var(--vscode-input-background);
+    border-color: var(--vscode-input-border);
+}
+
+/* QuickSetup disabled option */
+.disabled-option {
+    opacity: 0.6;
+    position: relative;
+}
+
+.disabled-notice {
+    background-color: var(--vscode-inputValidation-warningBackground);
+    color: var(--vscode-inputValidation-warningForeground);
+    border: 1px solid var(--vscode-inputValidation-warningBorder);
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-top: 4px;
+    text-align: center;
+}
+
+/* SearchConfig disabled item */
+.search-result-item.disabled {
+    opacity: 0.6;
+    background-color: var(--vscode-input-background);
+    border-left: 3px solid var(--vscode-inputValidation-warningBorder);
+}

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { CLANG_FORMAT_OPTIONS, ClangFormatOption } from '../data/clangFormatOptions';
+import { CLANG_FORMAT_OPTIONS, ClangFormatOption, isOptionDisabledForLanguage } from '../data/clangFormatOptions';
 import hljs from 'highlight.js/lib/core';
 import cpp from 'highlight.js/lib/languages/cpp';
 import './QuickSetup.css';
@@ -98,55 +98,22 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange }) => {
 
         const generateLanguageExample = (key: string) => {
             switch (currentLanguage) {
-                case 'CSharp':
+                case 'ObjC':
                     switch (key) {
                         case 'BasedOnStyle':
-                            return `// Based on ${config[option.key] || option.defaultValue} style\nclass Example\n{\n    public void Method()\n    {\n    }\n}`;
+                            return `// Based on ${config[option.key] || option.defaultValue} style\n@interface Example : NSObject\n@end\n\n@implementation Example\n- (void)method {\n}\n@end`;
                         case 'IndentWidth':
-                            const csIndent = ' '.repeat(config[option.key] || option.defaultValue || 4);
-                            return `if (condition)\n{\n${csIndent}DoSomething();\n}`;
+                            const objcIndent = ' '.repeat(config[option.key] || option.defaultValue || 4);
+                            return `if (condition) {\n${objcIndent}[self doSomething];\n}`;
                         case 'UseTab':
-                            const csUseTab = config[option.key] || option.defaultValue;
-                            const csTabIndent = csUseTab === 'Never' ? '    ' : '\t';
-                            return `class MyClass\n{\npublic:\n${csTabIndent}void Method();\n}`;
+                            const objcUseTab = config[option.key] || option.defaultValue;
+                            const objcTabIndent = objcUseTab === 'Never' ? '    ' : '\t';
+                            return `@interface MyClass : NSObject\n${objcTabIndent}- (void)method;\n@end`;
                         default:
-                            return `// ${option.key} example\nclass Example\n{\n    public void Method() { }\n}`;
+                            return `// ${option.key} example\n@interface Example : NSObject\n- (void)method;\n@end`;
                     }
 
-                case 'Java':
-                    switch (key) {
-                        case 'BasedOnStyle':
-                            return `// Based on ${config[option.key] || option.defaultValue} style\nclass Example {\n    public void method() {\n    }\n}`;
-                        case 'IndentWidth':
-                            const javaIndent = ' '.repeat(config[option.key] || option.defaultValue || 4);
-                            return `if (condition) {\n${javaIndent}doSomething();\n}`;
-                        case 'UseTab':
-                            const javaUseTab = config[option.key] || option.defaultValue;
-                            const javaTabIndent = javaUseTab === 'Never' ? '    ' : '\t';
-                            return `class MyClass {\npublic:\n${javaTabIndent}void method();\n}`;
-                        default:
-                            return `// ${option.key} example\nclass Example {\n    public void method() { }\n}`;
-                    }
-
-                case 'JavaScript':
-                    switch (key) {
-                        case 'BasedOnStyle':
-                            return `// Based on ${config[option.key] || option.defaultValue} style\nclass Example {\n    method() {\n    }\n}`;
-                        case 'IndentWidth':
-                            const jsIndent = ' '.repeat(config[option.key] || option.defaultValue || 2);
-                            return `if (condition) {\n${jsIndent}doSomething();\n}`;
-                        case 'UseTab':
-                            const jsUseTab = config[option.key] || option.defaultValue;
-                            const jsTabIndent = jsUseTab === 'Never' ? '  ' : '\t';
-                            return `class MyClass {\n${jsTabIndent}method() {\n${jsTabIndent}}\n}`;
-                        default:
-                            return `// ${option.key} example\nclass Example {\n  method() { }\n}`;
-                    }
-
-                case 'Json':
-                    return `{\n  "formatting": "${option.key}",\n  "value": "${config[option.key] || option.defaultValue || 'default'}"\n}`;
-
-                default: // Cpp and others
+                default: // Cpp
                     switch (key) {
                         case 'BasedOnStyle':
                             return `// Based on ${config[option.key] || option.defaultValue} style\nclass Example {\npublic:\n    void method();\n};`;
@@ -190,15 +157,18 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange }) => {
     };
     const renderConfigItem = (option: ClangFormatOption) => {
         const value = config[option.key];
+        const currentLanguage = config['Language'] || 'Cpp';
+        const isDisabled = isOptionDisabledForLanguage(option.key, currentLanguage);
 
         switch (option.type) {
             case 'boolean':
                 return (
                     <div className="quick-config-item">
-                        <label className="quick-checkbox-wrapper">
+                        <label className={`quick-checkbox-wrapper ${isDisabled ? 'disabled' : ''}`}>
                             <input
                                 type="checkbox"
                                 checked={Boolean(value !== undefined ? value : option.defaultValue)}
+                                disabled={isDisabled}
                                 onChange={(e) => onChange(option.key, e.target.checked)}
                             />
                             <span className="quick-checkbox"></span>
@@ -218,7 +188,8 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange }) => {
                             value={value !== undefined ? value : (option.defaultValue || '')}
                             min={option.min}
                             max={option.max}
-                            className="quick-number-input"
+                            disabled={isDisabled}
+                            className={`quick-number-input ${isDisabled ? 'disabled' : ''}`}
                             onChange={(e) => onChange(option.key, parseInt(e.target.value) || 0)}
                             placeholder={`默认: ${option.defaultValue || ''}`}
                         />
@@ -233,8 +204,9 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange }) => {
                         <label className="input-label">{option.name}</label>
                         <select
                             value={value !== undefined ? value : (option.defaultValue || '')}
+                            disabled={isDisabled}
                             onChange={(e) => onChange(option.key, e.target.value)}
-                            className="quick-select-input"
+                            className={`quick-select-input ${isDisabled ? 'disabled' : ''}`}
                         >
                             {option.enumValues?.map((enumValue: string) => (
                                 <option key={enumValue} value={enumValue}>
@@ -254,8 +226,9 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange }) => {
                         <input
                             type="text"
                             value={value !== undefined ? value : (option.defaultValue || '')}
+                            disabled={isDisabled}
                             onChange={(e) => onChange(option.key, e.target.value)}
-                            className="quick-text-input"
+                            className={`quick-text-input ${isDisabled ? 'disabled' : ''}`}
                             placeholder={`默认: ${option.defaultValue || ''}`}
                         />
                         <div className="item-description">{option.description}</div>
@@ -285,9 +258,17 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange }) => {
                         <div className="category-items">
                             {category.keys.map((key) => {
                                 const option = getQuickConfigItem(key);
+                                const currentLanguage = config['Language'] || 'Cpp';
+                                const isDisabled = option ? isOptionDisabledForLanguage(option.key, currentLanguage) : false;
+
                                 return option ? (
-                                    <div key={key}>
+                                    <div key={key} className={isDisabled ? 'disabled-option' : ''}>
                                         {renderConfigItem(option)}
+                                        {isDisabled && (
+                                            <div className="disabled-notice">
+                                                对 {currentLanguage} 不可用
+                                            </div>
+                                        )}
                                     </div>
                                 ) : null;
                             })}
