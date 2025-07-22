@@ -170,12 +170,31 @@
     border-radius: 8px;
     padding: 16px;
     transition: all 0.2s ease;
+    outline: none;
+    /* 移除默认焦点轮廓 */
+    cursor: pointer;
+    /* 添加指针光标 */
 }
 
 .config-option:hover {
     border-color: var(--vscode-focusBorder);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     background: var(--vscode-list-hoverBackground);
+    transform: translateY(-1px);
+    /* 轻微上浮效果 */
+}
+
+.config-option:focus {
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 0 0 2px var(--vscode-focusBorder);
+    background: var(--vscode-list-activeSelectionBackground);
+}
+
+/* 联动高亮状态 */
+.config-option.highlighting {
+    border-color: var(--vscode-charts-orange);
+    background: var(--vscode-editor-selectionHighlightBackground);
+    box-shadow: 0 0 0 1px var(--vscode-charts-orange);
 }
 
 .option-header {

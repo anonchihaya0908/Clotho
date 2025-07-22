@@ -26,6 +26,10 @@ export interface ConfigPanelProps {
         error?: string;
     };
     currentConfig: Record<string, any>;
+    // 新增：交互联动回调
+    onConfigOptionHover?: (optionName: string) => void;
+    onConfigOptionFocus?: (optionName: string) => void;
+    onClearHighlights?: () => void;
 }
 
 // 获取分类列表
@@ -39,7 +43,10 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
     onPreviewRequest,
     onOpenClangFormatFile,
     dynamicPreviewResult,
-    currentConfig
+    currentConfig,
+    onConfigOptionHover,
+    onConfigOptionFocus,
+    onClearHighlights
 }) => {
     const [mode, setMode] = useState<ConfigMode>('quick');
     const [searchQuery, setSearchQuery] = useState('');
@@ -73,7 +80,14 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
         const currentValue = currentConfig[option.key] ?? option.defaultValue;
 
         return (
-            <div key={option.key} className="config-option">
+            <div
+                key={option.key}
+                className="config-option"
+                onMouseEnter={() => onConfigOptionHover?.(option.key)}
+                onMouseLeave={() => onClearHighlights?.()}
+                onFocus={() => onConfigOptionFocus?.(option.key)}
+                tabIndex={0} // 使div可以获得焦点
+            >
                 <div className="option-header">
                     <div className="option-label">
                         {option.name}

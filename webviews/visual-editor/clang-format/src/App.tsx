@@ -4,10 +4,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { ConfigPanel } from './components/ConfigPanel';
-import { PreviewPanel } from './components/PreviewPanel';
 import { Toolbar } from './components/Toolbar';
 import { StatusBar } from './components/StatusBar';
-import { ResizableSplitter } from './components/ResizableSplitter';
 
 export interface AppProps {
     vscode: any;
@@ -18,7 +16,6 @@ export interface AppState {
     categories: string[];
     currentConfig: Record<string, any>;
     microPreviews: Record<string, string>;
-    macroPreview: string;
     isLoading: boolean;
     error: string | null;
     validationState: {
@@ -43,7 +40,6 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         categories: [],
         currentConfig: {},
         microPreviews: {},
-        macroPreview: '',
         isLoading: true,
         error: null,
         validationState: { isValid: true },
@@ -78,6 +74,21 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
     // 处理动态预览请求
     const handlePreviewRequest = useCallback((optionName: string, config: Record<string, any>, previewSnippet: string) => {
         sendMessage('getMicroPreview', { optionName, config, previewSnippet });
+    }, [sendMessage]);
+
+    // 处理配置项hover事件
+    const handleConfigOptionHover = useCallback((optionName: string) => {
+        sendMessage('configOptionHover', { optionName });
+    }, [sendMessage]);
+
+    // 处理配置项focus事件
+    const handleConfigOptionFocus = useCallback((optionName: string) => {
+        sendMessage('configOptionFocus', { optionName });
+    }, [sendMessage]);
+
+    // 处理清除高亮
+    const handleClearHighlights = useCallback(() => {
+        sendMessage('clearHighlights');
     }, [sendMessage]);
 
     // 处理工具栏操作
@@ -122,8 +133,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                         settings: message.payload.settings || prev.settings,
                         isLoading: false
                     }));
-                    // 初始化时立即请求一次宏观预览
-                    sendMessage('getMacroPreview', { config: message.payload.currentConfig });
+                    // 初始化时不再需要请求宏观预览，因为虚拟编辑器会自动处理
                     break;
 
                 case 'configLoaded':
@@ -131,8 +141,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                         ...prev,
                         currentConfig: message.payload.config
                     }));
-                    // 配置加载后请求宏观预览
-                    sendMessage('getMacroPreview', { config: message.payload.config });
+                    // 配置加载后不再需要请求宏观预览，虚拟编辑器会自动更新
                     break;
 
                 case 'microPreviewUpdate':
@@ -146,10 +155,8 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     break;
 
                 case 'macroPreviewUpdate':
-                    setState(prev => ({
-                        ...prev,
-                        macroPreview: message.payload.formattedCode
-                    }));
+                    // 【已弃用】宏观预览现在由真正的VSCode编辑器处理
+                    // 不再需要在Webview中处理宏观预览更新
                     break;
 
                 case 'validationResult':
@@ -218,38 +225,21 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
     return (
         <div className="app">
-            <div className="app-header">
-                <div className="app-title">
-                    <span className="app-icon">⚒️</span>
-                    <span className="app-name">Clang-Format Visual Editor</span>
-                </div>
-            </div>
-
             <Toolbar onAction={handleToolbarAction} />
 
             <div className="app-content">
-                <ResizableSplitter
-                    leftPanel={
-                        <ConfigPanel
-                            microPreviews={state.microPreviews}
-                            settings={state.settings}
-                            onConfigChange={handleConfigChange}
-                            onSettingsChange={handleSettingsChange}
-                            onPreviewRequest={handlePreviewRequest}
-                            onOpenClangFormatFile={() => handleToolbarAction('openClangFormatFile')}
-                            dynamicPreviewResult={state.dynamicPreviewResult}
-                            currentConfig={state.currentConfig}
-                        />
-                    }
-                    rightPanel={
-                        <PreviewPanel
-                            macroPreview={state.macroPreview}
-                            isValid={state.validationState.isValid}
-                        />
-                    }
-                    initialLeftWidth={45}
-                    minLeftWidth={25}
-                    maxLeftWidth={75}
+                <ConfigPanel
+                    microPreviews={state.microPreviews}
+                    settings={state.settings}
+                    onConfigChange={handleConfigChange}
+                    onSettingsChange={handleSettingsChange}
+                    onPreviewRequest={handlePreviewRequest}
+                    onOpenClangFormatFile={() => handleToolbarAction('openClangFormatFile')}
+                    dynamicPreviewResult={state.dynamicPreviewResult}
+                    currentConfig={state.currentConfig}
+                    onConfigOptionHover={handleConfigOptionHover}
+                    onConfigOptionFocus={handleConfigOptionFocus}
+                    onClearHighlights={handleClearHighlights}
                 />
             </div>
 

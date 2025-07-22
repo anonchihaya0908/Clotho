@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode';
 import { COMMANDS } from '../../common/constants';
+import { EditorOpenSource } from './coordinator';
 
 export class ClangFormatGuideService implements vscode.Disposable {
     private readonly disposables: vscode.Disposable[] = [];
@@ -104,7 +105,8 @@ class ClangFormatCodeLensProvider implements vscode.CodeLensProvider {
         const mainCodeLens = new vscode.CodeLens(topRange, {
             title: "$(edit)\u00A0Visual Editor",
             tooltip: "Open Clang-Format Visual Editor - Edit settings with a user-friendly interface",
-            command: COMMANDS.OPEN_CLANG_FORMAT_EDITOR
+            command: COMMANDS.OPEN_CLANG_FORMAT_EDITOR,
+            arguments: [EditorOpenSource.CODELENS] // 传递来源信息
         });
         codeLenses.push(mainCodeLens);
 

@@ -15,6 +15,7 @@ import { SwitchCoordinator, SwitchService, SwitchUI } from './switch-header-sour
 import { MonitorCoordinator } from './clangd-monitor';
 import { ClangFormatVisualEditorCoordinator } from './visual-editor';
 import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
+import * as ClangFormatModule from './visual-editor/clang-format';
 
 export let serviceContainer: ServiceContainer;
 
@@ -31,6 +32,9 @@ export async function bootstrap(context: vscode.ExtensionContext): Promise<void>
 
     // Register all services in the container
     registerServices(context);
+
+    // 激活 Clang-Format 可视化编辑器模块（注册虚拟文档提供者）
+    ClangFormatModule.activate(context);
 
     // Initialize main coordinators
     await initializeCoordinators();

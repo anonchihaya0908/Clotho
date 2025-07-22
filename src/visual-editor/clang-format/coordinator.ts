@@ -9,6 +9,18 @@ import { WebviewMessage, WebviewMessageType, ConfigCategories } from './types';
 import { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG, MACRO_PREVIEW_CODE } from './config-options';
 import { ErrorHandler } from '../../common/error-handler';
 import { COMMANDS } from '../../common/constants';
+import { ClangFormatPreviewProvider } from './preview-provider';
+
+/**
+ * 编辑器打开来源
+ * 用于实现"从哪里来，回哪里去"的智能导航
+ */
+export enum EditorOpenSource {
+    COMMAND_PALETTE = 'commandPalette',   // 来自命令面板（用户正在编辑代码）
+    CODELENS = 'codeLens',               // 来自.clang-format文件的CodeLens
+    STATUS_BAR = 'statusBar',            // 来自状态栏点击
+    DIRECT = 'direct'                    // 直接调用（默认）
+}
 
 export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
     private panel: vscode.WebviewPanel | undefined;
@@ -16,17 +28,38 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
     private currentConfig: Record<string, any>;
     private readonly extensionUri: vscode.Uri;
     private readonly disposables: vscode.Disposable[] = [];
+    private editorOpenSource: EditorOpenSource | undefined; // 记住用户来源
+
+    // 新增：预览相关的成员
+    private previewProvider: ClangFormatPreviewProvider;
+    private currentPreviewUri: vscode.Uri | undefined;
+    private previewEditor: vscode.TextEditor | undefined;
+
+    // 新增：装饰器，用于实现上下文高亮联动
+    private highlightDecorationType: vscode.TextEditorDecorationType;
 
     constructor(extensionUri: vscode.Uri) {
         this.extensionUri = extensionUri;
         this.formatService = new ClangFormatService();
         this.currentConfig = { ...DEFAULT_CLANG_FORMAT_CONFIG };
 
+        // 初始化预览提供者
+        this.previewProvider = ClangFormatPreviewProvider.getInstance();
+
+        // 创建上下文高亮装饰器
+        this.highlightDecorationType = vscode.window.createTextEditorDecorationType({
+            backgroundColor: new vscode.ThemeColor('editor.hoverHighlightBackground'),
+            border: '1px solid',
+            borderColor: new vscode.ThemeColor('focusBorder'),
+            borderRadius: '3px',
+            isWholeLine: false
+        });
+
         // Register command
         this.disposables.push(
             vscode.commands.registerCommand(
                 COMMANDS.OPEN_CLANG_FORMAT_EDITOR,
-                () => this.showEditor()
+                (source?: EditorOpenSource) => this.showEditor(source || EditorOpenSource.COMMAND_PALETTE)
             )
         );
     }
@@ -39,21 +72,37 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         if (this.panel) {
             this.panel.dispose();
         }
-        // 不再需要cleanup，新的format服务不使用临时文件
+        // 清理装饰器
+        if (this.highlightDecorationType) {
+            this.highlightDecorationType.dispose();
+        }
+        // 清理预览编辑器
+        this.cleanupPreviewEditor();
     }
 
     /**
      * 显示 clang-format 编辑器
+     * @param source 编辑器打开来源，用于实现智能导航
      */
-    async showEditor(): Promise<void> {
+    async showEditor(source: EditorOpenSource = EditorOpenSource.DIRECT): Promise<void> {
+        // 记录用户来源
+        this.editorOpenSource = source;
+
         try {
             // 如果面板已存在，则聚焦
-            if (this.panel) {
+            if (this.panel && this.currentPreviewUri) {
                 this.panel.reveal(vscode.ViewColumn.One);
+                // 同时聚焦预览编辑器
+                if (this.previewEditor) {
+                    await vscode.window.showTextDocument(this.previewEditor.document, {
+                        viewColumn: vscode.ViewColumn.Beside,
+                        preserveFocus: true
+                    });
+                }
                 return;
             }
 
-            // 创建 webview 面板
+            // 创建 webview 面板（左侧控制面板）
             this.panel = vscode.window.createWebviewPanel(
                 'clangFormatEditor',
                 'Clang-Format Editor',
@@ -62,7 +111,7 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                     enableScripts: true,
                     retainContextWhenHidden: true,
                     localResourceRoots: [
-                        // 授权整个 webviews 目录，确保 highlight.js 能访问所有必要的资源
+                        // 授权整个 webviews 目录，确保资源能访问所有必要的资源
                         vscode.Uri.joinPath(this.extensionUri, 'webviews'),
                         // 特别授权 dist 目录
                         vscode.Uri.joinPath(this.extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist')
@@ -76,16 +125,38 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                 dark: vscode.Uri.joinPath(this.extensionUri, 'resources', 'dark', 'format.svg')
             };
 
-            // 设置 HTML 内容
+            // 创建虚拟预览文档（右侧真正的编辑器）
+            this.currentPreviewUri = this.previewProvider.createPreviewUri('macro-preview.cpp');
+
+            // 设置初始预览内容
+            const initialPreviewCode = await this.generateInitialPreview();
+            this.previewProvider.updateContent(this.currentPreviewUri, initialPreviewCode);
+
+            // 设置 HTML 内容（现在只是左侧控制面板，不再包含预览）
             this.panel.webview.html = await this.getWebviewContent();
+
+            // 在Webview旁边打开真正的编辑器预览
+            this.previewEditor = await vscode.window.showTextDocument(this.currentPreviewUri, {
+                viewColumn: vscode.ViewColumn.Beside,
+                preserveFocus: true, // 保持焦点在Webview上
+                preview: false // 确保这不是预览模式，避免被其他文档替换
+            });
 
             // 监听消息
             this.setupMessageHandling();
 
             // 监听面板销毁
-            this.panel.onDidDispose(() => {
+            this.panel.onDidDispose(async () => {
+                // 【智能导航：从哪里来，回哪里去】
+                await this.handleSmartNavigation();
+
                 this.panel = undefined;
-                // 不再需要cleanup，新的format服务不使用临时文件
+                // 【核心修正】当Webview关闭时，自动关闭关联的预览编辑器
+                await this.closePreviewEditor();
+                // 清理预览编辑器资源
+                this.cleanupPreviewEditor();
+                // 清理来源记忆
+                this.editorOpenSource = undefined;
             });
 
             // 监听主题变化并通知 Webview
@@ -132,6 +203,157 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         if (this.panel) {
             this.panel.dispose();
         }
+        // 注意：这里不需要调用cleanupPreviewEditor，因为onDidDispose会处理
+    }
+
+    /**
+     * 智能导航处理：根据用户来源决定关闭后的导航行为
+     * 实现"从哪里来，回哪里去"的用户体验
+     */
+    private async handleSmartNavigation(): Promise<void> {
+        if (!this.editorOpenSource) {
+            return; // 没有记录来源，使用默认行为
+        }
+
+        try {
+            switch (this.editorOpenSource) {
+                case EditorOpenSource.CODELENS:
+                    // 用户从.clang-format文件的CodeLens来的，应该回到.clang-format文件
+                    await this.navigateToClangFormatFile();
+                    console.log('🎯 Clotho: User came from CodeLens, navigated back to .clang-format file');
+                    break;
+
+                case EditorOpenSource.COMMAND_PALETTE:
+                    // 用户从命令面板来的（很可能正在编辑代码文件）
+                    // VSCode会自动将焦点返回到之前的编辑器，我们什么都不做
+                    console.log('🎯 Clotho: User came from command palette, letting VSCode handle focus restoration');
+                    break;
+
+                case EditorOpenSource.STATUS_BAR:
+                    // 从状态栏来的，保持默认行为
+                    console.log('🎯 Clotho: User came from status bar, using default behavior');
+                    break;
+
+                case EditorOpenSource.DIRECT:
+                default:
+                    // 直接调用或未知来源，保持默认行为
+                    console.log('🎯 Clotho: Direct call or unknown source, using default behavior');
+                    break;
+            }
+        } catch (error) {
+            // 导航失败时，不应该影响编辑器的正常关闭
+            console.warn('⚠️ Smart navigation failed:', error);
+        }
+    }
+
+    /**
+     * 导航到.clang-format文件
+     */
+    private async navigateToClangFormatFile(): Promise<void> {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            return;
+        }
+
+        try {
+            const clangFormatUri = vscode.Uri.joinPath(workspaceFolder.uri, '.clang-format');
+
+            // 检查文件是否存在
+            try {
+                await vscode.workspace.fs.stat(clangFormatUri);
+            } catch {
+                // 文件不存在，不进行导航
+                console.log('🎯 .clang-format file not found, skipping navigation');
+                return;
+            }
+
+            // 打开.clang-format文件
+            await vscode.window.showTextDocument(clangFormatUri, {
+                viewColumn: vscode.ViewColumn.One,
+                preserveFocus: false
+            });
+        } catch (error) {
+            console.warn('⚠️ Failed to navigate to .clang-format file:', error);
+        }
+    }
+
+    /**
+     * 自动关闭关联的预览编辑器
+     * 实现真正的"生命周期绑定"
+     */
+    private async closePreviewEditor(): Promise<void> {
+        if (!this.currentPreviewUri) {
+            return;
+        }
+
+        try {
+            // 方法1：使用tabGroups API找到所有相关的标签页（VSCode 1.57+）
+            if (vscode.window.tabGroups) {
+                for (const tabGroup of vscode.window.tabGroups.all) {
+                    for (const tab of tabGroup.tabs) {
+                        if (tab.input && typeof tab.input === 'object' && 'uri' in tab.input) {
+                            const tabUri = (tab.input as any).uri;
+                            if (tabUri && tabUri.toString() === this.currentPreviewUri.toString()) {
+                                // 关闭这个标签页
+                                await vscode.window.tabGroups.close(tab);
+                                console.log('🔗 Clotho: Preview tab closed automatically');
+                            }
+                        }
+                    }
+                }
+            } else {
+                // 方法2：回退方案 - 使用传统方法
+                const allEditors = [...vscode.window.visibleTextEditors, ...vscode.workspace.textDocuments
+                    .map(doc => vscode.window.visibleTextEditors.find(editor => editor.document === doc))
+                    .filter(editor => editor !== undefined)] as vscode.TextEditor[];
+
+                const previewEditors = allEditors.filter(
+                    editor => editor.document.uri.toString() === this.currentPreviewUri!.toString()
+                );
+
+                // 逐个关闭这些编辑器
+                for (const editor of previewEditors) {
+                    // 先让这个编辑器成为活动编辑器
+                    await vscode.window.showTextDocument(editor.document, {
+                        viewColumn: editor.viewColumn,
+                        preserveFocus: false
+                    });
+
+                    // 然后关闭当前活动的编辑器
+                    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+                }
+            }
+
+            console.log('🔗 Clotho: Preview editor closed automatically with webview');
+        } catch (error) {
+            console.warn('⚠️ Clotho: Failed to auto-close preview editor:', error);
+            // 即使关闭失败，也要继续清理资源
+        }
+    }
+
+    /**
+     * 生成初始预览代码
+     */
+    private async generateInitialPreview(): Promise<string> {
+        try {
+            const result = await this.formatService.format(MACRO_PREVIEW_CODE, this.currentConfig);
+            return result.success ? result.formattedCode : MACRO_PREVIEW_CODE;
+        } catch (error) {
+            console.warn('Failed to generate initial preview, using default code:', error);
+            return MACRO_PREVIEW_CODE;
+        }
+    }
+
+    /**
+     * 清理预览编辑器资源
+     */
+    private cleanupPreviewEditor(): void {
+        if (this.currentPreviewUri) {
+            // 清理预览提供者中的内容
+            this.previewProvider.clearContent(this.currentPreviewUri);
+            this.currentPreviewUri = undefined;
+        }
+        this.previewEditor = undefined;
     }
 
     /**
@@ -256,7 +478,20 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                         break;
 
                     case WebviewMessageType.GET_MACRO_PREVIEW:
-                        await this.handleGetMacroPreview(message.payload);
+                        // 【已弃用】不再需要处理宏观预览请求，因为我们现在使用虚拟编辑器
+                        // 虚拟编辑器会在配置变更时自动更新
+                        break;
+
+                    case WebviewMessageType.CONFIG_OPTION_HOVER:
+                        await this.handleConfigOptionHover(message.payload);
+                        break;
+
+                    case WebviewMessageType.CONFIG_OPTION_FOCUS:
+                        await this.handleConfigOptionFocus(message.payload);
+                        break;
+
+                    case WebviewMessageType.CLEAR_HIGHLIGHTS:
+                        await this.handleClearHighlights();
                         break;
 
                     default:
@@ -528,57 +763,170 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         }
     }
 
-    private async handleGetMacroPreview(payload: { config: Record<string, any> }): Promise<void> {
-        try {
-            const config = payload.config;
-            if (!config) {
-                throw new Error('No configuration provided for macro preview');
-            }
-
-            const result = await this.formatService.format(MACRO_PREVIEW_CODE, config);
-            await this.sendMessage({
-                type: WebviewMessageType.MACRO_PREVIEW_UPDATE,
-                payload: {
-                    formattedCode: result.formattedCode,
-                    success: result.success,
-                    error: result.error
-                }
-            });
-        } catch (error) {
-            ErrorHandler.handle(error, {
-                operation: 'handleGetMacroPreview',
-                module: 'ClangFormatEditorCoordinator',
-                showToUser: false,
-                logLevel: 'error'
-            });
-
-            // 发送错误信息回前端
-            await this.sendMessage({
-                type: WebviewMessageType.MACRO_PREVIEW_UPDATE,
-                payload: {
-                    formattedCode: MACRO_PREVIEW_CODE, // 失败时显示原始代码
-                    success: false,
-                    error: error instanceof Error ? error.message : 'Failed to generate macro preview'
-                }
-            });
+    /**
+     * 处理配置项hover事件 - 实现上下文高亮联动
+     */
+    private async handleConfigOptionHover(payload: { optionName: string }): Promise<void> {
+        if (!this.previewEditor || !payload.optionName) {
+            return;
         }
+
+        // 清除之前的高亮
+        this.previewEditor.setDecorations(this.highlightDecorationType, []);
+
+        // 根据配置项类型，找到相关的代码行进行高亮
+        const ranges = this.getRelevantCodeRanges(payload.optionName);
+        if (ranges.length > 0) {
+            this.previewEditor.setDecorations(this.highlightDecorationType, ranges);
+        }
+    }
+
+    /**
+     * 处理配置项focus事件 - 自动滚动到相关代码
+     */
+    private async handleConfigOptionFocus(payload: { optionName: string }): Promise<void> {
+        if (!this.previewEditor || !payload.optionName) {
+            return;
+        }
+
+        // 先执行hover高亮
+        await this.handleConfigOptionHover(payload);
+
+        // 然后滚动到第一个相关的代码行
+        const ranges = this.getRelevantCodeRanges(payload.optionName);
+        if (ranges.length > 0) {
+            const firstRange = ranges[0];
+            this.previewEditor.revealRange(firstRange, vscode.TextEditorRevealType.InCenter);
+        }
+    }
+
+    /**
+     * 清除所有高亮
+     */
+    private async handleClearHighlights(): Promise<void> {
+        if (this.previewEditor) {
+            this.previewEditor.setDecorations(this.highlightDecorationType, []);
+        }
+    }
+
+    /**
+     * 根据配置项名称，获取相关的代码范围
+     * 这个方法包含了关于哪些配置项影响哪些代码部分的"领域知识"
+     */
+    private getRelevantCodeRanges(optionName: string): vscode.Range[] {
+        if (!this.previewEditor) {
+            return [];
+        }
+
+        const document = this.previewEditor.document;
+        const ranges: vscode.Range[] = [];
+
+        // 根据不同的配置项，智能识别相关的代码模式
+        switch (optionName) {
+            case 'IndentWidth':
+            case 'TabWidth':
+            case 'UseTab':
+                // 缩进相关：高亮所有有缩进的行
+                for (let i = 0; i < document.lineCount; i++) {
+                    const line = document.lineAt(i);
+                    if (line.text.match(/^[\s\t]+\S/)) { // 以空格或tab开头，后面跟非空字符
+                        ranges.push(new vscode.Range(i, 0, i, line.firstNonWhitespaceCharacterIndex));
+                    }
+                }
+                break;
+
+            case 'BreakBeforeBraces':
+            case 'Cpp11BracedListStyle':
+                // 大括号相关：高亮所有大括号
+                for (let i = 0; i < document.lineCount; i++) {
+                    const line = document.lineAt(i);
+                    const braceMatches = line.text.matchAll(/[{}]/g);
+                    for (const match of braceMatches) {
+                        if (match.index !== undefined) {
+                            ranges.push(new vscode.Range(i, match.index, i, match.index + 1));
+                        }
+                    }
+                }
+                break;
+
+            case 'PointerAlignment':
+            case 'ReferenceAlignment':
+                // 指针/引用对齐：高亮指针和引用符号
+                for (let i = 0; i < document.lineCount; i++) {
+                    const line = document.lineAt(i);
+                    const pointerMatches = line.text.matchAll(/[*&]/g);
+                    for (const match of pointerMatches) {
+                        if (match.index !== undefined) {
+                            ranges.push(new vscode.Range(i, match.index, i, match.index + 1));
+                        }
+                    }
+                }
+                break;
+
+            case 'SpaceBeforeParens':
+            case 'SpacesInParentheses':
+                // 括号空格：高亮所有括号
+                for (let i = 0; i < document.lineCount; i++) {
+                    const line = document.lineAt(i);
+                    const parenMatches = line.text.matchAll(/[()]/g);
+                    for (const match of parenMatches) {
+                        if (match.index !== undefined) {
+                            ranges.push(new vscode.Range(i, match.index, i, match.index + 1));
+                        }
+                    }
+                }
+                break;
+
+            case 'ColumnLimit':
+                // 列限制：高亮超长的行
+                for (let i = 0; i < document.lineCount; i++) {
+                    const line = document.lineAt(i);
+                    if (line.text.length > 80) { // 假设80为常见的列限制
+                        ranges.push(new vscode.Range(i, 80, i, line.text.length));
+                    }
+                }
+                break;
+
+            case 'AlignConsecutiveAssignments':
+                // 连续赋值对齐：高亮赋值符号
+                for (let i = 0; i < document.lineCount; i++) {
+                    const line = document.lineAt(i);
+                    const assignMatch = line.text.match(/=/);
+                    if (assignMatch && assignMatch.index !== undefined) {
+                        ranges.push(new vscode.Range(i, assignMatch.index, i, assignMatch.index + 1));
+                    }
+                }
+                break;
+
+            case 'SortIncludes':
+                // include排序：高亮所有include语句
+                for (let i = 0; i < document.lineCount; i++) {
+                    const line = document.lineAt(i);
+                    if (line.text.includes('#include')) {
+                        ranges.push(new vscode.Range(i, 0, i, line.text.length));
+                    }
+                }
+                break;
+
+            default:
+                // 对于未特殊处理的选项，不进行高亮
+                break;
+        }
+
+        return ranges;
     }
 
     private async updatePreview(changedKey?: string): Promise<void> {
         try {
-            // 更新宏观预览 - 使用新的统一format方法
+            // 【核心变更】不再向Webview发送宏观预览，而是直接更新虚拟编辑器
             const macroResult = await this.formatService.format(MACRO_PREVIEW_CODE, this.currentConfig);
 
-            await this.sendMessage({
-                type: WebviewMessageType.MACRO_PREVIEW_UPDATE,
-                payload: {
-                    formattedCode: macroResult.formattedCode,
-                    success: macroResult.success,
-                    error: macroResult.error
-                }
-            });
+            if (this.currentPreviewUri && macroResult.success) {
+                // 直接更新虚拟编辑器的内容！
+                this.previewProvider.updateContent(this.currentPreviewUri, macroResult.formattedCode);
+            }
 
-            // 如果有特定的配置项变更，更新对应的微观预览
+            // 如果有特定的配置项变更，仍然需要更新微观预览（这个还是发送给Webview的）
             if (changedKey) {
                 const option = CLANG_FORMAT_OPTIONS.find(opt => opt.key === changedKey);
                 if (option && option.microPreviewCode) {

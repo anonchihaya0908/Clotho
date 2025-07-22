@@ -57,7 +57,12 @@ export enum WebviewMessageType {
 
     // 设置相关
     UPDATE_SETTINGS = 'updateSettings',
-    SETTINGS_UPDATED = 'settingsUpdated'
+    SETTINGS_UPDATED = 'settingsUpdated',
+
+    // 交互联动相关
+    CONFIG_OPTION_HOVER = 'configOptionHover',      // 配置项hover事件
+    CONFIG_OPTION_FOCUS = 'configOptionFocus',      // 配置项focus事件
+    CLEAR_HIGHLIGHTS = 'clearHighlights'            // 清除高亮
 }
 
 // Webview 消息接口
