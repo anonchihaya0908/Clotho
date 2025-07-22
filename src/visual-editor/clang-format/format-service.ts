@@ -391,25 +391,56 @@ export class ClangFormatService {
             }
 
             const key = trimmedLine.substring(0, colonIndex).trim();
-            const valueStr = trimmedLine.substring(colonIndex + 1).trim();
+            let valueStr = trimmedLine.substring(colonIndex + 1).trim();
 
             // 解析值
             let value: any = valueStr;
 
+            // 移除可能的引号
+            if ((valueStr.startsWith('"') && valueStr.endsWith('"')) ||
+                (valueStr.startsWith("'") && valueStr.endsWith("'"))) {
+                valueStr = valueStr.slice(1, -1);
+                value = valueStr;
+            }
             // 布尔值
-            if (valueStr === 'true') {
+            else if (valueStr.toLowerCase() === 'true') {
                 value = true;
-            } else if (valueStr === 'false') {
+            } else if (valueStr.toLowerCase() === 'false') {
                 value = false;
             }
-            // 数字
-            else if (/^\d+$/.test(valueStr)) {
-                value = parseInt(valueStr);
+            // 数字（整数和浮点数）
+            else if (/^-?\d+(\.\d+)?$/.test(valueStr)) {
+                value = valueStr.includes('.') ? parseFloat(valueStr) : parseInt(valueStr);
+            }
+            // 数组值（例如：[value1, value2]）
+            else if (valueStr.startsWith('[') && valueStr.endsWith(']')) {
+                try {
+                    const arrayContent = valueStr.slice(1, -1).trim();
+                    if (arrayContent) {
+                        value = arrayContent.split(',').map(item => {
+                            const trimmed = item.trim();
+                            // 移除引号
+                            if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+                                (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+                                return trimmed.slice(1, -1);
+                            }
+                            return trimmed;
+                        });
+                    } else {
+                        value = [];
+                    }
+                } catch (error) {
+                    console.warn(`Clotho: Failed to parse array value for ${key}: ${valueStr}`);
+                    value = valueStr; // 保持原始字符串
+                }
             }
             // 其他保持为字符串
 
             config[key] = value;
         }
+
+        // 调试输出，帮助排查数据不准确的问题
+        console.log('📄 Clotho: Parsed configuration:', config);
 
         return config;
     }

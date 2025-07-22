@@ -11,6 +11,17 @@
     border-bottom: 1px solid var(--vscode-widget-border);
 }
 
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.header-text {
+    flex: 1;
+}
+
 .quick-setup-header h3 {
     margin: 0 0 8px 0;
     color: var(--vscode-foreground);
@@ -23,6 +34,34 @@
     color: var(--vscode-descriptionForeground);
     font-size: 13px;
     line-height: 1.4;
+}
+
+.open-clang-format-btn {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: 1px solid var(--vscode-button-border, transparent);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.open-clang-format-btn:hover {
+    background: var(--vscode-button-hoverBackground);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.open-clang-format-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .quick-categories {
@@ -210,6 +249,26 @@
     box-sizing: border-box;
 }
 
+/* 美化数字输入框，隐藏默认的上下箭头 */
+.quick-number-input {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: none;
+}
+
+.quick-number-input::-webkit-outer-spin-button,
+.quick-number-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.quick-number-input::-moz-number-spin-box,
+.quick-number-input::-moz-number-spin-up,
+.quick-number-input::-moz-number-spin-down {
+    -moz-appearance: none;
+    display: none;
+}
+
 .quick-number-input:focus,
 .quick-text-input:focus,
 .quick-select-input:focus {
@@ -255,6 +314,23 @@
 
 .number-input {
     max-width: 120px;
+    /* 美化数字输入框，隐藏默认的上下箭头 */
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: none;
+}
+
+.number-input::-webkit-outer-spin-button,
+.number-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.number-input::-moz-number-spin-box,
+.number-input::-moz-number-spin-up,
+.number-input::-moz-number-spin-down {
+    -moz-appearance: none;
+    display: none;
 }
 
 .select-input {
@@ -313,6 +389,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
 }
 
 .copy-markdown-btn {
@@ -324,8 +401,12 @@
     font-size: 9px;
     cursor: pointer;
     transition: all 0.15s ease;
-    margin-left: 8px;
     flex-shrink: 0;
+    min-width: fit-content;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .copy-markdown-btn:hover {
@@ -352,10 +433,111 @@
     word-break: break-word;
 }
 
+/* 继承状态样式 */
+.inherit-indicator {
+    font-size: 12px;
+    margin-left: 6px;
+    opacity: 0.7;
+    cursor: help;
+}
+
+.inherit-info {
+    margin-top: 6px;
+    padding: 8px 12px;
+    background: var(--vscode-editorWidget-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--vscode-descriptionForeground);
+}
+
+.inherit-info strong {
+    color: var(--vscode-foreground);
+    font-weight: 600;
+}
+
+/* 继承状态的输入框样式 */
+.quick-number-input.inheriting,
+.quick-select-input.inheriting {
+    background: var(--vscode-editorWidget-background);
+    border-style: dashed;
+    opacity: 0.8;
+}
+
+.quick-number-input.inheriting::placeholder {
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+}
+
+/* 继承状态下的输入框焦点样式 */
+.quick-number-input.inheriting:focus {
+    background: var(--vscode-input-background);
+    border-style: solid;
+    opacity: 1;
+}
+
+/* Select wrapper with dropdown arrow */
+.select-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.select-arrow {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--vscode-descriptionForeground);
+    font-size: 11px;
+    pointer-events: none;
+    line-height: 1;
+}
+
+/* 修正选择框样式，移除默认箭头 */
+.select-wrapper .quick-select-input {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: none;
+    padding-right: 30px;
+    cursor: pointer;
+}
+
+.select-wrapper .quick-select-input::-ms-expand {
+    display: none;
+}
+
+/* 继承状态下的选择框样式调整 */
+.select-wrapper .quick-select-input.inheriting {
+    background: var(--vscode-input-background);
+    border-style: dashed;
+    color: var(--vscode-descriptionForeground);
+    opacity: 0.8;
+}
+
+.select-wrapper .quick-select-input.inheriting+.select-arrow {
+    color: var(--vscode-descriptionForeground);
+    opacity: 0.6;
+}
+
 /* Responsive design for quick setup */
 @media (max-width: 600px) {
     .quick-setup {
         padding: 12px;
+    }
+
+    .header-content {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+
+    .open-clang-format-btn {
+        align-self: flex-start;
+        font-size: 11px;
+        padding: 6px 10px;
     }
 
     .config-category {
@@ -369,5 +551,10 @@
 
     .config-item {
         padding: 10px;
+    }
+
+    .select-arrow {
+        right: 8px;
+        font-size: 10px;
     }
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import './ConfigModeSelector.css';
+import './style.css';
 
 export type ConfigMode = 'quick' | 'full' | 'search';
 

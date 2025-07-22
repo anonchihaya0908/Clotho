@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { ClangFormatOption } from '../data/clangFormatOptions';
-import './SearchConfig.css';
+import { ClangFormatOption } from '../../data/clangFormatOptions';
+import './style.css';
 
 interface SearchConfigProps {
     options: ClangFormatOption[];

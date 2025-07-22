@@ -3,7 +3,6 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import hljs from 'highlight.js/lib/core';
 import { ConfigPanel } from './components/ConfigPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import { Toolbar } from './components/Toolbar';
@@ -101,6 +100,9 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                 break;
             case 'validate':
                 sendMessage('validateConfig');
+                break;
+            case 'openClangFormatFile':
+                sendMessage('openClangFormatFile');
                 break;
         }
     }, [sendMessage]);
@@ -216,6 +218,13 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
     return (
         <div className="app">
+            <div className="app-header">
+                <div className="app-title">
+                    <span className="app-icon">⚒️</span>
+                    <span className="app-name">Clang-Format Visual Editor</span>
+                </div>
+            </div>
+
             <Toolbar onAction={handleToolbarAction} />
 
             <div className="app-content">
@@ -227,6 +236,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                             onConfigChange={handleConfigChange}
                             onSettingsChange={handleSettingsChange}
                             onPreviewRequest={handlePreviewRequest}
+                            onOpenClangFormatFile={() => handleToolbarAction('openClangFormatFile')}
                             dynamicPreviewResult={state.dynamicPreviewResult}
                             currentConfig={state.currentConfig}
                         />

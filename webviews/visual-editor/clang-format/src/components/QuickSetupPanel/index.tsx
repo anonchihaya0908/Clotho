@@ -4,9 +4,8 @@
  */
 
 import React from 'react';
-import { CLANG_FORMAT_OPTIONS, ClangFormatOption } from '../data/clangFormatOptions';
-import { DynamicMicroPreview } from './DynamicMicroPreview';
-import './QuickSetup.css';
+import { CLANG_FORMAT_OPTIONS, ClangFormatOption } from '../../data/clangFormatOptions';
+import DynamicMicroPreview from '../DynamicMicroPreview';
 
 interface QuickSetupPanelProps {
     currentConfig: Record<string, any>;

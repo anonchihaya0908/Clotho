@@ -46,10 +46,17 @@ module.exports = (env, argv) => {
         ],
         optimization: {
             minimize: isProduction,
+            // 暂时禁用代码分割以避免复杂性，专注于懒加载优化
+            // splitChunks: false,
         },
         externals: {
             // VS Code webview API is provided by the webview environment
             vscode: 'commonjs vscode',
+        },
+        performance: {
+            hints: isProduction ? 'warning' : false,
+            maxEntrypointSize: 300000, // 300 KiB (增加限制以适应VS Code webview)
+            maxAssetSize: 300000,
         },
     };
 };

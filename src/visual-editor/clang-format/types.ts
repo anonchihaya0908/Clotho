@@ -49,6 +49,7 @@ export enum WebviewMessageType {
     IMPORT_CONFIG = 'importConfig',
     RESET_CONFIG = 'resetConfig',
     VALIDATE_CONFIG = 'validateConfig',
+    OPEN_CLANG_FORMAT_FILE = 'openClangFormatFile',
 
     // 验证相关
     VALIDATION_RESULT = 'validationResult',

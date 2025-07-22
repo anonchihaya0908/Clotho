@@ -170,6 +170,30 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         const config = vscode.workspace.getConfiguration('clotho.clangFormat');
         const showGuideButton = config.get<boolean>('showGuideButton', true);
 
+        // 【新增】尝试自动加载工作区配置
+        try {
+            const configPath = this.formatService.getWorkspaceConfigPath();
+            if (configPath) {
+                console.log('📁 Clotho: Found workspace .clang-format file, loading automatically...');
+                this.currentConfig = await this.formatService.loadConfigFromFile(configPath);
+                vscode.window.showInformationMessage('已自动加载工作区的 .clang-format 配置文件');
+            } else {
+                console.log('📁 Clotho: No workspace .clang-format file found, using default config');
+                // 使用默认配置
+                this.currentConfig = { ...DEFAULT_CLANG_FORMAT_CONFIG };
+            }
+        } catch (error) {
+            console.error('❌ Clotho: Failed to auto-load workspace config:', error);
+            ErrorHandler.handle(error, {
+                operation: 'autoLoadWorkspaceConfig',
+                module: 'ClangFormatEditorCoordinator',
+                showToUser: false, // 不向用户显示错误，因为这是自动尝试
+                logLevel: 'warn'
+            });
+            // 如果自动加载失败，使用默认配置
+            this.currentConfig = { ...DEFAULT_CLANG_FORMAT_CONFIG };
+        }
+
         // 发送初始配置选项
         await this.sendMessage({
             type: WebviewMessageType.INITIALIZE,
@@ -217,6 +241,10 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
 
                     case WebviewMessageType.VALIDATE_CONFIG:
                         await this.handleValidateConfig();
+                        break;
+
+                    case WebviewMessageType.OPEN_CLANG_FORMAT_FILE:
+                        await this.handleOpenClangFormatFile();
                         break;
 
                     case WebviewMessageType.UPDATE_SETTINGS:
@@ -376,6 +404,55 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             type: WebviewMessageType.VALIDATION_RESULT,
             payload: validation
         });
+    }
+
+    private async handleOpenClangFormatFile(): Promise<void> {
+        try {
+            // 获取当前工作区根目录
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            if (!workspaceFolder) {
+                vscode.window.showErrorMessage('No workspace folder is open. Please open a workspace to access .clang-format file.');
+                return;
+            }
+
+            // 构建 .clang-format 文件路径
+            const clangFormatFilePath = vscode.Uri.joinPath(workspaceFolder.uri, '.clang-format');
+
+            try {
+                // 尝试打开现有的 .clang-format 文件
+                await vscode.workspace.fs.stat(clangFormatFilePath);
+                const document = await vscode.workspace.openTextDocument(clangFormatFilePath);
+                await vscode.window.showTextDocument(document);
+            } catch (error) {
+                // 文件不存在，询问用户是否创建
+                const choice = await vscode.window.showInformationMessage(
+                    'No .clang-format file found in workspace. Would you like to create one?',
+                    'Create',
+                    'Cancel'
+                );
+
+                if (choice === 'Create') {
+                    // 创建基本的 .clang-format 文件
+                    const basicConfig = this.generateBasicClangFormatConfig();
+                    await vscode.workspace.fs.writeFile(
+                        clangFormatFilePath,
+                        Buffer.from(basicConfig, 'utf8')
+                    );
+
+                    const document = await vscode.workspace.openTextDocument(clangFormatFilePath);
+                    await vscode.window.showTextDocument(document);
+
+                    vscode.window.showInformationMessage('.clang-format file created successfully!');
+                }
+            }
+        } catch (error) {
+            ErrorHandler.handle(error, {
+                operation: 'openClangFormatFile',
+                module: 'ClangFormatEditorCoordinator',
+                showToUser: true,
+                logLevel: 'error'
+            });
+        }
     }
 
     private async handleUpdateSettings(payload: any): Promise<void> {
@@ -620,7 +697,49 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             </script>
         </body>
         </html>`;
-    }    /**
+    }
+
+    /**
+     * 生成基本的 .clang-format 配置文件内容
+     */
+    private generateBasicClangFormatConfig(): string {
+        return `# Clang-Format Configuration File
+# Generated by Clotho VS Code Extension
+
+# Base style to inherit from
+BasedOnStyle: LLVM
+
+# Indentation settings
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# Column limit
+ColumnLimit: 100
+
+# Brace settings
+BreakBeforeBraces: Attach
+
+# Pointer alignment
+PointerAlignment: Left
+
+# Space settings
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# Alignment settings
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: true
+
+# Other settings
+SortIncludes: CaseSensitive
+FixNamespaceComments: true
+`;
+    }
+
+    /**
      * 生成随机nonce用于CSP安全
      */
     private getNonce(): string {

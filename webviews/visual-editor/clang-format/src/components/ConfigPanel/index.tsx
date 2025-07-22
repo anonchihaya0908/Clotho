@@ -3,12 +3,12 @@
  */
 
 import React, { useState } from 'react';
-import { ConfigModeSelector, ConfigMode } from './ConfigModeSelector';
-import { QuickSetup } from './QuickSetup';
-import { SearchConfig } from './SearchConfig';
-import { DynamicMicroPreview } from './DynamicMicroPreview';
-import { CLANG_FORMAT_OPTIONS, ClangFormatOption } from '../data/clangFormatOptions';
-import './ConfigPanel.css';
+import { ConfigModeSelector, ConfigMode } from '../ConfigModeSelector';
+import { QuickSetup } from '../QuickSetup';
+import { SearchConfig } from '../SearchConfig';
+import DynamicMicroPreview from '../DynamicMicroPreview';
+import { CLANG_FORMAT_OPTIONS, ClangFormatOption } from '../../data/clangFormatOptions';
+import './style.css';
 
 export interface ConfigPanelProps {
     microPreviews: Record<string, string>;
@@ -18,6 +18,7 @@ export interface ConfigPanelProps {
     onConfigChange: (key: string, value: any) => void;
     onSettingsChange: (setting: string, value: any) => void;
     onPreviewRequest: (optionName: string, config: Record<string, any>, previewSnippet: string) => void;
+    onOpenClangFormatFile?: () => void;
     dynamicPreviewResult?: {
         optionName: string;
         formattedCode: string;
@@ -36,6 +37,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
     onConfigChange,
     onSettingsChange,
     onPreviewRequest,
+    onOpenClangFormatFile,
     dynamicPreviewResult,
     currentConfig
 }) => {
@@ -211,6 +213,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                     <QuickSetup
                         config={currentConfig}
                         onChange={onConfigChange}
+                        onOpenClangFormatFile={onOpenClangFormatFile}
                     />
                 )}
 

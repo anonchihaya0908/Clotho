@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { ClangFormatOption, CLANG_FORMAT_OPTIONS } from '../data/clangFormatOptions';
-import { DynamicMicroPreview } from './DynamicMicroPreview';
+import { ClangFormatOption, CLANG_FORMAT_OPTIONS } from '../../data/clangFormatOptions';
+import DynamicMicroPreview from '../DynamicMicroPreview';
 
 interface MainConfigInterfaceProps {
     currentConfig: Record<string, any>;
