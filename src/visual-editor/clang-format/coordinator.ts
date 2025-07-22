@@ -62,7 +62,10 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                     enableScripts: true,
                     retainContextWhenHidden: true,
                     localResourceRoots: [
-                        vscode.Uri.joinPath(this.extensionUri, 'webviews')
+                        // 授权整个 webviews 目录，确保 highlight.js 能访问所有必要的资源
+                        vscode.Uri.joinPath(this.extensionUri, 'webviews'),
+                        // 特别授权 dist 目录
+                        vscode.Uri.joinPath(this.extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist')
                     ]
                 }
             );
@@ -84,6 +87,30 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                 this.panel = undefined;
                 // 不再需要cleanup，新的format服务不使用临时文件
             });
+
+            // 监听主题变化并通知 Webview
+            this.disposables.push(
+                vscode.window.onDidChangeActiveColorTheme(theme => {
+                    const isDarkTheme = theme.kind === vscode.ColorThemeKind.Dark ||
+                        theme.kind === vscode.ColorThemeKind.HighContrast;
+
+                    console.log('🎨 Theme Changed:', {
+                        name: theme.kind,
+                        isDark: isDarkTheme,
+                        themeKind: vscode.ColorThemeKind[theme.kind]
+                    });
+
+                    // 通知 Webview 主题已变化
+                    if (this.panel) {
+                        this.panel.webview.postMessage({
+                            command: 'themeChanged',
+                            theme: isDarkTheme ? 'dark' : 'light',
+                            kind: vscode.ColorThemeKind[theme.kind],
+                            isDark: isDarkTheme
+                        });
+                    }
+                })
+            );
 
             // 初始化编辑器
             await this.initializeEditor();
@@ -198,6 +225,10 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
 
                     case WebviewMessageType.GET_MICRO_PREVIEW:
                         await this.handleGetMicroPreview(message.payload);
+                        break;
+
+                    case WebviewMessageType.GET_MACRO_PREVIEW:
+                        await this.handleGetMacroPreview(message.payload);
                         break;
 
                     default:
@@ -420,6 +451,42 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         }
     }
 
+    private async handleGetMacroPreview(payload: { config: Record<string, any> }): Promise<void> {
+        try {
+            const config = payload.config;
+            if (!config) {
+                throw new Error('No configuration provided for macro preview');
+            }
+
+            const result = await this.formatService.format(MACRO_PREVIEW_CODE, config);
+            await this.sendMessage({
+                type: WebviewMessageType.MACRO_PREVIEW_UPDATE,
+                payload: {
+                    formattedCode: result.formattedCode,
+                    success: result.success,
+                    error: result.error
+                }
+            });
+        } catch (error) {
+            ErrorHandler.handle(error, {
+                operation: 'handleGetMacroPreview',
+                module: 'ClangFormatEditorCoordinator',
+                showToUser: false,
+                logLevel: 'error'
+            });
+
+            // 发送错误信息回前端
+            await this.sendMessage({
+                type: WebviewMessageType.MACRO_PREVIEW_UPDATE,
+                payload: {
+                    formattedCode: MACRO_PREVIEW_CODE, // 失败时显示原始代码
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Failed to generate macro preview'
+                }
+            });
+        }
+    }
+
     private async updatePreview(changedKey?: string): Promise<void> {
         try {
             // 更新宏观预览 - 使用新的统一format方法
@@ -471,26 +538,60 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         }
 
         const webview = this.panel.webview;
+        const extensionUri = this.extensionUri;
 
-        // 获取资源路径
+        // 【核心】检测当前VSCode的主题是亮色还是暗色
+        const currentTheme = vscode.window.activeColorTheme;
+        const isDarkTheme = currentTheme.kind === vscode.ColorThemeKind.Dark ||
+            currentTheme.kind === vscode.ColorThemeKind.HighContrast;
+
+        console.log('🎨 VS Code Theme Detection:', {
+            name: currentTheme.kind,
+            isDark: isDarkTheme,
+            themeKind: vscode.ColorThemeKind[currentTheme.kind]
+        });
+
+        // 1. 【核心】定义所有需要从本地加载的资源的URI
         const scriptUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this.extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist', 'index.js')
+            vscode.Uri.joinPath(extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist', 'index.js')
         );
         const styleUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this.extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist', 'index.css')
+            vscode.Uri.joinPath(extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist', 'index.css')
         );
 
-        // 生成 HTML
+        // 确保 highlight.js 能访问其所需的所有资源
+        const webviewResourceRoot = webview.asWebviewUri(
+            vscode.Uri.joinPath(extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist')
+        );
+
+        const nonce = this.getNonce();
+
+        // 2. 【核心】构建一个更完善的、允许动态加载的内容安全策略
         return `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Clang-Format Editor</title>
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource};">
+            
+            <!--
+              Content Security Policy (CSP) - The Ultimate Version
+              This is the key to allowing modern highlighters like highlight.js to work.
+            -->
+            <meta http-equiv="Content-Security-Policy" content="
+                default-src 'none';
+                style-src   ${webview.cspSource} 'nonce-${nonce}';
+                script-src  'nonce-${nonce}';
+                img-src     ${webview.cspSource} https: data:;
+                font-src    ${webview.cspSource};
+                worker-src  ${webview.cspSource};
+                connect-src ${webview.cspSource};
+            ">
+
             <link href="${styleUri}" rel="stylesheet">
-            <style>
-                /* 确保 VS Code 主题变量可用 */
+            <title>Clang-Format Editor</title>
+            
+            <style nonce="${nonce}">
+                /* Base styles to prevent flash of unstyled content */
                 body {
                     font-family: var(--vscode-font-family);
                     font-size: var(--vscode-font-size);
@@ -502,10 +603,32 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                 }
             </style>
         </head>
-        <body>
+        <body data-vscode-theme="${isDarkTheme ? 'dark' : 'light'}" data-vscode-theme-name="${currentTheme.kind}">
+            <!-- 【核心】将当前主题信息，通过data属性，直接嵌入到body上 -->
             <div id="app"></div>
-            <script src="${scriptUri}"></script>
+            <script nonce="${nonce}" src="${scriptUri}"></script>
+            
+            <script nonce="${nonce}">
+                // 主题信息传递给前端
+                window.vscodeTheme = {
+                    isDark: ${isDarkTheme},
+                    kind: '${vscode.ColorThemeKind[currentTheme.kind]}',
+                    name: '${currentTheme.kind}'
+                };
+                
+                console.log('🎨 Webview Theme Info:', window.vscodeTheme);
+            </script>
         </body>
         </html>`;
+    }    /**
+     * 生成随机nonce用于CSP安全
+     */
+    private getNonce(): string {
+        let text = '';
+        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for (let i = 0; i < 32; i++) {
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+        }
+        return text;
     }
 }

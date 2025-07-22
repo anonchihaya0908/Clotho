@@ -28,7 +28,6 @@ export interface ConfigValidationResult {
 
 export class ClangFormatService {
     constructor() {
-        // 不再需要临时文件路径！
     }
 
     /**

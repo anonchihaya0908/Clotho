@@ -310,9 +310,10 @@ body {
 /* Highlight.js 主题覆盖以匹配 VS Code */
 .hljs {
     background: transparent !important;
-    color: var(--vscode-editor-foreground, #d4d4d4) !important;
     padding: 0 !important;
     margin: 0 !important;
+    display: block !important;
+    overflow-x: auto !important;
 }
 
 /* 确保代码容器保持 language-cpp class */
@@ -320,127 +321,16 @@ body {
     background: transparent !important;
 }
 
-/* C++ 语法高亮颜色 - 完整覆盖，确保主题兼容性 */
-
-/* 关键字：class, public, private, int, void, const, auto 等 */
-.hljs-keyword,
-.hljs-built_in,
-.hljs-type {
-    color: var(--vscode-symbolIcon-keywordForeground, #569cd6) !important;
-    font-weight: normal !important;
+/* 增强微观预览代码样式 */
+.micro-preview-code {
+    font-size: 13px !important;
+    line-height: 1.3 !important;
 }
 
-/* 字符串和字符：双引号字符串 */
-.hljs-string,
-.hljs-char,
-.hljs-string .hljs-subst {
-    color: var(--vscode-symbolIcon-stringForeground, #ce9178) !important;
-}
-
-/* 注释：单行和多行注释 */
-.hljs-comment {
-    color: var(--vscode-symbolIcon-textForeground, #6a9955) !important;
-    font-style: italic !important;
-}
-
-/* 数字：整数、浮点数 */
-.hljs-number,
-.hljs-literal {
-    color: var(--vscode-symbolIcon-numberForeground, #b5cea8) !important;
-}
-
-/* 函数名：函数定义和调用 */
-.hljs-function .hljs-title,
-.hljs-title.function_,
-.hljs-title.class_,
-.hljs-class .hljs-title {
-    color: var(--vscode-symbolIcon-functionForeground, #dcdcaa) !important;
-    font-weight: normal !important;
-}
-
-/* 变量名：参数、局部变量 */
-.hljs-variable,
-.hljs-template-variable,
-.hljs-params {
-    color: var(--vscode-symbolIcon-variableForeground, #9cdcfe) !important;
-}
-
-/* 预处理器：#include, #define 等 */
-.hljs-meta,
-.hljs-meta-keyword,
-.hljs-meta-string,
-.hljs-preprocessor {
-    color: var(--vscode-symbolIcon-keywordForeground, #c586c0) !important;
-}
-
-/* 操作符：+, -, *, /, =, ==, != 等 */
-.hljs-operator {
+/* 回退样式 - 当高亮失败时保持可读性 */
+.hljs-fallback {
     color: var(--vscode-editor-foreground, #d4d4d4) !important;
-}
-
-/* 标点符号：{, }, (, ), ;, , 等 */
-.hljs-punctuation {
-    color: var(--vscode-editor-foreground, #d4d4d4) !important;
-}
-
-/* 属性和标签 */
-.hljs-name,
-.hljs-attr,
-.hljs-tag {
-    color: var(--vscode-symbolIcon-variableForeground, #9cdcfe) !important;
-}
-
-/* 属性值 */
-.hljs-attribute {
-    color: var(--vscode-symbolIcon-propertyForeground, #9cdcfe) !important;
-}
-
-/* 节标题 */
-.hljs-section,
-.hljs-title {
-    color: var(--vscode-symbolIcon-classForeground, #4ec9b0) !important;
-}
-
-/* 符号和标记 */
-.hljs-symbol,
-.hljs-bullet {
-    color: var(--vscode-symbolIcon-numberForeground, #b5cea8) !important;
-}
-
-/* 强调样式 */
-.hljs-emphasis {
-    font-style: italic !important;
-}
-
-.hljs-strong {
-    font-weight: bold !important;
-}
-
-/* 确保所有高亮元素都有正确的字体 */
-.hljs * {
-    font-family: inherit !important;
-}
-
-/* 专门针对 C++ 的额外规则 */
-.language-cpp .hljs-keyword {
-    color: var(--vscode-symbolIcon-keywordForeground, #569cd6) !important;
-}
-
-.language-cpp .hljs-string {
-    color: var(--vscode-symbolIcon-stringForeground, #ce9178) !important;
-}
-
-.language-cpp .hljs-comment {
-    color: var(--vscode-symbolIcon-textForeground, #6a9955) !important;
-    font-style: italic !important;
-}
-
-.language-cpp .hljs-number {
-    color: var(--vscode-symbolIcon-numberForeground, #b5cea8) !important;
-}
-
-.language-cpp .hljs-title {
-    color: var(--vscode-symbolIcon-functionForeground, #dcdcaa) !important;
+    font-family: var(--vscode-editor-font-family, 'Courier New', monospace) !important;
 }
 
 /* Status Bar */
@@ -740,4 +630,140 @@ textarea:disabled {
     font-size: 12px;
     padding: 8px;
     text-align: center;
+}
+
+/* 🎨 终极语法高亮系统 - 完全动态主题版 + 完整样式保留 */
+
+/*
+ * 为代码预览区建立一个"CSS独立王国"。
+ * 通过使用ID选择器 (#...), 我们赋予这些规则最高的权重，
+ * 确保它们能覆盖任何其他可能冲突的样式，比如 .disabled 或其他通用规则。
+ * 
+ * 🎯 完全移除硬编码颜色，100%依赖VS Code主题变量
+ */
+
+#macro-preview-code,
+[id^="micro-preview-code-"] {
+    display: block;
+    overflow-x: auto;
+    padding: 0 !important;
+    background: transparent !important;
+    color: var(--vscode-editor-foreground);
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+}
+
+/* Fallback: ensure all hljs spans inherit editor foreground if no specific rule applies */
+#macro-preview-code [class*="hljs-"],
+[id^="micro-preview-code-"] [class*="hljs-"] {
+    color: var(--vscode-editor-foreground);
+}
+
+/* --- 核心染色规则 - 带硬编码回退的动态主题版 --- */
+
+#macro-preview-code .hljs-comment,
+[id^="micro-preview-code-"] .hljs-comment {
+    color: var(--vscode-editor-snippetTabstopHighlightBackground, var(--vscode-debugConsole-sourceForeground, var(--vscode-terminal-ansiGreen, #6A9955))) !important;
+    opacity: 1;
+    font-style: italic;
+}
+
+#macro-preview-code .hljs-keyword,
+[id^="micro-preview-code-"] .hljs-keyword,
+#macro-preview-code .hljs-built_in,
+[id^="micro-preview-code-"] .hljs-built_in,
+#macro-preview-code .hljs-literal,
+[id^="micro-preview-code-"] .hljs-literal {
+    color: var(--vscode-symbolIcon-keywordForeground, var(--vscode-terminal-ansiMagenta, var(--vscode-debugTokenExpression-name, #C586C0))) !important;
+    font-weight: normal;
+}
+
+/* 预处理器指令 #include 等 */
+#macro-preview-code .hljs-meta,
+[id^="micro-preview-code-"] .hljs-meta,
+#macro-preview-code .hljs-meta-keyword,
+[id^="micro-preview-code-"] .hljs-meta-keyword {
+    color: var(--vscode-symbolIcon-keywordForeground, var(--vscode-terminal-ansiMagenta, var(--vscode-debugTokenExpression-name, #C586C0))) !important;
+}
+
+#macro-preview-code .hljs-string,
+[id^="micro-preview-code-"] .hljs-string {
+    color: var(--vscode-symbolIcon-stringForeground, var(--vscode-terminal-ansiYellow, var(--vscode-debugTokenExpression-string, #CE9178))) !important;
+}
+
+#macro-preview-code .hljs-number,
+[id^="micro-preview-code-"] .hljs-number {
+    color: var(--vscode-symbolIcon-numberForeground, var(--vscode-terminal-ansiGreen, var(--vscode-debugTokenExpression-number, #B5CEA8))) !important;
+}
+
+#macro-preview-code .hljs-title.class_,
+[id^="micro-preview-code-"] .hljs-title.class_,
+#macro-preview-code .hljs-symbol,
+[id^="micro-preview-code-"] .hljs-symbol {
+    color: var(--vscode-symbolIcon-classForeground, var(--vscode-terminal-ansiCyan, var(--vscode-debugTokenExpression-name, #4EC9B0))) !important;
+    font-weight: normal;
+}
+
+#macro-preview-code .hljs-type,
+[id^="micro-preview-code-"] .hljs-type {
+    color: var(--vscode-symbolIcon-classForeground, var(--vscode-terminal-ansiCyan, var(--vscode-debugTokenExpression-name, #4EC9B0))) !important;
+}
+
+#macro-preview-code .hljs-title.function_,
+[id^="micro-preview-code-"] .hljs-title.function_ {
+    color: var(--vscode-symbolIcon-functionForeground, var(--vscode-terminal-ansiYellow, var(--vscode-debugTokenExpression-name, #DCDCAA))) !important;
+    font-weight: normal;
+}
+
+#macro-preview-code .hljs-variable,
+[id^="micro-preview-code-"] .hljs-variable,
+#macro-preview-code .hljs-params,
+[id^="micro-preview-code-"] .hljs-params {
+    color: var(--vscode-symbolIcon-variableForeground, var(--vscode-terminal-ansiBlue, var(--vscode-debugTokenExpression-value, #9CDCFE))) !important;
+}
+
+#macro-preview-code .hljs-operator,
+[id^="micro-preview-code-"] .hljs-operator,
+#macro-preview-code .hljs-punctuation,
+[id^="micro-preview-code-"] .hljs-punctuation {
+    color: var(--vscode-editor-foreground, var(--vscode-terminal-foreground, #D4D4D4)) !important;
+    opacity: 1;
+}
+
+/* 应急回退 - 如果highlight.js完全失效 */
+#macro-preview-code code,
+[id^="micro-preview-code-"] code {
+    background: transparent !important;
+    font-family: var(--vscode-editor-font-family, 'Consolas', 'Courier New', monospace) !important;
+}
+
+/* 🌗 主题特定样式覆盖 */
+
+/* 深色主题优化 */
+[data-vscode-theme="dark"] #macro-preview-code .hljs-comment,
+[data-vscode-theme="dark"] [id^="micro-preview-code-"] .hljs-comment {
+    opacity: 0.7;
+    /* 深色主题下注释稍微亮一些 */
+}
+
+/* 浅色主题优化 */
+[data-vscode-theme="light"] #macro-preview-code .hljs-comment,
+[data-vscode-theme="light"] [id^="micro-preview-code-"] .hljs-comment {
+    opacity: 0.65;
+    /* 浅色主题下注释稍微暗一些 */
+}
+
+/* 高对比度主题优化 */
+[data-vscode-theme-name="HighContrast"] #macro-preview-code .hljs-comment,
+[data-vscode-theme-name="HighContrast"] [id^="micro-preview-code-"] .hljs-comment {
+    opacity: 1;
+    /* 高对比度主题下不使用透明度 */
+    color: var(--vscode-editor-foreground);
+    font-weight: normal;
+}
+
+/* 主题切换时的平滑过渡 */
+#macro-preview-code span,
+[id^="micro-preview-code-"] span {
+    transition: color 0.15s ease-in-out, opacity 0.15s ease-in-out;
 }

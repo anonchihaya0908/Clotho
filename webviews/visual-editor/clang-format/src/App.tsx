@@ -120,6 +120,8 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                         settings: message.payload.settings || prev.settings,
                         isLoading: false
                     }));
+                    // 初始化时立即请求一次宏观预览
+                    sendMessage('getMacroPreview', { config: message.payload.currentConfig });
                     break;
 
                 case 'configLoaded':
@@ -127,6 +129,8 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                         ...prev,
                         currentConfig: message.payload.config
                     }));
+                    // 配置加载后请求宏观预览
+                    sendMessage('getMacroPreview', { config: message.payload.config });
                     break;
 
                 case 'microPreviewUpdate':
@@ -192,7 +196,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
-    }, []);
+    }, [sendMessage]); // sendMessage 已被 useCallback 包装
 
     if (state.isLoading) {
         return (

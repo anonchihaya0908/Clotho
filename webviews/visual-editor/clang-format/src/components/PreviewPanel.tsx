@@ -2,12 +2,19 @@
  * Preview Panel Component - 宏观预览面板
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import hljs from 'highlight.js/lib/core';
 import cpp from 'highlight.js/lib/languages/cpp';
 
 // 注册 C++ 语言
 hljs.registerLanguage('cpp', cpp);
+
+// 配置 highlight.js 以确保最佳渲染效果
+hljs.configure({
+    ignoreUnescapedHTML: true,
+    throwUnescapedHTML: false,
+    classPrefix: 'hljs-'
+});
 
 export interface PreviewPanelProps {
     macroPreview: string;
@@ -19,61 +26,69 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     isValid
 }) => {
     const codeRef = useRef<HTMLElement>(null);
+    const [currentTheme, setCurrentTheme] = useState(
+        typeof window !== 'undefined' ?
+            (window as any).vscodeTheme?.isDark ? 'dark' : 'light' : 'dark'
+    );
 
-    // 生成Markdown格式的代码
-    const generateMarkdownCode = (code: string) => {
-        if (!code) return '';
-        return `\`\`\`cpp\n${code}\n\`\`\``;
-    };
-
-    // 应用语法高亮
+    // 监听主题变化
     useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data.command === 'themeChanged') {
+                const newTheme = event.data.isDark ? 'dark' : 'light';
+                setCurrentTheme(newTheme);
+                document.body.setAttribute('data-vscode-theme', newTheme);
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
+    // 应用语法高亮 - 最终稳定版
+    // 使用 useLayoutEffect 确保在 DOM 绘制前同步执行高亮
+    React.useLayoutEffect(() => {
         if (codeRef.current) {
             if (macroPreview) {
                 try {
-                    // 强制清除之前的内容和属性
-                    codeRef.current.removeAttribute('data-highlighted');
-                    codeRef.current.className = 'language-cpp hljs';
-
-                    // 使用 highlight.js 高亮代码
                     const result = hljs.highlight(macroPreview, {
                         language: 'cpp',
                         ignoreIllegals: true
                     });
-
-                    // 设置高亮后的 HTML
                     codeRef.current.innerHTML = result.value;
-
-                    console.log('Preview panel highlight applied successfully');
                 } catch (error) {
-                    console.error('Preview panel highlight error:', error);
-                    // 降级到普通文本
+                    console.error('❌ Highlight failed:', error);
+                    // Fallback to plain text
                     codeRef.current.textContent = macroPreview;
                 }
             } else {
-                // 如果没有预览内容，则清空
+                // 清空内容
                 codeRef.current.innerHTML = '';
             }
         }
-    }, [macroPreview]);
+        // 清理函数，在下次 effect 执行前清空，防止旧内容残留
+        return () => {
+            if (codeRef.current) {
+                codeRef.current.innerHTML = '';
+            }
+        };
+    }, [macroPreview, currentTheme]); // 依赖项
 
     return (
         <div className="preview-panel">
             <div className="preview-header">
-                <h3>Macro Preview</h3>
-                <div className={`validation-indicator ${isValid ? 'valid' : 'invalid'}`}>
-                    {isValid ? '✓ Valid' : '⚠ Invalid'}
-                </div>
+                <h3>代码预览</h3>
+                <span className={`validation-indicator ${isValid ? 'valid' : 'invalid'}`}>
+                    {isValid ? '✓ 有效配置' : '✗ 无效配置'}
+                </span>
             </div>
-
             <div className="preview-content">
                 <pre className="code-preview">
                     <code
                         ref={codeRef}
-                        className="language-cpp"
-                    >
-                        {/* 内容将通过 innerHTML 设置 */}
-                    </code>
+                        id="macro-preview-code"
+                        className="language-cpp hljs"
+                    />
                 </pre>
             </div>
         </div>

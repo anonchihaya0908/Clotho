@@ -39,6 +39,7 @@ export enum WebviewMessageType {
     MICRO_PREVIEW_UPDATE = 'microPreviewUpdate',
     MACRO_PREVIEW_UPDATE = 'macroPreviewUpdate',
     GET_MICRO_PREVIEW = 'getMicroPreview',         // 请求动态微观预览
+    GET_MACRO_PREVIEW = 'getMacroPreview',         // 请求宏观预览
     UPDATE_MICRO_PREVIEW = 'updateMicroPreview',   // 返回微观预览结果
 
     // 操作相关
