@@ -17,14 +17,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onAction }) => {
                     onClick={() => onAction('load')}
                     title="Load workspace configuration"
                 >
-                    📁 Load
+                    Load
                 </button>
                 <button
                     className="toolbar-button"
                     onClick={() => onAction('save')}
                     title="Save to workspace"
                 >
-                    💾 Save
+                    Save
                 </button>
             </div>
 
@@ -34,14 +34,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onAction }) => {
                     onClick={() => onAction('import')}
                     title="Import configuration file"
                 >
-                    📥 Import
+                    Import
                 </button>
                 <button
                     className="toolbar-button"
                     onClick={() => onAction('export')}
                     title="Export configuration file"
                 >
-                    📤 Export
+                    Export
                 </button>
             </div>
 
@@ -51,14 +51,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onAction }) => {
                     onClick={() => onAction('validate')}
                     title="Validate current configuration"
                 >
-                    ✓ Validate
+                    Validate
                 </button>
                 <button
                     className="toolbar-button reset"
                     onClick={() => onAction('reset')}
                     title="Reset to default configuration"
                 >
-                    🔄 Reset
+                    Reset
                 </button>
             </div>
         </div>

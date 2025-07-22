@@ -88,9 +88,9 @@ body {
 }
 
 .toolbar-button {
-    padding: 6px 12px;
-    background-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
+    padding: 8px 16px;
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -99,7 +99,7 @@ body {
 }
 
 .toolbar-button:hover {
-    background-color: var(--vscode-button-hoverBackground);
+    background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
 .toolbar-button.reset {
@@ -678,7 +678,7 @@ textarea:disabled {
  * 通过使用ID选择器 (#...), 我们赋予这些规则最高的权重，
  * 确保它们能覆盖任何其他可能冲突的样式，比如 .disabled 或其他通用规则。
  * 
- * 🎯 完全移除硬编码颜色，100%依赖VS Code主题变量
+ * 🎯 使用VS Code主题中最准确的语法高亮变量
  */
 
 #macro-preview-code,
@@ -698,75 +698,76 @@ textarea:disabled {
     color: var(--vscode-editor-foreground);
 }
 
-/* --- 核心染色规则 - 带硬编码回退的动态主题版 --- */
+/* --- 简化的语法高亮规则 - 使用VS Code主题语义颜色 --- */
 
+/* 注释 */
 #macro-preview-code .hljs-comment,
 [id^="micro-preview-code-"] .hljs-comment {
-    color: var(--vscode-editor-snippetTabstopHighlightBackground, var(--vscode-debugConsole-sourceForeground, var(--vscode-terminal-ansiGreen, #6A9955))) !important;
-    opacity: 1;
+    color: var(--vscode-descriptionForeground);
     font-style: italic;
+    opacity: 0.8;
 }
 
+/* 关键字、内置类型、字面量 */
 #macro-preview-code .hljs-keyword,
 [id^="micro-preview-code-"] .hljs-keyword,
 #macro-preview-code .hljs-built_in,
 [id^="micro-preview-code-"] .hljs-built_in,
 #macro-preview-code .hljs-literal,
-[id^="micro-preview-code-"] .hljs-literal {
-    color: var(--vscode-symbolIcon-keywordForeground, var(--vscode-terminal-ansiMagenta, var(--vscode-debugTokenExpression-name, #C586C0))) !important;
-    font-weight: normal;
-}
-
-/* 预处理器指令 #include 等 */
+[id^="micro-preview-code-"] .hljs-literal,
 #macro-preview-code .hljs-meta,
 [id^="micro-preview-code-"] .hljs-meta,
 #macro-preview-code .hljs-meta-keyword,
 [id^="micro-preview-code-"] .hljs-meta-keyword {
-    color: var(--vscode-symbolIcon-keywordForeground, var(--vscode-terminal-ansiMagenta, var(--vscode-debugTokenExpression-name, #C586C0))) !important;
+    color: var(--vscode-textLink-foreground);
+    font-weight: 500;
 }
 
+/* 字符串 */
 #macro-preview-code .hljs-string,
 [id^="micro-preview-code-"] .hljs-string {
-    color: var(--vscode-symbolIcon-stringForeground, var(--vscode-terminal-ansiYellow, var(--vscode-debugTokenExpression-string, #CE9178))) !important;
+    color: var(--vscode-gitDecoration-addedResourceForeground, var(--vscode-textLink-activeForeground));
 }
 
+/* 数字 */
 #macro-preview-code .hljs-number,
 [id^="micro-preview-code-"] .hljs-number {
-    color: var(--vscode-symbolIcon-numberForeground, var(--vscode-terminal-ansiGreen, var(--vscode-debugTokenExpression-number, #B5CEA8))) !important;
+    color: var(--vscode-charts-yellow, var(--vscode-textLink-activeForeground));
 }
 
+/* 类名、类型 */
 #macro-preview-code .hljs-title.class_,
 [id^="micro-preview-code-"] .hljs-title.class_,
 #macro-preview-code .hljs-symbol,
-[id^="micro-preview-code-"] .hljs-symbol {
-    color: var(--vscode-symbolIcon-classForeground, var(--vscode-terminal-ansiCyan, var(--vscode-debugTokenExpression-name, #4EC9B0))) !important;
-    font-weight: normal;
-}
-
+[id^="micro-preview-code-"] .hljs-symbol,
 #macro-preview-code .hljs-type,
 [id^="micro-preview-code-"] .hljs-type {
-    color: var(--vscode-symbolIcon-classForeground, var(--vscode-terminal-ansiCyan, var(--vscode-debugTokenExpression-name, #4EC9B0))) !important;
+    color: var(--vscode-charts-blue, var(--vscode-textPreformat-foreground));
+    font-weight: 500;
 }
 
+/* 函数名 */
 #macro-preview-code .hljs-title.function_,
 [id^="micro-preview-code-"] .hljs-title.function_ {
-    color: var(--vscode-symbolIcon-functionForeground, var(--vscode-terminal-ansiYellow, var(--vscode-debugTokenExpression-name, #DCDCAA))) !important;
-    font-weight: normal;
+    color: var(--vscode-charts-green, var(--vscode-textLink-activeForeground));
+    font-weight: 500;
 }
 
+/* 变量、参数 */
 #macro-preview-code .hljs-variable,
 [id^="micro-preview-code-"] .hljs-variable,
 #macro-preview-code .hljs-params,
 [id^="micro-preview-code-"] .hljs-params {
-    color: var(--vscode-symbolIcon-variableForeground, var(--vscode-terminal-ansiBlue, var(--vscode-debugTokenExpression-value, #9CDCFE))) !important;
+    color: var(--vscode-editor-foreground);
 }
 
+/* 操作符、标点符号 */
 #macro-preview-code .hljs-operator,
 [id^="micro-preview-code-"] .hljs-operator,
 #macro-preview-code .hljs-punctuation,
 [id^="micro-preview-code-"] .hljs-punctuation {
-    color: var(--vscode-editor-foreground, var(--vscode-terminal-foreground, #D4D4D4)) !important;
-    opacity: 1;
+    color: var(--vscode-editor-foreground);
+    opacity: 0.9;
 }
 
 /* 应急回退 - 如果highlight.js完全失效 */
@@ -774,31 +775,6 @@ textarea:disabled {
 [id^="micro-preview-code-"] code {
     background: transparent !important;
     font-family: var(--vscode-editor-font-family, 'Consolas', 'Courier New', monospace) !important;
-}
-
-/* 🌗 主题特定样式覆盖 */
-
-/* 深色主题优化 */
-[data-vscode-theme="dark"] #macro-preview-code .hljs-comment,
-[data-vscode-theme="dark"] [id^="micro-preview-code-"] .hljs-comment {
-    opacity: 0.7;
-    /* 深色主题下注释稍微亮一些 */
-}
-
-/* 浅色主题优化 */
-[data-vscode-theme="light"] #macro-preview-code .hljs-comment,
-[data-vscode-theme="light"] [id^="micro-preview-code-"] .hljs-comment {
-    opacity: 0.65;
-    /* 浅色主题下注释稍微暗一些 */
-}
-
-/* 高对比度主题优化 */
-[data-vscode-theme-name="HighContrast"] #macro-preview-code .hljs-comment,
-[data-vscode-theme-name="HighContrast"] [id^="micro-preview-code-"] .hljs-comment {
-    opacity: 1;
-    /* 高对比度主题下不使用透明度 */
-    color: var(--vscode-editor-foreground);
-    font-weight: normal;
 }
 
 /* 主题切换时的平滑过渡 */
