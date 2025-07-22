@@ -46,8 +46,8 @@ module.exports = (env, argv) => {
         ],
         optimization: {
             minimize: isProduction,
-            // 暂时禁用代码分割以避免复杂性，专注于懒加载优化
-            // splitChunks: false,
+            // 完全禁用代码分割以避免VS Code webview CSP问题
+            splitChunks: false,
         },
         externals: {
             // VS Code webview API is provided by the webview environment

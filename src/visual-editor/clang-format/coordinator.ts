@@ -55,6 +55,19 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             isWholeLine: false
         });
 
+        // 监听文档关闭事件
+        this.disposables.push(
+            vscode.workspace.onDidCloseTextDocument((document) => {
+                // 检查关闭的是否是我们的预览文档
+                if (this.currentPreviewUri && document.uri.toString() === this.currentPreviewUri.toString()) {
+                    // 只清理预览编辑器状态，不再发送通知
+                    // 通知的功能已移至 onDidDispose 中，以保证时序正确
+                    this.previewEditor = undefined;
+                    console.log('🔗 Clotho: Preview editor reference cleaned up.');
+                }
+            })
+        );
+
         // Register command
         this.disposables.push(
             vscode.commands.registerCommand(
@@ -147,16 +160,26 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
 
             // 监听面板销毁
             this.panel.onDidDispose(async () => {
+                console.log('🔍 DEBUG: panel.onDidDispose 触发，准备处理...');
+
                 // 【智能导航：从哪里来，回哪里去】
                 await this.handleSmartNavigation();
 
+                // 【核心修正】在关闭预览编辑器之前，先通知WebView
+                console.log('🔍 DEBUG: 调用 notifyPreviewClosed() 发送消息...');
+                this.notifyPreviewClosed();
+
+                console.log('🔍 DEBUG: 设置 this.panel = undefined');
                 this.panel = undefined;
-                // 【核心修正】当Webview关闭时，自动关闭关联的预览编辑器
+                // 当Webview关闭时，自动关闭关联的预览编辑器
+                console.log('🔍 DEBUG: 调用 closePreviewEditor()...');
                 await this.closePreviewEditor();
                 // 清理预览编辑器资源
+                console.log('🔍 DEBUG: 调用 cleanupPreviewEditor()...');
                 this.cleanupPreviewEditor();
                 // 清理来源记忆
                 this.editorOpenSource = undefined;
+                console.log('🔍 DEBUG: panel.onDidDispose 处理完成');
             });
 
             // 监听主题变化并通知 Webview
@@ -345,6 +368,51 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
     }
 
     /**
+     * 通知webview预览编辑器已关闭
+     */
+    private notifyPreviewClosed(): void {
+        if (this.panel) {
+            console.log('🔍 DEBUG: 准备发送previewClosed消息，panel状态:', !!this.panel);
+            this.panel.webview.postMessage({
+                type: WebviewMessageType.PREVIEW_CLOSED
+            });
+            console.log('🔗 Clotho: 已发送previewClosed消息到webview');
+        } else {
+            console.log('❌ DEBUG: 无法发送previewClosed消息，panel已不存在');
+        }
+    }
+
+    /**
+     * 重新打开预览编辑器
+     */
+    private async reopenPreviewEditor(): Promise<void> {
+        if (!this.panel || this.previewEditor) {
+            return; // 面板不存在或预览编辑器已存在
+        }
+
+        try {
+            // 重新生成预览URI
+            this.currentPreviewUri = this.previewProvider.createPreviewUri('clang-format-preview.cpp');
+
+            // 设置初始预览内容
+            const initialPreviewCode = await this.generateInitialPreview();
+            this.previewProvider.updateContent(this.currentPreviewUri, initialPreviewCode);
+
+            // 在Webview旁边重新打开编辑器预览
+            this.previewEditor = await vscode.window.showTextDocument(this.currentPreviewUri, {
+                viewColumn: vscode.ViewColumn.Beside,
+                preserveFocus: true,
+                preview: false
+            });
+
+            console.log('🔗 Clotho: Preview editor reopened successfully');
+        } catch (error) {
+            console.error('❌ Failed to reopen preview editor:', error);
+            vscode.window.showErrorMessage('Failed to reopen preview editor');
+        }
+    }
+
+    /**
      * 清理预览编辑器资源
      */
     private cleanupPreviewEditor(): void {
@@ -492,6 +560,10 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
 
                     case WebviewMessageType.CLEAR_HIGHLIGHTS:
                         await this.handleClearHighlights();
+                        break;
+
+                    case WebviewMessageType.REOPEN_PREVIEW:
+                        await this.reopenPreviewEditor();
                         break;
 
                     default:

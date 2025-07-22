@@ -1,10 +1,10 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "target": "es2024",
+        "target": "esnext",
         "outDir": "out",
         "lib": [
-            "es2024",
+            "ESNext",
             "DOM"
         ],
         "sourceMap": true,

@@ -1,64 +1,50 @@
-// 懒加载的highlight.js模块
-import type { HLJSApi } from 'highlight.js';
+// 静态导入highlight.js以避免CSP问题
+import hljs from 'highlight.js/lib/core';
+import cpp from 'highlight.js/lib/languages/cpp';
 
-let hljs: HLJSApi | null = null;
-let isLoading = false;
-let loadPromise: Promise<HLJSApi> | null = null;
+// 注册C++语言支持
+hljs.registerLanguage('cpp', cpp);
 
-export const loadHighlightJS = async (): Promise<HLJSApi> => {
-    // 如果已经加载，直接返回
-    if (hljs) {
-        return hljs;
-    }
+let isInitialized = false;
 
-    // 如果正在加载，返回加载Promise
-    if (isLoading && loadPromise) {
-        return loadPromise;
-    }
-
-    // 开始加载
-    isLoading = true;
-    loadPromise = (async () => {
-        try {
-            // 动态导入highlight.js
-            const [hljsCore, cpp] = await Promise.all([
-                import('highlight.js/lib/core'),
-                import('highlight.js/lib/languages/cpp')
-            ]);
-
-            const hljsInstance = hljsCore.default;
-
-            // 注册C++语言支持（如果还未注册）
-            if (!hljsInstance.getLanguage('cpp')) {
-                hljsInstance.registerLanguage('cpp', cpp.default);
-            }
-
-            hljs = hljsInstance;
-            isLoading = false;
-            return hljsInstance;
-        } catch (error) {
-            isLoading = false;
-            throw new Error(`Failed to load highlight.js: ${error}`);
+export const loadHighlightJS = async (): Promise<typeof hljs> => {
+    if (!isInitialized) {
+        // 确保语言已注册
+        if (!hljs.getLanguage('cpp')) {
+            hljs.registerLanguage('cpp', cpp);
         }
-    })();
-
-    return loadPromise;
+        isInitialized = true;
+    }
+    return hljs;
 };
 
 // 便捷的高亮函数
 export const highlightCode = async (code: string, language: string = 'cpp'): Promise<string> => {
     try {
         const hljsInstance = await loadHighlightJS();
+
+        // 验证语言是否已注册
+        if (!hljsInstance.getLanguage(language)) {
+            console.warn(`Language '${language}' not registered, falling back to auto detection`);
+            const result = hljsInstance.highlightAuto(code);
+            return result.value;
+        }
+
         const result = hljsInstance.highlight(code, { language });
         return result.value;
     } catch (error) {
         console.warn('Failed to highlight code:', error);
-        // 降级返回原始代码
-        return code;
+        // 降级返回HTML转义的代码
+        return code
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 };
 
 // 检查是否已加载
 export const isHighlightJSLoaded = (): boolean => {
-    return hljs !== null;
+    return isInitialized;
 };

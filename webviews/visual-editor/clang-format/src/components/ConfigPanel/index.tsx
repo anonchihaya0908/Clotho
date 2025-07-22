@@ -194,21 +194,37 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                     <p>经纬万千，分毫入缕。</p>
                 </div>
 
-                <div className="config-settings">
-                    <label className="guide-toggle">
-                        <input
-                            type="checkbox"
-                            checked={settings.showGuideButton}
-                            onChange={(e) => onSettingsChange('showGuideButton', e.target.checked)}
-                        />
-                        <span className="toggle-slider"></span>
-                        <span className="toggle-label">显示预览</span>
-                    </label>
+                <div className="config-controls-wrapper">
+                    <div className="category-selector">
+                        <div className="category-tabs">
+                            {categories.map((category) => (
+                                <button
+                                    key={category}
+                                    className={`category-tab ${selectedCategory === category ? 'active' : ''}`}
+                                    onClick={() => setSelectedCategory(category)}
+                                >
+                                    {category}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="config-settings">
+                        <label className="guide-toggle">
+                            <input
+                                type="checkbox"
+                                checked={settings.showGuideButton}
+                                onChange={(e) => onSettingsChange('showGuideButton', e.target.checked)}
+                            />
+                            <span className="toggle-slider"></span>
+                            <span className="toggle-label">显示预览</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
             <div className="config-options-list">
-                {CLANG_FORMAT_OPTIONS.map(renderConfigOption)}
+                {filteredOptions.map(renderConfigOption)}
             </div>
         </div>
     );

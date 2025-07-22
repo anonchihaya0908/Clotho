@@ -1,6 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React from 'react';
 import { ClangFormatOption } from '../../data/clangFormatOptions';
-import { highlightCode, isHighlightJSLoaded } from '../../utils/highlight-loader';
 
 interface DynamicMicroPreviewProps {
     option: ClangFormatOption;
@@ -20,24 +19,6 @@ const DynamicMicroPreview: React.FC<DynamicMicroPreviewProps> = ({
     onPreviewRequest,
     previewResult
 }) => {
-    const codeRef = useRef<HTMLElement>(null);
-    const [currentTheme, setCurrentTheme] = useState('dark');
-    const [isLoading, setIsLoading] = useState(false);
-
-    // 监听VS Code主题变化
-    useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
-            const message = event.data;
-            if (message.type === 'themeChanged') {
-                const newTheme = message.theme;
-                setCurrentTheme(newTheme);
-            }
-        };
-
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, []);
-
     // 获取配置项的预览代码片段
     const getPreviewSnippet = (option: ClangFormatOption): string => {
         if (option.previewSnippet) {
@@ -62,51 +43,8 @@ const DynamicMicroPreview: React.FC<DynamicMicroPreviewProps> = ({
         }
     };
 
-    // 异步高亮代码
-    const highlightCodeAsync = async (code: string) => {
-        if (!codeRef.current) return;
-
-        setIsLoading(true);
-        try {
-            codeRef.current.className = 'language-cpp hljs';
-            const highlighted = await highlightCode(code, 'cpp');
-            if (codeRef.current) {
-                codeRef.current.innerHTML = highlighted;
-            }
-        } catch (error) {
-            console.error('Dynamic micro preview highlight error:', error);
-            if (codeRef.current) {
-                codeRef.current.textContent = code;
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // 处理预览结果变化
-    useEffect(() => {
-        if (previewResult && previewResult.optionName === option.key) {
-            const { formattedCode, success, error } = previewResult;
-
-            if (success && formattedCode) {
-                // 清理代码（移除多余空行和格式）
-                const cleanCode = formattedCode
-                    .replace(/^\s*\n/gm, '') // 移除空行
-                    .replace(/\n\s*\n/g, '\n') // 合并多个空行
-                    .trim();
-
-                highlightCodeAsync(cleanCode);
-            } else if (error) {
-                if (codeRef.current) {
-                    codeRef.current.textContent = `Error: ${error}`;
-                    codeRef.current.className = 'error';
-                }
-            }
-        }
-    }, [previewResult, option.key]);
-
-    // 初始化和配置变更时请求预览
-    useEffect(() => {
+    // 触发预览请求
+    React.useEffect(() => {
         if (onPreviewRequest) {
             const previewSnippet = getPreviewSnippet(option);
             onPreviewRequest(option.key, currentConfig, previewSnippet);
@@ -122,19 +60,27 @@ const DynamicMicroPreview: React.FC<DynamicMicroPreviewProps> = ({
         );
     }
 
+    const resultStatus = previewResult?.optionName === option.key ?
+        (previewResult.success ? '✓' : '✗') : '⏳';
+
+    const statusColor = previewResult?.optionName === option.key ?
+        (previewResult.success ? 'green' : 'red') : 'orange';
+
     return (
         <div className="dynamic-micro-preview">
             <div className="preview-header">
                 <span className="preview-label">Preview</span>
-                {isLoading && <span className="loading-indicator">⏳</span>}
+                <span className="preview-status" style={{ color: statusColor }}>
+                    {resultStatus}
+                </span>
             </div>
-            <div className="preview-container">
-                <pre className="micro-preview-code">
-                    <code ref={codeRef} className="language-cpp">
-                        {/* 初始显示原始代码片段 */}
-                        {getPreviewSnippet(option)}
-                    </code>
-                </pre>
+            <div className="preview-notice">
+                <p>💡 实时预览在VS Code编辑器中显示</p>
+                {previewResult?.optionName === option.key && previewResult.error && (
+                    <div className="error-notice">
+                        ⚠️ {previewResult.error}
+                    </div>
+                )}
             </div>
         </div>
     );

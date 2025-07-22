@@ -1,6 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { CLANG_FORMAT_OPTIONS, ClangFormatOption } from '../../data/clangFormatOptions';
-import { highlightCode, isHighlightJSLoaded } from '../../utils/highlight-loader';
 import './style.css';
 
 interface QuickSetupProps {
@@ -137,46 +136,16 @@ const QUICK_CONFIG_CATEGORIES = [
 ];
 
 // 微观预览组件 - 支持Markdown格式
+// 简化的预览组件 - 不需要HTML模拟
 const MicroPreview: React.FC<{ code: string }> = ({ code }) => {
-    const codeRef = useRef<HTMLElement>(null);
-
-    useEffect(() => {
-        if (codeRef.current && code) {
-            const highlightCodeElement = async () => {
-                try {
-                    codeRef.current!.removeAttribute('data-highlighted');
-                    codeRef.current!.className = 'language-cpp hljs';
-
-                    // 使用异步高亮
-                    const highlightedCode = await highlightCode(code, 'cpp');
-                    if (codeRef.current) {
-                        codeRef.current.innerHTML = highlightedCode;
-                    }
-                } catch (error) {
-                    console.error('Quick setup highlight error:', error);
-                    if (codeRef.current) {
-                        codeRef.current.textContent = code;
-                    }
-                }
-            };
-
-            highlightCodeElement();
-        }
-    }, [code]);
-
     return (
         <div className="quick-micro-preview">
             <div className="preview-label">
-                Preview:
+                💡 实时预览在VS Code编辑器中显示
             </div>
-            <pre className="quick-code-preview">
-                <code
-                    ref={codeRef}
-                    className="language-cpp"
-                >
-                    {/* 内容将通过 innerHTML 设置 */}
-                </code>
-            </pre>
+            <div className="preview-info">
+                样例代码: {code.split('\n')[0]}...
+            </div>
         </div>
     );
 };

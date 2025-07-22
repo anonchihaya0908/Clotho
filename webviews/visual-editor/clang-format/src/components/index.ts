@@ -8,6 +8,7 @@
 // 主要组件
 export { ConfigPanel } from './ConfigPanel';
 export { PreviewPanel } from './PreviewPanel';
+export { PreviewPlaceholder } from './PreviewPlaceholder';
 export { Toolbar } from './Toolbar';
 export { StatusBar } from './StatusBar';
 export { ResizableSplitter } from './ResizableSplitter';

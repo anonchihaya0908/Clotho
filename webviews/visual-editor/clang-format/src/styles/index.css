@@ -2,6 +2,10 @@
  * Main styles for Clang-Format Editor
  */
 
+/* Import utility classes */
+@import './utils.css';
+@import '../components/PreviewPlaceholder/style.css';
+
 /* Reset and base styles */
 * {
     margin: 0;
@@ -42,6 +46,12 @@ body {
 .app-content {
     flex: 1;
     overflow: hidden;
+}
+
+/* 当显示占位符时，限制配置面板宽度 */
+.app.with-placeholder .app-content {
+    width: 50%;
+    max-width: 50%;
 }
 
 /* App Header */
@@ -346,30 +356,41 @@ body {
     font-family: inherit;
 }
 
-/* Highlight.js 主题覆盖以匹配 VS Code */
-.hljs {
-    background: transparent !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    display: block !important;
-    overflow-x: auto !important;
+/* 简化后的预览样式 - 不再需要highlight.js */
+.preview-notice {
+    padding: 16px;
+    background: var(--vscode-editor-inactiveSelectionBackground);
+    border-radius: 6px;
+    text-align: center;
+    color: var(--vscode-descriptionForeground);
 }
 
-/* 确保代码容器保持 language-cpp class */
-.language-cpp.hljs {
-    background: transparent !important;
+.preview-notice p {
+    margin: 4px 0;
 }
 
-/* 增强微观预览代码样式 */
-.micro-preview-code {
-    font-size: 13px !important;
-    line-height: 1.3 !important;
+.error-notice {
+    margin-top: 8px;
+    padding: 8px;
+    background: var(--vscode-inputValidation-errorBackground);
+    color: var(--vscode-inputValidation-errorForeground);
+    border-radius: 4px;
+    border-left: 3px solid var(--vscode-inputValidation-errorBorder);
 }
 
-/* 回退样式 - 当高亮失败时保持可读性 */
-.hljs-fallback {
-    color: var(--vscode-editor-foreground, #d4d4d4) !important;
-    font-family: var(--vscode-editor-font-family, 'Courier New', monospace) !important;
+.preview-status {
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.preview-info {
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    font-family: var(--vscode-editor-font-family);
+    padding: 8px;
+    background: var(--vscode-textCodeBlock-background);
+    border-radius: 4px;
+    margin-top: 8px;
 }
 
 /* Status Bar */
@@ -673,112 +694,20 @@ textarea:disabled {
 
 /* 🎨 终极语法高亮系统 - 完全动态主题版 + 完整样式保留 */
 
-/*
- * 为代码预览区建立一个"CSS独立王国"。
- * 通过使用ID选择器 (#...), 我们赋予这些规则最高的权重，
- * 确保它们能覆盖任何其他可能冲突的样式，比如 .disabled 或其他通用规则。
- * 
- * 🎯 使用VS Code主题中最准确的语法高亮变量
- */
+/* 简化的代码显示样式 - 删除所有highlight.js相关的代码 */
 
-#macro-preview-code,
-[id^="micro-preview-code-"] {
-    display: block;
-    overflow-x: auto;
-    padding: 0 !important;
-    background: transparent !important;
-    color: var(--vscode-editor-foreground);
+.code-preview,
+.micro-code-preview {
+    background: var(--vscode-textCodeBlock-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 4px;
     font-family: var(--vscode-editor-font-family);
     font-size: var(--vscode-editor-font-size);
-}
-
-/* Fallback: ensure all hljs spans inherit editor foreground if no specific rule applies */
-#macro-preview-code [class*="hljs-"],
-[id^="micro-preview-code-"] [class*="hljs-"] {
     color: var(--vscode-editor-foreground);
+    white-space: pre-wrap;
+    overflow-x: auto;
+    padding: 12px;
+    margin: 8px 0;
 }
 
-/* --- 简化的语法高亮规则 - 使用VS Code主题语义颜色 --- */
-
-/* 注释 */
-#macro-preview-code .hljs-comment,
-[id^="micro-preview-code-"] .hljs-comment {
-    color: var(--vscode-descriptionForeground);
-    font-style: italic;
-    opacity: 0.8;
-}
-
-/* 关键字、内置类型、字面量 */
-#macro-preview-code .hljs-keyword,
-[id^="micro-preview-code-"] .hljs-keyword,
-#macro-preview-code .hljs-built_in,
-[id^="micro-preview-code-"] .hljs-built_in,
-#macro-preview-code .hljs-literal,
-[id^="micro-preview-code-"] .hljs-literal,
-#macro-preview-code .hljs-meta,
-[id^="micro-preview-code-"] .hljs-meta,
-#macro-preview-code .hljs-meta-keyword,
-[id^="micro-preview-code-"] .hljs-meta-keyword {
-    color: var(--vscode-textLink-foreground);
-    font-weight: 500;
-}
-
-/* 字符串 */
-#macro-preview-code .hljs-string,
-[id^="micro-preview-code-"] .hljs-string {
-    color: var(--vscode-gitDecoration-addedResourceForeground, var(--vscode-textLink-activeForeground));
-}
-
-/* 数字 */
-#macro-preview-code .hljs-number,
-[id^="micro-preview-code-"] .hljs-number {
-    color: var(--vscode-charts-yellow, var(--vscode-textLink-activeForeground));
-}
-
-/* 类名、类型 */
-#macro-preview-code .hljs-title.class_,
-[id^="micro-preview-code-"] .hljs-title.class_,
-#macro-preview-code .hljs-symbol,
-[id^="micro-preview-code-"] .hljs-symbol,
-#macro-preview-code .hljs-type,
-[id^="micro-preview-code-"] .hljs-type {
-    color: var(--vscode-charts-blue, var(--vscode-textPreformat-foreground));
-    font-weight: 500;
-}
-
-/* 函数名 */
-#macro-preview-code .hljs-title.function_,
-[id^="micro-preview-code-"] .hljs-title.function_ {
-    color: var(--vscode-charts-green, var(--vscode-textLink-activeForeground));
-    font-weight: 500;
-}
-
-/* 变量、参数 */
-#macro-preview-code .hljs-variable,
-[id^="micro-preview-code-"] .hljs-variable,
-#macro-preview-code .hljs-params,
-[id^="micro-preview-code-"] .hljs-params {
-    color: var(--vscode-editor-foreground);
-}
-
-/* 操作符、标点符号 */
-#macro-preview-code .hljs-operator,
-[id^="micro-preview-code-"] .hljs-operator,
-#macro-preview-code .hljs-punctuation,
-[id^="micro-preview-code-"] .hljs-punctuation {
-    color: var(--vscode-editor-foreground);
-    opacity: 0.9;
-}
-
-/* 应急回退 - 如果highlight.js完全失效 */
-#macro-preview-code code,
-[id^="micro-preview-code-"] code {
-    background: transparent !important;
-    font-family: var(--vscode-editor-font-family, 'Consolas', 'Courier New', monospace) !important;
-}
-
-/* 主题切换时的平滑过渡 */
-#macro-preview-code span,
-[id^="micro-preview-code-"] span {
-    transition: color 0.15s ease-in-out, opacity 0.15s ease-in-out;
-}
+/* 文件结束 */

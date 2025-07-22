@@ -192,9 +192,10 @@
 
 /* 联动高亮状态 */
 .config-option.highlighting {
-    border-color: var(--vscode-charts-orange);
+    border-color: var(--vscode-focusBorder);
     background: var(--vscode-editor-selectionHighlightBackground);
-    box-shadow: 0 0 0 1px var(--vscode-charts-orange);
+    box-shadow: 0 0 0 2px var(--vscode-focusBorder);
+    transform: translateY(-1px);
 }
 
 .option-header {
@@ -384,10 +385,14 @@
         padding: 8px;
     }
 
+    .full-configuration {
+        padding: 12px;
+    }
+
     .option-header {
         flex-direction: column;
         align-items: stretch;
-        gap: 12px;
+        gap: 8px;
     }
 
     .option-value {
@@ -404,23 +409,30 @@
     .category-tabs {
         gap: 4px;
         justify-content: flex-start;
+        flex-wrap: wrap;
     }
 
     .category-tab {
-        padding: 8px 12px;
-        font-size: 12px;
-        min-width: 80px;
-        flex: 1;
+        padding: 6px 12px;
+        font-size: 11px;
+        min-width: 60px;
+        flex: 1 1 auto;
+        text-align: center;
     }
 
     .config-controls-wrapper {
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
     }
 
     .option-label {
         min-width: auto;
         flex-wrap: wrap;
+        font-size: 13px;
+    }
+
+    .config-option {
+        padding: 12px;
     }
 }
 

@@ -1,0 +1,272 @@
+/* 通用组件样式工具类 */
+
+/* 加载状态 */
+.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 14px;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--vscode-progressBar-background);
+    border-top: 2px solid var(--vscode-progressBar-foreground);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* 错误状态 */
+.error-state {
+    padding: 16px;
+    background: var(--vscode-inputValidation-errorBackground);
+    border: 1px solid var(--vscode-errorForeground);
+    border-radius: 6px;
+    color: var(--vscode-errorForeground);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.error-state h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+}
+
+.error-state .error-details {
+    font-family: var(--vscode-editor-font-family);
+    font-size: 12px;
+    background: var(--vscode-textCodeBlock-background);
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+    overflow-x: auto;
+}
+
+/* 占位符状态 */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: var(--vscode-descriptionForeground);
+    text-align: center;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.empty-state-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--vscode-foreground);
+}
+
+.empty-state-description {
+    font-size: 13px;
+    line-height: 1.4;
+    max-width: 300px;
+}
+
+/* 通用卡片样式 */
+.card {
+    background: var(--vscode-editor-inactiveSelectionBackground);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    border-color: var(--vscode-focusBorder);
+    background: var(--vscode-list-hoverBackground);
+}
+
+.card.elevated {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 按钮样式扩展 */
+.btn-primary {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: 1px solid var(--vscode-button-border, transparent);
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: var(--vscode-button-hoverBackground);
+}
+
+.btn-secondary {
+    background: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    border: 1px solid var(--vscode-button-border);
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.btn-danger {
+    background: var(--vscode-errorForeground);
+    color: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-errorForeground);
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* 输入框统一样式 */
+.input-field {
+    padding: 8px 12px;
+    background: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 4px;
+    color: var(--vscode-input-foreground);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s ease;
+    width: 100%;
+}
+
+.input-field:focus {
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+}
+
+.input-field.error {
+    border-color: var(--vscode-errorForeground);
+}
+
+.input-field.warning {
+    border-color: var(--vscode-warningForeground);
+}
+
+/* 标签样式 */
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    line-height: 1.2;
+}
+
+.badge-info {
+    background: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+}
+
+.badge-success {
+    background: var(--vscode-charts-green);
+    color: var(--vscode-editor-background);
+}
+
+.badge-warning {
+    background: var(--vscode-warningForeground);
+    color: var(--vscode-editor-background);
+}
+
+.badge-error {
+    background: var(--vscode-errorForeground);
+    color: var(--vscode-editor-background);
+}
+
+/* 分隔符 */
+.divider {
+    height: 1px;
+    background: var(--vscode-widget-border);
+    margin: 16px 0;
+}
+
+.divider-vertical {
+    width: 1px;
+    background: var(--vscode-widget-border);
+    margin: 0 16px;
+}
+
+/* 工具提示样式 */
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--vscode-editorHoverWidget-background);
+    color: var(--vscode-editorHoverWidget-foreground);
+    border: 1px solid var(--vscode-editorHoverWidget-border);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 1000;
+    margin-bottom: 8px;
+}
+
+.tooltip:hover::after {
+    opacity: 1;
+}
+
+/* 响应式断点助手 */
+.mobile-only {
+    display: none;
+}
+
+.desktop-only {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .mobile-only {
+        display: block;
+    }
+
+    .desktop-only {
+        display: none;
+    }
+}

@@ -59,6 +59,10 @@ export enum WebviewMessageType {
     UPDATE_SETTINGS = 'updateSettings',
     SETTINGS_UPDATED = 'settingsUpdated',
 
+    // 预览相关
+    PREVIEW_CLOSED = 'previewClosed',               // 预览编辑器被关闭
+    REOPEN_PREVIEW = 'reopenPreview',               // 重新打开预览编辑器
+
     // 交互联动相关
     CONFIG_OPTION_HOVER = 'configOptionHover',      // 配置项hover事件
     CONFIG_OPTION_FOCUS = 'configOptionFocus',      // 配置项focus事件
