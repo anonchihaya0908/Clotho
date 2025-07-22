@@ -37,10 +37,6 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                         ⚠ {validationState.warnings.length} warnings
                     </span>
                 )}
-
-                <span className={`validation-status ${validationState.isValid ? 'valid' : 'invalid'}`}>
-                    {validationState.isValid ? '✓ Valid Configuration' : '❌ Invalid Configuration'}
-                </span>
             </div>
         </div>
     );

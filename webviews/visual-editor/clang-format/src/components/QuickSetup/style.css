@@ -392,28 +392,6 @@
     gap: 8px;
 }
 
-.copy-markdown-btn {
-    background: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
-    border: 1px solid var(--vscode-widget-border);
-    border-radius: 3px;
-    padding: 2px 6px;
-    font-size: 9px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    flex-shrink: 0;
-    min-width: fit-content;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.copy-markdown-btn:hover {
-    background: var(--vscode-button-secondaryHoverBackground);
-    border-color: var(--vscode-focusBorder);
-}
-
 .quick-code-preview {
     margin: 0;
     padding: 0;

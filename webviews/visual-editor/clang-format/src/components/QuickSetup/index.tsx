@@ -164,22 +164,10 @@ const MicroPreview: React.FC<{ code: string }> = ({ code }) => {
         }
     }, [code]);
 
-    // 生成Markdown格式的代码
-    const generateMarkdownCode = () => {
-        return `\`\`\`cpp\n${code}\n\`\`\``;
-    };
-
     return (
         <div className="quick-micro-preview">
             <div className="preview-label">
                 Preview:
-                <button
-                    className="copy-markdown-btn"
-                    onClick={() => navigator.clipboard?.writeText(generateMarkdownCode())}
-                    title="复制Markdown代码"
-                >
-                    📋 MD
-                </button>
             </div>
             <pre className="quick-code-preview">
                 <code
