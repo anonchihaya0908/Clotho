@@ -36,6 +36,7 @@ export interface AppState {
     previewState: {
         isOpen: boolean;
         showPlaceholder: boolean;
+        isReopening: boolean;
     };
 }
 
@@ -49,7 +50,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         error: null,
         validationState: { isValid: true },
         settings: { showGuideButton: true },
-        previewState: { isOpen: true, showPlaceholder: false }
+        previewState: { isOpen: true, showPlaceholder: false, isReopening: false }
     });
 
     // 发送消息到 VS Code
@@ -128,7 +129,6 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
             const message = event.data;
-            console.log('🔍 DEBUG: 收到消息:', message);
 
             switch (message.type) {
                 case 'initialize':
@@ -198,21 +198,51 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     }));
                     break;
 
+                case 'previewOpened':
+                    console.log('🔍 DEBUG: Received previewOpened message');
+                    setState(prev => ({
+                        ...prev,
+                        previewState: {
+                            isOpen: true,
+                            showPlaceholder: false,
+                            isReopening: false
+                        }
+                    }));
+                    break;
+
                 case 'previewClosed':
-                    console.log('🔍 DEBUG: 处理previewClosed消息，更新状态...');
-                    setState(prev => {
-                        console.log('🔍 DEBUG: 更新前状态:', prev.previewState);
-                        const newState = {
-                            ...prev,
-                            previewState: {
-                                isOpen: false,
-                                showPlaceholder: true
-                            }
-                        };
-                        console.log('🔍 DEBUG: 更新后状态:', newState.previewState);
-                        return newState;
-                    });
-                    console.log('🔍 DEBUG: previewClosed消息处理完成');
+                    console.log('🔍 DEBUG: Received previewClosed message');
+                    setState(prev => ({
+                        ...prev,
+                        previewState: {
+                            isOpen: false,
+                            showPlaceholder: true,
+                            isReopening: false
+                        }
+                    }));
+                    break;
+
+                case 'previewReopened':
+                    setState(prev => ({
+                        ...prev,
+                        previewState: {
+                            isOpen: true,
+                            showPlaceholder: false,
+                            isReopening: false
+                        }
+                    }));
+                    break;
+
+                case 'previewReopenFailed':
+                    // 重新打开失败时，保持占位符显示
+                    setState(prev => ({
+                        ...prev,
+                        previewState: {
+                            isOpen: false,
+                            showPlaceholder: true,
+                            isReopening: false
+                        }
+                    }));
                     break;
 
                 default:
@@ -220,30 +250,42 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
             }
         };
 
-        console.log('🔍 DEBUG: 注册message事件监听器');
         window.addEventListener('message', handleMessage);
+
+        // 监听webview即将卸载，这时显示占位符
+        const handleBeforeUnload = () => {
+            console.log('🔍 DEBUG: Webview is about to unload, showing placeholder');
+            setState(prev => ({
+                ...prev,
+                previewState: {
+                    isOpen: false,
+                    showPlaceholder: true,
+                    isReopening: false
+                }
+            }));
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
         return () => {
-            console.log('🔍 DEBUG: 移除message事件监听器');
             window.removeEventListener('message', handleMessage);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
         };
     }, []); // 移除sendMessage依赖，因为它不需要重新创建监听器
 
     // 重新打开预览编辑器
     const reopenPreview = useCallback(() => {
-        console.log('🔍 DEBUG: 调用reopenPreview()...');
+        // 设置重新打开状态
+        setState(prev => ({
+            ...prev,
+            previewState: {
+                ...prev.previewState,
+                isReopening: true
+            }
+        }));
+
+        // 发送重新打开消息
         sendMessage('reopenPreview');
-        setState(prev => {
-            console.log('🔍 DEBUG: reopenPreview - 更新前状态:', prev.previewState);
-            const newState = {
-                ...prev,
-                previewState: {
-                    isOpen: true,
-                    showPlaceholder: false
-                }
-            };
-            console.log('🔍 DEBUG: reopenPreview - 更新后状态:', newState.previewState);
-            return newState;
-        });
     }, [sendMessage]);
 
     if (state.isLoading) {
@@ -283,9 +325,11 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
             </div>
 
             {/* 当预览编辑器关闭时显示占位符 */}
-            {console.log('🔍 DEBUG: 渲染占位符条件:', state.previewState.showPlaceholder)}
             {state.previewState.showPlaceholder && (
-                <PreviewPlaceholder onReopenPreview={reopenPreview} />
+                <PreviewPlaceholder
+                    onReopenPreview={reopenPreview}
+                    isReopening={state.previewState.isReopening}
+                />
             )}
 
             <StatusBar

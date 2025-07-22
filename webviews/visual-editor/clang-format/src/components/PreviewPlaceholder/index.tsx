@@ -3,9 +3,10 @@ import './style.css';
 
 interface PreviewPlaceholderProps {
     onReopenPreview: () => void;
+    isReopening?: boolean;
 }
 
-export const PreviewPlaceholder: React.FC<PreviewPlaceholderProps> = ({ onReopenPreview }) => {
+export const PreviewPlaceholder: React.FC<PreviewPlaceholderProps> = ({ onReopenPreview, isReopening = false }) => {
     return (
         <div className="preview-placeholder">
             <div className="placeholder-content">
@@ -16,8 +17,9 @@ export const PreviewPlaceholder: React.FC<PreviewPlaceholderProps> = ({ onReopen
                 <button
                     className="reopen-preview-button"
                     onClick={onReopenPreview}
+                    disabled={isReopening}
                 >
-                    重新打开预览编辑器
+                    {isReopening ? '正在打开预览编辑器...' : '重新打开预览编辑器'}
                 </button>
                 <div className="placeholder-tips">
                     <p>💡 提示：</p>

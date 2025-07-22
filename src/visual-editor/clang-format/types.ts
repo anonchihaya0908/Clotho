@@ -60,8 +60,11 @@ export enum WebviewMessageType {
     SETTINGS_UPDATED = 'settingsUpdated',
 
     // 预览相关
+    PREVIEW_OPENED = 'previewOpened',               // 预览编辑器已打开
     PREVIEW_CLOSED = 'previewClosed',               // 预览编辑器被关闭
     REOPEN_PREVIEW = 'reopenPreview',               // 重新打开预览编辑器
+    PREVIEW_REOPENED = 'previewReopened',           // 预览编辑器已成功重新打开
+    PREVIEW_REOPEN_FAILED = 'previewReopenFailed',  // 预览编辑器重新打开失败
 
     // 交互联动相关
     CONFIG_OPTION_HOVER = 'configOptionHover',      // 配置项hover事件

@@ -7,7 +7,7 @@ module.exports = (env, argv) => {
     return {
         entry: './src/index.tsx',
         mode: isProduction ? 'production' : 'development',
-        devtool: isProduction ? false : 'inline-source-map',
+        devtool: 'source-map', // 避免在VS Code Webview中使用 eval
         output: {
             path: path.resolve(__dirname, 'dist'),
             filename: 'index.js',
