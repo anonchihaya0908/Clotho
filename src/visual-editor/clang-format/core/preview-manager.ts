@@ -178,6 +178,17 @@ ${configEntries || '//   (using base style defaults)'}
             this.updatePreviewWithConfig(newConfig);
         });
 
+        // 监听主编辑器的可视状态变化
+        this.context.eventBus.on('editor-visibility-changed', ({ isVisible }: { isVisible: boolean }) => {
+            if (isVisible) {
+                console.log('Editor is visible again, reopening preview.');
+                this.openPreview();
+            } else {
+                console.log('Editor is no longer visible, closing preview.');
+                this.closePreview();
+            }
+        });
+
         // 监听文档关闭事件，以处理用户手动关闭预览的情况
         vscode.workspace.onDidCloseTextDocument(async (doc) => {
             const state = this.context.stateManager.getState();

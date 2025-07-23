@@ -133,6 +133,12 @@ export class ClangFormatEditorManager implements BaseManager {
             await this.context.eventBus.emit('webview-message-received', message);
         });
 
+        this.panel.onDidChangeViewState(async (e: vscode.WebviewPanelOnDidChangeViewStateEvent) => {
+            const isVisible = e.webviewPanel.visible;
+            await this.context.stateManager.updateState({ isVisible }, 'editor-visibility-changed');
+            this.context.eventBus.emit('editor-visibility-changed', { isVisible });
+        });
+
         // 监听主题变化并通知 Webview
         const themeChangeListener = vscode.window.onDidChangeActiveColorTheme(theme => {
             const isDarkTheme = theme.kind === vscode.ColorThemeKind.Dark ||
