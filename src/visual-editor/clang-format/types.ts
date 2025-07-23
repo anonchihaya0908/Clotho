@@ -1,18 +1,7 @@
 /**
  * Types for Clang-Format Editor
- * @deprecated 这个文件将被逐步迁移到 src/common/types/
- * 请使用 src/common/types/ 中的统一类型定义
+ * @deprecated 这个文件已被重构，所有类型定义已移至 src/common/types.ts
+ * This file is now just for re-exporting common types for backward compatibility.
  */
 
-// 重新导出统一类型定义，保持向后兼容
-export {
-    ClangFormatOption,
-    ConfigCategories,
-    WebviewMessageType,
-    WebviewMessage,
-    ConfigChangedMessage,
-    ConfigLoadedMessage,
-    PreviewUpdateMessage,
-    ValidationMessage,
-    SettingsMessage
-} from '../../common/types';
+export * from '../../common/types';

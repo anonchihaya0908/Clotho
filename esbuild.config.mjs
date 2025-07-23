@@ -1,4 +1,4 @@
-import { build } from 'esbuild';
+import { build, context } from 'esbuild';
 import { readFileSync } from 'fs';
 
 // 读取 package.json 获取外部依赖
@@ -47,24 +47,15 @@ async function buildExtension() {
     try {
         if (isWatch) {
             console.log('👀 Starting esbuild in watch mode...');
-            const context = await build({
-                ...baseConfig,
-                watch: {
-                    onRebuild(error, result) {
-                        if (error) {
-                            console.error('❌ Watch build failed:', error);
-                        } else {
-                            console.log('✅ Watch build succeeded');
-                        }
-                    }
-                }
-            });
+            const ctx = await context(baseConfig);
 
+            await ctx.watch();
             console.log('📡 Watching for changes...');
+
             // 在 watch 模式下保持进程运行
             process.on('SIGINT', async () => {
                 console.log('\n🛑 Stopping watch mode...');
-                await context.dispose();
+                await ctx.dispose();
                 process.exit(0);
             });
         } else {

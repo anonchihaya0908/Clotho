@@ -13,10 +13,12 @@ import { PairCoordinator, PairCreatorService, PairCreatorUI } from './create-sou
 import { PairingRuleService, PairingRuleUI, PairingRuleCoordinator } from './pairing-rule-manager';
 import { SwitchCoordinator, SwitchService, SwitchUI } from './switch-header-source';
 import { MonitorCoordinator } from './clangd-monitor';
-import { ClangFormatVisualEditorCoordinator } from './visual-editor';
+// 使用重构后的协调器
+import { RefactoredClangFormatEditorCoordinator } from './visual-editor/clang-format/refactored-coordinator';
 import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
 import * as ClangFormatModule from './visual-editor/clang-format';
 import { ClangFormatPreviewProvider } from './visual-editor/clang-format/preview-provider';
+import { COMMANDS } from './common/constants';
 
 export let serviceContainer: ServiceContainer;
 
@@ -45,6 +47,19 @@ export async function bootstrap(context: vscode.ExtensionContext): Promise<void>
 
     // Initialize main coordinators
     await initializeCoordinators();
+
+    // 注册命令：打开Clang-Format编辑器
+    context.subscriptions.push(
+        vscode.commands.registerCommand(COMMANDS.OPEN_CLANG_FORMAT_EDITOR, async () => {
+            try {
+                const coordinator = serviceContainer.get('clangFormatVisualEditorCoordinator');
+                await coordinator.showEditor();
+            } catch (error) {
+                console.error('Failed to open Clang-Format editor:', error);
+                vscode.window.showErrorMessage('Failed to open Clang-Format editor. See console for details.');
+            }
+        })
+    );
 
     // Register the service container for cleanup
     context.subscriptions.push({
@@ -111,9 +126,9 @@ function registerServices(context: vscode.ExtensionContext): void {
         });
     });
 
-    // Clang-Format Visual Editor - 保持原有的单实例coordinator用于向后兼容
+    // Clang-Format Visual Editor - 使用重构后的协调器
     serviceContainer.register('clangFormatVisualEditorCoordinator', () =>
-        new ClangFormatVisualEditorCoordinator(context.extensionUri)
+        new RefactoredClangFormatEditorCoordinator(context.extensionUri)
     );
 
     // 新增：多实例协调器
@@ -144,7 +159,6 @@ async function initializeCoordinators(): Promise<void> {
     serviceContainer.get('pairingRuleCoordinator');
     serviceContainer.get('pairCoordinator');
     serviceContainer.get('switchCoordinator');
-    serviceContainer.get('clangFormatVisualEditorCoordinator');
     serviceContainer.get('clangFormatGuideService');
 
     // 注册防抖测试命令

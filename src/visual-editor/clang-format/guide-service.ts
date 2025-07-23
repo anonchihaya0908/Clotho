@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode';
 import { COMMANDS } from '../../common/constants';
-import { EditorOpenSource } from './coordinator';
+import { EditorOpenSource } from '../../common/types';
 
 export class ClangFormatGuideService implements vscode.Disposable {
     private readonly disposables: vscode.Disposable[] = [];

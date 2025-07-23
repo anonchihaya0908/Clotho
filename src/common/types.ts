@@ -186,3 +186,124 @@ export type Uri = vscode.Uri;
 export type WorkspaceFolder = vscode.WorkspaceFolder;
 export type TextEditor = vscode.TextEditor;
 export type TextDocument = vscode.TextDocument;
+
+
+// ===============================
+// Visual Editor specific Types
+// ===============================
+
+/**
+ * 编辑器打开来源
+ */
+export enum EditorOpenSource {
+    DIRECT = 'direct',
+    COMMAND = 'command',
+    CODE_LENS = 'code_lens'
+}
+
+/**
+ * 角色信息
+ */
+// export interface CharacterInfo { ... } // Temporarily commented out
+
+/**
+ * 编辑器状态定义
+ */
+export interface EditorState {
+    // 基础状态
+    isInitialized: boolean;
+    isVisible: boolean;
+    
+    // 预览状态
+    previewMode: 'open' | 'closed' | 'transitioning';
+    previewUri?: vscode.Uri;
+    previewEditor?: vscode.TextEditor;
+    
+    // 配置状态
+    currentConfig: Record<string, any>;
+    configDirty: boolean;
+    
+    // 错误状态
+    lastError?: EditorError;
+    recoveryAttempts: number;
+}
+
+/**
+ * 状态变化事件
+ */
+export interface StateChangeEvent {
+    type: 'preview' | 'config' | 'error';
+    from: any;
+    to: any;
+    timestamp: number;
+    source: string;
+}
+
+/**
+ * 编辑器错误信息
+ */
+export interface EditorError {
+    code: string;
+    message: string;
+    context: Record<string, any>;
+    timestamp: number;
+    recoverable: boolean;
+}
+
+/**
+ * 基础管理器接口
+ */
+export interface BaseManager {
+    readonly name: string;
+    initialize(context: ManagerContext): Promise<void>;
+    dispose(): void;
+    getStatus(): ManagerStatus;
+}
+
+/**
+ * 管理器上下文
+ */
+export interface ManagerContext {
+    extensionUri: vscode.Uri;
+    stateManager: any; // Using any to avoid circular dependency, will be typed in consuming files
+    errorRecovery: any;
+    eventBus: any;
+}
+
+/**
+ * 管理器状态
+ */
+export interface ManagerStatus {
+    isInitialized: boolean;
+    isHealthy: boolean;
+    lastActivity: Date;
+    errorCount: number;
+}
+
+/**
+ * Webview 消息
+ */
+export interface WebviewMessage {
+    type: string;
+    payload?: any;
+}
+
+/**
+ * Webview 消息类型
+ */
+export enum WebviewMessageType {
+    // 配置
+    CONFIG_CHANGED = 'config-changed',
+    APPLY_CONFIG = 'apply-config',
+    RESET_CONFIG = 'reset-config',
+    EXPORT_CONFIG = 'export-config',
+    IMPORT_CONFIG = 'import-config',
+    
+    // 预览
+    REOPEN_PREVIEW = 'reopen-preview',
+    UPDATE_PREVIEW = 'update-preview',
+    
+    // 通用
+    GET_STATE = 'get-state',
+    SHOW_MESSAGE = 'show-message',
+}
