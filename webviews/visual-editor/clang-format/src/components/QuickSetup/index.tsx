@@ -476,15 +476,6 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange, onOpen
                         <h3>⚒️ 快速设置</h3>
                         <p>执此数线，织体自成。</p>
                     </div>
-                    {onOpenClangFormatFile && (
-                        <button
-                            className="open-clang-format-btn"
-                            onClick={onOpenClangFormatFile}
-                            title="打开工作区中的 .clang-format 文件"
-                        >
-                            Edit as Text
-                        </button>
-                    )}
                 </div>
             </div>
 

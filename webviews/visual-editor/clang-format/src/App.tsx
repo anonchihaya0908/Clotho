@@ -55,6 +55,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
     // 发送消息到 VS Code
     const sendMessage = useCallback((type: string, payload?: any) => {
+        console.log('🔍 DEBUG: Sending message to VS Code:', type, payload);
         vscode.postMessage({ type, payload });
     }, [vscode]);
 
@@ -115,9 +116,6 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                 break;
             case 'reset':
                 sendMessage('resetConfig');
-                break;
-            case 'validate':
-                sendMessage('validateConfig');
                 break;
             case 'openClangFormatFile':
                 sendMessage('openClangFormatFile');
@@ -356,17 +354,6 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     </div>
                 )}
             </div>
-
-            {/* 当预览编辑器关闭时显示占位符 - 【BUG修复】移除此占位符的渲染 */}
-            {/* 独立的彩蛋Webview将负责填充右侧空间，主面板不再需要显示内部占位符 */}
-            {/*
-            {state.previewState.showPlaceholder && (
-                <PreviewPlaceholder
-                    onReopenPreview={reopenPreview}
-                    isReopening={state.previewState.isReopening}
-                />
-            )}
-            */}
 
             <StatusBar
                 validationState={state.validationState}

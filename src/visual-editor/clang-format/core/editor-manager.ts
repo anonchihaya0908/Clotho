@@ -129,6 +129,7 @@ export class ClangFormatEditorManager implements BaseManager {
         });
 
         this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
+            console.log('🔍 DEBUG: Received webview message:', message.type, message.payload);
             await this.context.eventBus.emit('webview-message-received', message);
         });
 

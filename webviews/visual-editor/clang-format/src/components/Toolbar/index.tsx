@@ -47,18 +47,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onAction }) => {
 
             <div className="toolbar-group">
                 <button
-                    className="toolbar-button"
-                    onClick={() => onAction('validate')}
-                    title="Validate current configuration"
-                >
-                    Validate
-                </button>
-                <button
                     className="toolbar-button reset"
                     onClick={() => onAction('reset')}
                     title="Reset to default configuration"
                 >
                     Reset
+                </button>
+                <button
+                    className="toolbar-button clang-format-file"
+                    onClick={() => onAction('openClangFormatFile')}
+                    title="Edit as .clang-format text file"
+                >
+                    Edit as Text
                 </button>
             </div>
         </div>

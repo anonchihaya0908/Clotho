@@ -60,7 +60,7 @@ export class DebounceIntegration {
      */
     createDebouncedPreviewReopenHandler(
         originalHandler: () => Promise<vscode.TextEditor>
-    ): () => Promise<vscode.TextEditor> {
+    ): () => Promise<void> {
         return this.debounceManager.debounce(
             'preview-reopen-handler',
             async () => {
@@ -68,7 +68,7 @@ export class DebounceIntegration {
 
                 try {
                     // 使用过渡管理器切换回预览模式
-                    return await this.transitionManager.switchToPreview(async () => {
+                    await this.transitionManager.switchToPreview(async () => {
                         return await originalHandler();
                     });
 

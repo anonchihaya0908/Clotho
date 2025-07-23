@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { BaseManager, ManagerContext } from '../../../common/types';
 import { ClangFormatPreviewProvider } from '../preview-provider';
+import { ClangFormatService } from '../format-service';
+import { MACRO_PREVIEW_CODE } from '../config-options';
 
 /**
  * 预览编辑器管理器
@@ -11,9 +13,11 @@ export class PreviewEditorManager implements BaseManager {
 
     private context!: ManagerContext;
     private previewProvider: ClangFormatPreviewProvider;
+    private formatService: ClangFormatService;
 
     constructor() {
         this.previewProvider = ClangFormatPreviewProvider.getInstance();
+        this.formatService = new ClangFormatService();
     }
 
     async initialize(context: ManagerContext): Promise<void> {
@@ -36,7 +40,9 @@ export class PreviewEditorManager implements BaseManager {
             await this.context.stateManager.updateState({ previewMode: 'transitioning' }, 'preview-opening');
 
             const previewUri = this.previewProvider.createPreviewUri(`preview-${Date.now()}.cpp`);
-            const initialContent = "// Welcome to Clang-Format Preview!\n// Your formatted code will appear here.";
+            // 初始化预览内容
+            // 示例代码
+            const initialContent = MACRO_PREVIEW_CODE;
             this.previewProvider.updateContent(previewUri, initialContent);
 
             const editor = await vscode.window.showTextDocument(previewUri, {
@@ -102,6 +108,61 @@ export class PreviewEditorManager implements BaseManager {
         }
     }
 
+    /**
+     * 基于新配置更新预览内容
+     * 集成 clang-format 实时格式化功能
+     */
+    private async updatePreviewWithConfig(newConfig: Record<string, any>): Promise<void> {
+        const { previewUri } = this.context.stateManager.getState();
+        if (!previewUri) {
+            console.log('No preview URI available for config update');
+            return;
+        }
+
+        try {
+            // 使用 clang-format 格式化预览代码
+            console.log('🔄 Formatting preview code with clang-format...');
+            const formatResult = await this.formatService.format(MACRO_PREVIEW_CODE, newConfig);
+
+            if (formatResult.success) {
+                // 添加配置注释到格式化后的代码顶部
+                const configComment = this.generateConfigComment(newConfig);
+                const updatedContent = `${configComment}\n\n${formatResult.formattedCode}`;
+
+                this.previewProvider.updateContent(previewUri, updatedContent);
+                console.log('✅ Preview content updated with clang-format formatting');
+            } else {
+                // 如果格式化失败，回退到原始代码 + 配置注释
+                console.warn('⚠️ clang-format failed, using original code:', formatResult.error);
+                const configComment = this.generateConfigComment(newConfig);
+                const updatedContent = `${configComment}\n\n${MACRO_PREVIEW_CODE}`;
+
+                this.previewProvider.updateContent(previewUri, updatedContent);
+            }
+        } catch (error) {
+            console.error('Failed to update preview with config:', error);
+            // 出错时回退到原始代码
+            const configComment = this.generateConfigComment(newConfig);
+            const updatedContent = `${configComment}\n\n${MACRO_PREVIEW_CODE}`;
+            this.previewProvider.updateContent(previewUri, updatedContent);
+        }
+    }
+
+    /**
+     * 生成配置注释
+     */
+    private generateConfigComment(config: Record<string, any>): string {
+        const configEntries = Object.entries(config)
+            .filter(([key, value]) => value !== undefined && value !== null)
+            .map(([key, value]) => `//   ${key}: ${JSON.stringify(value)}`)
+            .join('\n');
+
+        return `// Clotho Clang-Format Configuration Preview
+// Active configuration:
+${configEntries || '//   (using base style defaults)'}
+// ==========================================`;
+    }
+
     dispose(): void {
         this.closePreview();
     }
@@ -109,10 +170,11 @@ export class PreviewEditorManager implements BaseManager {
     private setupEventListeners() {
         this.context.eventBus.on('open-preview-requested', () => this.openPreview());
         this.context.eventBus.on('close-preview-requested', () => this.closePreview());
-        this.context.eventBus.on('config-updated-for-preview', ({ newConfig }) => {
+        this.context.eventBus.on('config-updated-for-preview', ({ newConfig }: any) => {
+            console.log('🔍 DEBUG: Received config update for preview:', newConfig);
             // 这里可以添加基于新配置更新预览的逻辑
-            // 比如，重新格式化并更新内容
-            // this.updatePreviewContent(formattedContent);
+            // 目前先简单地重新应用宏观预览代码，未来可以集成clang-format格式化
+            this.updatePreviewWithConfig(newConfig);
         });
 
         // 监听文档关闭事件，以处理用户手动关闭预览的情况
