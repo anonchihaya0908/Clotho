@@ -106,7 +106,7 @@ class ClangFormatCodeLensProvider implements vscode.CodeLensProvider {
             title: "$(edit)\u00A0Visual Editor",
             tooltip: "Open Clang-Format Visual Editor - Edit settings with a user-friendly interface",
             command: COMMANDS.OPEN_CLANG_FORMAT_EDITOR,
-            arguments: [EditorOpenSource.CODELENS] // 传递来源信息
+            arguments: [EditorOpenSource.CODE_LENS] // 传递来源信息
         });
         codeLenses.push(mainCodeLens);
 

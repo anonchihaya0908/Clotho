@@ -117,6 +117,9 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
         this.eventBus.on('export-config-requested', () => this.handleExportConfig());
         this.eventBus.on('reset-config-requested', () => this.handleResetConfig());
         this.eventBus.on('open-clang-format-file-requested', () => this.handleOpenClangFormatFile());
+
+        // 监听配置变更请求
+        this.eventBus.on('config-change-requested', (payload) => this.handleConfigChange(payload));
     }
 
     /**
@@ -176,6 +179,24 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     // --- 配置操作处理方法 ---
 
     /**
+     * 处理来自 WebView 的配置变更请求
+     */
+    private async handleConfigChange(payload: any): Promise<void> {
+        const { key, value } = payload;
+        const currentState = this.stateManager.getState();
+        const newConfig = { ...currentState.currentConfig };
+
+        if (value === 'inherit' || value === undefined || value === null) {
+            delete newConfig[key];
+        } else {
+            newConfig[key] = value;
+        }
+
+        console.log(`🔄 Config changed: ${key} = ${value}`);
+        await this.updateConfigState(newConfig, 'config-changed');
+    }
+
+    /**
      * 获取工作区根目录的 .clang-format 文件 URI
      */
     private async getWorkspaceClangFormatUri(): Promise<vscode.Uri | undefined> {
@@ -211,11 +232,16 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     private async writeConfigToFile(fileUri: vscode.Uri): Promise<void> {
         try {
             const currentConfig = this.stateManager.getState().currentConfig;
+            console.log('Clotho-Debug: Attempting to save config:', JSON.stringify(currentConfig, null, 2));
+
             const fileContent = this.formatService.stringify(currentConfig);
+            console.log('Clotho-Debug: Stringified file content to write:\n---\n' + fileContent + '\n---');
+
             await vscode.workspace.fs.writeFile(fileUri, Buffer.from(fileContent, 'utf-8'));
             await this.stateManager.updateState({ configDirty: false }, 'config-saved');
             vscode.window.showInformationMessage(`Configuration saved to ${vscode.workspace.asRelativePath(fileUri)}.`);
         } catch (error: any) {
+            console.error('Clotho-Debug: Error during writeConfigToFile:', error);
             await this.errorRecovery.handleError('config-save-failed', error, { file: fileUri.toString() });
             vscode.window.showErrorMessage(`Failed to save configuration file: ${error.message}`);
         }
@@ -236,6 +262,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
      */
     private async handleSaveConfig(): Promise<void> {
         const fileUri = await this.getWorkspaceClangFormatUri();
+        console.log(`Clotho-Debug: handleSaveConfig triggered. Target URI: ${fileUri?.toString()}`);
         if (fileUri) {
             await this.writeConfigToFile(fileUri);
         }

@@ -1,4 +1,5 @@
-import { BaseManager, ManagerContext, WebviewMessage, WebviewMessageType } from '../../../common/types';
+import { BaseManager, ManagerContext } from '../../../common/types';
+import { WebviewMessage, WebviewMessageType } from '../../../common/types/webview';
 
 type MessageHandlerFunction = (payload: any, context: ManagerContext) => Promise<void>;
 
@@ -12,10 +13,14 @@ export class MessageHandler implements BaseManager {
     private context!: ManagerContext;
     private messageHandlers = new Map<string, MessageHandlerFunction>();
 
+    constructor() {
+        this.setupMessageHandlers();
+        console.log('Clotho-Debug: MessageHandler constructed. Handlers are now set up.');
+    }
+
     async initialize(context: ManagerContext): Promise<void> {
         this.context = context;
-        this.setupMessageHandlers();
-        console.log('MessageHandler initialized.');
+        console.log('Clotho-Debug: MessageHandler initialized.');
     }
 
     /**
@@ -33,8 +38,8 @@ export class MessageHandler implements BaseManager {
 
         const handler = this.messageHandlers.get(message.type);
         if (!handler) {
-            console.warn(`No handler found for message type: ${message.type}`);
-            console.log('Available handlers:', Array.from(this.messageHandlers.keys()));
+            console.warn(`Clotho-Debug: No handler found for message type: ${message.type}`);
+            console.log('Clotho-Debug: Available handlers at time of failure:', Array.from(this.messageHandlers.keys()));
             return;
         }
 
@@ -55,26 +60,9 @@ export class MessageHandler implements BaseManager {
     private setupMessageHandlers(): void {
         // 配置变更处理函数
         const handleConfigChange = async (payload: any, context: ManagerContext) => {
-            const { key, value } = payload;
-            const currentState = context.stateManager.getState();
-            const newConfig = { ...currentState.currentConfig };
-
-            if (value === 'inherit' || value === undefined || value === null) {
-                delete newConfig[key];
-            } else {
-                newConfig[key] = value;
-            }
-
-            await context.stateManager.updateState(
-                {
-                    currentConfig: newConfig,
-                    configDirty: true,
-                },
-                'config-changed'
-            );
-
-            // 通知预览更新
-            context.eventBus.emit('config-updated-for-preview', { newConfig });
+            console.log('🔄 Config changed, delegating to coordinator:', payload);
+            // 不直接处理，而是触发事件让 coordinator 统一处理
+            context.eventBus.emit('config-change-requested', payload);
         };
 
         // 配置变更 - 支持两种消息类型格式
@@ -93,19 +81,19 @@ export class MessageHandler implements BaseManager {
         });
 
         // 工具栏按钮：Import
-        this.messageHandlers.set(WebviewMessageType.IMPORT_CONFIG_FILE, async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.IMPORT_CONFIG, async (payload, context) => {
             console.log('📥 Importing config...');
             context.eventBus.emit('import-config-requested', payload);
         });
 
         // 工具栏按钮：Export
-        this.messageHandlers.set(WebviewMessageType.EXPORT_CONFIG_FILE, async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.EXPORT_CONFIG, async (payload, context) => {
             console.log('📤 Exporting config...');
             context.eventBus.emit('export-config-requested', payload);
         });
 
         // 工具栏按钮：Reset
-        this.messageHandlers.set(WebviewMessageType.RESET_CONFIG_TO_DEFAULT, async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.RESET_CONFIG, async (payload, context) => {
             console.log('🔄 Resetting config...');
             context.eventBus.emit('reset-config-requested', payload);
         });

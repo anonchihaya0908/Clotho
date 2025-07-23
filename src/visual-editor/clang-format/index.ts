@@ -4,20 +4,15 @@
  */
 
 import * as vscode from 'vscode';
+import { ClangFormatEditorCoordinator } from './coordinator';
+import { ClangFormatPreviewProvider } from './preview-provider';
 
 export { ClangFormatService } from './format-service';
 export { ClangFormatPreviewProvider } from './preview-provider';
-export { GuideService } from './guide-service';
+export { ClangFormatGuideService } from './guide-service';
 
 // 导出新的、重构后的视觉编辑器协调器
 export { ClangFormatEditorCoordinator as ClangFormatVisualEditorCoordinator } from './coordinator';
-
-// =========================================================================
-//  旧版协调器（保留用于调试和比较）
-// =========================================================================
-import { ClangFormatEditorCoordinator as ClangFormatVisualEditorCoordinator } from './coordinator';
-import { EasterEggManager } from './core/easter-egg-manager';
-// =========================================================================
 
 /**
  * 激活 Clang-Format 可视化编辑器模块
@@ -28,9 +23,9 @@ export function activate(context: vscode.ExtensionContext): void {
     ClangFormatPreviewProvider.register(context);
 }
 
-// 便利函数：创建并显示 clang-format 编辑器
-export async function createClangFormatEditor(extensionUri: vscode.Uri): Promise<ClangFormatVisualEditorCoordinator> {
-    const coordinator = new ClangFormatVisualEditorCoordinator(extensionUri);
+// 便利函数：创建并显示 clang-format 编辑器  
+export async function createClangFormatEditor(extensionUri: vscode.Uri): Promise<ClangFormatEditorCoordinator> {
+    const coordinator = new ClangFormatEditorCoordinator(extensionUri);
     await coordinator.showEditor();
     return coordinator;
 }
