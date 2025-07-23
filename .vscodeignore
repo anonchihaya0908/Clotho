@@ -1,7 +1,6 @@
 out/**/*.map
 src/**
 tsconfig.json
-node_modules
 .vscode-test/
 *.vsix
 .DS_Store
@@ -10,3 +9,20 @@ node_modules
 .vscode/tasks.json
 .eslintrc.json
 **/*.ts
+!out/**/*.js
+
+# Webview source files (exclude source, include built dist)
+webviews/**/src/**
+webviews/**/node_modules/**
+webviews/**/package-lock.json
+webviews/**/*.ts
+webviews/**/*.tsx
+webviews/**/tsconfig.json
+webviews/**/webpack.config.js
+
+# But keep the built webview assets - IMPORTANT!
+!webviews/**/dist/**
+!webviews/**/dist/**/*.js
+!webviews/**/dist/**/*.css
+!webviews/**/dist/**/*.webp
+!webviews/**/dist/**/*.png

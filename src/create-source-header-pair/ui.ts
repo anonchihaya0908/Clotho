@@ -16,6 +16,7 @@ import {
   PairingRuleUI
 } from '../pairing-rule-manager';
 import { ErrorHandler } from '../common/error-handler';
+import { toPascalCase } from '../common/utils';
 
 import { PairCreatorService } from './service';
 import { Language, TEMPLATE_RULES, VALIDATION_PATTERNS } from './templates';
@@ -193,7 +194,7 @@ export class PairCreatorUI {
         path.basename(activeEditor.document.fileName,
           path.extname(activeEditor.document.fileName));
       return rule.language === 'c' ? fileName
-        : this.service.toPascalCase(fileName);
+        : toPascalCase(fileName);
     }
 
     return this.service.getDefaultPlaceholder(rule);

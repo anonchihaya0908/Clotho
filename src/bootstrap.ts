@@ -16,6 +16,7 @@ import { MonitorCoordinator } from './clangd-monitor';
 import { ClangFormatVisualEditorCoordinator } from './visual-editor';
 import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
 import * as ClangFormatModule from './visual-editor/clang-format';
+import { ClangFormatPreviewProvider } from './visual-editor/clang-format/preview-provider';
 
 export let serviceContainer: ServiceContainer;
 
@@ -34,7 +35,13 @@ export async function bootstrap(context: vscode.ExtensionContext): Promise<void>
     registerServices(context);
 
     // 激活 Clang-Format 可视化编辑器模块（注册虚拟文档提供者）
-    ClangFormatModule.activate(context);
+    try {
+        // 直接调用 ClangFormatPreviewProvider.register 而不是依赖导入的 activate 函数
+        ClangFormatPreviewProvider.register(context);
+        console.log('Clotho: Successfully registered ClangFormatPreviewProvider');
+    } catch (error) {
+        console.error('Clotho: Failed to register ClangFormatPreviewProvider', error);
+    }
 
     // Initialize main coordinators
     await initializeCoordinators();

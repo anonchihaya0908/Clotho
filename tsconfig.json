@@ -27,6 +27,7 @@
         "node_modules",
         ".vscode-test",
         "out",
-        "**/*.test.ts"
+        "**/*.test.ts",
+        "webviews/**/*"
     ]
 }

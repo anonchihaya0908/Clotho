@@ -34,7 +34,7 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
     private previewProvider: ClangFormatPreviewProvider;
     private currentPreviewUri: vscode.Uri | undefined;
     private previewEditor: vscode.TextEditor | undefined;
-    private userClosedPreview: boolean = false; // 跟踪用户是否主动关闭了预览
+    private isMacroPreviewOpen: boolean = true; // 简化的预览状态标志
 
     // 新增：装饰器，用于实现上下文高亮联动
     private highlightDecorationType: vscode.TextEditorDecorationType;
@@ -58,41 +58,48 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
 
         // 监听文档关闭事件
         this.disposables.push(
-            vscode.workspace.onDidCloseTextDocument((document) => {
-                console.log('🔍 DEBUG: Document closed:', document.uri.toString());
-                console.log('🔍 DEBUG: Current preview URI:', this.currentPreviewUri?.toString());
-
+            vscode.workspace.onDidCloseTextDocument(async (document) => {
                 // 检查关闭的是否是我们的预览文档
                 if (this.currentPreviewUri && document.uri.toString() === this.currentPreviewUri.toString()) {
-                    console.log('🔍 DEBUG: Preview document closed by user, cleaning up...');
-                    // 标记用户主动关闭了预览
-                    this.userClosedPreview = true;
-                    // 清理预览编辑器状态
-                    this.previewEditor = undefined;
-                    // 通知webview预览编辑器已关闭
-                    this.notifyPreviewClosed();
-                } else {
-                    console.log('🔍 DEBUG: Not our preview document, ignoring...');
+                    // 只有在面板可见时才认为是用户主动关闭预览
+                    if (this.panel && this.panel.visible) {
+                        // 用户手动关闭了预览编辑器
+                        this.isMacroPreviewOpen = false;
+                        this.previewEditor = undefined;
+
+                        // 通知webview显示占位符
+                        await this.notifyPreviewClosed();
+                    } else {
+                        // 面板不可见时的关闭，只清理编辑器引用，不改变状态
+                        this.previewEditor = undefined;
+                    }
                 }
             })
         );
 
-        // 监听可见编辑器变化（更可靠的方案）
+        // 监听可见编辑器变化（处理快捷键关闭等情况）
         this.disposables.push(
-            vscode.window.onDidChangeVisibleTextEditors((editors) => {
-                // 如果当前有预览编辑器
-                if (this.previewEditor && this.currentPreviewUri) {
+            vscode.window.onDidChangeVisibleTextEditors(async (editors) => {
+                // 如果当前有预览编辑器且预览是打开状态
+                if (this.previewEditor && this.currentPreviewUri && this.isMacroPreviewOpen) {
                     // 检查预览编辑器是否还在可见编辑器列表中
                     const previewStillVisible = editors.some(e =>
                         e.document.uri.toString() === this.currentPreviewUri?.toString()
                     );
 
                     if (!previewStillVisible) {
-                        console.log('🔍 DEBUG: Preview editor no longer visible, cleaning up...');
-                        // 标记用户主动关闭了预览
-                        this.userClosedPreview = true;
-                        this.previewEditor = undefined;
-                        this.notifyPreviewClosed();
+                        // 只有在面板可见时才认为是用户主动关闭预览
+                        if (this.panel && this.panel.visible) {
+                            // 用户通过其他方式关闭了预览编辑器
+                            this.isMacroPreviewOpen = false;
+                            this.previewEditor = undefined;
+
+                            // 通知webview显示占位符
+                            await this.notifyPreviewClosed();
+                        } else {
+                            // 面板不可见时的关闭，只清理编辑器引用，不改变状态
+                            this.previewEditor = undefined;
+                        }
                     }
                 }
             })
@@ -135,10 +142,10 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             // 如果面板已存在，则聚焦
             if (this.panel && this.currentPreviewUri) {
                 this.panel.reveal(vscode.ViewColumn.One);
-                // 同时聚焦预览编辑器
-                if (this.previewEditor) {
+                // 如果预览是打开状态且编辑器存在，则聚焦预览编辑器
+                if (this.isMacroPreviewOpen && this.previewEditor) {
                     await vscode.window.showTextDocument(this.previewEditor.document, {
-                        viewColumn: vscode.ViewColumn.Beside,
+                        viewColumn: vscode.ViewColumn.Two,
                         preserveFocus: true
                     });
                 }
@@ -178,57 +185,76 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             // 设置 HTML 内容（现在只是左侧控制面板，不再包含预览）
             this.panel.webview.html = await this.getWebviewContent();
 
-            // 只有在用户没有主动关闭预览时才自动打开预览编辑器
-            if (!this.userClosedPreview) {
-                // 在Webview旁边打开真正的编辑器预览
+            // 根据预览状态决定是否打开预览编辑器
+            if (this.isMacroPreviewOpen) {
+                // 在专用的第二列打开预览编辑器
                 this.previewEditor = await vscode.window.showTextDocument(this.currentPreviewUri, {
-                    viewColumn: vscode.ViewColumn.Beside,
-                    preserveFocus: true, // 保持焦点在Webview上
-                    preview: false // 确保这不是预览模式，避免被其他文档替换
+                    viewColumn: vscode.ViewColumn.Two,
+                    preserveFocus: true,
+                    preview: false
                 });
             }
 
             // 监听消息
             this.setupMessageHandling();
 
+            // 监听面板可见性变化，实现预览编辑器的自动显示/隐藏
+            this.panel.onDidChangeViewState(async (e) => {
+                if (e.webviewPanel.visible) {
+                    // 面板变为可见，如果预览应该打开但当前没有编辑器，则重新打开
+                    if (this.isMacroPreviewOpen && !this.previewEditor && this.currentPreviewUri) {
+                        try {
+                            this.previewEditor = await vscode.window.showTextDocument(this.currentPreviewUri, {
+                                viewColumn: vscode.ViewColumn.Two,
+                                preserveFocus: true,
+                                preview: false
+                            });
+                            console.log('🔗 Clotho: Preview editor reopened due to panel becoming visible');
+                        } catch (error) {
+                            console.warn('⚠️ Failed to reopen preview editor when panel became visible:', error);
+                        }
+                    }
+                } else {
+                    // 面板变为不可见，关闭预览编辑器以减少视觉割裂
+                    if (this.previewEditor && this.currentPreviewUri) {
+                        await this.closePreviewEditor();
+                        // 注意：不要设置 isMacroPreviewOpen = false，因为这只是临时隐藏
+                        this.previewEditor = undefined;
+                        console.log('🔗 Clotho: Preview editor closed due to panel becoming invisible');
+                    }
+                }
+            });
+
             // 监听面板销毁
             this.panel.onDidDispose(async () => {
-                console.log('🔍 DEBUG: panel.onDidDispose 触发，准备处理...');
-
                 // 【智能导航：从哪里来，回哪里去】
                 await this.handleSmartNavigation();
 
                 // 当Webview关闭时，自动关闭关联的预览编辑器
-                console.log('🔍 DEBUG: 调用 closePreviewEditor()...');
                 await this.closePreviewEditor();
                 // 清理预览编辑器资源
-                console.log('🔍 DEBUG: 调用 cleanupPreviewEditor()...');
                 this.cleanupPreviewEditor();
 
-                console.log('🔍 DEBUG: 设置 this.panel = undefined');
                 this.panel = undefined;
-                // 重置用户关闭预览标志（下次打开时重新显示预览）
-                this.userClosedPreview = false;
+                // 重置预览状态（下次打开时重新显示预览）
+                this.isMacroPreviewOpen = true;
                 // 清理来源记忆
                 this.editorOpenSource = undefined;
-                console.log('🔍 DEBUG: panel.onDidDispose 处理完成');
             });
 
             // 在面板创建后检查预览编辑器状态并发送相应消息
             setTimeout(() => {
                 if (this.panel) {
-                    if (this.previewEditor) {
+                    if (this.isMacroPreviewOpen && this.previewEditor) {
                         // 预览编辑器存在，发送打开消息
                         this.panel.webview.postMessage({
                             type: 'previewOpened'
                         });
-                        console.log('🔍 DEBUG: Sent previewOpened message');
                     } else {
                         // 预览编辑器不存在，发送关闭消息
                         this.panel.webview.postMessage({
                             type: 'previewClosed'
                         });
-                        console.log('🔍 DEBUG: Sent previewClosed message (no preview editor)');
                     }
                 }
             }, 100);
@@ -238,12 +264,6 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                 vscode.window.onDidChangeActiveColorTheme(theme => {
                     const isDarkTheme = theme.kind === vscode.ColorThemeKind.Dark ||
                         theme.kind === vscode.ColorThemeKind.HighContrast;
-
-                    console.log('🎨 Theme Changed:', {
-                        name: theme.kind,
-                        isDark: isDarkTheme,
-                        themeKind: vscode.ColorThemeKind[theme.kind]
-                    });
 
                     // 通知 Webview 主题已变化
                     if (this.panel) {
@@ -353,7 +373,6 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
 
     /**
      * 自动关闭关联的预览编辑器
-     * 实现真正的"生命周期绑定"
      */
     private async closePreviewEditor(): Promise<void> {
         if (!this.currentPreviewUri) {
@@ -361,47 +380,21 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         }
 
         try {
-            // 方法1：使用tabGroups API找到所有相关的标签页（VSCode 1.57+）
+            // 使用tabGroups API找到并关闭相关的标签页
             if (vscode.window.tabGroups) {
                 for (const tabGroup of vscode.window.tabGroups.all) {
                     for (const tab of tabGroup.tabs) {
                         if (tab.input && typeof tab.input === 'object' && 'uri' in tab.input) {
                             const tabUri = (tab.input as any).uri;
                             if (tabUri && tabUri.toString() === this.currentPreviewUri.toString()) {
-                                // 关闭这个标签页
                                 await vscode.window.tabGroups.close(tab);
-                                console.log('🔗 Clotho: Preview tab closed automatically');
                             }
                         }
                     }
                 }
-            } else {
-                // 方法2：回退方案 - 使用传统方法
-                const allEditors = [...vscode.window.visibleTextEditors, ...vscode.workspace.textDocuments
-                    .map(doc => vscode.window.visibleTextEditors.find(editor => editor.document === doc))
-                    .filter(editor => editor !== undefined)] as vscode.TextEditor[];
-
-                const previewEditors = allEditors.filter(
-                    editor => editor.document.uri.toString() === this.currentPreviewUri!.toString()
-                );
-
-                // 逐个关闭这些编辑器
-                for (const editor of previewEditors) {
-                    // 先让这个编辑器成为活动编辑器
-                    await vscode.window.showTextDocument(editor.document, {
-                        viewColumn: editor.viewColumn,
-                        preserveFocus: false
-                    });
-
-                    // 然后关闭当前活动的编辑器
-                    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-                }
             }
-
-            console.log('🔗 Clotho: Preview editor closed automatically with webview');
         } catch (error) {
-            console.warn('⚠️ Clotho: Failed to auto-close preview editor:', error);
-            // 即使关闭失败，也要继续清理资源
+            console.warn('⚠️ Failed to auto-close preview editor:', error);
         }
     }
 
@@ -424,19 +417,18 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
     private async notifyPreviewClosed(): Promise<void> {
         if (this.panel) {
             try {
-                console.log('🔍 DEBUG: Sending previewClosed message to webview...');
-                // 发送消息并等待一个确认，或者简单地延迟一小段时间
+                console.log('📤 Sending previewClosed message to webview');
                 await this.panel.webview.postMessage({
                     type: 'previewClosed'
                 });
                 // 短暂延迟，给webview足够的时间来处理消息
                 await new Promise(resolve => setTimeout(resolve, 100));
-                console.log('🔗 Clotho: Notified webview that preview editor was closed');
+                console.log('✅ previewClosed message sent successfully');
             } catch (error) {
-                console.error('❌ Clotho: Failed to send previewClosed message, panel might be disposing.', error);
+                console.error('❌ Failed to send previewClosed message:', error);
             }
         } else {
-            console.log('🔍 DEBUG: Panel is null, cannot send previewClosed message');
+            console.warn('⚠️ Cannot send previewClosed message: panel is null');
         }
     }
 
@@ -449,9 +441,8 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                 await this.panel.webview.postMessage({
                     type: 'previewReopened'
                 });
-                console.log('🔗 Clotho: Notified webview that preview editor was reopened');
             } catch (error) {
-                console.error('❌ Clotho: Failed to send previewReopened message:', error);
+                console.error('❌ Failed to send previewReopened message:', error);
             }
         }
     }
@@ -465,9 +456,8 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                 await this.panel.webview.postMessage({
                     type: 'previewReopenFailed'
                 });
-                console.log('🔗 Clotho: Notified webview that preview editor reopen failed');
             } catch (error) {
-                console.error('❌ Clotho: Failed to send previewReopenFailed message:', error);
+                console.error('❌ Failed to send previewReopenFailed message:', error);
             }
         }
     }
@@ -476,27 +466,27 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
      * 重新打开预览编辑器
      */
     private async reopenPreviewEditor(): Promise<void> {
-        if (!this.panel || this.previewEditor) {
-            return; // 面板不存在或预览编辑器已存在
+        if (!this.panel) {
+            return; // 面板不存在
         }
 
         try {
             // 重新生成预览URI
-            this.currentPreviewUri = this.previewProvider.createPreviewUri('clang-format-preview.cpp');
+            this.currentPreviewUri = this.previewProvider.createPreviewUri(`clang-format-preview-${Date.now()}.cpp`);
 
             // 设置初始预览内容
             const initialPreviewCode = await this.generateInitialPreview();
             this.previewProvider.updateContent(this.currentPreviewUri, initialPreviewCode);
 
-            // 在Webview旁边重新打开编辑器预览
+            // 在第二列打开新的预览编辑器
             this.previewEditor = await vscode.window.showTextDocument(this.currentPreviewUri, {
-                viewColumn: vscode.ViewColumn.Beside,
+                viewColumn: vscode.ViewColumn.Two,
                 preserveFocus: true,
                 preview: false
             });
 
-            // 重置用户关闭标志
-            this.userClosedPreview = false;
+            // 设置预览状态为打开
+            this.isMacroPreviewOpen = true;
 
             // 通知webview预览编辑器已成功重新打开
             await this.notifyPreviewReopened();
@@ -521,6 +511,7 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             this.currentPreviewUri = undefined;
         }
         this.previewEditor = undefined;
+        this.isMacroPreviewOpen = true; // 重置状态
     }
 
     /**
@@ -559,20 +550,17 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         const config = vscode.workspace.getConfiguration('clotho.clangFormat');
         const showGuideButton = config.get<boolean>('showGuideButton', true);
 
-        // 【新增】尝试自动加载工作区配置
+        // 尝试自动加载工作区配置
         try {
             const configPath = this.formatService.getWorkspaceConfigPath();
             if (configPath) {
-                console.log('📁 Clotho: Found workspace .clang-format file, loading automatically...');
                 this.currentConfig = await this.formatService.loadConfigFromFile(configPath);
                 vscode.window.showInformationMessage('已自动加载工作区的 .clang-format 配置文件');
             } else {
-                console.log('📁 Clotho: No workspace .clang-format file found, using default config');
                 // 使用默认配置
                 this.currentConfig = { ...DEFAULT_CLANG_FORMAT_CONFIG };
             }
         } catch (error) {
-            console.error('❌ Clotho: Failed to auto-load workspace config:', error);
             ErrorHandler.handle(error, {
                 operation: 'autoLoadWorkspaceConfig',
                 module: 'ClangFormatEditorCoordinator',
@@ -643,12 +631,6 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                     case WebviewMessageType.GET_MICRO_PREVIEW:
                         await this.handleGetMicroPreview(message.payload);
                         break;
-
-                    case WebviewMessageType.GET_MACRO_PREVIEW:
-                        // 【已弃用】不再需要处理宏观预览请求，因为我们现在使用虚拟编辑器
-                        // 虚拟编辑器会在配置变更时自动更新
-                        break;
-
                     case WebviewMessageType.CONFIG_OPTION_HOVER:
                         await this.handleConfigOptionHover(message.payload);
                         break;
@@ -663,6 +645,11 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
 
                     case WebviewMessageType.REOPEN_PREVIEW:
                         await this.reopenPreviewEditor();
+                        break;
+
+                    case 'testPlaceholder':
+                        // 调试功能：强制显示占位符
+                        await this.notifyPreviewClosed();
                         break;
 
                     default:
@@ -1136,18 +1123,42 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         const webview = this.panel.webview;
         const extensionUri = this.extensionUri;
 
+        // 添加调试日志
+        console.log('🔍 DEBUG: Creating webview content...');
+        console.log('🔍 DEBUG: Extension URI:', extensionUri.toString());
+
         // 【核心】检测当前VSCode的主题是亮色还是暗色
         const currentTheme = vscode.window.activeColorTheme;
         const isDarkTheme = currentTheme.kind === vscode.ColorThemeKind.Dark ||
             currentTheme.kind === vscode.ColorThemeKind.HighContrast;
 
         // 1. 【核心】定义所有需要从本地加载的资源的URI
-        const scriptUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist', 'index.js')
-        );
-        const styleUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist', 'index.css')
-        );
+        const scriptPath = vscode.Uri.joinPath(extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist', 'index.js');
+        const stylePath = vscode.Uri.joinPath(extensionUri, 'webviews', 'visual-editor', 'clang-format', 'dist', 'index.css');
+
+        const scriptUri = webview.asWebviewUri(scriptPath);
+        const styleUri = webview.asWebviewUri(stylePath);
+
+        // 添加调试日志
+        console.log('🔍 DEBUG: Script path:', scriptPath.toString());
+        console.log('🔍 DEBUG: Style path:', stylePath.toString());
+        console.log('🔍 DEBUG: Script URI:', scriptUri.toString());
+        console.log('🔍 DEBUG: Style URI:', styleUri.toString());
+
+        // 验证文件是否存在（仅在开发模式下）
+        try {
+            const fs = require('fs');
+            const scriptExists = fs.existsSync(scriptPath.fsPath);
+            const styleExists = fs.existsSync(stylePath.fsPath);
+            console.log('🔍 DEBUG: Script exists:', scriptExists);
+            console.log('🔍 DEBUG: Style exists:', styleExists);
+
+            if (!scriptExists || !styleExists) {
+                console.error('❌ Webview资源文件缺失！请运行: npm run build:webview:production');
+            }
+        } catch (error) {
+            console.log('🔍 DEBUG: File existence check failed (normal in packaged extension)');
+        }
 
         // 确保 highlight.js 能访问其所需的所有资源
         const webviewResourceRoot = webview.asWebviewUri(

@@ -15,8 +15,8 @@ const baseConfig = {
     outfile: 'out/bundle.js',
     external: [
         'vscode',
-        ...Object.keys(pkg.dependencies || {}),
-        ...Object.keys(pkg.devDependencies || {})
+        'vscode-languageclient' // VSCode API相关，需要外部化
+        // 尝试将pidusage打包进bundle而不是外部化
     ],
     format: 'cjs',
     platform: 'node',
@@ -26,7 +26,21 @@ const baseConfig = {
     define: {
         'process.env.NODE_ENV': isProduction ? '"production"' : '"development"'
     },
-    logLevel: 'info'
+    logLevel: 'info',
+    // 排除webview相关文件
+    loader: {
+        '.tsx': 'tsx',
+        '.ts': 'ts'
+    },
+    // 确保不处理webview文件
+    plugins: [{
+        name: 'exclude-webviews',
+        setup(build) {
+            build.onResolve({ filter: /^\.\/webviews/ }, args => {
+                return { path: args.path, external: true }
+            })
+        }
+    }]
 };
 
 async function buildExtension() {

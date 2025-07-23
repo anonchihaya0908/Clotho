@@ -33,6 +33,13 @@ module.exports = (env, argv) => {
                         'css-loader',
                     ],
                 },
+                {
+                    test: /\.(png|svg|jpg|jpeg|gif|webp)$/i,
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'images/[path][name]-[hash:8][ext]'
+                    }
+                },
             ],
         },
         plugins: [

@@ -122,8 +122,23 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
             case 'openClangFormatFile':
                 sendMessage('openClangFormatFile');
                 break;
+            case 'testPlaceholder':
+                // 调试功能：测试占位符显示
+                sendMessage('testPlaceholder');
+                break;
         }
     }, [sendMessage]);
+
+    // 调试功能：手动切换占位符显示
+    const togglePlaceholder = useCallback(() => {
+        setState(prev => ({
+            ...prev,
+            previewState: {
+                ...prev.previewState,
+                showPlaceholder: !prev.previewState.showPlaceholder
+            }
+        }));
+    }, []);
 
     // 监听来自 VS Code 的消息
     useEffect(() => {
@@ -275,6 +290,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
     // 重新打开预览编辑器
     const reopenPreview = useCallback(() => {
+        console.log('🔄 Attempting to reopen preview editor');
         // 设置重新打开状态
         setState(prev => ({
             ...prev,
@@ -287,6 +303,11 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         // 发送重新打开消息
         sendMessage('reopenPreview');
     }, [sendMessage]);
+
+    // 调试：监听预览状态变化
+    useEffect(() => {
+        console.log('🔍 Preview state changed:', state.previewState);
+    }, [state.previewState]);
 
     if (state.isLoading) {
         return (
@@ -322,6 +343,18 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     onConfigOptionFocus={handleConfigOptionFocus}
                     onClearHighlights={handleClearHighlights}
                 />
+
+                {/* 调试按钮 - 仅在开发模式下显示 */}
+                {process.env.NODE_ENV === 'development' && (
+                    <div style={{ position: 'fixed', bottom: '10px', left: '10px', zIndex: 9999 }}>
+                        <button onClick={togglePlaceholder} style={{ marginRight: '8px' }}>
+                            切换占位符
+                        </button>
+                        <button onClick={() => handleToolbarAction('testPlaceholder')}>
+                            测试占位符
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* 当预览编辑器关闭时显示占位符 */}

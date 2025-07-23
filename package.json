@@ -2,7 +2,7 @@
     "name": "clotho",
     "displayName": "Clotho - C/C++ clangd enhancer",
     "description": "A powerful VS Code extension for enhancing C/C++ development with clangd.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "publisher": "your-publisher-name",
     "private": true,
     "workspaces": [
@@ -288,8 +288,11 @@
         "lint": "eslint src --ext ts",
         "lint:fix": "eslint src --ext ts --fix",
         "test": "node ./out/test/runTest.js",
-        "package": "npm run build:production && @vscode/vsce package",
+        "package": "node scripts/package-extension.js",
         "package:quick": "@vscode/vsce package --no-dependencies",
+        "package:old": "npm run build:production && @vscode/vsce package",
+        "diagnose": "node scripts/diagnose-vsix.js",
+        "fix-packaging": "node scripts/fix-vsix-packaging.js",
         "format": "npx prettier --write \"src/**/*.ts\"",
         "clean": "rimraf out && npm run clean:webview",
         "clean:webview": "npm run clean --workspace=webviews/visual-editor/clang-format",
@@ -323,6 +326,7 @@
         "esbuild": "^0.25.8",
         "eslint": "^8.28.0",
         "glob": "^11.0.3",
+        "sharp": "^0.34.3",
         "typescript": "^5.0.0"
     },
     "repository": {
