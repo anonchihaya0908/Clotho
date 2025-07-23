@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { WebviewMessageType } from '../../../../src/common/types/webview'; // 导入消息类型
 import { ConfigPanel } from './components/ConfigPanel';
 import { PreviewPlaceholder } from './components/PreviewPlaceholder';
 import { Toolbar } from './components/Toolbar';
@@ -54,7 +55,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
     });
 
     // 发送消息到 VS Code
-    const sendMessage = useCallback((type: string, payload?: any) => {
+    const sendMessage = useCallback((type: WebviewMessageType, payload?: any) => {
         console.log('🔍 DEBUG: Sending message to VS Code:', type, payload);
         vscode.postMessage({ type, payload });
     }, [vscode]);
@@ -66,7 +67,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
             currentConfig: { ...prev.currentConfig, [key]: value }
         }));
 
-        sendMessage('configChanged', { key, value });
+        sendMessage(WebviewMessageType.CONFIG_CHANGED, { key, value });
     }, [sendMessage]);
 
     // 处理设置变更
@@ -76,53 +77,53 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
             settings: { ...prev.settings, [setting]: value }
         }));
 
-        sendMessage('updateSettings', { [setting]: value });
+        sendMessage(WebviewMessageType.UPDATE_SETTINGS, { [setting]: value });
     }, [sendMessage]);
 
     // 处理动态预览请求
     const handlePreviewRequest = useCallback((optionName: string, config: Record<string, any>, previewSnippet: string) => {
-        sendMessage('getMicroPreview', { optionName, config, previewSnippet });
+        sendMessage(WebviewMessageType.GET_MICRO_PREVIEW, { optionName, config, previewSnippet });
     }, [sendMessage]);
 
     // 处理配置项hover事件
     const handleConfigOptionHover = useCallback((optionName: string) => {
-        sendMessage('configOptionHover', { optionName });
+        sendMessage(WebviewMessageType.CONFIG_OPTION_HOVER, { optionName });
     }, [sendMessage]);
 
     // 处理配置项focus事件
     const handleConfigOptionFocus = useCallback((optionName: string) => {
-        sendMessage('configOptionFocus', { optionName });
+        sendMessage(WebviewMessageType.CONFIG_OPTION_FOCUS, { optionName });
     }, [sendMessage]);
 
     // 处理清除高亮
     const handleClearHighlights = useCallback(() => {
-        sendMessage('clearHighlights');
+        sendMessage(WebviewMessageType.CLEAR_HIGHLIGHTS);
     }, [sendMessage]);
 
     // 处理工具栏操作
     const handleToolbarAction = useCallback((action: string) => {
         switch (action) {
             case 'load':
-                sendMessage('loadWorkspaceConfig');
+                sendMessage(WebviewMessageType.LOAD_WORKSPACE_CONFIG);
                 break;
             case 'save':
-                sendMessage('saveConfig');
+                sendMessage(WebviewMessageType.SAVE_CONFIG);
                 break;
             case 'export':
-                sendMessage('exportConfig');
+                sendMessage(WebviewMessageType.EXPORT_CONFIG);
                 break;
             case 'import':
-                sendMessage('importConfig');
+                sendMessage(WebviewMessageType.IMPORT_CONFIG);
                 break;
             case 'reset':
-                sendMessage('resetConfig');
+                sendMessage(WebviewMessageType.RESET_CONFIG);
                 break;
             case 'openClangFormatFile':
-                sendMessage('openClangFormatFile');
+                sendMessage(WebviewMessageType.OPEN_CLANG_FORMAT_FILE);
                 break;
             case 'testPlaceholder':
                 // 调试功能：测试占位符显示
-                sendMessage('testPlaceholder');
+                sendMessage(WebviewMessageType.TEST_PLACEHOLDER);
                 break;
         }
     }, [sendMessage]);
@@ -144,7 +145,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
             const message = event.data;
 
             switch (message.type) {
-                case 'initialize':
+                case WebviewMessageType.INITIALIZE:
                     setState(prev => ({
                         ...prev,
                         options: message.payload.options,
@@ -153,20 +154,17 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                         settings: message.payload.settings || prev.settings,
                         isLoading: false
                     }));
-                    // 初始化完成后，通知扩展端 webview 已准备就绪
-                    setTimeout(() => {
-                        sendMessage('webview-ready');
-                    }, 100); // 给 React 一点时间完成渲染
+                    // 初始化完成后，不再使用 setTimeout，改由 useEffect 触发
                     break;
 
-                case 'configLoaded':
+                case WebviewMessageType.CONFIG_LOADED:
                     setState(prev => ({
                         ...prev,
                         currentConfig: message.payload.config
                     }));
                     break;
 
-                case 'microPreviewUpdate':
+                case WebviewMessageType.MICRO_PREVIEW_UPDATE:
                     setState(prev => ({
                         ...prev,
                         microPreviews: {
@@ -176,14 +174,14 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     }));
                     break;
 
-                case 'validationResult':
+                case WebviewMessageType.VALIDATION_RESULT:
                     setState(prev => ({
                         ...prev,
                         validationState: message.payload
                     }));
                     break;
 
-                case 'validationError':
+                case WebviewMessageType.VALIDATION_ERROR:
                     setState(prev => ({
                         ...prev,
                         validationState: {
@@ -193,7 +191,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     }));
                     break;
 
-                case 'settingsUpdated':
+                case WebviewMessageType.SETTINGS_UPDATED:
                     setState(prev => ({
                         ...prev,
                         settings: {
@@ -203,7 +201,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     }));
                     break;
 
-                case 'updateMicroPreview':
+                case WebviewMessageType.UPDATE_MICRO_PREVIEW:
                     setState(prev => ({
                         ...prev,
                         dynamicPreviewResult: {
@@ -215,7 +213,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     }));
                     break;
 
-                case 'previewOpened':
+                case WebviewMessageType.PREVIEW_OPENED:
                     console.log('🔍 DEBUG: Received previewOpened message');
                     setState(prev => ({
                         ...prev,
@@ -227,7 +225,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     }));
                     break;
 
-                case 'previewClosed':
+                case WebviewMessageType.PREVIEW_CLOSED:
                     console.log('🔍 DEBUG: Received previewClosed message');
                     setState(prev => ({
                         ...prev,
@@ -239,7 +237,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     }));
                     break;
 
-                case 'previewReopened':
+                case WebviewMessageType.PREVIEW_REOPENED:
                     setState(prev => ({
                         ...prev,
                         previewState: {
@@ -250,7 +248,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     }));
                     break;
 
-                case 'previewReopenFailed':
+                case WebviewMessageType.PREVIEW_REOPEN_FAILED:
                     // 重新打开失败时，保持占位符显示
                     setState(prev => ({
                         ...prev,
@@ -288,7 +286,14 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
             window.removeEventListener('message', handleMessage);
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
-    }, []); // 移除sendMessage依赖，因为它不需要重新创建监听器
+    }, [sendMessage]); // 依赖中加入 sendMessage
+
+    // 当初始化加载完成后，向扩展发送 webview-ready 消息
+    useEffect(() => {
+        if (!state.isLoading) {
+            sendMessage(WebviewMessageType.WEBVIEW_READY);
+        }
+    }, [state.isLoading, sendMessage]);
 
     // 重新打开预览编辑器
     const reopenPreview = useCallback(() => {
@@ -303,7 +308,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         }));
 
         // 发送重新打开消息
-        sendMessage('reopenPreview');
+        sendMessage(WebviewMessageType.REOPEN_PREVIEW);
     }, [sendMessage]);
 
     // 调试：监听预览状态变化
@@ -349,7 +354,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                 {/* 预览占位符 - 当预览未打开时显示 */}
                 {state.previewState.showPlaceholder && (
                     <PreviewPlaceholder
-                        onReopenPreview={() => handleToolbarAction('testPlaceholder')}
+                        onReopenPreview={reopenPreview}
                         isReopening={state.previewState.isReopening}
                     />
                 )}

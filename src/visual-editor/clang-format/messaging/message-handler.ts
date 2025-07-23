@@ -79,7 +79,6 @@ export class MessageHandler implements BaseManager {
 
         // 配置变更 - 支持两种消息类型格式
         this.messageHandlers.set(WebviewMessageType.CONFIG_CHANGED, handleConfigChange);
-        this.messageHandlers.set(WebviewMessageType.CONFIG_CHANGED_ALT, handleConfigChange); // WebView 实际发送的格式
 
         // 工具栏按钮：Load（快速设置/加载工作区配置）
         this.messageHandlers.set(WebviewMessageType.LOAD_WORKSPACE_CONFIG, async (payload, context) => {
@@ -123,7 +122,7 @@ export class MessageHandler implements BaseManager {
         });
 
         // 测试占位符功能（调试用）
-        this.messageHandlers.set('testPlaceholder', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.TEST_PLACEHOLDER, async (payload, context) => {
             console.log('🧪 Test placeholder functionality triggered');
             context.eventBus.emit('close-preview-requested');
         });

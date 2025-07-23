@@ -50,7 +50,10 @@ export enum WebviewMessageType {
     CLEAR_HIGHLIGHTS = 'clearHighlights',            // 清除高亮
 
     // 调试相关
-    TEST_PLACEHOLDER = 'testPlaceholder'            // 调试功能：测试占位符
+    TEST_PLACEHOLDER = 'testPlaceholder',            // 调试功能：测试占位符
+
+    // 生命周期
+    WEBVIEW_READY = 'webview-ready',                 // Webview 已准备就绪
 }
 
 // 基础 Webview 消息接口
