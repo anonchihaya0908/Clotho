@@ -329,4 +329,5 @@ export enum WebviewMessageType {
     // 通用
     GET_STATE = 'get-state',
     SHOW_MESSAGE = 'show-message',
+    CONFIG_LOADED = "CONFIG_LOADED",
 }

@@ -32,8 +32,7 @@
     ],
     "activationEvents": [
         "onLanguage:c",
-        "onLanguage:cpp",
-        "onStartupFinished"
+        "onLanguage:cpp"
     ],
     "main": "./out/bundle.js",
     "contributes": {
