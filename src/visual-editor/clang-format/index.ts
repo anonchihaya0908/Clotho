@@ -5,14 +5,19 @@
 
 import * as vscode from 'vscode';
 
-export { RefactoredClangFormatEditorCoordinator as ClangFormatVisualEditorCoordinator } from './refactored-coordinator';
 export { ClangFormatService } from './format-service';
 export { ClangFormatPreviewProvider } from './preview-provider';
-export { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG, MACRO_PREVIEW_CODE } from './config-options';
-// 类型定义已迁移到 src/common/types/，通过那里导入
+export { GuideService } from './guide-service';
 
-import { RefactoredClangFormatEditorCoordinator as ClangFormatVisualEditorCoordinator } from './refactored-coordinator';
-import { ClangFormatPreviewProvider } from './preview-provider';
+// 导出新的、重构后的视觉编辑器协调器
+export { ClangFormatEditorCoordinator as ClangFormatVisualEditorCoordinator } from './coordinator';
+
+// =========================================================================
+//  旧版协调器（保留用于调试和比较）
+// =========================================================================
+import { ClangFormatEditorCoordinator as ClangFormatVisualEditorCoordinator } from './coordinator';
+import { EasterEggManager } from './core/easter-egg-manager';
+// =========================================================================
 
 /**
  * 激活 Clang-Format 可视化编辑器模块

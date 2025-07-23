@@ -38,6 +38,24 @@ export class ClangFormatService {
     }
 
     /**
+     * Parses a YAML-like string from a .clang-format file.
+     * @param content The string content of the file.
+     * @returns A configuration object.
+     */
+    public parse(content: string): Record<string, any> {
+        return this.parseConfigContent(content);
+    }
+
+    /**
+     * Stringifies a configuration object into a .clang-format file content.
+     * @param config The configuration object.
+     * @returns A string suitable for a .clang-format file.
+     */
+    public stringify(config: Record<string, any>): string {
+        return this.generateConfigFile(config);
+    }
+
+    /**
      * Formats a given code snippet using a configuration object.
      * This is the single, definitive, and most robust implementation.
      * It uses stdin/stdout streams and communicates with clang-format in its native YAML dialect.
@@ -154,9 +172,10 @@ export class ClangFormatService {
     }
 
     /**
-     * 生成 .clang-format 配置文件内容
+     * Generates the content for a .clang-format configuration file.
+     * (Internal helper for stringify)
      */
-    generateConfigFile(config: Record<string, any>): string {
+    private generateConfigFile(config: Record<string, any>): string {
         const lines: string[] = [];
 
         // 添加注释头

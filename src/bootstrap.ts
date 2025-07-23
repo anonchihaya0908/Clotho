@@ -14,7 +14,7 @@ import { PairingRuleService, PairingRuleUI, PairingRuleCoordinator } from './pai
 import { SwitchCoordinator, SwitchService, SwitchUI } from './switch-header-source';
 import { MonitorCoordinator } from './clangd-monitor';
 // 使用重构后的协调器
-import { RefactoredClangFormatEditorCoordinator } from './visual-editor/clang-format/refactored-coordinator';
+import { ClangFormatEditorCoordinator } from './visual-editor/clang-format/coordinator';
 import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
 import * as ClangFormatModule from './visual-editor/clang-format';
 import { ClangFormatPreviewProvider } from './visual-editor/clang-format/preview-provider';
@@ -128,7 +128,7 @@ function registerServices(context: vscode.ExtensionContext): void {
 
     // Clang-Format Visual Editor - 使用重构后的协调器
     serviceContainer.register('clangFormatVisualEditorCoordinator', () =>
-        new RefactoredClangFormatEditorCoordinator(context.extensionUri)
+        new ClangFormatEditorCoordinator(context.extensionUri)
     );
 
     // 新增：多实例协调器
