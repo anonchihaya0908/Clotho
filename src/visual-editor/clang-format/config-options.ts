@@ -3,7 +3,7 @@
  * 包含所有配置项的元数据和微观预览代码
  */
 
-import { ClangFormatOption, ConfigCategories } from './types';
+import { ClangFormatOption, ConfigCategories } from '../../common/types/index';
 
 export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
     // Alignment 对齐相关

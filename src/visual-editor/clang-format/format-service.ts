@@ -13,18 +13,7 @@ import { ProcessRunner, CommandResult } from '../../common/process-runner';
 import { ErrorHandler, ErrorContext } from '../../common/error-handler';
 import { getLineEnding } from '../../common/platform-utils';
 import { MACRO_PREVIEW_CODE, DEFAULT_CLANG_FORMAT_CONFIG } from './config-options';
-
-export interface FormatResult {
-    success: boolean;
-    formattedCode: string;
-    error?: string;
-}
-
-export interface ConfigValidationResult {
-    isValid: boolean;
-    error?: string;
-    warnings?: string[];
-}
+import { FormatResult, ConfigValidationResult } from '../../common/types/index';
 
 export class ClangFormatService {
     constructor() {

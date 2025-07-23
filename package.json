@@ -73,6 +73,21 @@
                 "title": "Open Clang-Format Visual Editor",
                 "category": "Clotho",
                 "icon": "$(edit)"
+            },
+            {
+                "command": "clotho.testDebounce",
+                "title": "Test Debounce Mechanism",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.testDebounceManual",
+                "title": "Manual Debounce Test",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.testRapidSwitching",
+                "title": "Test Rapid Switching",
+                "category": "Clotho"
             }
         ],
         "menus": {
@@ -120,6 +135,15 @@
                 },
                 {
                     "command": "clotho.openClangFormatEditor"
+                },
+                {
+                    "command": "clotho.testDebounce"
+                },
+                {
+                    "command": "clotho.testDebounceManual"
+                },
+                {
+                    "command": "clotho.testRapidSwitching"
                 }
             ]
         },

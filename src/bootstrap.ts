@@ -111,10 +111,22 @@ function registerServices(context: vscode.ExtensionContext): void {
         });
     });
 
-    // Clang-Format Visual Editor
+    // Clang-Format Visual Editor - 保持原有的单实例coordinator用于向后兼容
     serviceContainer.register('clangFormatVisualEditorCoordinator', () =>
         new ClangFormatVisualEditorCoordinator(context.extensionUri)
     );
+
+    // 新增：多实例协调器
+    serviceContainer.register('multiInstanceClangFormatCoordinator', () => {
+        const { MultiInstanceClangFormatCoordinator } = require('./visual-editor/clang-format/core/multi-instance-coordinator');
+        return new MultiInstanceClangFormatCoordinator(context.extensionUri);
+    });
+
+    // 新增：防抖集成测试
+    serviceContainer.register('debounceIntegration', () => {
+        const { DebounceIntegration } = require('./visual-editor/clang-format/core/debounce-integration');
+        return new DebounceIntegration(context.extensionUri);
+    });
 
     // Clang-Format Guide Service
     serviceContainer.register('clangFormatGuideService', () =>
@@ -134,6 +146,48 @@ async function initializeCoordinators(): Promise<void> {
     serviceContainer.get('switchCoordinator');
     serviceContainer.get('clangFormatVisualEditorCoordinator');
     serviceContainer.get('clangFormatGuideService');
+
+    // 注册防抖测试命令
+    const debounceIntegration = serviceContainer.get('debounceIntegration');
+    vscode.commands.registerCommand('clotho.testDebounce', async () => {
+        try {
+            console.log('🧪 Starting debounce test...');
+
+            // 创建测试用的防抖处理器
+            const testHandler = debounceIntegration.createDebouncedPreviewCloseHandler(async () => {
+                console.log('📄 Original handler would be called here');
+            });
+
+            // 模拟快速调用
+            console.log('⚡ Simulating rapid calls...');
+            testHandler();
+            testHandler();
+            testHandler();
+
+            // 显示统计信息
+            const stats = debounceIntegration.getStats();
+            console.log('📊 Debounce stats:', stats);
+
+            vscode.window.showInformationMessage(
+                `Debounce test completed! Check console for details. Active timers: ${stats.debounceManager.activeTimers.length}`
+            );
+
+        } catch (error) {
+            console.error('❌ Debounce test failed:', error);
+            vscode.window.showErrorMessage(`Debounce test failed: ${error}`);
+        }
+    });
+
+    // 注册手动测试命令
+    vscode.commands.registerCommand('clotho.testDebounceManual', async () => {
+        const { runManualDebounceTest } = require('./test/manual-debounce-test');
+        await runManualDebounceTest();
+    });
+
+    vscode.commands.registerCommand('clotho.testRapidSwitching', async () => {
+        const { testRapidSwitching } = require('./test/manual-debounce-test');
+        await testRapidSwitching();
+    });
 
     // Initialize and start the monitor coordinator
     const monitorCoordinator = serviceContainer.get('monitorCoordinator');

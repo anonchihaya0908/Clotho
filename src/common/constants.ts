@@ -41,7 +41,8 @@ export const COMMANDS = {
     SWITCH_HEADER_SOURCE: 'clotho.switchHeaderSource',
     CONFIGURE_RULES: 'clotho.configureRules',
     SHOW_CLANGD_DETAILS: 'clotho.showClangdDetails',
-    OPEN_CLANG_FORMAT_EDITOR: 'clotho.openClangFormatEditor'
+    OPEN_CLANG_FORMAT_EDITOR: 'clotho.openClangFormatEditor',
+    TEST_DEBOUNCE: 'clotho.testDebounce'
 } as const;
 
 // ===============================

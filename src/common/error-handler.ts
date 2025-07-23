@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 export interface ErrorContext {
     operation: string;
     module: string;
+    instanceId?: string; // 新增：实例标识
     showToUser?: boolean;
     logLevel?: 'debug' | 'info' | 'warn' | 'error';
 }

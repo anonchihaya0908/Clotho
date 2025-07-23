@@ -4,12 +4,14 @@
  */
 
 import * as vscode from 'vscode';
-import { ClangFormatService, FormatResult, ConfigValidationResult } from './format-service';
-import { WebviewMessage, WebviewMessageType, ConfigCategories } from './types';
+import { ClangFormatService } from './format-service';
+import { WebviewMessage, WebviewMessageType, ConfigCategories, FormatResult, ConfigValidationResult } from '../../common/types/index';
 import { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG, MACRO_PREVIEW_CODE } from './config-options';
 import { ErrorHandler } from '../../common/error-handler';
 import { COMMANDS } from '../../common/constants';
 import { ClangFormatPreviewProvider } from './preview-provider';
+import { TransitionManager } from './core/transition-manager';
+import { SimpleEasterEggWebviewController } from './core/simple-easter-egg-controller';
 
 /**
  * 编辑器打开来源
@@ -39,6 +41,10 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
     // 新增：装饰器，用于实现上下文高亮联动
     private highlightDecorationType: vscode.TextEditorDecorationType;
 
+    // 新增：防抖和彩蛋功能
+    private transitionManager: TransitionManager;
+    private easterEggController: SimpleEasterEggWebviewController;
+
     constructor(extensionUri: vscode.Uri) {
         this.extensionUri = extensionUri;
         this.formatService = new ClangFormatService();
@@ -46,6 +52,13 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
 
         // 初始化预览提供者
         this.previewProvider = ClangFormatPreviewProvider.getInstance();
+
+        // 初始化防抖和彩蛋功能
+        this.transitionManager = new TransitionManager(extensionUri);
+        this.easterEggController = new SimpleEasterEggWebviewController(
+            extensionUri,
+            () => this.handleReopenPreviewFromEasterEgg()
+        );
 
         // 创建上下文高亮装饰器
         this.highlightDecorationType = vscode.window.createTextEditorDecorationType({
@@ -128,6 +141,10 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         }
         // 清理预览编辑器
         this.cleanupPreviewEditor();
+
+        // 清理防抖和彩蛋功能
+        this.transitionManager.dispose();
+        this.easterEggController.dispose();
     }
 
     /**
@@ -139,18 +156,8 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
         this.editorOpenSource = source;
 
         try {
-            // 如果面板已存在，则聚焦
-            if (this.panel && this.currentPreviewUri) {
-                this.panel.reveal(vscode.ViewColumn.One);
-                // 如果预览是打开状态且编辑器存在，则聚焦预览编辑器
-                if (this.isMacroPreviewOpen && this.previewEditor) {
-                    await vscode.window.showTextDocument(this.previewEditor.document, {
-                        viewColumn: vscode.ViewColumn.Two,
-                        preserveFocus: true
-                    });
-                }
-                return;
-            }
+            // 移除单例限制 - 总是创建新的面板实例
+            // 这样用户可以同时打开多个clang-format编辑器
 
             // 创建 webview 面板（左侧控制面板）
             this.panel = vscode.window.createWebviewPanel(
@@ -279,6 +286,7 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
 
             // 初始化编辑器
             await this.initializeEditor();
+
 
         } catch (error) {
             ErrorHandler.handle(error, {
@@ -412,20 +420,36 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
     }
 
     /**
-     * 通知webview预览编辑器已关闭
+     * 通知webview预览编辑器已关闭（集成防抖和彩蛋功能）
      */
     private async notifyPreviewClosed(): Promise<void> {
         if (this.panel) {
             try {
+                // 【BUG修复】恢复向主Webview发送 'previewClosed' 消息。
+                // 这将通知前端将主面板宽度设置为50%，为右侧的彩蛋面板留出空间。
                 console.log('📤 Sending previewClosed message to webview');
                 await this.panel.webview.postMessage({
                     type: 'previewClosed'
                 });
-                // 短暂延迟，给webview足够的时间来处理消息
-                await new Promise(resolve => setTimeout(resolve, 100));
-                console.log('✅ previewClosed message sent successfully');
+
+                // 使用过渡管理器创建彩蛋webview，以占据右侧视图列，防止布局抖动
+                console.log('🎭 Creating easter egg webview with transition...');
+                await this.transitionManager.switchToEasterEgg(async () => {
+                    // 传递主面板引用，确保彩蛋能正确定位
+                    return await this.easterEggController.createEasterEggWebview();
+                });
+
+                console.log('✅ Easter egg webview transition initiated successfully');
             } catch (error) {
-                console.error('❌ Failed to send previewClosed message:', error);
+                console.error('❌ Failed to send previewClosed message or create easter egg:', error);
+                // 回退到原有行为
+                try {
+                    await this.panel.webview.postMessage({
+                        type: 'previewClosed'
+                    });
+                } catch (fallbackError) {
+                    console.error('❌ Fallback also failed:', fallbackError);
+                }
             }
         } else {
             console.warn('⚠️ Cannot send previewClosed message: panel is null');
@@ -463,11 +487,34 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
     }
 
     /**
+     * 从彩蛋重新打开预览编辑器
+     */
+    private async handleReopenPreviewFromEasterEgg(): Promise<void> {
+        try {
+            console.log('🔄 Reopening preview from easter egg...');
+
+            // 使用过渡管理器切换回预览模式
+            await this.transitionManager.switchToPreview(async () => {
+                return await this.reopenPreviewEditor();
+            });
+
+            console.log('✅ Successfully reopened preview from easter egg');
+        } catch (error) {
+            ErrorHandler.handle(error, {
+                operation: 'handleReopenPreviewFromEasterEgg',
+                module: 'ClangFormatVisualEditorCoordinator',
+                showToUser: false,
+                logLevel: 'error'
+            });
+        }
+    }
+
+    /**
      * 重新打开预览编辑器
      */
-    private async reopenPreviewEditor(): Promise<void> {
+    private async reopenPreviewEditor(): Promise<vscode.TextEditor> {
         if (!this.panel) {
-            return; // 面板不存在
+            throw new Error('Panel not available'); // 面板不存在
         }
 
         try {
@@ -492,12 +539,14 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             await this.notifyPreviewReopened();
 
             console.log('🔗 Clotho: Preview editor reopened successfully');
+            return this.previewEditor;
         } catch (error) {
             console.error('❌ Failed to reopen preview editor:', error);
             vscode.window.showErrorMessage('Failed to reopen preview editor');
 
             // 通知webview重新打开失败
             await this.notifyPreviewReopenFailed();
+            throw error;
         }
     }
 
@@ -647,7 +696,7 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
                         await this.reopenPreviewEditor();
                         break;
 
-                    case 'testPlaceholder':
+                    case WebviewMessageType.TEST_PLACEHOLDER:
                         // 调试功能：强制显示占位符
                         await this.notifyPreviewClosed();
                         break;
@@ -1181,7 +1230,7 @@ export class ClangFormatVisualEditorCoordinator implements vscode.Disposable {
             <meta http-equiv="Content-Security-Policy" content="
                 default-src 'none';
                 style-src   ${webview.cspSource} 'nonce-${nonce}';
-                script-src  'nonce-${nonce}';
+                script-src  'nonce-${nonce}' 'unsafe-eval';
                 img-src     ${webview.cspSource} https: data:;
                 font-src    ${webview.cspSource};
                 worker-src  ${webview.cspSource};

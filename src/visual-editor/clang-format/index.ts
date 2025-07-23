@@ -9,7 +9,7 @@ export { ClangFormatVisualEditorCoordinator } from './coordinator';
 export { ClangFormatService } from './format-service';
 export { ClangFormatPreviewProvider } from './preview-provider';
 export { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG, MACRO_PREVIEW_CODE } from './config-options';
-export * from './types';
+// 类型定义已迁移到 src/common/types/，通过那里导入
 
 import { ClangFormatVisualEditorCoordinator } from './coordinator';
 import { ClangFormatPreviewProvider } from './preview-provider';

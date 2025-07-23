@@ -326,7 +326,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
     }
 
     return (
-        <div className={`app ${state.previewState.showPlaceholder ? 'with-placeholder' : ''}`}>
+        <div className={`app ${state.previewState.showPlaceholder ? '' : ''}`}>
             <Toolbar onAction={handleToolbarAction} />
 
             <div className="app-content">
@@ -357,13 +357,16 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                 )}
             </div>
 
-            {/* 当预览编辑器关闭时显示占位符 */}
+            {/* 当预览编辑器关闭时显示占位符 - 【BUG修复】移除此占位符的渲染 */}
+            {/* 独立的彩蛋Webview将负责填充右侧空间，主面板不再需要显示内部占位符 */}
+            {/*
             {state.previewState.showPlaceholder && (
                 <PreviewPlaceholder
                     onReopenPreview={reopenPreview}
                     isReopening={state.previewState.isReopening}
                 />
             )}
+            */}
 
             <StatusBar
                 validationState={state.validationState}
