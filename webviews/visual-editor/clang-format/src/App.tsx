@@ -153,6 +153,10 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                         settings: message.payload.settings || prev.settings,
                         isLoading: false
                     }));
+                    // 初始化完成后，通知扩展端 webview 已准备就绪
+                    setTimeout(() => {
+                        sendMessage('webview-ready');
+                    }, 100); // 给 React 一点时间完成渲染
                     break;
 
                 case 'configLoaded':
@@ -341,6 +345,14 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     onConfigOptionFocus={handleConfigOptionFocus}
                     onClearHighlights={handleClearHighlights}
                 />
+
+                {/* 预览占位符 - 当预览未打开时显示 */}
+                {state.previewState.showPlaceholder && (
+                    <PreviewPlaceholder
+                        onReopenPreview={() => handleToolbarAction('testPlaceholder')}
+                        isReopening={state.previewState.isReopening}
+                    />
+                )}
 
                 {/* 调试按钮 - 仅在开发模式下显示 */}
                 {process.env.NODE_ENV === 'development' && (

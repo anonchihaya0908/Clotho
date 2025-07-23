@@ -31,8 +31,9 @@ export class PreviewEditorManager implements BaseManager {
      */
     async openPreview(): Promise<void> {
         const state = this.context.stateManager.getState();
-        if (state.previewMode === 'open') {
-            console.log('Preview is already open.');
+        // 如果不是关闭状态，就直接返回，防止重复打开
+        if (state.previewMode !== 'closed') {
+            console.log(`Preview is already ${state.previewMode}.`);
             return;
         }
 

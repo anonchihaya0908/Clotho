@@ -79,40 +79,40 @@ export class MessageHandler implements BaseManager {
 
         // 配置变更 - 支持两种消息类型格式
         this.messageHandlers.set(WebviewMessageType.CONFIG_CHANGED, handleConfigChange);
-        this.messageHandlers.set('configChanged', handleConfigChange); // WebView 实际发送的格式
+        this.messageHandlers.set(WebviewMessageType.CONFIG_CHANGED_ALT, handleConfigChange); // WebView 实际发送的格式
 
         // 工具栏按钮：Load（快速设置/加载工作区配置）
-        this.messageHandlers.set('loadWorkspaceConfig', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.LOAD_WORKSPACE_CONFIG, async (payload, context) => {
             console.log('🔄 Loading workspace config...');
             context.eventBus.emit('load-workspace-config-requested', payload);
         });
 
         // 工具栏按钮：Save
-        this.messageHandlers.set('saveConfig', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.SAVE_CONFIG, async (payload, context) => {
             console.log('💾 Saving config...');
             context.eventBus.emit('save-config-requested', payload);
         });
 
         // 工具栏按钮：Import
-        this.messageHandlers.set('importConfig', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.IMPORT_CONFIG_FILE, async (payload, context) => {
             console.log('📥 Importing config...');
             context.eventBus.emit('import-config-requested', payload);
         });
 
         // 工具栏按钮：Export
-        this.messageHandlers.set('exportConfig', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.EXPORT_CONFIG_FILE, async (payload, context) => {
             console.log('📤 Exporting config...');
             context.eventBus.emit('export-config-requested', payload);
         });
 
         // 工具栏按钮：Reset
-        this.messageHandlers.set('resetConfig', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.RESET_CONFIG_TO_DEFAULT, async (payload, context) => {
             console.log('🔄 Resetting config...');
             context.eventBus.emit('reset-config-requested', payload);
         });
 
         // Edit as Text按钮
-        this.messageHandlers.set('openClangFormatFile', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.OPEN_CLANG_FORMAT_FILE, async (payload, context) => {
             console.log('📝 Opening clang-format file for text editing...');
             context.eventBus.emit('open-clang-format-file-requested', payload);
         });
@@ -129,19 +129,19 @@ export class MessageHandler implements BaseManager {
         });
 
         // 微观预览请求
-        this.messageHandlers.set('getMicroPreview', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.GET_MICRO_PREVIEW, async (payload, context) => {
             console.log('🔍 Micro preview requested:', payload);
             context.eventBus.emit('micro-preview-requested', payload);
         });
 
         // 宏观预览请求
-        this.messageHandlers.set('getMacroPreview', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.GET_MACRO_PREVIEW, async (payload, context) => {
             console.log('🔍 Macro preview requested:', payload);
             context.eventBus.emit('macro-preview-requested', payload);
         });
 
         // 设置更新
-        this.messageHandlers.set('updateSettings', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.UPDATE_SETTINGS, async (payload, context) => {
             console.log('⚙️ Settings updated:', payload);
             // 这里可以处理应用程序设置的更新
             // 比如显示/隐藏指南按钮等
@@ -149,24 +149,30 @@ export class MessageHandler implements BaseManager {
         });
 
         // 配置选项悬停
-        this.messageHandlers.set('configOptionHover', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.CONFIG_OPTION_HOVER, async (payload, context) => {
             console.log('🎯 Config option hover:', payload);
             // 这里可以处理选项悬停时的预览高亮
             context.eventBus.emit('config-option-hover', payload);
         });
 
         // 配置选项焦点
-        this.messageHandlers.set('configOptionFocus', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.CONFIG_OPTION_FOCUS, async (payload, context) => {
             console.log('🎯 Config option focus:', payload);
             // 这里可以处理选项获得焦点时的操作
             context.eventBus.emit('config-option-focus', payload);
         });
 
         // 清除高亮
-        this.messageHandlers.set('clearHighlights', async (payload, context) => {
+        this.messageHandlers.set(WebviewMessageType.CLEAR_HIGHLIGHTS, async (payload, context) => {
             console.log('🧹 Clear highlights');
             // 这里可以处理清除预览高亮的操作
             context.eventBus.emit('clear-highlights', payload);
+        });
+
+        // Webview 准备就绪
+        this.messageHandlers.set(WebviewMessageType.WEBVIEW_READY, async (payload, context) => {
+            console.log('✅ Webview is ready, triggering editor-fully-ready event');
+            context.eventBus.emit('editor-fully-ready', payload);
         });
     }
 

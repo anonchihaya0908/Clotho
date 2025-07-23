@@ -213,16 +213,16 @@ export interface EditorState {
     // 基础状态
     isInitialized: boolean;
     isVisible: boolean;
-    
+
     // 预览状态
     previewMode: 'open' | 'closed' | 'transitioning';
     previewUri?: vscode.Uri;
     previewEditor?: vscode.TextEditor;
-    
+
     // 配置状态
     currentConfig: Record<string, any>;
     configDirty: boolean;
-    
+
     // 错误状态
     lastError?: EditorError;
     recoveryAttempts: number;
@@ -294,15 +294,38 @@ export interface WebviewMessage {
 export enum WebviewMessageType {
     // 配置
     CONFIG_CHANGED = 'config-changed',
+    CONFIG_CHANGED_ALT = 'configChanged', // WebView 实际发送的格式
     APPLY_CONFIG = 'apply-config',
     RESET_CONFIG = 'reset-config',
     EXPORT_CONFIG = 'export-config',
     IMPORT_CONFIG = 'import-config',
-    
+
     // 预览
     REOPEN_PREVIEW = 'reopen-preview',
     UPDATE_PREVIEW = 'update-preview',
-    
+
+    // 设置和交互
+    UPDATE_SETTINGS = 'updateSettings',
+    CONFIG_OPTION_HOVER = 'configOptionHover',
+    CONFIG_OPTION_FOCUS = 'configOptionFocus',
+    CLEAR_HIGHLIGHTS = 'clearHighlights',
+
+    // 生命周期
+    WEBVIEW_READY = 'webview-ready',
+
+    // 工具栏操作
+    LOAD_WORKSPACE_CONFIG = 'loadWorkspaceConfig',
+    SAVE_CONFIG = 'saveConfig',
+    IMPORT_CONFIG_FILE = 'importConfig',
+    EXPORT_CONFIG_FILE = 'exportConfig',
+    RESET_CONFIG_TO_DEFAULT = 'resetConfig',
+    OPEN_CLANG_FORMAT_FILE = 'openClangFormatFile',
+
+    // 预览操作
+    GET_MICRO_PREVIEW = 'getMicroPreview',
+    GET_MACRO_PREVIEW = 'getMacroPreview',
+    TEST_PLACEHOLDER = 'testPlaceholder',
+
     // 通用
     GET_STATE = 'get-state',
     SHOW_MESSAGE = 'show-message',

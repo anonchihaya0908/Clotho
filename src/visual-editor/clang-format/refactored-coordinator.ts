@@ -59,8 +59,7 @@ export class RefactoredClangFormatEditorCoordinator implements vscode.Disposable
 
             // 触发事件来创建编辑器
             this.eventBus.emit('create-editor-requested', source);
-            // 默认同时打开预览
-            this.eventBus.emit('open-preview-requested');
+            // 移除这里的预览打开请求，改由 'editor-fully-ready' 事件触发
 
         } catch (error: any) {
             await this.errorRecovery.handleError('coordinator-startup-failed', error);
@@ -97,16 +96,13 @@ export class RefactoredClangFormatEditorCoordinator implements vscode.Disposable
 
         // 监听状态变化并打印日志
         this.eventBus.on('state-changed', (event) => {
-            // 当编辑器创建完成时，自动打开预览
-            if (event.source === 'editor-created' && event.to.isInitialized) {
-                console.log('🔔 Event: editor-created - automatically opening preview');
-                // 延迟一点确保编辑器面板完全创建
-                setTimeout(() => {
-                    this.eventBus.emit('open-preview-requested');
-                }, 200);
-            }
-
             console.log(`[StateChange] Type: ${event.type}, Source: ${event.source}`);
+        });
+
+        // 监听 webview 完全准备就绪事件，自动打开预览
+        this.eventBus.on('editor-fully-ready', () => {
+            console.log('🔔 Event: editor-fully-ready - automatically opening preview');
+            this.eventBus.emit('open-preview-requested');
         });
     }
 
