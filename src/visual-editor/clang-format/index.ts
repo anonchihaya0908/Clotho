@@ -12,7 +12,7 @@ export { ClangFormatPreviewProvider } from './preview-provider';
 export { ClangFormatGuideService } from './guide-service';
 
 // 导出新的、重构后的视觉编辑器协调器
-export { ClangFormatEditorCoordinator as ClangFormatVisualEditorCoordinator } from './coordinator';
+export { ClangFormatEditorCoordinator } from './coordinator';
 
 /**
  * 激活 Clang-Format 可视化编辑器模块

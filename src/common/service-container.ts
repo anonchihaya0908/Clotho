@@ -36,7 +36,7 @@ import {
   SwitchUI,
 } from '../switch-header-source';
 import { MonitorCoordinator } from '../clangd-monitor';
-import { ClangFormatVisualEditorCoordinator } from '../visual-editor';
+import { ClangFormatEditorCoordinator } from '../visual-editor';
 import { ClangFormatGuideService } from '../visual-editor/clang-format/guide-service';
 
 // A collection of factory functions for creating services
@@ -66,12 +66,8 @@ export interface ServiceCollection {
   monitorCoordinator: MonitorCoordinator;
 
   // Clang-Format Visual Editor
-  clangFormatVisualEditorCoordinator: ClangFormatVisualEditorCoordinator;
+  clangFormatEditorCoordinator: ClangFormatEditorCoordinator;
   clangFormatGuideService: ClangFormatGuideService;
-
-  // Multi-instance coordinator and debounce integration
-  multiInstanceClangFormatCoordinator?: any;
-  debounceIntegration?: any;
 } // A mapping of service names to their instances
 type ServiceCache = Map<
   keyof ServiceCollection,

@@ -126,9 +126,6 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       this.eventBus.emit('close-preview-requested');
     });
 
-    // 监听状态变化并打印日志
-    this.eventBus.on('state-changed', (event) => {});
-
     // 监听 webview 完全准备就绪事件，自动打开预览
     this.eventBus.on('editor-fully-ready', async () => {
       // 自动加载逻辑已移至 ConfigActionManager

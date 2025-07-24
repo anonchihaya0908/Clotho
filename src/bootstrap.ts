@@ -69,7 +69,7 @@ export async function bootstrap(
       async () => {
         try {
           const coordinator = serviceContainer.get(
-            'clangFormatVisualEditorCoordinator',
+            'clangFormatEditorCoordinator',
           );
           await coordinator.showEditor();
         } catch (error) {
@@ -168,22 +168,9 @@ function registerServices(context: vscode.ExtensionContext): void {
 
   // Clang-Format Visual Editor - 使用重构后的协调器
   serviceContainer.register(
-    'clangFormatVisualEditorCoordinator',
+    'clangFormatEditorCoordinator',
     () => new ClangFormatEditorCoordinator(context.extensionUri),
   );
-
-  // 新增：多实例协调器（可选）
-  try {
-    const {
-      MultiInstanceClangFormatCoordinator,
-    } = require('./visual-editor/clang-format/core/multi-instance-coordinator');
-    serviceContainer.register(
-      'multiInstanceClangFormatCoordinator',
-      () => new MultiInstanceClangFormatCoordinator(context.extensionUri),
-    );
-  } catch (error) {
-    console.warn('MultiInstanceClangFormatCoordinator not available:', error);
-  }
 
   // Clang-Format Guide Service
   serviceContainer.register(
