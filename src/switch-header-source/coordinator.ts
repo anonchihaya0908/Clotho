@@ -47,7 +47,7 @@ export class SwitchCoordinator implements vscode.Disposable {
   public async switchHeaderSource(): Promise<void> {
     // Validate preconditions
     const activeEditor = this.validateActiveEditor();
-    if (!activeEditor) {return;}
+    if (!activeEditor) { return; }
 
     const currentFile = activeEditor.document.uri;
     const currentPath = currentFile.fsPath;

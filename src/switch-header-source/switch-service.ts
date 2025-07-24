@@ -31,11 +31,11 @@ import {
 export interface SearchResult {
   files: vscode.Uri[];
   method:
-    | 'clangd'
-    | 'same-directory'
-    | 'src-include'
-    | 'parallel-tests'
-    | 'global-search';
+  | 'clangd'
+  | 'same-directory'
+  | 'src-include'
+  | 'parallel-tests'
+  | 'global-search';
 }
 
 /**

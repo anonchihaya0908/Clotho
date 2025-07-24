@@ -11,7 +11,6 @@ import { PlaceholderWebviewManager } from './core/placeholder-manager';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from './config-options';
 import { WebviewMessageType } from '../../common/types/webview';
 import { DebounceIntegration } from './core/debounce-integration';
-import { BaseManager } from '../../common/types';
 
 /**
  * 主协调器
@@ -28,7 +27,6 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
   private placeholderManager: PlaceholderWebviewManager;
   private debounceIntegration: DebounceIntegration;
 
-  private managers: BaseManager[];
   private disposables: vscode.Disposable[] = [];
   private isInitialized = false;
 
@@ -52,15 +50,6 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       this.previewManager,
       this.placeholderManager,
     );
-
-    this.managers = [
-      this.messageHandler,
-      this.editorManager,
-      this.previewManager,
-      this.configActionManager,
-      this.placeholderManager,
-      this.debounceIntegration,
-    ];
 
     // 3. 设置事件监听
     this.setupEventListeners();
@@ -115,7 +104,11 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.eventBus.dispose();
     this.stateManager.dispose();
     this.errorRecovery.dispose();
-    this.managers.forEach((manager) => manager.dispose());
+    this.messageHandler.dispose();
+    this.editorManager.dispose();
+    this.previewManager.dispose();
+    this.placeholderManager.dispose();
+    this.debounceIntegration.dispose();
   }
 
   /**
@@ -228,7 +221,16 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
    * 初始化所有管理器
    */
   private async initializeManagers(context: ManagerContext): Promise<void> {
-    for (const manager of this.managers) {
+    const managers = [
+      this.messageHandler,
+      this.editorManager,
+      this.previewManager,
+      this.configActionManager,
+      this.placeholderManager,
+      this.debounceIntegration,
+    ];
+
+    for (const manager of managers) {
       try {
         await manager.initialize(context);
       } catch (error: any) {

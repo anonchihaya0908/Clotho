@@ -19,7 +19,6 @@ export class MonitorCoordinator implements vscode.Disposable {
   private readonly monitors: Map<string, IMonitor> = new Map();
   private readonly config: MonitorConfig;
   private readonly statusBarPresenter: StatusBarPresenter;
-  private showDetailsCommand: vscode.Disposable | undefined;
   private disposables: vscode.Disposable[] = [];
   private updateInterval: NodeJS.Timeout | undefined;
 
@@ -30,6 +29,7 @@ export class MonitorCoordinator implements vscode.Disposable {
       compactMode: true,
       normalizeCpu: true, // Show normalized CPU (system-wide perspective)
     });
+    this.disposables.push(this.statusBarPresenter);
     this.initializeMonitors();
     this.registerCommands();
   }
@@ -42,14 +42,17 @@ export class MonitorCoordinator implements vscode.Disposable {
       // Initialize memory monitor without status bar (we use unified presenter)
       const memoryMonitor = new MemoryMonitor(this.config.memory, true);
       this.monitors.set('memory', memoryMonitor);
+      this.disposables.push(memoryMonitor);
 
       // Initialize CPU monitor without status bar (we use unified presenter)
       const cpuMonitor = new CpuMonitor(this.config.cpu, true);
       this.monitors.set('cpu', cpuMonitor);
+      this.disposables.push(cpuMonitor);
 
       // Initialize status monitor (for future use)
       const statusMonitor = new StatusMonitor();
       this.monitors.set('status', statusMonitor);
+      this.disposables.push(statusMonitor);
 
       console.log(
         'Clotho MonitorCoordinator: All monitors initialized successfully',
@@ -71,18 +74,18 @@ export class MonitorCoordinator implements vscode.Disposable {
    * Register VS Code commands for monitor interaction
    */
   private registerCommands(): void {
-    this.showDetailsCommand = vscode.commands.registerCommand(
-      'clotho.showClangdDetails',
-      this.showClangdDetails,
-      this,
-    );
-
-    vscode.commands.registerCommand('clotho.restartClangd', () =>
-      this.restartClangd(),
-    );
-
-    vscode.commands.registerCommand('clotho.debugClangdDetection', () =>
-      this.debugClangdDetection(),
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        'clotho.showClangdDetails',
+        this.showClangdDetails,
+        this,
+      ),
+      vscode.commands.registerCommand('clotho.restartClangd', () =>
+        this.restartClangd(),
+      ),
+      vscode.commands.registerCommand('clotho.debugClangdDetection', () =>
+        this.debugClangdDetection(),
+      ),
     );
   }
 
@@ -104,18 +107,18 @@ export class MonitorCoordinator implements vscode.Disposable {
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Force all monitors to reset and re-detect PID (should now pick the main process)
-      const memoryMonitor = this.getMemoryMonitor();
+      const memoryMonitor = this.getMonitor<MemoryMonitor>('memory');
       if (memoryMonitor?.reset) {
         await memoryMonitor.reset();
       }
 
-      const cpuMonitor = this.getCpuMonitor();
+      const cpuMonitor = this.getMonitor<CpuMonitor>('cpu');
       if (cpuMonitor?.reset) {
         await cpuMonitor.reset();
       }
 
       // Force status monitor to update
-      const statusMonitor = this.getStatusMonitor();
+      const statusMonitor = this.getMonitor<StatusMonitor>('status');
       if (statusMonitor?.reset) {
         await statusMonitor.reset();
       }
@@ -140,7 +143,7 @@ export class MonitorCoordinator implements vscode.Disposable {
    * Debug clangd detection process by delegating to memory monitor
    */
   private async debugClangdDetection(): Promise<void> {
-    const memoryMonitor = this.getMemoryMonitor();
+    const memoryMonitor = this.getMonitor<MemoryMonitor>('memory');
     if (memoryMonitor && 'debugClangdDetection' in memoryMonitor) {
       await (memoryMonitor as any).debugClangdDetection();
     } else {
@@ -159,18 +162,18 @@ export class MonitorCoordinator implements vscode.Disposable {
 
       // Select command based on platform
       switch (process.platform) {
-      case 'win32':
-        command = 'taskkill /f /im clangd.exe';
-        break;
-      case 'darwin':
-      case 'linux':
-        command = 'pkill -f clangd';
-        break;
-      default:
-        console.warn(
-          `Clotho: Unsupported platform for killing clangd processes: ${process.platform}`,
-        );
-        return;
+        case 'win32':
+          command = 'taskkill /f /im clangd.exe';
+          break;
+        case 'darwin':
+        case 'linux':
+          command = 'pkill -f clangd';
+          break;
+        default:
+          console.warn(
+            `Clotho: Unsupported platform for killing clangd processes: ${process.platform}`,
+          );
+          return;
       }
 
       await new Promise<void>((resolve, reject) => {
@@ -242,9 +245,9 @@ export class MonitorCoordinator implements vscode.Disposable {
    */
   private updateStatusBarData(): void {
     try {
-      const memoryMonitor = this.getMemoryMonitor();
-      const cpuMonitor = this.getCpuMonitor();
-      const statusMonitor = this.getStatusMonitor();
+      const memoryMonitor = this.getMonitor<MemoryMonitor>('memory');
+      const cpuMonitor = this.getMonitor<CpuMonitor>('cpu');
+      const statusMonitor = this.getMonitor<StatusMonitor>('status');
 
       // Get latest data from monitors
       const memoryUsage = memoryMonitor?.getLastMemoryUsage();
@@ -310,43 +313,18 @@ export class MonitorCoordinator implements vscode.Disposable {
   }
 
   /**
-   * Get memory monitor specifically
-   */
-  public getMemoryMonitor(): MemoryMonitor | undefined {
-    return this.getMonitor<MemoryMonitor>('memory');
-  }
-
-  /**
-   * Get CPU monitor specifically
-   */
-  public getCpuMonitor(): CpuMonitor | undefined {
-    return this.getMonitor<CpuMonitor>('cpu');
-  }
-
-  /**
-   * Get status monitor specifically
-   */
-  public getStatusMonitor(): StatusMonitor | undefined {
-    return this.getMonitor<StatusMonitor>('status');
-  }
-
-  /**
    * Show detailed clangd information in a dialog
    */
   private async showClangdDetails(): Promise<void> {
     try {
-      const memoryMonitor = this.getMemoryMonitor();
-      const statusMonitor = this.getStatusMonitor();
+      const memoryMonitor = this.getMonitor<MemoryMonitor>('memory');
+      const statusMonitor = this.getMonitor<StatusMonitor>('status');
 
       if (!memoryMonitor || !statusMonitor) {
         vscode.window.showErrorMessage('Clangd monitoring is not available');
         return;
       }
 
-      const lastMemoryUsage = memoryMonitor.getLastMemoryUsage();
-      const currentStatus = statusMonitor.getCurrentStatus();
-
-      // Create detailed information panel
       const panel = vscode.window.createWebviewPanel(
         'clangdDetails',
         'Clangd Process Details',
@@ -357,34 +335,40 @@ export class MonitorCoordinator implements vscode.Disposable {
         },
       );
 
+      const updatePanelContent = async () => {
+        // Ensure status is up-to-date before rendering
+        await (statusMonitor as any).updateStatus();
+
+        const lastMemoryUsage = memoryMonitor.getLastMemoryUsage();
+        const currentStatus = statusMonitor.getCurrentStatus();
+        const config = memoryMonitor.getConfig();
+
+        if (panel.visible) {
+          panel.webview.html = this.generateDetailsHtml(
+            lastMemoryUsage,
+            currentStatus,
+            config,
+          );
+        }
+      };
       // Generate HTML content
-      panel.webview.html = this.generateDetailsHtml(
-        lastMemoryUsage,
-        currentStatus,
-        memoryMonitor.getConfig(),
-      );
+      await updatePanelContent();
 
       // Handle messages from webview
       panel.webview.onDidReceiveMessage(
         async (message) => {
           switch (message.command) {
-          case 'refresh':
-            // Re-generate and set the HTML content
-            panel.webview.html = await this.getGeneratedHtml();
-            return;
-          case 'restartClangd':
-            await this.restartClangd();
-            // After restart, refresh the panel multiple times to show progress
-            setTimeout(async () => {
-              panel.webview.html = await this.getGeneratedHtml();
-            }, 1000);
-            setTimeout(async () => {
-              panel.webview.html = await this.getGeneratedHtml();
-            }, 3000);
-            setTimeout(async () => {
-              panel.webview.html = await this.getGeneratedHtml();
-            }, 5000);
-            return;
+            case 'refresh':
+              await updatePanelContent();
+              return;
+            case 'restartClangd':
+              await this.restartClangd();
+              // After restart, poll for updates to show progress
+              for (let i = 0; i < 5; i++) {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+                await updatePanelContent();
+              }
+              return;
           }
         },
         undefined,
@@ -398,24 +382,6 @@ export class MonitorCoordinator implements vscode.Disposable {
         logLevel: 'error',
       });
     }
-  }
-
-  private async getGeneratedHtml(): Promise<string> {
-    const memoryMonitor = this.getMemoryMonitor();
-    const statusMonitor = this.getStatusMonitor();
-
-    if (!memoryMonitor || !statusMonitor) {
-      return this.generateDetailsHtml(null, null, {});
-    }
-
-    // Ensure status is up-to-date before rendering
-    await (statusMonitor as any).updateStatus();
-
-    const lastMemoryUsage = memoryMonitor.getLastMemoryUsage();
-    const currentStatus = statusMonitor.getCurrentStatus();
-    const config = memoryMonitor.getConfig();
-
-    return this.generateDetailsHtml(lastMemoryUsage, currentStatus, config);
   }
 
   /**
@@ -521,9 +487,8 @@ export class MonitorCoordinator implements vscode.Disposable {
                 <button class="button button-danger" onclick="restartClangd()">💀 Kill All & Restart Clangd</button>
             </div>
             
-            ${
-  hasData
-    ? `
+            ${hasData
+        ? `
                 <div class="section">
                     <h2>📊 Memory Usage</h2>
                     <div class="info-grid">
@@ -559,16 +524,15 @@ export class MonitorCoordinator implements vscode.Disposable {
                             <span class="info-label">Backend Version:</span>
                             <span>${status.version || '未检测到版本信息'}</span>
                         </div>
-                        ${
-  status.pid
-    ? `
+                        ${status.pid
+          ? `
                         <div class="info-item">
                             <span class="info-label">Server Process ID:</span>
                             <span>${status.pid}</span>
                         </div>
                         `
-    : ''
-}
+          : ''
+        }
                     </div>
                 </div>
 
@@ -590,7 +554,7 @@ export class MonitorCoordinator implements vscode.Disposable {
                     </div>
                 </div>
             `
-    : `
+        : `
                 <div class="section no-data">
                     <h2>❌ No Data Available</h2>
                     <p>Clangd process monitoring data is not available.</p>
@@ -602,7 +566,7 @@ export class MonitorCoordinator implements vscode.Disposable {
                     </ul>
                 </div>
             `
-}
+      }
 
             <script>
                 const vscode = acquireVsCodeApi();
@@ -627,24 +591,10 @@ export class MonitorCoordinator implements vscode.Disposable {
     // Stop monitoring first
     this.stopMonitoring();
 
-    // Dispose all monitors
-    for (const monitor of this.monitors.values()) {
-      monitor.dispose();
-    }
+    // Dispose all resources
+    this.disposables.forEach((d) => d.dispose());
+    this.disposables = [];
+
     this.monitors.clear();
-
-    // Dispose status bar presenter
-    this.statusBarPresenter.dispose();
-
-    // Dispose commands
-    if (this.showDetailsCommand) {
-      this.showDetailsCommand.dispose();
-    }
-
-    // Dispose debug command
-    const debugCommand = (this as any).debugCommand;
-    if (debugCommand) {
-      debugCommand.dispose();
-    }
   }
 }
