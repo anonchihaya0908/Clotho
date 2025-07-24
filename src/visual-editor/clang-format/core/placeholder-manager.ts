@@ -6,6 +6,8 @@ import {
   ManagerContext,
   WebviewMessage,
 } from '../../../common/types';
+import { getNonce } from '../../../common/utils';
+import { isDarkTheme } from '../../../common/platform-utils';
 
 /**
  * 占位符 Webview 管理器
@@ -188,15 +190,12 @@ export class PlaceholderWebviewManager implements BaseManager {
     // 监听主题变化
     const themeChangeListener = vscode.window.onDidChangeActiveColorTheme(
       (theme) => {
-        const isDarkTheme =
-          theme.kind === vscode.ColorThemeKind.Dark ||
-          theme.kind === vscode.ColorThemeKind.HighContrast;
-
+        const dark = isDarkTheme(theme);
         if (this.panel) {
           this.panel.webview.postMessage({
             type: 'theme-changed',
             payload: {
-              isDark: isDarkTheme,
+              isDark: dark,
             },
           });
         }
@@ -229,12 +228,8 @@ export class PlaceholderWebviewManager implements BaseManager {
    * 生成占位符 HTML 内容
    */
   private generatePlaceholderContent(): string {
-    const currentTheme = vscode.window.activeColorTheme;
-    const isDarkTheme =
-      currentTheme.kind === vscode.ColorThemeKind.Dark ||
-      currentTheme.kind === vscode.ColorThemeKind.HighContrast;
-
-    const nonce = this.getNonce();
+    const dark = isDarkTheme();
+    const nonce = getNonce();
 
     // 【彩蛋功能】随机选择一张动漫角色图片
     const randomImagePath = this.getRandomCharacterImagePath();
@@ -262,11 +257,11 @@ export class PlaceholderWebviewManager implements BaseManager {
                 :root {
                     --vscode-font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
                     --vscode-font-size: var(--vscode-font-size, 13px);
-                    --vscode-foreground: var(--vscode-foreground, ${isDarkTheme ? '#cccccc' : '#333333'});
-                    --vscode-background: var(--vscode-editor-background, ${isDarkTheme ? '#1e1e1e' : '#ffffff'});
-                    --vscode-button-background: var(--vscode-button-background, ${isDarkTheme ? '#0e639c' : '#007acc'});
-                    --vscode-button-hoverBackground: var(--vscode-button-hoverBackground, ${isDarkTheme ? '#1177bb' : '#005a9e'});
-                    --vscode-descriptionForeground: var(--vscode-descriptionForeground, ${isDarkTheme ? '#cccccc99' : '#717171'});
+                    --vscode-foreground: var(--vscode-foreground, ${dark ? '#cccccc' : '#333333'});
+                    --vscode-background: var(--vscode-editor-background, ${dark ? '#1e1e1e' : '#ffffff'});
+                    --vscode-button-background: var(--vscode-button-background, ${dark ? '#0e639c' : '#007acc'});
+                    --vscode-button-hoverBackground: var(--vscode-button-hoverBackground, ${dark ? '#1177bb' : '#005a9e'});
+                    --vscode-descriptionForeground: var(--vscode-descriptionForeground, ${dark ? '#cccccc99' : '#717171'});
                 }
 
                 * {
@@ -397,7 +392,7 @@ export class PlaceholderWebviewManager implements BaseManager {
                 }
             </style>
         </head>
-        <body data-vscode-theme="${isDarkTheme ? 'dark' : 'light'}">
+        <body data-vscode-theme="${dark ? 'dark' : 'light'}">
             <div class="placeholder-container">
                 <div class="placeholder-icon">
                     <img src="${randomImageUri}" 
@@ -576,19 +571,6 @@ export class PlaceholderWebviewManager implements BaseManager {
     );
 
     return this.panel.webview.asWebviewUri(imageFullPath).toString();
-  }
-
-  /**
-   * 生成随机 nonce 用于 CSP 安全
-   */
-  private getNonce(): string {
-    let text = '';
-    const possible =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < 32; i++) {
-      text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    return text;
   }
 
   getStatus() {

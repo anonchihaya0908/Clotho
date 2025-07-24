@@ -5,6 +5,8 @@ import {
   EditorOpenSource,
   WebviewMessage,
 } from '../../../common/types';
+import { getNonce } from '../../../common/utils';
+import { isDarkTheme } from '../../../common/platform-utils';
 
 /**
  * 编辑器管理器
@@ -141,7 +143,7 @@ export class ClangFormatEditorManager implements BaseManager {
   }
 
   private setupPanelEventListeners() {
-    if (!this.panel) {return;}
+    if (!this.panel) { return; }
 
     this.panel.onDidDispose(() => {
       this.panel = undefined;
@@ -172,22 +174,17 @@ export class ClangFormatEditorManager implements BaseManager {
       },
     );
 
-    // 监听主题变化并通知 Webview
+    // 监听主题变化
     const themeChangeListener = vscode.window.onDidChangeActiveColorTheme(
       (theme) => {
-        const isDarkTheme =
-          theme.kind === vscode.ColorThemeKind.Dark ||
-          theme.kind === vscode.ColorThemeKind.HighContrast;
-
-        // 通知 Webview 主题已变化
-        if (this.panel) {
-          this.panel.webview.postMessage({
-            command: 'themeChanged',
-            theme: isDarkTheme ? 'dark' : 'light',
+        const dark = isDarkTheme(theme);
+        this.panel?.webview.postMessage({
+          type: 'theme-changed',
+          payload: {
+            isDark: dark,
             kind: vscode.ColorThemeKind[theme.kind],
-            isDark: isDarkTheme,
-          });
-        }
+          },
+        });
       },
     );
 
@@ -214,11 +211,8 @@ export class ClangFormatEditorManager implements BaseManager {
     const webview = this.panel.webview;
     const extensionUri = this.context.extensionUri;
 
-    // 【核心】检测当前VSCode的主题是亮色还是暗色
     const currentTheme = vscode.window.activeColorTheme;
-    const isDarkTheme =
-      currentTheme.kind === vscode.ColorThemeKind.Dark ||
-      currentTheme.kind === vscode.ColorThemeKind.HighContrast;
+    const dark = isDarkTheme(currentTheme);
 
     // 1. 【核心】定义所有需要从本地加载的资源的URI
     const scriptPath = vscode.Uri.joinPath(
@@ -246,7 +240,7 @@ export class ClangFormatEditorManager implements BaseManager {
     console.log('🔍 DEBUG: Script URI:', scriptUri.toString());
     console.log('🔍 DEBUG: Style URI:', styleUri.toString());
 
-    const nonce = this.getNonce();
+    const nonce = getNonce();
 
     // 2. 【核心】构建一个更完善的、允许动态加载的内容安全策略
     return `<!DOCTYPE html>
@@ -285,7 +279,7 @@ export class ClangFormatEditorManager implements BaseManager {
                 }
             </style>
         </head>
-        <body data-vscode-theme="${isDarkTheme ? 'dark' : 'light'}" data-vscode-theme-name="${currentTheme.kind}">
+        <body data-vscode-theme="${dark ? 'dark' : 'light'}" data-vscode-theme-name="${currentTheme.kind}">
             <!-- 【核心】将当前主题信息，通过data属性，直接嵌入到body上 -->
             <div id="app"></div>
             <script nonce="${nonce}" src="${scriptUri}"></script>
@@ -293,26 +287,13 @@ export class ClangFormatEditorManager implements BaseManager {
             <script nonce="${nonce}">
                 // 主题信息传递给前端
                 window.vscodeTheme = {
-                    isDark: ${isDarkTheme},
+                    isDark: ${dark},
                     kind: '${vscode.ColorThemeKind[currentTheme.kind]}',
                     name: '${currentTheme.kind}'
                 };
             </script>
         </body>
         </html>`;
-  }
-
-  /**
-   * 生成随机nonce用于CSP安全
-   */
-  private getNonce(): string {
-    let text = '';
-    const possible =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < 32; i++) {
-      text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    return text;
   }
 
   getStatus() {

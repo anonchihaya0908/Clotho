@@ -54,13 +54,27 @@ export function getPathSeparator(): string {
  */
 export function getPlatformName(): string {
   switch (process.platform) {
-  case 'win32':
-    return 'Windows';
-  case 'darwin':
-    return 'macOS';
-  case 'linux':
-    return 'Linux';
-  default:
-    return 'Unknown';
+    case 'win32':
+      return 'Windows';
+    case 'darwin':
+      return 'macOS';
+    case 'linux':
+      return 'Linux';
+    default:
+      return 'Unknown';
   }
+}
+
+/**
+ * Checks if the current VS Code theme is a dark theme.
+ * High-contrast themes are also considered dark.
+ * @param theme - Optional theme object to check. If not provided, the active theme is used.
+ * @returns True if the theme is dark, false otherwise.
+ */
+export function isDarkTheme(theme?: vscode.ColorTheme): boolean {
+  const currentTheme = theme || vscode.window.activeColorTheme;
+  return (
+    currentTheme.kind === vscode.ColorThemeKind.Dark ||
+    currentTheme.kind === vscode.ColorThemeKind.HighContrast
+  );
 }
