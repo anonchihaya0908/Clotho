@@ -10,6 +10,7 @@ import { ConfigActionManager } from './core/config-action-manager';
 import { PlaceholderWebviewManager } from './core/placeholder-manager';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from './config-options';
 import { WebviewMessageType } from '../../common/types/webview';
+import { DebounceIntegration } from './core/debounce-integration';
 /**
  * 重构后的轻量级主协调器
  * 只负责初始化和协调各个管理器，不包含具体的业务逻辑
@@ -23,6 +24,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
   private previewManager: PreviewEditorManager;
   private configActionManager: ConfigActionManager;
   private placeholderManager: PlaceholderWebviewManager;
+  private debounceIntegration: DebounceIntegration;
 
   private disposables: vscode.Disposable[] = [];
   private isInitialized = false;
@@ -39,9 +41,14 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     // 2. 初始化管理器
     this.messageHandler = new MessageHandler();
     this.editorManager = new ClangFormatEditorManager();
-    this.previewManager = new PreviewEditorManager();
+    this.previewManager = new PreviewEditorManager(); // 保留实例，作为依赖
     this.configActionManager = new ConfigActionManager();
-    this.placeholderManager = new PlaceholderWebviewManager();
+    this.placeholderManager = new PlaceholderWebviewManager(); // 保留实例，作为依赖
+    this.debounceIntegration = new DebounceIntegration(
+      this.extensionUri,
+      this.previewManager,
+      this.placeholderManager,
+    );
 
     // 3. 设置事件监听
     this.setupEventListeners();
@@ -100,12 +107,27 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.editorManager.dispose();
     this.previewManager.dispose();
     this.placeholderManager.dispose();
+    this.debounceIntegration.dispose();
   }
 
   /**
    * 设置管理器之间的事件监听和响应
    */
   private setupEventListeners(): void {
+    // --- 新的、带过渡效果的事件处理 ---
+
+    // 监听重新打开预览的请求
+    const debouncedReopenHandler =
+      this.debounceIntegration.createDebouncedPreviewReopenHandler();
+    this.eventBus.on('open-preview-requested', debouncedReopenHandler);
+
+    // 监听预览关闭事件
+    const debouncedCloseHandler =
+      this.debounceIntegration.createDebouncedPreviewCloseHandler();
+    this.eventBus.on('preview-closed', debouncedCloseHandler);
+
+    // --- 保留的其他事件处理 ---
+
     // Webview消息路由
     this.eventBus.on('webview-message-received', (message) => {
       this.messageHandler.handleMessage(message);
@@ -121,19 +143,15 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
 
     // 监听主编辑器关闭事件，联动关闭所有
     this.eventBus.on('editor-closed', () => {
-      // 【关键修复】主编辑器关闭时，直接清理预览，不发送 preview-closed 事件
-      // 这样可以避免占位符在不合适的时机被创建
+      // 这里的逻辑可能需要调整，确保它与新的过渡系统协同工作
+      // 例如，应该确保所有相关的 webview 都被正确关闭
       this.eventBus.emit('close-preview-requested');
     });
 
     // 监听 webview 完全准备就绪事件，自动打开预览
     this.eventBus.on('editor-fully-ready', async () => {
-      // 自动加载逻辑已移至 ConfigActionManager
       this.eventBus.emit('open-preview-requested');
     });
-
-    // Webview 的消息现在由 MessageHandler 统一处理，它会把消息转换为 EventBus 上的具体事件
-    // 其他 Manager (如 ConfigActionManager) 会监听这些具体事件并作出响应
   }
 
   /**
@@ -189,6 +207,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       this.previewManager,
       this.configActionManager,
       this.placeholderManager,
+      this.debounceIntegration,
     ];
 
     for (const manager of managers) {

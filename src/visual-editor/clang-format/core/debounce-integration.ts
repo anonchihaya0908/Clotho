@@ -7,31 +7,43 @@ import * as vscode from 'vscode';
 import { DebounceManager } from './debounce-manager';
 import { TransitionManager } from './transition-manager';
 import { ErrorHandler } from '../../../common/error-handler';
+import { BaseManager, ManagerContext } from '../../../common/types';
+import { PreviewEditorManager } from './preview-manager';
+import { PlaceholderWebviewManager } from './placeholder-manager';
 
 /**
  * 防抖集成器
  */
-export class DebounceIntegration {
+export class DebounceIntegration implements BaseManager {
+  readonly name = 'DebounceIntegration';
+
   private debounceManager: DebounceManager;
   private transitionManager: TransitionManager;
   private isEnabled: boolean = true;
+  private context!: ManagerContext;
 
-  constructor(private extensionUri: vscode.Uri) {
+  constructor(
+    private extensionUri: vscode.Uri,
+    private previewManager: PreviewEditorManager,
+    private placeholderManager: PlaceholderWebviewManager,
+  ) {
     this.debounceManager = new DebounceManager();
     this.transitionManager = new TransitionManager(extensionUri);
+  }
+
+  async initialize(context: ManagerContext): Promise<void> {
+    this.context = context;
   }
 
   /**
    * 防抖的预览关闭处理
    */
-  createDebouncedPreviewCloseHandler(
-    originalHandler: () => Promise<void>,
-  ): () => Promise<void> {
+  createDebouncedPreviewCloseHandler(): () => Promise<void> {
     return this.debounceManager.debounce(
       'preview-close-handler',
       async () => {
         if (!this.isEnabled) {
-          await originalHandler();
+          await this.placeholderManager.createPlaceholder();
           return;
         }
 
@@ -40,20 +52,21 @@ export class DebounceIntegration {
         );
 
         try {
-          // 直接执行原始处理器，不再使用彩蛋过渡
-          await originalHandler();
-          console.log(
-            '✅ DebounceIntegration: Direct handler execution completed',
-          );
+          // 使用过渡管理器切换到彩蛋模式
+          await this.transitionManager.switchToEasterEgg(async () => {
+            await this.placeholderManager.createPlaceholder();
+            return this.placeholderManager.getPlaceholderPanel()!;
+          });
         } catch (error) {
           console.error('❌ DebounceIntegration: Handler execution failed');
-          await originalHandler();
+          // 降级处理：直接创建占位符
+          await this.placeholderManager.createPlaceholder();
         }
       },
       {
-        delay: 50, // 50ms防抖延迟
-        leading: true, // 立即执行第一次
-        trailing: false, // 不执行尾随调用
+        delay: 50,
+        leading: true,
+        trailing: false,
       },
     );
   }
@@ -61,9 +74,7 @@ export class DebounceIntegration {
   /**
    * 防抖的预览重新打开处理
    */
-  createDebouncedPreviewReopenHandler(
-    originalHandler: () => Promise<vscode.TextEditor>,
-  ): () => Promise<void> {
+  createDebouncedPreviewReopenHandler(): () => Promise<void> {
     return this.debounceManager.debounce(
       'preview-reopen-handler',
       async () => {
@@ -74,7 +85,8 @@ export class DebounceIntegration {
         try {
           // 使用过渡管理器切换回预览模式
           await this.transitionManager.switchToPreview(async () => {
-            return await originalHandler();
+            await this.previewManager.openPreview();
+            return this.context.stateManager.getState().previewEditor!;
           });
         } catch (error) {
           ErrorHandler.handle(error, {
@@ -83,7 +95,8 @@ export class DebounceIntegration {
             showToUser: false,
             logLevel: 'error',
           });
-          throw error;
+          // 降级处理
+          await this.previewManager.openPreview();
         }
       },
       {
