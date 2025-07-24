@@ -94,7 +94,7 @@ export class PreviewEditorManager implements BaseManager {
    * 基于新配置更新预览内容
    * 集成 clang-format 实时格式化功能
    */
-  private async updatePreviewWithConfig(
+  public async updatePreviewWithConfig(
     newConfig: Record<string, any>,
   ): Promise<void> {
     const { previewUri } = this.context.stateManager.getState();

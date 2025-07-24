@@ -163,6 +163,15 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
         }
       }
     });
+
+    // 【修复】重新添加对配置更新的监听，以刷新预览
+    this.eventBus.on(
+      'config-updated-for-preview',
+      ({ newConfig }: { newConfig: Record<string, any> }) => {
+        // 直接调用 previewManager 的方法来更新预览内容
+        this.previewManager.updatePreviewWithConfig(newConfig);
+      },
+    );
   }
 
   /**

@@ -20,7 +20,19 @@ export class PlaceholderWebviewManager implements BaseManager {
   private context!: ManagerContext;
   private disposables: vscode.Disposable[] = [];
   private characterImagePaths: string[] = [];
-  private generatedHtmlCache: string | undefined;
+  private readonly footerTexts: string[] = [
+    'Clotho 由 Oblivionis小姐 和 丰川集团 赞助开发。',
+    '丰川清告先生因重大判断失误致集团损失168亿日元，已引咎辞职并被驱逐出家族。',
+    `近日，本集团不幸遭遇重大经济诈骗事件，损失金额高达168亿日元。        
+    经集团审计部门与第三方调查机构联合调查确认，事件的主要责任人丰川清告先生。
+    在此次对外投资案中，丰川清告先生作为主要决策人，严重缺乏风险识别与把控能力，未能履行基本的尽职调查义务，草率推进与不明背景企业的合作，最终导致集团陷入诈骗陷阱，蒙受巨额损失。
+    面对错误，丰川清告先生已正式向董事会提交引咎辞职申请，董事会一致通过并立即生效。同时，依据丰川家族章程及集团管理条例，丰川清告先生被永久驱逐出家族核心成员名单，其所持有的全部职权与权益即刻失效。
+    集团管理委员会将全面加强内部治理与风控机制，杜绝任何类似事件再次发生。
+    与此同时，我们已联合司法机关展开调查，依法追查涉案诈骗团伙，争取最大限度追回集团损失。
+      对于本次事件对员工、合作伙伴以及公众所造成的困扰，我们深表歉意。集团将以此为沉痛教训，重整旗鼓，持续以严谨、透明、稳健的管理理念前行。    ——丰川集团管理委员会 敬启`,
+    '沿着银白色的丝线，将思念，缓缓拉至身旁。',
+    '就这样纠缠不清地舞动下去吧，轻纱缠裹着你我，一圈圈地旋转。',
+  ]
 
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
@@ -204,20 +216,16 @@ export class PlaceholderWebviewManager implements BaseManager {
    * 生成占位符 HTML 内容
    */
   private generatePlaceholderContent(): string {
-    if (this.generatedHtmlCache) {
-      return this.generatedHtmlCache;
-    }
-
     const dark = isDarkTheme();
     const nonce = getNonce();
 
-    // 【彩蛋功能】随机选择一张动漫角色图片
+    // 随机选择一张角色图片
     const randomImagePath = this.getRandomCharacterImagePath();
     const randomImageUri = randomImagePath
       ? this.getWebviewImageUri(randomImagePath)
       : '';
 
-    const html = `<!DOCTYPE html>
+    return `<!DOCTYPE html>
         <html lang="zh-CN">
         <head>
             <meta charset="UTF-8">
@@ -391,8 +399,7 @@ export class PlaceholderWebviewManager implements BaseManager {
                 </button>
                 
                 <div class="placeholder-footer">
-                    丰川清告先生因重大判断失误致 TGW集团 损失168亿日元，已引咎辞职并被驱逐出家族。
-                    由 Oblivionis 于 集团公告。
+                    ${this.getRandomFooterText()}
                 </div>
             </div>
 
@@ -480,9 +487,6 @@ export class PlaceholderWebviewManager implements BaseManager {
             </script>
         </body>
         </html>`;
-
-    this.generatedHtmlCache = html;
-    return html;
   }
 
   /**
@@ -560,6 +564,14 @@ export class PlaceholderWebviewManager implements BaseManager {
     );
 
     return this.panel.webview.asWebviewUri(imageFullPath).toString();
+  }
+
+  private getRandomFooterText(): string {
+    if (this.footerTexts.length === 0) {
+      return '';
+    }
+    const randomIndex = Math.floor(Math.random() * this.footerTexts.length);
+    return this.footerTexts[randomIndex];
   }
 
   getStatus() {
