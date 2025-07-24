@@ -53,6 +53,20 @@ export class EventBus {
   }
 
   /**
+   * 异步发布事件，返回Promise以支持串联操作
+   * @param eventName 事件名称
+   * @param args 传递给处理函数的参数
+   * @returns Promise<void>
+   */
+  async emitAsync(eventName: string, ...args: any[]): Promise<void> {
+    return new Promise((resolve) => {
+      this.emitter.emit(eventName, ...args);
+      // 使用微任务确保事件处理器有机会执行
+      process.nextTick(resolve);
+    });
+  }
+
+  /**
    * 清理所有监听器
    */
   dispose(): void {

@@ -17,7 +17,7 @@ export class PreviewEditorManager implements BaseManager {
 
   constructor() {
     this.previewProvider = ClangFormatPreviewProvider.getInstance();
-    this.formatService = new ClangFormatService();
+    this.formatService = ClangFormatService.getInstance();
   }
 
   async initialize(context: ManagerContext): Promise<void> {

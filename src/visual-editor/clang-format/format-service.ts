@@ -19,7 +19,26 @@ import {
 import { FormatResult, ConfigValidationResult } from '../../common/types/index';
 
 export class ClangFormatService {
-  constructor() { }
+  private static instance: ClangFormatService | undefined;
+
+  private constructor() { }
+
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): ClangFormatService {
+    if (!ClangFormatService.instance) {
+      ClangFormatService.instance = new ClangFormatService();
+    }
+    return ClangFormatService.instance;
+  }
+
+  /**
+   * 重置单例实例（用于测试）
+   */
+  public static resetInstance(): void {
+    ClangFormatService.instance = undefined;
+  }
 
   /**
    * Serializes a configuration object into a YAML-like string for the -style flag.

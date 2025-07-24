@@ -26,3 +26,4 @@ webviews/**/webpack.config.js
 !webviews/**/dist/**/*.css
 !webviews/**/dist/**/*.webp
 !webviews/**/dist/**/*.png
+
