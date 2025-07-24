@@ -7,6 +7,7 @@ import { MessageHandler } from './messaging/message-handler';
 import { ClangFormatEditorManager } from './core/editor-manager';
 import { PreviewEditorManager } from './core/preview-manager';
 import { ConfigActionManager } from './core/config-action-manager';
+import { PlaceholderWebviewManager } from './core/placeholder-manager';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from './config-options';
 import { WebviewMessageType } from '../../common/types/webview';
 /**
@@ -21,6 +22,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     private editorManager: ClangFormatEditorManager;
     private previewManager: PreviewEditorManager;
     private configActionManager: ConfigActionManager;
+    private placeholderManager: PlaceholderWebviewManager;
 
     private disposables: vscode.Disposable[] = [];
     private isInitialized = false;
@@ -36,6 +38,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
         this.editorManager = new ClangFormatEditorManager();
         this.previewManager = new PreviewEditorManager();
         this.configActionManager = new ConfigActionManager();
+        this.placeholderManager = new PlaceholderWebviewManager();
 
         // 3. 设置事件监听
         this.setupEventListeners();
@@ -51,23 +54,34 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
         try {
             // 确保只初始化一次
             if (!this.isInitialized) {
-                const context: ManagerContext = {
-                    extensionUri: this.extensionUri,
-                    stateManager: this.stateManager,
-                    errorRecovery: this.errorRecovery,
-                    eventBus: this.eventBus,
-                };
-                await this.initializeManagers(context);
-                this.isInitialized = true;
+                await this.initializeOnce();
             }
 
             // 触发事件来创建编辑器
             this.eventBus.emit('create-editor-requested', source);
-            // 移除这里的预览打开请求，改由 'editor-fully-ready' 事件触发
 
         } catch (error: any) {
             await this.errorRecovery.handleError('coordinator-startup-failed', error);
         }
+    }
+
+    /**
+     * 确保只初始化一次的私有方法
+     */
+    private async initializeOnce(): Promise<void> {
+        if (this.isInitialized) {
+            return;
+        }
+
+        const context: ManagerContext = {
+            extensionUri: this.extensionUri,
+            stateManager: this.stateManager,
+            errorRecovery: this.errorRecovery,
+            eventBus: this.eventBus,
+        };
+
+        await this.initializeManagers(context);
+        this.isInitialized = true;
     }
 
     /**
@@ -81,7 +95,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
         this.messageHandler.dispose();
         this.editorManager.dispose();
         this.previewManager.dispose();
-        console.log('ClangFormatEditorCoordinator disposed.');
+        this.placeholderManager.dispose();
     }
 
     /**
@@ -100,17 +114,17 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
 
         // 监听主编辑器关闭事件，联动关闭所有
         this.eventBus.on('editor-closed', () => {
+            // 【关键修复】主编辑器关闭时，直接清理预览，不发送 preview-closed 事件
+            // 这样可以避免占位符在不合适的时机被创建
             this.eventBus.emit('close-preview-requested');
         });
 
         // 监听状态变化并打印日志
         this.eventBus.on('state-changed', (event) => {
-            console.log(`[StateChange] Type: ${event.type}, Source: ${event.source}`);
         });
 
         // 监听 webview 完全准备就绪事件，自动打开预览
         this.eventBus.on('editor-fully-ready', async () => {
-            console.log('🔔 Event: editor-fully-ready - opening preview');
             // 自动加载逻辑已移至 ConfigActionManager
             this.eventBus.emit('open-preview-requested');
         });
@@ -164,17 +178,16 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
             this.editorManager,
             this.previewManager,
             this.configActionManager,
+            this.placeholderManager,
         ];
 
         for (const manager of managers) {
             try {
                 await manager.initialize(context);
             } catch (error: any) {
-                console.error(`Failed to initialize manager: ${manager.name}`, error);
                 throw error;
             }
         }
-        console.log('All managers initialized.');
     }
 
     /**

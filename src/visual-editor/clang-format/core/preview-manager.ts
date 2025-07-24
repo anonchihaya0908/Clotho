@@ -23,17 +23,31 @@ export class PreviewEditorManager implements BaseManager {
     async initialize(context: ManagerContext): Promise<void> {
         this.context = context;
         this.setupEventListeners();
-        console.log('PreviewManager initialized.');
     }
 
     /**
      * 打开预览编辑器
      */
-    async openPreview(): Promise<void> {
+    async openPreview(source?: string, options?: { forceReopen?: boolean }): Promise<void> {
+        const forceReopen = options?.forceReopen === true;
         const state = this.context.stateManager.getState();
+
+        console.log(`[PreviewManager] 打开预览 (source: ${source}, forceReopen: ${forceReopen})`);
+
+        // 如果强制重新打开，则跳过状态检查
+        if (forceReopen) {
+            // 继续执行打开逻辑
+        }
+        // 如果预览已打开，则仅激活它
+        else if (state.previewMode === 'open' && state.previewEditor) {
+            vscode.window.showTextDocument(state.previewEditor.document, {
+                viewColumn: vscode.ViewColumn.Two,
+                preserveFocus: false
+            });
+            return;
+        }
         // 如果不是关闭状态，就直接返回，防止重复打开
-        if (state.previewMode !== 'closed') {
-            console.log(`Preview is already ${state.previewMode}.`);
+        else if (state.previewMode !== 'closed') {
             return;
         }
 
@@ -42,13 +56,13 @@ export class PreviewEditorManager implements BaseManager {
 
             const previewUri = this.previewProvider.createPreviewUri(`preview-${Date.now()}.cpp`);
             // 初始化预览内容
-            // 示例代码
             const initialContent = MACRO_PREVIEW_CODE;
             this.previewProvider.updateContent(previewUri, initialContent);
 
+            // 创建预览编辑器
             const editor = await vscode.window.showTextDocument(previewUri, {
                 viewColumn: vscode.ViewColumn.Two,
-                preserveFocus: true,
+                preserveFocus: false,
                 preview: false,
             });
 
@@ -60,17 +74,35 @@ export class PreviewEditorManager implements BaseManager {
                 },
                 'preview-opened'
             );
+
+            // 通知占位符预览已打开
+            this.context.eventBus.emit('preview-opened');
+
+            console.log('[PreviewManager] 预览打开成功');
         } catch (error: any) {
+            console.error('[PreviewManager] 预览打开失败:', error);
             await this.context.errorRecovery.handleError('preview-creation-failed', error);
+
+            // 如果打开失败，确保状态被重置为关闭
+            await this.context.stateManager.updateState({
+                previewMode: 'closed',
+                previewUri: undefined,
+                previewEditor: undefined
+            }, 'preview-open-failed');
         }
     }
 
     /**
      * 关闭预览编辑器
+     * @param shouldCreatePlaceholder 是否应该创建占位符（默认false，用于程序关闭）
      */
-    async closePreview(): Promise<void> {
+    async closePreview(shouldCreatePlaceholder: boolean = false): Promise<void> {
+        console.log(`[PreviewManager] 关闭预览 (shouldCreatePlaceholder: ${shouldCreatePlaceholder})`);
         const { previewUri } = this.context.stateManager.getState();
-        if (!previewUri) return;
+        if (!previewUri) {
+            console.log('[PreviewManager] 没有预览URI，无需关闭');
+            return;
+        }
 
         try {
             // 查找并关闭对应的编辑器标签页
@@ -78,15 +110,18 @@ export class PreviewEditorManager implements BaseManager {
                 for (const tab of tabGroup.tabs) {
                     const tabInput = tab.input as { uri?: vscode.Uri };
                     if (tabInput?.uri?.toString() === previewUri.toString()) {
+                        console.log('[PreviewManager] 找到预览标签，正在关闭');
                         await vscode.window.tabGroups.close(tab);
                         break;
                     }
                 }
             }
         } catch (error: any) {
+            console.error('[PreviewManager] 关闭预览失败:', error);
             await this.context.errorRecovery.handleError('preview-close-failed', error);
         } finally {
             // 无论关闭tab是否成功，都清理状态
+            console.log('[PreviewManager] 清理预览内容并更新状态');
             this.previewProvider.clearContent(previewUri);
             await this.context.stateManager.updateState(
                 {
@@ -96,6 +131,12 @@ export class PreviewEditorManager implements BaseManager {
                 },
                 'preview-closed'
             );
+
+            // 【关键修复】只有在应该创建占位符时才发送事件
+            if (shouldCreatePlaceholder) {
+                console.log('[PreviewManager] 发送预览关闭事件，以创建占位符');
+                this.context.eventBus.emit('preview-closed');
+            }
         }
     }
 
@@ -116,13 +157,11 @@ export class PreviewEditorManager implements BaseManager {
     private async updatePreviewWithConfig(newConfig: Record<string, any>): Promise<void> {
         const { previewUri } = this.context.stateManager.getState();
         if (!previewUri) {
-            console.log('No preview URI available for config update');
             return;
         }
 
         try {
             // 使用 clang-format 格式化预览代码
-            console.log('🔄 Formatting preview code with clang-format...');
             const formatResult = await this.formatService.format(MACRO_PREVIEW_CODE, newConfig);
 
             if (formatResult.success) {
@@ -131,17 +170,14 @@ export class PreviewEditorManager implements BaseManager {
                 const updatedContent = `${configComment}\n\n${formatResult.formattedCode}`;
 
                 this.previewProvider.updateContent(previewUri, updatedContent);
-                console.log('✅ Preview content updated with clang-format formatting');
             } else {
                 // 如果格式化失败，回退到原始代码 + 配置注释
-                console.warn('⚠️ clang-format failed, using original code:', formatResult.error);
                 const configComment = this.generateConfigComment(newConfig);
                 const updatedContent = `${configComment}\n\n${MACRO_PREVIEW_CODE}`;
 
                 this.previewProvider.updateContent(previewUri, updatedContent);
             }
         } catch (error) {
-            console.error('Failed to update preview with config:', error);
             // 出错时回退到原始代码
             const configComment = this.generateConfigComment(newConfig);
             const updatedContent = `${configComment}\n\n${MACRO_PREVIEW_CODE}`;
@@ -165,41 +201,54 @@ ${configEntries || '//   (using base style defaults)'}
     }
 
     dispose(): void {
-        this.closePreview();
+        this.closePreview(false); // dispose时关闭，不创建占位符
     }
 
     private setupEventListeners() {
-        this.context.eventBus.on('open-preview-requested', () => this.openPreview());
-        this.context.eventBus.on('close-preview-requested', () => this.closePreview());
+        this.context.eventBus.on('open-preview-requested', (data?: any) => {
+            const source = data?.source || 'unknown';
+            const forceReopen = data?.forceReopen === true;
+            this.openPreview(source, { forceReopen });
+        });
+
+        this.context.eventBus.on('close-preview-requested', () => this.closePreview(false)); // 程序关闭，不创建占位符
         this.context.eventBus.on('config-updated-for-preview', ({ newConfig }: any) => {
-            console.log('🔍 DEBUG: Received config update for preview:', newConfig);
             // 这里可以添加基于新配置更新预览的逻辑
             // 目前先简单地重新应用宏观预览代码，未来可以集成clang-format格式化
             this.updatePreviewWithConfig(newConfig);
         });
 
-        // 监听主编辑器的可视状态变化
-        this.context.eventBus.on('editor-visibility-changed', ({ isVisible }: { isVisible: boolean }) => {
-            if (isVisible) {
-                console.log('Editor is visible again, reopening preview.');
-                this.openPreview();
-            } else {
-                console.log('Editor is no longer visible, closing preview.');
-                this.closePreview();
-            }
-        });
-
-        // 监听文档关闭事件，以处理用户手动关闭预览的情况
-        vscode.workspace.onDidCloseTextDocument(async (doc) => {
+        // 【新增】监听编辑器标签关闭事件 - 更可靠的检测方式
+        vscode.window.tabGroups.onDidChangeTabs(async (event) => {
             const state = this.context.stateManager.getState();
-            if (doc.uri.toString() === state.previewUri?.toString()) {
-                console.log('Preview document was closed manually.');
-                await this.context.stateManager.updateState({
-                    previewMode: 'closed',
-                    previewUri: undefined,
-                    previewEditor: undefined
-                }, 'preview-closed-manually');
-                this.context.eventBus.emit('preview-closed');
+            if (!state.previewUri) return;
+
+            // 检查是否有预览标签被关闭
+            for (const tab of event.closed) {
+                const tabInput = tab.input as { uri?: vscode.Uri };
+                if (tabInput?.uri?.toString() === state.previewUri.toString()) {
+                    console.log('[PreviewManager] 预览标签被手动关闭');
+
+                    // 检查主编辑器是否仍然活跃
+                    const shouldCreatePlaceholder = state.isVisible && state.isInitialized && state.previewMode === 'open';
+                    console.log(`[PreviewManager] 是否应创建占位符: ${shouldCreatePlaceholder}`);
+
+                    // 清理预览内容
+                    this.previewProvider.clearContent(state.previewUri);
+
+                    // 更新状态 - 无论如何都要确保状态被设置为closed
+                    await this.context.stateManager.updateState({
+                        previewMode: 'closed',
+                        previewUri: undefined,
+                        previewEditor: undefined
+                    }, 'preview-tab-closed');
+
+                    if (shouldCreatePlaceholder) {
+                        console.log('[PreviewManager] 发送预览关闭事件，以创建占位符');
+                        this.context.eventBus.emit('preview-closed');
+                    }
+                    break;
+                }
             }
         });
     }

@@ -87,6 +87,56 @@
                 "command": "clotho.testRapidSwitching",
                 "title": "Test Rapid Switching",
                 "category": "Clotho"
+            },
+            {
+                "command": "clotho.testPlaceholder",
+                "title": "Test Placeholder Webview (All Tests)",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.testPlaceholderBasic",
+                "title": "Test Placeholder Basic Functionality",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.testMainEditorClose",
+                "title": "Test Main Editor Close Logic (Should NOT Create Placeholder)",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.testPreviewClose",
+                "title": "Test Preview Close Logic (Should Create Placeholder)",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.testDirectPlaceholder",
+                "title": "Test Direct Placeholder Creation (Debug Mode)",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.forceCreatePlaceholder",
+                "title": "Force Create Placeholder (Debug)",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.debugPlaceholder",
+                "title": "Debug Placeholder (Force Create)",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.debugLayout",
+                "title": "Debug Editor Layout",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.checkEditorGroups",
+                "title": "Check Editor Groups Status (Debug)",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.testPlaceholderSwitching",
+                "title": "Test Placeholder-Preview Switching",
+                "category": "Clotho"
             }
         ],
         "menus": {
@@ -143,6 +193,30 @@
                 },
                 {
                     "command": "clotho.testRapidSwitching"
+                },
+                {
+                    "command": "clotho.testPlaceholder"
+                },
+                {
+                    "command": "clotho.testPlaceholderBasic"
+                },
+                {
+                    "command": "clotho.testMainEditorClose"
+                },
+                {
+                    "command": "clotho.testPreviewClose"
+                },
+                {
+                    "command": "clotho.testDirectPlaceholder"
+                },
+                {
+                    "command": "clotho.forceCreatePlaceholder"
+                },
+                {
+                    "command": "clotho.checkEditorGroups"
+                },
+                {
+                    "command": "clotho.testPlaceholderSwitching"
                 }
             ]
         },

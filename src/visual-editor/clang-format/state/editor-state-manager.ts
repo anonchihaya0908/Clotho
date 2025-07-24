@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { EditorState, StateChangeEvent } from '../../../common/types';
 import { EventBus } from '../messaging/event-bus';
+import { DEFAULT_CLANG_FORMAT_CONFIG } from '../config-options';
 
 type StateSnapshot = {
     state: EditorState;
@@ -88,21 +89,11 @@ export class EditorStateManager implements vscode.Disposable {
      * 创建编辑器的初始状态
      */
     private createInitialState(): EditorState {
-        // 尝试加载默认配置
-        let defaultConfig = {};
-        try {
-            // 这里使用同步导入以避免异步复杂性
-            const configModule = require('../config-options');
-            defaultConfig = configModule.DEFAULT_CLANG_FORMAT_CONFIG || {};
-        } catch (error) {
-            console.warn('Failed to load default config, using empty config:', error);
-        }
-
         return {
             isInitialized: false,
             isVisible: false,
             previewMode: 'closed',
-            currentConfig: defaultConfig,
+            currentConfig: DEFAULT_CLANG_FORMAT_CONFIG || {},
             configDirty: false,
             recoveryAttempts: 0,
         };

@@ -56,6 +56,10 @@ export interface ServiceCollection {
     // Clang-Format Visual Editor
     clangFormatVisualEditorCoordinator: ClangFormatVisualEditorCoordinator;
     clangFormatGuideService: ClangFormatGuideService;
+
+    // Multi-instance coordinator and debounce integration
+    multiInstanceClangFormatCoordinator?: any;
+    debounceIntegration?: any;
 }// A mapping of service names to their instances
 type ServiceCache = Map<keyof ServiceCollection, ServiceCollection[keyof ServiceCollection]>;
 

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { BaseManager, ManagerContext, ManagerStatus, WebviewMessageType } from '../../../common/types';
+import { BaseManager, ManagerContext, ManagerStatus } from '../../../common/types';
+import { WebviewMessageType } from '../../../common/types/webview';
 import { ClangFormatService } from '../format-service';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from '../config-options';
 

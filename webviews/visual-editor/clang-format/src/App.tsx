@@ -128,6 +128,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
             const message = event.data;
+            console.log('🔍 [Frontend] Received message from VS Code:', message.type, message);
 
             switch (message.type) {
                 case WebviewMessageType.INITIALIZE:
@@ -246,7 +247,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     break;
 
                 default:
-                    console.warn('Unknown message type:', message.type);
+                    console.warn('🚨 [Frontend] Unknown message type:', message.type, 'Message:', message);
             }
         };
 
