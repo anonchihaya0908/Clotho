@@ -25,10 +25,8 @@ import {
   SwitchUI,
 } from './switch-header-source';
 import { MonitorCoordinator } from './clangd-monitor';
-// 使用重构后的协调器
 import { ClangFormatEditorCoordinator } from './visual-editor/clang-format/coordinator';
 import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
-// import * as ClangFormatModule from './visual-editor/clang-format'; // 未使用，已注释
 import { ClangFormatPreviewProvider } from './visual-editor/clang-format/preview-provider';
 import { COMMANDS } from './common/constants';
 
@@ -53,7 +51,6 @@ export async function bootstrap(
   // 激活 Clang-Format 可视化编辑器模块（注册虚拟文档提供者）
   try {
     ClangFormatPreviewProvider.register(context);
-    console.log('Clotho: Successfully registered ClangFormatPreviewProvider');
   } catch (error) {
     console.error(
       'Clotho: Failed to register ClangFormatPreviewProvider',
@@ -188,19 +185,6 @@ function registerServices(context: vscode.ExtensionContext): void {
     console.warn('MultiInstanceClangFormatCoordinator not available:', error);
   }
 
-  // 新增：防抖集成测试（可选）
-  try {
-    const {
-      DebounceIntegration,
-    } = require('./visual-editor/clang-format/core/debounce-integration');
-    serviceContainer.register(
-      'debounceIntegration',
-      () => new DebounceIntegration(context.extensionUri),
-    );
-  } catch (error) {
-    console.warn('DebounceIntegration not available:', error);
-  }
-
   // Clang-Format Guide Service
   serviceContainer.register(
     'clangFormatGuideService',
@@ -220,116 +204,6 @@ async function initializeCoordinators(): Promise<void> {
   serviceContainer.get('switchCoordinator');
   serviceContainer.get('clangFormatGuideService');
 
-  // 注册防抖测试命令（如果可用）
-  if (serviceContainer.has('debounceIntegration')) {
-    const debounceIntegration = serviceContainer.get('debounceIntegration');
-    vscode.commands.registerCommand('clotho.testDebounce', async () => {
-      try {
-        console.log('🧪 Starting debounce test...');
-
-        // 创建测试用的防抖处理器
-        const testHandler =
-          debounceIntegration.createDebouncedPreviewCloseHandler(async () => {
-            console.log('📄 Original handler would be called here');
-          });
-
-        // 模拟快速调用
-        console.log('⚡ Simulating rapid calls...');
-        testHandler();
-        testHandler();
-        testHandler();
-
-        // 显示统计信息
-        const stats = debounceIntegration.getStats();
-        console.log('📊 Debounce stats:', stats);
-
-        vscode.window.showInformationMessage(
-          `Debounce test completed! Check console for details. Active timers: ${stats.debounceManager.activeTimers.length}`,
-        );
-      } catch (error) {
-        console.error('❌ Debounce test failed:', error);
-        vscode.window.showErrorMessage(`Debounce test failed: ${error}`);
-      }
-    });
-  }
-
-  // 注册手动测试命令
-  vscode.commands.registerCommand('clotho.testDebounceManual', async () => {
-    const { runManualDebounceTest } = require('./test/manual-debounce-test');
-    await runManualDebounceTest();
-  });
-
-  vscode.commands.registerCommand('clotho.testRapidSwitching', async () => {
-    const { testRapidSwitching } = require('./test/manual-debounce-test');
-    await testRapidSwitching();
-  });
-
-  // 注册占位符测试命令
-  vscode.commands.registerCommand('clotho.testPlaceholder', async () => {
-    const {
-      runAllPlaceholderTests,
-    } = require('./visual-editor/clang-format/test/placeholder-test');
-    await runAllPlaceholderTests();
-  });
-
-  vscode.commands.registerCommand('clotho.testPlaceholderBasic', async () => {
-    const {
-      testPlaceholderBasicFunctionality,
-    } = require('./visual-editor/clang-format/test/placeholder-test');
-    await testPlaceholderBasicFunctionality();
-  });
-
-  vscode.commands.registerCommand('clotho.testMainEditorClose', async () => {
-    const {
-      testMainEditorCloseLogic,
-    } = require('./visual-editor/clang-format/test/placeholder-test');
-    await testMainEditorCloseLogic();
-  });
-
-  vscode.commands.registerCommand('clotho.testPreviewClose', async () => {
-    const {
-      testPreviewCloseLogic,
-    } = require('./visual-editor/clang-format/test/placeholder-test');
-    await testPreviewCloseLogic();
-  });
-
-  vscode.commands.registerCommand('clotho.testDirectPlaceholder', async () => {
-    const {
-      testDirectPlaceholderCreation,
-    } = require('./visual-editor/clang-format/test/placeholder-test');
-    await testDirectPlaceholderCreation();
-  });
-
-  // 调试命令：强制创建占位符
-  vscode.commands.registerCommand('clotho.forceCreatePlaceholder', async () => {
-    try {
-      console.log('🔥 Force creating placeholder via debug command...');
-
-      // 获取协调器实例
-      const coordinator = serviceContainer.get(
-        'clangFormatVisualEditorCoordinator',
-      );
-
-      // 通过反射访问私有成员（仅用于调试）
-      const placeholderManager = (coordinator as any).placeholderManager;
-
-      if (
-        placeholderManager &&
-        typeof placeholderManager.forceCreatePlaceholder === 'function'
-      ) {
-        await placeholderManager.forceCreatePlaceholder();
-        vscode.window.showInformationMessage(
-          '强制创建占位符完成！检查右侧是否出现占位符。',
-        );
-      } else {
-        vscode.window.showErrorMessage('无法访问占位符管理器');
-      }
-    } catch (error) {
-      console.error('Force create placeholder failed:', error);
-      vscode.window.showErrorMessage(`强制创建占位符失败: ${error}`);
-    }
-  });
-
   // Initialize and start the monitor coordinator
   const monitorCoordinator = serviceContainer.get('monitorCoordinator');
 
@@ -340,12 +214,9 @@ async function initializeCoordinators(): Promise<void> {
   if (isMonitoringEnabled) {
     try {
       await monitorCoordinator.startMonitoring();
-      console.log('Clotho: Clangd monitoring started successfully');
     } catch (error) {
       console.error('Clotho: Failed to start clangd monitoring:', error);
     }
-  } else {
-    console.log('Clotho: Clangd monitoring is disabled in configuration');
   }
 }
 
@@ -357,17 +228,3 @@ export function cleanup(): void {
     serviceContainer.dispose();
   }
 }
-// 调试命令：检查编辑器组状态
-vscode.commands.registerCommand('clotho.checkEditorGroups', async () => {
-  const {
-    checkEditorGroupsStatus,
-  } = require('./visual-editor/clang-format/test/placeholder-test');
-  await checkEditorGroupsStatus();
-});
-// 调试命令：测试占位符和预览切换
-vscode.commands.registerCommand('clotho.testPlaceholderSwitching', async () => {
-  const {
-    testPlaceholderPreviewSwitching,
-  } = require('./visual-editor/clang-format/test/placeholder-test');
-  await testPlaceholderPreviewSwitching();
-});

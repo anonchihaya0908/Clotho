@@ -37,7 +37,7 @@ export class PlaceholderWebviewManager implements BaseManager {
     try {
       this.panel = vscode.window.createWebviewPanel(
         'clangFormatPlaceholder',
-        'Clang-Format 预览占位符',
+        '实时代码预览已关闭',
         {
           viewColumn: vscode.ViewColumn.Two,
           preserveFocus: true,
@@ -170,7 +170,7 @@ export class PlaceholderWebviewManager implements BaseManager {
   }
 
   private setupPanelEventListeners(): void {
-    if (!this.panel) {return;}
+    if (!this.panel) { return; }
 
     // 监听占位符被关闭
     this.panel.onDidDispose(() => {
@@ -256,7 +256,7 @@ export class PlaceholderWebviewManager implements BaseManager {
                 font-src 'self';
             ">
 
-            <title>Clang-Format 预览占位符</title>
+            <title>实时代码预览已关闭</title>
             
             <style nonce="${nonce}">
                 :root {
@@ -416,7 +416,7 @@ export class PlaceholderWebviewManager implements BaseManager {
                 </button>
                 
                 <div class="placeholder-footer">
-                    丰川清告先生因重大判断失误致集团损失168亿日元，已引咎辞职并被驱逐出家族。
+                    丰川清告先生因重大判断失误致 TGW集团 损失168亿日元，已引咎辞职并被驱逐出家族。
                     由 Oblivionis 于 集团公告。
                 </div>
             </div>
@@ -562,7 +562,7 @@ export class PlaceholderWebviewManager implements BaseManager {
    * 生成webview可用的图片URI
    */
   private getWebviewImageUri(imagePath: string): string {
-    if (!this.panel) {return '';}
+    if (!this.panel) { return ''; }
 
     const imageFullPath = vscode.Uri.joinPath(
       this.context.extensionUri,

@@ -49,9 +49,6 @@ export enum WebviewMessageType {
   CONFIG_OPTION_FOCUS = 'configOptionFocus', // 配置项focus事件
   CLEAR_HIGHLIGHTS = 'clearHighlights', // 清除高亮
 
-  // 调试相关
-  TEST_PLACEHOLDER = 'testPlaceholder', // 调试功能：测试占位符
-
   // 生命周期
   WEBVIEW_READY = 'webview-ready', // Webview 已准备就绪
 }
@@ -83,8 +80,8 @@ export interface ConfigLoadedMessage extends WebviewMessage {
 // 预览更新消息
 export interface PreviewUpdateMessage extends WebviewMessage {
   type:
-    | WebviewMessageType.MICRO_PREVIEW_UPDATE
-    | WebviewMessageType.MACRO_PREVIEW_UPDATE;
+  | WebviewMessageType.MICRO_PREVIEW_UPDATE
+  | WebviewMessageType.MACRO_PREVIEW_UPDATE;
   payload: {
     formattedCode: string;
     success: boolean;
@@ -96,8 +93,8 @@ export interface PreviewUpdateMessage extends WebviewMessage {
 // 设置消息
 export interface SettingsMessage extends WebviewMessage {
   type:
-    | WebviewMessageType.UPDATE_SETTINGS
-    | WebviewMessageType.SETTINGS_UPDATED;
+  | WebviewMessageType.UPDATE_SETTINGS
+  | WebviewMessageType.SETTINGS_UPDATED;
   payload: {
     showGuideButton?: boolean;
   };

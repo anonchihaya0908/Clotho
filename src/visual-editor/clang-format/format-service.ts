@@ -19,7 +19,7 @@ import {
 import { FormatResult, ConfigValidationResult } from '../../common/types/index';
 
 export class ClangFormatService {
-  constructor() {}
+  constructor() { }
 
   /**
    * Serializes a configuration object into a YAML-like string for the -style flag.
@@ -102,7 +102,6 @@ export class ClangFormatService {
             resolve({ success: true, formattedCode });
           } else {
             const fullError = `clang-format exited with code ${exitCode}.\n--- Config Sent ---\n${styleString}\n--- Error Details ---\n${errorOutput}`;
-            console.error('Clotho: clang-format error:', fullError);
             resolve({ success: false, formattedCode: code, error: fullError });
           }
         });
@@ -353,7 +352,6 @@ export class ClangFormatService {
           } else {
             // 失败！
             const error = `clang-format exited with code ${exitCode}. Details: ${errorOutput}`;
-            console.error('Clotho: clang-format failed.', error);
             resolve({
               success: false,
               formattedCode: code, // 返回原始代码
@@ -364,7 +362,6 @@ export class ClangFormatService {
 
         // 监听进程创建错误
         clangFormatProcess.on('error', (err) => {
-          console.error('Clotho: Failed to spawn clang-format process.', err);
           resolve({
             success: false,
             formattedCode: code,
@@ -374,7 +371,6 @@ export class ClangFormatService {
 
         // 处理进程可能无法接收输入的情况
         clangFormatProcess.stdin.on('error', (err) => {
-          console.error('Clotho: stdin error:', err);
           resolve({
             success: false,
             formattedCode: code,

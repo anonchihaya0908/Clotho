@@ -16,8 +16,6 @@ import { COMMANDS, UI_CONSTANTS } from './common/constants';
  * This happens when VS Code determines that your extension should be loaded
  */
 export async function activate(context: vscode.ExtensionContext) {
-  console.log('Clotho extension is now active!');
-
   try {
     // Initialize the service container and all services
     await bootstrap(context);
@@ -38,8 +36,6 @@ export async function activate(context: vscode.ExtensionContext) {
  * Called when the extension is deactivated
  */
 export function deactivate() {
-  console.log('Clotho extension has been deactivated');
-
   // Clean up all services through the service container
   cleanup();
 }

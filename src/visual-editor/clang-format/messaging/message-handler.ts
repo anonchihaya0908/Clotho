@@ -163,15 +163,6 @@ export class MessageHandler implements BaseManager {
       },
     );
 
-    // 测试占位符功能（调试用）
-    this.messageHandlers.set(
-      WebviewMessageType.TEST_PLACEHOLDER,
-      async (payload, context) => {
-        console.log('🧪 Test placeholder functionality triggered');
-        context.eventBus.emit('close-preview-requested');
-      },
-    );
-
     // 微观预览请求
     this.messageHandlers.set(
       WebviewMessageType.GET_MICRO_PREVIEW,

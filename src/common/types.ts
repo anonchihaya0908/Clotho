@@ -339,7 +339,6 @@ export enum WebviewMessageType {
   // 预览操作
   GET_MICRO_PREVIEW = 'getMicroPreview',
   GET_MACRO_PREVIEW = 'getMacroPreview',
-  TEST_PLACEHOLDER = 'testPlaceholder',
 
   // 通用
   GET_STATE = 'get-state',
