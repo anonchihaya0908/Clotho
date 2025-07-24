@@ -3,21 +3,21 @@
  * Common helper functions used across modules
  */
 
-import * as vscode from "vscode";
-import * as path from "path";
+import * as vscode from 'vscode';
+import * as path from 'path';
 import {
   Language,
   FileType,
   ValidationResult,
   Uri,
   ConfigScope,
-} from "./types";
+} from './types';
 import {
   HEADER_EXTENSIONS,
   SOURCE_EXTENSIONS,
   VALIDATION_PATTERNS,
   TEST_PATTERNS,
-} from "./constants";
+} from './constants';
 
 // ===============================
 // File Type Detection
@@ -50,8 +50,8 @@ export function isValidCppFile(filePath: string): boolean {
  * Gets the file type (header or source) from a file path
  */
 export function getFileType(filePath: string): FileType | null {
-  if (isHeaderFile(filePath)) return "header";
-  if (isSourceFile(filePath)) return "source";
+  if (isHeaderFile(filePath)) {return 'header';}
+  if (isSourceFile(filePath)) {return 'source';}
   return null;
 }
 
@@ -64,11 +64,11 @@ export function getFileType(filePath: string): FileType | null {
  */
 export function toPascalCase(input: string): string {
   return input
-    .replace(/[^a-zA-Z0-9]/g, " ")
-    .split(" ")
+    .replace(/[^a-zA-Z0-9]/g, ' ')
+    .split(' ')
     .filter((word) => word.length > 0)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join("");
+    .join('');
 }
 
 /**
@@ -78,11 +78,11 @@ export function toSnakeCase(input: string): string {
   return input
     .replace(
       /[A-Z]/g,
-      (match, offset) => (offset > 0 ? "_" : "") + match.toLowerCase(),
+      (match, offset) => (offset > 0 ? '_' : '') + match.toLowerCase(),
     )
-    .replace(/[^a-zA-Z0-9]/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_|_$/g, "");
+    .replace(/[^a-zA-Z0-9]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
 }
 
 /**
@@ -114,14 +114,14 @@ export function cleanTestBaseName(baseName: string): string {
  */
 export function validateIdentifier(identifier: string): ValidationResult {
   if (!identifier || identifier.trim().length === 0) {
-    return { isValid: false, error: "Identifier cannot be empty" };
+    return { isValid: false, error: 'Identifier cannot be empty' };
   }
 
   if (!VALIDATION_PATTERNS.IDENTIFIER.test(identifier)) {
     return {
       isValid: false,
       error:
-        "Identifier must start with a letter or underscore and contain only letters, numbers, and underscores",
+        'Identifier must start with a letter or underscore and contain only letters, numbers, and underscores',
     };
   }
 
@@ -133,17 +133,17 @@ export function validateIdentifier(identifier: string): ValidationResult {
  */
 export function validateFileExtension(extension: string): ValidationResult {
   if (!extension || extension.trim().length === 0) {
-    return { isValid: false, error: "Extension cannot be empty" };
+    return { isValid: false, error: 'Extension cannot be empty' };
   }
 
-  if (!extension.startsWith(".")) {
-    return { isValid: false, error: "Extension must start with a dot" };
+  if (!extension.startsWith('.')) {
+    return { isValid: false, error: 'Extension must start with a dot' };
   }
 
   if (!VALIDATION_PATTERNS.FILE_EXTENSION.test(extension)) {
     return {
       isValid: false,
-      error: "Extension must contain only letters after the dot",
+      error: 'Extension must contain only letters after the dot',
     };
   }
 
@@ -158,7 +158,7 @@ export function validateFileExtension(extension: string): ValidationResult {
  * Normalizes a path for consistent cross-platform handling
  */
 export function normalizePath(filePath: string): string {
-  return path.normalize(filePath).replace(/\\/g, "/");
+  return path.normalize(filePath).replace(/\\/g, '/');
 }
 
 /**
@@ -236,7 +236,7 @@ export async function setConfigValue<T>(
   scope: ConfigScope,
 ): Promise<void> {
   const target =
-    scope === "workspace"
+    scope === 'workspace'
       ? vscode.ConfigurationTarget.Workspace
       : vscode.ConfigurationTarget.Global;
 
@@ -254,13 +254,13 @@ export function detectLanguageFromExtension(filePath: string): Language | null {
   const ext = path.extname(filePath).toLowerCase();
 
   // C-specific extensions
-  if (ext === ".c") return "c";
+  if (ext === '.c') {return 'c';}
 
   // C++-specific extensions
-  if ([".cpp", ".cc", ".cxx"].includes(ext)) return "cpp";
+  if (['.cpp', '.cc', '.cxx'].includes(ext)) {return 'cpp';}
 
   // Ambiguous extensions (could be either)
-  if ([".h", ".hpp", ".hh", ".hxx"].includes(ext)) return null;
+  if (['.h', '.hpp', '.hh', '.hxx'].includes(ext)) {return null;}
 
   return null;
 }
@@ -272,12 +272,12 @@ export function detectLanguageFromLanguageId(
   languageId: string,
 ): Language | null {
   switch (languageId) {
-    case "c":
-      return "c";
-    case "cpp":
-      return "cpp";
-    default:
-      return null;
+  case 'c':
+    return 'c';
+  case 'cpp':
+    return 'cpp';
+  default:
+    return null;
   }
 }
 

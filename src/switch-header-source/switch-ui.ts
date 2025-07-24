@@ -5,10 +5,10 @@
  * It follows the pattern established in create-source-header-pair module.
  */
 
-import * as vscode from "vscode";
-import * as path from "path";
-import { ERROR_MESSAGES } from "../common/constants";
-import { ErrorHandler } from "../common/error-handler";
+import * as vscode from 'vscode';
+import * as path from 'path';
+import { ERROR_MESSAGES } from '../common/constants';
+import { ErrorHandler } from '../common/error-handler';
 
 /**
  * UI service class for switch header/source functionality.
@@ -27,7 +27,7 @@ export class SwitchUI {
     currentFileName: string,
     isHeader: boolean,
   ): void {
-    const fileType = isHeader ? "source" : "header";
+    const fileType = isHeader ? 'source' : 'header';
     const message = `No corresponding ${fileType} file found for '${currentFileName}'. You may need to create it manually.`;
     vscode.window.showInformationMessage(message);
   }
@@ -46,7 +46,7 @@ export class SwitchUI {
    */
   public showNoActiveEditorWarning(): void {
     vscode.window.showWarningMessage(
-      "No active editor found. Please open a C/C++ file first.",
+      'No active editor found. Please open a C/C++ file first.',
     );
   }
 
@@ -56,10 +56,10 @@ export class SwitchUI {
    */
   public showSwitchError(error: Error): void {
     ErrorHandler.handle(error, {
-      operation: "switchHeaderSource",
-      module: "SwitchUI",
+      operation: 'switchHeaderSource',
+      module: 'SwitchUI',
       showToUser: true,
-      logLevel: "error",
+      logLevel: 'error',
     });
   }
 
@@ -80,7 +80,7 @@ export class SwitchUI {
     baseName: string,
     isHeader: boolean,
   ): Promise<vscode.Uri | undefined> {
-    const fileType = isHeader ? "source" : "header";
+    const fileType = isHeader ? 'source' : 'header';
 
     interface FileQuickPickItem extends vscode.QuickPickItem {
       uri: vscode.Uri;
@@ -98,7 +98,7 @@ export class SwitchUI {
 
     const selected = await vscode.window.showQuickPick(items, {
       placeHolder: `Found multiple possible ${fileType} files for '${baseName}'. Please choose one.`,
-      title: "Select Corresponding File",
+      title: 'Select Corresponding File',
       matchOnDescription: true,
       matchOnDetail: true,
     });

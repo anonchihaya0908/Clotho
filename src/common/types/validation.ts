@@ -3,7 +3,7 @@
  * 统一管理所有验证相关的类型和接口
  */
 
-import { WebviewMessage, WebviewMessageType } from "./webview";
+import { WebviewMessage, WebviewMessageType } from './webview';
 
 // 验证结果接口
 export interface ValidationResult {

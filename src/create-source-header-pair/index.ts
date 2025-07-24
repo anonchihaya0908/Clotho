@@ -32,7 +32,7 @@
 //
 
 // Re-export main types and classes for external usage
-export { PairCoordinator } from "./coordinator";
-export { PairCreatorService } from "./service";
-export { PairCreatorUI } from "./ui";
-export { Language, TemplateKey } from "./templates";
+export { PairCoordinator } from './coordinator';
+export { PairCreatorService } from './service';
+export { PairCreatorUI } from './ui';
+export { Language, TemplateKey } from './templates';

@@ -6,9 +6,9 @@
  * "parent-child DNA testing" to identify legitimate processes vs stale ones.
  */
 
-import { ProcessRunner } from "./process-runner";
-import { ErrorHandler } from "./error-handler";
-import * as process from "node:process";
+import { ProcessRunner } from './process-runner';
+import { ErrorHandler } from './error-handler';
+import * as process from 'node:process';
 
 /**
  * Extended process information with metadata
@@ -18,7 +18,7 @@ export interface ProcessInfo {
   ppid: number;
   memory: number; // in KB
   name: string;
-  relationship?: "direct-child" | "grandchild" | "orphan";
+  relationship?: 'direct-child' | 'grandchild' | 'orphan';
   isMainProcess?: boolean;
 }
 
@@ -28,7 +28,7 @@ export interface ProcessInfo {
 export interface ProcessDetectionResult {
   success: boolean;
   processInfo?: ProcessInfo;
-  method: "api" | "dna-test" | "failed";
+  method: 'api' | 'dna-test' | 'failed';
   candidateCount: number;
   debugInfo?: string;
 }
@@ -103,10 +103,10 @@ export class ProcessDetector {
         error,
       );
       ErrorHandler.handle(error, {
-        operation: "findMainProcessByName",
-        module: "ProcessDetector",
+        operation: 'findMainProcessByName',
+        module: 'ProcessDetector',
         showToUser: false,
-        logLevel: "debug",
+        logLevel: 'debug',
       });
       return undefined;
     }
@@ -126,7 +126,7 @@ export class ProcessDetector {
     allProcesses: Array<{ pid: number; ppid: number; memory: number }>,
     processName: string,
   ): ProcessInfo | undefined {
-    console.log("🧬 Performing DNA Test (parent-child verification)...");
+    console.log('🧬 Performing DNA Test (parent-child verification)...');
 
     // Classify processes by relationship to us
     const directChildren = allProcesses.filter((p) => p.ppid === ourPid);
@@ -134,7 +134,7 @@ export class ProcessDetector {
       (p) => p.ppid !== ourPid,
     );
 
-    console.log("🔬 DNA Analysis Results:");
+    console.log('🔬 DNA Analysis Results:');
     console.log(
       `   Direct children (PPID=${ourPid}): ${directChildren.length}`,
     );
@@ -144,7 +144,7 @@ export class ProcessDetector {
 
     // Display our direct children (100% legitimate)
     if (directChildren.length > 0) {
-      console.log("👶 Our direct children (100% legitimate):");
+      console.log('👶 Our direct children (100% legitimate):');
       directChildren.forEach((p) => {
         const memMB = Math.round(p.memory / 1024);
         console.log(`   ✅ PID ${p.pid}: ${memMB}MB (Direct child)`);
@@ -153,7 +153,7 @@ export class ProcessDetector {
 
     // Display potential grandchildren (may include stale processes)
     if (potentialGrandchildren.length > 0) {
-      console.log("❓ Potential grandchildren/orphans (needs verification):");
+      console.log('❓ Potential grandchildren/orphans (needs verification):');
       potentialGrandchildren.forEach((p) => {
         const memMB = Math.round(p.memory / 1024);
         console.log(
@@ -164,19 +164,19 @@ export class ProcessDetector {
 
     // Select the best candidate
     let candidates = [...directChildren];
-    let selectedRelationship: "direct-child" | "grandchild" = "direct-child";
+    let selectedRelationship: 'direct-child' | 'grandchild' = 'direct-child';
 
     // If no direct children, consider grandchildren (less reliable)
     if (candidates.length === 0) {
       console.log(
-        "⚠️ No direct children found, considering potential grandchildren...",
+        '⚠️ No direct children found, considering potential grandchildren...',
       );
       candidates = potentialGrandchildren;
-      selectedRelationship = "grandchild";
+      selectedRelationship = 'grandchild';
     }
 
     if (candidates.length === 0) {
-      console.log("❌ No valid candidates after DNA test");
+      console.log('❌ No valid candidates after DNA test');
       return undefined;
     }
 
@@ -194,7 +194,7 @@ export class ProcessDetector {
     };
 
     const memMB = Math.round(selectedProcess.memory / 1024);
-    console.log("👑 DNA TEST RESULT:");
+    console.log('👑 DNA TEST RESULT:');
     console.log(
       `   🎯 Selected PID ${selectedProcess.pid}: ${memMB}MB (${selectedRelationship})`,
     );
@@ -234,16 +234,16 @@ export class ProcessDetector {
               ppid: 0, // Unknown via API
               memory: 0, // Unknown via API
               name: processName,
-              relationship: "direct-child",
+              relationship: 'direct-child',
               isMainProcess: true,
             },
-            method: "api",
+            method: 'api',
             candidateCount: 1,
             debugInfo: `API detected PID ${apiPid}`,
           };
         }
 
-        console.log("⚠️ API detection failed, falling back to DNA testing...");
+        console.log('⚠️ API detection failed, falling back to DNA testing...');
       }
 
       // Strategy 2: DNA testing (process scanning)
@@ -261,7 +261,7 @@ export class ProcessDetector {
         return {
           success: true,
           processInfo: mainProcess,
-          method: "dna-test",
+          method: 'dna-test',
           candidateCount,
           debugInfo: `DNA test selected PID ${mainProcess.pid} from ${candidateCount} candidates`,
         };
@@ -270,7 +270,7 @@ export class ProcessDetector {
       // Both strategies failed
       return {
         success: false,
-        method: "failed",
+        method: 'failed',
         candidateCount,
         debugInfo: `All strategies failed. Found ${candidateCount} candidates but none were legitimate children.`,
       };
@@ -281,7 +281,7 @@ export class ProcessDetector {
       );
       return {
         success: false,
-        method: "failed",
+        method: 'failed',
         candidateCount: 0,
         debugInfo: `Detection failed with error: ${error instanceof Error ? error.message : String(error)}`,
       };
@@ -311,31 +311,31 @@ export class ProcessDetector {
       ppid: p.ppid,
       memory: p.memory,
       name: processName,
-      relationship: p.ppid === ourPid ? "direct-child" : "orphan",
+      relationship: p.ppid === ourPid ? 'direct-child' : 'orphan',
     }));
 
     const directChildren = processInfos.filter(
-      (p) => p.relationship === "direct-child",
+      (p) => p.relationship === 'direct-child',
     );
-    const orphans = processInfos.filter((p) => p.relationship === "orphan");
+    const orphans = processInfos.filter((p) => p.relationship === 'orphan');
 
     const recommendations: string[] = [];
 
     if (directChildren.length === 0 && orphans.length > 0) {
       recommendations.push(
-        "No direct children found - orphan processes may be stale from previous sessions",
+        'No direct children found - orphan processes may be stale from previous sessions',
       );
       recommendations.push(
-        "Consider restarting VS Code to clean up stale processes",
+        'Consider restarting VS Code to clean up stale processes',
       );
     }
 
     if (directChildren.length > 1) {
       recommendations.push(
-        "Multiple direct children found - this is normal for clangd",
+        'Multiple direct children found - this is normal for clangd',
       );
       recommendations.push(
-        "The process with highest memory usage will be selected as main",
+        'The process with highest memory usage will be selected as main',
       );
     }
 

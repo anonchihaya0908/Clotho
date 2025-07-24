@@ -3,14 +3,14 @@
  * Monitors clangd process CPU usage and displays it in the status bar
  */
 
-import * as vscode from "vscode";
-import * as os from "os";
-import { IMonitor, CpuUsage, CpuMonitorConfig } from "../types";
-import { ErrorHandler } from "../../common/error-handler";
-import { ProcessDetector } from "../../common/process-detector";
+import * as vscode from 'vscode';
+import * as os from 'os';
+import { IMonitor, CpuUsage, CpuMonitorConfig } from '../types';
+import { ErrorHandler } from '../../common/error-handler';
+import { ProcessDetector } from '../../common/process-detector';
 
 // Import pidusage with proper typing
-import pidusage from "pidusage";
+import pidusage from 'pidusage';
 
 /**
  * CPU monitoring implementation that tracks clangd CPU usage
@@ -50,9 +50,9 @@ export class CpuMonitor implements IMonitor {
       99, // Priority - slightly left of memory monitor
     );
 
-    this.statusBarItem.text = "$(pulse) Clangd CPU: ---";
-    this.statusBarItem.tooltip = "Clangd CPU usage monitoring";
-    this.statusBarItem.command = "clotho.showClangdDetails";
+    this.statusBarItem.text = '$(pulse) Clangd CPU: ---';
+    this.statusBarItem.tooltip = 'Clangd CPU usage monitoring';
+    this.statusBarItem.command = 'clotho.showClangdDetails';
     this.statusBarItem.show();
   }
 
@@ -66,7 +66,7 @@ export class CpuMonitor implements IMonitor {
 
     try {
       // Try to find clangd process initially
-      const mainProcess = await ProcessDetector.findMainProcessByName("clangd");
+      const mainProcess = await ProcessDetector.findMainProcessByName('clangd');
       if (!mainProcess) {
         this.updateStatusBarNoClangd();
         // Still start monitoring - clangd might start later
@@ -81,10 +81,10 @@ export class CpuMonitor implements IMonitor {
       this.startUpdateLoop();
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "startCpuMonitor",
-        module: "CpuMonitor",
+        operation: 'startCpuMonitor',
+        module: 'CpuMonitor',
         showToUser: false,
-        logLevel: "warn",
+        logLevel: 'warn',
       });
     }
   }
@@ -105,7 +105,7 @@ export class CpuMonitor implements IMonitor {
 
     // Update status bar to show stopped state
     this.updateStatusBarNoClangd();
-    console.log("Clotho CpuMonitor: Stopped");
+    console.log('Clotho CpuMonitor: Stopped');
   }
 
   /**
@@ -128,7 +128,7 @@ export class CpuMonitor implements IMonitor {
       // If we don't have a PID, use ProcessDetector to find it
       if (!this.currentPid) {
         const mainProcess =
-          await ProcessDetector.findMainProcessByName("clangd");
+          await ProcessDetector.findMainProcessByName('clangd');
         this.currentPid = mainProcess?.pid;
 
         if (!this.currentPid) {
@@ -170,13 +170,13 @@ export class CpuMonitor implements IMonitor {
 
       // Only log if it's not a simple "process not found" error
       if (
-        !(error instanceof Error && error.message.includes("No such process"))
+        !(error instanceof Error && error.message.includes('No such process'))
       ) {
         ErrorHandler.handle(error, {
-          operation: "updateCpuUsage",
-          module: "CpuMonitor",
+          operation: 'updateCpuUsage',
+          module: 'CpuMonitor',
           showToUser: false,
-          logLevel: "debug",
+          logLevel: 'debug',
         });
       }
     }
@@ -192,22 +192,22 @@ export class CpuMonitor implements IMonitor {
 
     const rawCpuPercent = cpuUsage.cpu;
     const normalizedCpuPercent = this.getNormalizedCpu(rawCpuPercent);
-    let icon = "$(pulse)";
-    let color = "";
+    let icon = '$(pulse)';
+    let color = '';
 
     // Set icon and color based on normalized thresholds
     if (normalizedCpuPercent >= this.config.errorThreshold) {
       // 80%+
-      icon = "$(flame)";
-      color = "#ff4444"; // Red
+      icon = '$(flame)';
+      color = '#ff4444'; // Red
     } else if (normalizedCpuPercent >= this.config.warningThreshold) {
       // 50-80%
-      icon = "$(warning)";
-      color = "#ffaa00"; // Yellow
+      icon = '$(warning)';
+      color = '#ffaa00'; // Yellow
     } else {
       // <50%
-      icon = "$(pulse)";
-      color = ""; // White (default)
+      icon = '$(pulse)';
+      color = ''; // White (default)
     }
 
     // Display normalized CPU value for user-friendly experience
@@ -224,10 +224,10 @@ export class CpuMonitor implements IMonitor {
       return;
     }
 
-    this.statusBarItem.text = "$(pulse) Clangd CPU: ---";
-    this.statusBarItem.color = "#888888"; // Gray
+    this.statusBarItem.text = '$(pulse) Clangd CPU: ---';
+    this.statusBarItem.color = '#888888'; // Gray
     this.statusBarItem.tooltip =
-      "Clangd process not detected\nCPU monitoring inactive";
+      'Clangd process not detected\nCPU monitoring inactive';
   }
 
   /**
@@ -285,13 +285,13 @@ export class CpuMonitor implements IMonitor {
     lines.push(
       `Process ID: ${this.currentPid}`,
       `Last updated: ${new Date(cpuUsage.timestamp).toLocaleTimeString()}`,
-      "",
+      '',
       `Warning threshold: ${this.config.warningThreshold}%`,
       `Error threshold: ${this.config.errorThreshold}%`,
       `Update interval: ${this.config.updateInterval / 1000}s`,
     );
 
-    return lines.join("\n");
+    return lines.join('\n');
   }
 
   /**
@@ -395,6 +395,6 @@ export class CpuMonitor implements IMonitor {
    * Get a human-readable name for this monitor
    */
   public getName(): string {
-    return "CPU Monitor";
+    return 'CPU Monitor';
   }
 }

@@ -3,14 +3,14 @@
  * Provides consistent error handling patterns across all modules
  */
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 
 export interface ErrorContext {
   operation: string;
   module: string;
   instanceId?: string; // 新增：实例标识
   showToUser?: boolean;
-  logLevel?: "debug" | "info" | "warn" | "error";
+  logLevel?: 'debug' | 'info' | 'warn' | 'error';
 }
 
 export class ClothoError extends Error {
@@ -20,12 +20,12 @@ export class ClothoError extends Error {
     public override readonly cause?: unknown,
   ) {
     super(message);
-    this.name = "ClothoError";
+    this.name = 'ClothoError';
   }
 }
 
 export class ErrorHandler {
-  private static readonly LOG_PREFIX = "Clotho";
+  private static readonly LOG_PREFIX = 'Clotho';
 
   /**
    * Handles errors with consistent logging and user notification
@@ -63,23 +63,23 @@ export class ErrorHandler {
    * Logs error with appropriate level
    */
   private static logError(error: ClothoError): void {
-    const { operation, module, logLevel = "error" } = error.context;
+    const { operation, module, logLevel = 'error' } = error.context;
     const logMessage = `${this.LOG_PREFIX}: [${module}] ${operation} failed: ${error.message}`;
 
     switch (logLevel) {
-      case "debug":
-        console.debug(logMessage, error.cause);
-        break;
-      case "info":
-        console.info(logMessage);
-        break;
-      case "warn":
-        console.warn(logMessage, error.cause);
-        break;
-      case "error":
-      default:
-        console.error(logMessage, error.cause);
-        break;
+    case 'debug':
+      console.debug(logMessage, error.cause);
+      break;
+    case 'info':
+      console.info(logMessage);
+      break;
+    case 'warn':
+      console.warn(logMessage, error.cause);
+      break;
+    case 'error':
+    default:
+      console.error(logMessage, error.cause);
+      break;
     }
   }
 
@@ -144,7 +144,7 @@ export function handleErrors(context: Partial<ErrorContext>) {
         operation: propertyKey,
         module: target.constructor.name,
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
         ...context,
       };
 

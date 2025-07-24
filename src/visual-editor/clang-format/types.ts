@@ -4,4 +4,4 @@
  * This file is now just for re-exporting common types for backward compatibility.
  */
 
-export * from "../../common/types";
+export * from '../../common/types';

@@ -3,21 +3,21 @@
  * Centralizes all magic numbers, strings, and configuration defaults
  */
 
-import { SwitchConfig, TemplateContext } from "./types";
+import { SwitchConfig, TemplateContext } from './types';
 
 // ===============================
 // Extension Metadata
 // ===============================
 
-export const EXTENSION_NAME = "Clotho";
-export const EXTENSION_ID = "your-publisher-name.clotho";
+export const EXTENSION_NAME = 'Clotho';
+export const EXTENSION_ID = 'your-publisher-name.clotho';
 
 // ===============================
 // File Extensions
 // ===============================
 
-export const HEADER_EXTENSIONS = [".h", ".hpp", ".hh", ".hxx"] as const;
-export const SOURCE_EXTENSIONS = [".c", ".cpp", ".cc", ".cxx"] as const;
+export const HEADER_EXTENSIONS = ['.h', '.hpp', '.hh', '.hxx'] as const;
+export const SOURCE_EXTENSIONS = ['.c', '.cpp', '.cc', '.cxx'] as const;
 export const ALL_CPP_EXTENSIONS = [
   ...HEADER_EXTENSIONS,
   ...SOURCE_EXTENSIONS,
@@ -28,11 +28,11 @@ export const ALL_CPP_EXTENSIONS = [
 // ===============================
 
 export const CONFIG_KEYS = {
-  CREATE_PAIR_RULES: "createPair.rules",
-  SWITCH_SOURCE_DIRS: "switch.sourceDirs",
-  SWITCH_HEADER_DIRS: "switch.headerDirs",
-  SWITCH_TEST_DIRS: "switch.testDirs",
-  SWITCH_SEARCH_PATHS: "switchHeaderSource.searchPaths",
+  CREATE_PAIR_RULES: 'createPair.rules',
+  SWITCH_SOURCE_DIRS: 'switch.sourceDirs',
+  SWITCH_HEADER_DIRS: 'switch.headerDirs',
+  SWITCH_TEST_DIRS: 'switch.testDirs',
+  SWITCH_SEARCH_PATHS: 'switchHeaderSource.searchPaths',
 } as const;
 
 // ===============================
@@ -40,12 +40,12 @@ export const CONFIG_KEYS = {
 // ===============================
 
 export const COMMANDS = {
-  NEW_SOURCE_PAIR: "clotho.newSourcePair",
-  SWITCH_HEADER_SOURCE: "clotho.switchHeaderSource",
-  CONFIGURE_RULES: "clotho.configureRules",
-  SHOW_CLANGD_DETAILS: "clotho.showClangdDetails",
-  OPEN_CLANG_FORMAT_EDITOR: "clotho.openClangFormatEditor",
-  TEST_DEBOUNCE: "clotho.testDebounce",
+  NEW_SOURCE_PAIR: 'clotho.newSourcePair',
+  SWITCH_HEADER_SOURCE: 'clotho.switchHeaderSource',
+  CONFIGURE_RULES: 'clotho.configureRules',
+  SHOW_CLANGD_DETAILS: 'clotho.showClangdDetails',
+  OPEN_CLANG_FORMAT_EDITOR: 'clotho.openClangFormatEditor',
+  TEST_DEBOUNCE: 'clotho.testDebounce',
 } as const;
 
 // ===============================
@@ -53,15 +53,15 @@ export const COMMANDS = {
 // ===============================
 
 export const DEFAULT_SWITCH_CONFIG: SwitchConfig = {
-  sourceDirs: ["src", "source", "lib"],
-  headerDirs: ["include", "inc", "headers", "api"],
-  testDirs: ["test", "tests", "spec", "unittest"],
-  searchPaths: [".", "../include", "../src", "./include", "./src"],
+  sourceDirs: ['src', 'source', 'lib'],
+  headerDirs: ['include', 'inc', 'headers', 'api'],
+  testDirs: ['test', 'tests', 'spec', 'unittest'],
+  searchPaths: ['.', '../include', '../src', './include', './src'],
   excludePatterns: [
-    "**/node_modules/**",
-    "**/build/**",
-    "**/dist/**",
-    "**/.git/**",
+    '**/node_modules/**',
+    '**/build/**',
+    '**/dist/**',
+    '**/.git/**',
   ],
 };
 
@@ -70,11 +70,11 @@ export const DEFAULT_SWITCH_CONFIG: SwitchConfig = {
 // ===============================
 
 export const DEFAULT_PLACEHOLDERS = {
-  C_EMPTY: "my_c_functions",
-  C_STRUCT: "MyStruct",
-  CPP_EMPTY: "utils",
-  CPP_CLASS: "MyClass",
-  CPP_STRUCT: "MyStruct",
+  C_EMPTY: 'my_c_functions',
+  C_STRUCT: 'MyStruct',
+  CPP_EMPTY: 'utils',
+  CPP_CLASS: 'MyClass',
+  CPP_STRUCT: 'MyStruct',
 } as const;
 
 // ===============================
@@ -105,7 +105,7 @@ export const TEST_PATTERNS = [
 // ===============================
 
 export const EXTERNAL_EXTENSIONS = {
-  CLANGD: "llvm-vs-code-extensions.vscode-clangd",
+  CLANGD: 'llvm-vs-code-extensions.vscode-clangd',
 } as const;
 
 // ===============================
@@ -116,7 +116,7 @@ export const UI_CONSTANTS = {
   MAX_QUICK_PICK_ITEMS: 20,
   MAX_SEARCH_RESULTS: 20,
   FILE_PICKER_TIMEOUT: 30000, // 30 seconds
-  WELCOME_MESSAGE_KEY: "clotho.hasShownWelcome",
+  WELCOME_MESSAGE_KEY: 'clotho.hasShownWelcome',
 } as const;
 
 // ===============================
@@ -124,19 +124,19 @@ export const UI_CONSTANTS = {
 // ===============================
 
 export const ERROR_MESSAGES = {
-  NO_ACTIVE_EDITOR: "No active editor found. Please open a C/C++ file first.",
+  NO_ACTIVE_EDITOR: 'No active editor found. Please open a C/C++ file first.',
   INVALID_FILE_TYPE: (fileName: string) =>
     `File '${fileName}' is not a recognized C/C++ source or header file.`,
   NO_TARGET_DIRECTORY:
-    "Cannot determine target directory. Please open a folder or a file first.",
+    'Cannot determine target directory. Please open a folder or a file first.',
   FILE_EXISTS: (filePath: string) => `File already exists: ${filePath}`,
   NO_FILES_FOUND: (fileName: string, fileType: string) =>
     `No corresponding ${fileType} file found for '${fileName}'. You may need to create it manually.`,
   SWITCH_FAILED: (error: string) => `Failed to switch header/source: ${error}`,
-  UNEXPECTED_ERROR: "An unexpected error occurred.",
-  CLANGD_NOT_FOUND: "clangd extension not found",
-  CLANGD_NOT_RUNNING: "clangd client is not running",
-  GLOBAL_SEARCH_FAILED: "Global file search failed",
+  UNEXPECTED_ERROR: 'An unexpected error occurred.',
+  CLANGD_NOT_FOUND: 'clangd extension not found',
+  CLANGD_NOT_RUNNING: 'clangd client is not running',
+  GLOBAL_SEARCH_FAILED: 'Global file search failed',
 } as const;
 
 // ===============================
@@ -158,7 +158,7 @@ export const SUCCESS_MESSAGES = {
 // ===============================
 
 export const LSP_REQUESTS = {
-  SWITCH_SOURCE_HEADER: "textDocument/switchSourceHeader",
+  SWITCH_SOURCE_HEADER: 'textDocument/switchSourceHeader',
 } as const;
 
 // ===============================
@@ -167,7 +167,7 @@ export const LSP_REQUESTS = {
 
 export const TEMPLATE_HELPERS = {
   generateHeaderGuard: (fileName: string, headerExt: string): string => {
-    const baseName = fileName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+    const baseName = fileName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
     const extName = headerExt.substring(1).toUpperCase();
     return `${baseName}_${extName}`;
   },

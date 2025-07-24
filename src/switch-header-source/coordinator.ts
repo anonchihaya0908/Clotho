@@ -3,18 +3,18 @@
  * Demonstrates best practices for error handling, type safety, and code organization
  */
 
-import * as vscode from "vscode";
-import * as path from "path";
+import * as vscode from 'vscode';
+import * as path from 'path';
 import {
   ErrorHandler,
   COMMANDS,
   ERROR_MESSAGES,
   isValidCppFile,
   getFileType,
-} from "../common";
-import { SwitchService } from "./switch-service";
-import { SwitchUI } from "./switch-ui";
-import { SwitchConfigService } from "./config-manager";
+} from '../common';
+import { SwitchService } from './switch-service';
+import { SwitchUI } from './switch-ui';
+import { SwitchConfigService } from './config-manager';
 
 /**
  * Main coordinator class that orchestrates the switch functionality.
@@ -34,8 +34,8 @@ export class SwitchCoordinator implements vscode.Disposable {
     this.switchCommand = vscode.commands.registerCommand(
       COMMANDS.SWITCH_HEADER_SOURCE,
       ErrorHandler.wrapAsync(() => this.switchHeaderSource(), {
-        operation: "switchHeaderSource command",
-        module: "SwitchCoordinator",
+        operation: 'switchHeaderSource command',
+        module: 'SwitchCoordinator',
         showToUser: true,
       }),
     );
@@ -47,7 +47,7 @@ export class SwitchCoordinator implements vscode.Disposable {
   public async switchHeaderSource(): Promise<void> {
     // Validate preconditions
     const activeEditor = this.validateActiveEditor();
-    if (!activeEditor) return;
+    if (!activeEditor) {return;}
 
     const currentFile = activeEditor.document.uri;
     const currentPath = currentFile.fsPath;
@@ -65,13 +65,13 @@ export class SwitchCoordinator implements vscode.Disposable {
     if (!result || result.files.length === 0) {
       const baseName = path.basename(currentPath, path.extname(currentPath));
       const fileType = getFileType(currentPath);
-      this.ui.showNoFilesFoundMessage(baseName, fileType === "header");
+      this.ui.showNoFilesFoundMessage(baseName, fileType === 'header');
       return;
     }
 
     // Handle the results
     const baseName = path.basename(currentPath, path.extname(currentPath));
-    const isHeader = getFileType(currentPath) === "header";
+    const isHeader = getFileType(currentPath) === 'header';
     await this.ui.handleSearchResult(
       result.files,
       baseName,
@@ -88,8 +88,8 @@ export class SwitchCoordinator implements vscode.Disposable {
       await SwitchConfigService.showTemplateSelector();
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "showConfigTemplate",
-        module: "SwitchCoordinator",
+        operation: 'showConfigTemplate',
+        module: 'SwitchCoordinator',
         showToUser: true,
       });
     }
@@ -103,8 +103,8 @@ export class SwitchCoordinator implements vscode.Disposable {
       SwitchConfigService.showCurrentConfig();
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "showCurrentConfig",
-        module: "SwitchCoordinator",
+        operation: 'showCurrentConfig',
+        module: 'SwitchCoordinator',
         showToUser: true,
       });
     }

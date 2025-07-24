@@ -1,17 +1,17 @@
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 import {
   BaseManager,
   ManagerContext,
   EditorOpenSource,
   WebviewMessage,
-} from "../../../common/types";
+} from '../../../common/types';
 
 /**
  * 编辑器管理器
  * 负责主Webview面板的创建、配置、内容生成和生命周期管理
  */
 export class ClangFormatEditorManager implements BaseManager {
-  readonly name = "EditorManager";
+  readonly name = 'EditorManager';
 
   private panel: vscode.WebviewPanel | undefined;
   private context!: ManagerContext;
@@ -20,7 +20,7 @@ export class ClangFormatEditorManager implements BaseManager {
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
     this.setupEventListeners();
-    console.log("EditorManager initialized.");
+    console.log('EditorManager initialized.');
   }
 
   /**
@@ -31,15 +31,15 @@ export class ClangFormatEditorManager implements BaseManager {
       this.panel.reveal(vscode.ViewColumn.One);
       await this.context.stateManager.updateState(
         { isVisible: true },
-        "editor-revealed",
+        'editor-revealed',
       );
       return;
     }
 
     try {
       this.panel = vscode.window.createWebviewPanel(
-        "clangFormatEditor",
-        "Clang-Format Editor",
+        'clangFormatEditor',
+        'Clang-Format Editor',
         {
           viewColumn: vscode.ViewColumn.One,
           preserveFocus: false,
@@ -55,14 +55,14 @@ export class ClangFormatEditorManager implements BaseManager {
           isVisible: true,
           isInitialized: true,
         },
-        "editor-created",
+        'editor-created',
       );
 
       // 【关键】发送初始化消息到webview
       await this.sendInitializationMessage();
     } catch (error: any) {
       await this.context.errorRecovery.handleError(
-        "editor-creation-failed",
+        'editor-creation-failed',
         error,
         { source },
       );
@@ -76,17 +76,17 @@ export class ClangFormatEditorManager implements BaseManager {
     try {
       // 导入必要的配置数据 - 这些应该从原coordinator中迁移过来
       const { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG } =
-        await import("../config-options");
-      const { ConfigCategories } = await import("../../../common/types/config");
+        await import('../config-options');
+      const { ConfigCategories } = await import('../../../common/types/config');
 
       const currentState = this.context.stateManager.getState();
 
       // 获取设置
-      const config = vscode.workspace.getConfiguration("clotho.clangFormat");
-      const showGuideButton = config.get<boolean>("showGuideButton", true);
+      const config = vscode.workspace.getConfiguration('clotho.clangFormat');
+      const showGuideButton = config.get<boolean>('showGuideButton', true);
 
       const initMessage = {
-        type: "initialize",
+        type: 'initialize',
         payload: {
           options: CLANG_FORMAT_OPTIONS,
           categories: Object.values(ConfigCategories),
@@ -97,11 +97,11 @@ export class ClangFormatEditorManager implements BaseManager {
       };
 
       await this.postMessage(initMessage);
-      console.log("Sent initialization message to webview");
+      console.log('Sent initialization message to webview');
     } catch (error: any) {
-      console.error("Failed to send initialization message:", error);
+      console.error('Failed to send initialization message:', error);
       await this.context.errorRecovery.handleError(
-        "initialization-message-failed",
+        'initialization-message-failed',
         error,
       );
     }
@@ -114,7 +114,7 @@ export class ClangFormatEditorManager implements BaseManager {
     if (this.panel) {
       await this.panel.webview.postMessage(message);
     } else {
-      console.warn("Cannot post message: Editor panel is not available.");
+      console.warn('Cannot post message: Editor panel is not available.');
     }
   }
 
@@ -126,14 +126,14 @@ export class ClangFormatEditorManager implements BaseManager {
 
   private setupEventListeners() {
     this.context.eventBus.on(
-      "create-editor-requested",
+      'create-editor-requested',
       (source: EditorOpenSource) => {
         this.createOrShowEditor(source);
       },
     );
 
     this.context.eventBus.on(
-      "post-message-to-webview",
+      'post-message-to-webview',
       (message: WebviewMessage) => {
         this.postMessage(message);
       },
@@ -141,24 +141,24 @@ export class ClangFormatEditorManager implements BaseManager {
   }
 
   private setupPanelEventListeners() {
-    if (!this.panel) return;
+    if (!this.panel) {return;}
 
     this.panel.onDidDispose(() => {
       this.panel = undefined;
       this.context.stateManager.updateState(
         { isVisible: false },
-        "editor-closed",
+        'editor-closed',
       );
-      this.context.eventBus.emit("editor-closed"); // 通知其他管理器
+      this.context.eventBus.emit('editor-closed'); // 通知其他管理器
     });
 
     this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
       console.log(
-        "🔍 DEBUG: Received webview message:",
+        '🔍 DEBUG: Received webview message:',
         message.type,
         message.payload,
       );
-      await this.context.eventBus.emit("webview-message-received", message);
+      await this.context.eventBus.emit('webview-message-received', message);
     });
 
     this.panel.onDidChangeViewState(
@@ -166,9 +166,9 @@ export class ClangFormatEditorManager implements BaseManager {
         const isVisible = e.webviewPanel.visible;
         await this.context.stateManager.updateState(
           { isVisible },
-          "editor-visibility-changed",
+          'editor-visibility-changed',
         );
-        this.context.eventBus.emit("editor-visibility-changed", { isVisible });
+        this.context.eventBus.emit('editor-visibility-changed', { isVisible });
       },
     );
 
@@ -182,8 +182,8 @@ export class ClangFormatEditorManager implements BaseManager {
         // 通知 Webview 主题已变化
         if (this.panel) {
           this.panel.webview.postMessage({
-            command: "themeChanged",
-            theme: isDarkTheme ? "dark" : "light",
+            command: 'themeChanged',
+            theme: isDarkTheme ? 'dark' : 'light',
             kind: vscode.ColorThemeKind[theme.kind],
             isDark: isDarkTheme,
           });
@@ -200,15 +200,15 @@ export class ClangFormatEditorManager implements BaseManager {
       enableScripts: true,
       retainContextWhenHidden: true,
       localResourceRoots: [
-        vscode.Uri.joinPath(this.context.extensionUri, "webviews"),
-        vscode.Uri.joinPath(this.context.extensionUri, "dist"),
+        vscode.Uri.joinPath(this.context.extensionUri, 'webviews'),
+        vscode.Uri.joinPath(this.context.extensionUri, 'dist'),
       ],
     };
   }
 
   private async generateWebviewContent(): Promise<string> {
     if (!this.panel) {
-      throw new Error("Panel not initialized");
+      throw new Error('Panel not initialized');
     }
 
     const webview = this.panel.webview;
@@ -223,28 +223,28 @@ export class ClangFormatEditorManager implements BaseManager {
     // 1. 【核心】定义所有需要从本地加载的资源的URI
     const scriptPath = vscode.Uri.joinPath(
       extensionUri,
-      "webviews",
-      "visual-editor",
-      "clang-format",
-      "dist",
-      "index.js",
+      'webviews',
+      'visual-editor',
+      'clang-format',
+      'dist',
+      'index.js',
     );
     const stylePath = vscode.Uri.joinPath(
       extensionUri,
-      "webviews",
-      "visual-editor",
-      "clang-format",
-      "dist",
-      "index.css",
+      'webviews',
+      'visual-editor',
+      'clang-format',
+      'dist',
+      'index.css',
     );
 
     const scriptUri = webview.asWebviewUri(scriptPath);
     const styleUri = webview.asWebviewUri(stylePath);
 
     // 添加调试日志
-    console.log("🔍 DEBUG: Creating webview content...");
-    console.log("🔍 DEBUG: Script URI:", scriptUri.toString());
-    console.log("🔍 DEBUG: Style URI:", styleUri.toString());
+    console.log('🔍 DEBUG: Creating webview content...');
+    console.log('🔍 DEBUG: Script URI:', scriptUri.toString());
+    console.log('🔍 DEBUG: Style URI:', styleUri.toString());
 
     const nonce = this.getNonce();
 
@@ -285,7 +285,7 @@ export class ClangFormatEditorManager implements BaseManager {
                 }
             </style>
         </head>
-        <body data-vscode-theme="${isDarkTheme ? "dark" : "light"}" data-vscode-theme-name="${currentTheme.kind}">
+        <body data-vscode-theme="${isDarkTheme ? 'dark' : 'light'}" data-vscode-theme-name="${currentTheme.kind}">
             <!-- 【核心】将当前主题信息，通过data属性，直接嵌入到body上 -->
             <div id="app"></div>
             <script nonce="${nonce}" src="${scriptUri}"></script>
@@ -306,9 +306,9 @@ export class ClangFormatEditorManager implements BaseManager {
    * 生成随机nonce用于CSP安全
    */
   private getNonce(): string {
-    let text = "";
+    let text = '';
     const possible =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     for (let i = 0; i < 32; i++) {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }

@@ -3,8 +3,8 @@
  * 专门管理VS Code WebviewPanel的创建、销毁和状态管理
  */
 
-import * as vscode from "vscode";
-import { ErrorHandler } from "../../../common/error-handler";
+import * as vscode from 'vscode';
+import { ErrorHandler } from '../../../common/error-handler';
 
 /**
  * 面板配置选项
@@ -79,7 +79,7 @@ export interface PanelManager {
  * ClangFormat面板管理器实现
  */
 export class ClangFormatPanelManager
-  implements PanelManager, vscode.Disposable
+implements PanelManager, vscode.Disposable
 {
   private panels = new Map<string, vscode.WebviewPanel>();
   private panelStates = new Map<string, PanelState>();
@@ -152,10 +152,10 @@ export class ClangFormatPanelManager
       return panel;
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "createPanel",
-        module: "PanelManager",
+        operation: 'createPanel',
+        module: 'PanelManager',
         showToUser: true,
-        logLevel: "error",
+        logLevel: 'error',
       });
       throw error;
     }
@@ -199,10 +199,10 @@ export class ClangFormatPanelManager
       return true;
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "destroyPanel",
-        module: "PanelManager",
+        operation: 'destroyPanel',
+        module: 'PanelManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
       return false;
     }
@@ -225,10 +225,10 @@ export class ClangFormatPanelManager
       return true;
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "focusPanel",
-        module: "PanelManager",
+        operation: 'focusPanel',
+        module: 'PanelManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
       return false;
     }
@@ -276,13 +276,13 @@ export class ClangFormatPanelManager
       for (const id of panelIds) {
         this.destroyPanel(id);
       }
-      console.log("PanelManager: All panels destroyed");
+      console.log('PanelManager: All panels destroyed');
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "destroyAllPanels",
-        module: "PanelManager",
+        operation: 'destroyAllPanels',
+        module: 'PanelManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -346,7 +346,7 @@ export class ClangFormatPanelManager
     activePanels: number;
     visiblePanels: number;
     oldestPanel?: { id: string; age: number };
-  } {
+    } {
     const allPanels = this.getAllPanels();
     const totalPanels = allPanels.size;
     let activePanels = 0;
@@ -358,8 +358,8 @@ export class ClangFormatPanelManager
     for (const [id, panel] of allPanels) {
       const state = this.panelStates.get(id);
 
-      if (panel.active) activePanels++;
-      if (panel.visible) visiblePanels++;
+      if (panel.active) {activePanels++;}
+      if (panel.visible) {visiblePanels++;}
 
       if (state) {
         const age = now.getTime() - state.createdAt.getTime();
@@ -389,13 +389,13 @@ export class ClangFormatPanelManager
       this.disposables.forEach((d) => d.dispose());
       this.disposables = [];
 
-      console.log("PanelManager: Manager disposed");
+      console.log('PanelManager: Manager disposed');
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "disposePanelManager",
-        module: "PanelManager",
+        operation: 'disposePanelManager',
+        module: 'PanelManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }

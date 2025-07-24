@@ -9,15 +9,15 @@
 // - Validation patterns
 //
 
-import { PairingRule, Language } from "../common/types";
+import { PairingRule, Language } from '../common/types';
 
 // Types for better type safety
 export type TemplateKey =
-  | "CPP_CLASS"
-  | "CPP_STRUCT"
-  | "C_STRUCT"
-  | "C_EMPTY"
-  | "CPP_EMPTY";
+  | 'CPP_CLASS'
+  | 'CPP_STRUCT'
+  | 'C_STRUCT'
+  | 'C_EMPTY'
+  | 'CPP_EMPTY';
 
 // Regular expression patterns to validate C/C++ identifiers
 export const VALIDATION_PATTERNS = {
@@ -26,58 +26,58 @@ export const VALIDATION_PATTERNS = {
 
 // Default placeholder names for different file types
 export const DEFAULT_PLACEHOLDERS = {
-  C_EMPTY: "my_c_functions",
-  C_STRUCT: "MyStruct",
-  CPP_EMPTY: "utils",
-  CPP_CLASS: "MyClass",
-  CPP_STRUCT: "MyStruct",
+  C_EMPTY: 'my_c_functions',
+  C_STRUCT: 'MyStruct',
+  CPP_EMPTY: 'utils',
+  CPP_CLASS: 'MyClass',
+  CPP_STRUCT: 'MyStruct',
 };
 
 // Template rules for available file pair types
 export const TEMPLATE_RULES: PairingRule[] = [
   {
-    key: "cpp_empty",
-    label: "$(new-file) C++ Pair",
-    description: "Creates a basic Header/Source file pair with header guards.",
-    language: "cpp" as const,
-    headerExt: ".h",
-    sourceExt: ".cpp",
+    key: 'cpp_empty',
+    label: '$(new-file) C++ Pair',
+    description: 'Creates a basic Header/Source file pair with header guards.',
+    language: 'cpp' as const,
+    headerExt: '.h',
+    sourceExt: '.cpp',
   },
   {
-    key: "cpp_class",
-    label: "$(symbol-class) C++ Class",
+    key: 'cpp_class',
+    label: '$(symbol-class) C++ Class',
     description:
-      "Creates a Header/Source file pair with a boilerplate class definition.",
-    language: "cpp" as const,
-    headerExt: ".h",
-    sourceExt: ".cpp",
+      'Creates a Header/Source file pair with a boilerplate class definition.',
+    language: 'cpp' as const,
+    headerExt: '.h',
+    sourceExt: '.cpp',
     isClass: true,
   },
   {
-    key: "cpp_struct",
-    label: "$(symbol-struct) C++ Struct",
+    key: 'cpp_struct',
+    label: '$(symbol-struct) C++ Struct',
     description:
-      "Creates a Header/Source file pair with a boilerplate struct definition.",
-    language: "cpp" as const,
-    headerExt: ".h",
-    sourceExt: ".cpp",
+      'Creates a Header/Source file pair with a boilerplate struct definition.',
+    language: 'cpp' as const,
+    headerExt: '.h',
+    sourceExt: '.cpp',
     isStruct: true,
   },
   {
-    key: "c_empty",
-    label: "$(file-code) C Pair",
-    description: "Creates a basic .h/.c file pair for function declarations.",
-    language: "c" as const,
-    headerExt: ".h",
-    sourceExt: ".c",
+    key: 'c_empty',
+    label: '$(file-code) C Pair',
+    description: 'Creates a basic .h/.c file pair for function declarations.',
+    language: 'c' as const,
+    headerExt: '.h',
+    sourceExt: '.c',
   },
   {
-    key: "c_struct",
-    label: "$(symbol-struct) C Struct",
-    description: "Creates a .h/.c file pair with a boilerplate typedef struct.",
-    language: "c" as const,
-    headerExt: ".h",
-    sourceExt: ".c",
+    key: 'c_struct',
+    label: '$(symbol-struct) C Struct',
+    description: 'Creates a .h/.c file pair with a boilerplate typedef struct.',
+    language: 'c' as const,
+    headerExt: '.h',
+    sourceExt: '.c',
     isStruct: true,
   },
 ];
@@ -120,7 +120,7 @@ struct {{fileName}} {
 
 #endif  // {{headerGuard}}
 `,
-    source: "{{includeLine}}",
+    source: '{{includeLine}}',
   },
   C_STRUCT: {
     header: `#ifndef {{headerGuard}}
@@ -132,7 +132,7 @@ typedef struct {
 
 #endif  // {{headerGuard}}
 `,
-    source: "{{includeLine}}",
+    source: '{{includeLine}}',
   },
   C_EMPTY: {
     header: `#ifndef {{headerGuard}}
@@ -155,7 +155,7 @@ typedef struct {
 
 #endif  // {{headerGuard}}
 `,
-    source: "{{includeLine}}",
+    source: '{{includeLine}}',
   },
 };
 

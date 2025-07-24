@@ -5,12 +5,12 @@
  * 一个真正的、具有完整语义高亮和clangd支持的编辑器
  */
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 
 export class ClangFormatPreviewProvider
-  implements vscode.TextDocumentContentProvider
+implements vscode.TextDocumentContentProvider
 {
-  private static readonly SCHEME = "clotho-preview";
+  private static readonly SCHEME = 'clotho-preview';
   private static instance: ClangFormatPreviewProvider | undefined;
 
   // onDidChange事件，用来通知VSCode"我的内容更新了，请重新渲染"
@@ -68,7 +68,7 @@ export class ClangFormatPreviewProvider
    * @param filename 文件名（将显示在标签页上）
    * @returns 新的预览URI
    */
-  public createPreviewUri(filename: string = "macro-preview.cpp"): vscode.Uri {
+  public createPreviewUri(filename: string = 'macro-preview.cpp'): vscode.Uri {
     // 使用时间戳确保URI的唯一性
     const timestamp = Date.now();
     const uri = vscode.Uri.parse(

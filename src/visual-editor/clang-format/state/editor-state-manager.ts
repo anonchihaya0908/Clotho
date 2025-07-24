@@ -1,7 +1,7 @@
-import * as vscode from "vscode";
-import { EditorState, StateChangeEvent } from "../../../common/types";
-import { EventBus } from "../messaging/event-bus";
-import { DEFAULT_CLANG_FORMAT_CONFIG } from "../config-options";
+import * as vscode from 'vscode';
+import { EditorState, StateChangeEvent } from '../../../common/types';
+import { EventBus } from '../messaging/event-bus';
+import { DEFAULT_CLANG_FORMAT_CONFIG } from '../config-options';
 
 type StateSnapshot = {
   state: EditorState;
@@ -66,10 +66,10 @@ export class EditorStateManager implements vscode.Disposable {
     if (lastSnapshot) {
       const oldState = { ...this.state };
       this.state = lastSnapshot.state;
-      await this.notifyStateChange(oldState, this.state, "rollback");
-      console.log("Rolled back to previous state.");
+      await this.notifyStateChange(oldState, this.state, 'rollback');
+      console.log('Rolled back to previous state.');
     } else {
-      console.warn("No previous state to roll back to.");
+      console.warn('No previous state to roll back to.');
     }
   }
 
@@ -81,8 +81,8 @@ export class EditorStateManager implements vscode.Disposable {
     const safeState = this.createInitialState();
     this.state = safeState;
 
-    await this.notifyStateChange(oldState, this.state, "safety-reset");
-    console.log("State has been reset to a safe initial state.");
+    await this.notifyStateChange(oldState, this.state, 'safety-reset');
+    console.log('State has been reset to a safe initial state.');
   }
 
   dispose(): void {
@@ -97,7 +97,7 @@ export class EditorStateManager implements vscode.Disposable {
     return {
       isInitialized: false,
       isVisible: false,
-      previewMode: "closed",
+      previewMode: 'closed',
       currentConfig: DEFAULT_CLANG_FORMAT_CONFIG || {},
       configDirty: false,
       recoveryAttempts: 0,
@@ -110,12 +110,12 @@ export class EditorStateManager implements vscode.Disposable {
   private validateStateTransition(from: EditorState, to: EditorState): boolean {
     // 例如：不允许在预览打开时直接切换到另一个预览
     if (
-      from.previewMode === "open" &&
-      to.previewMode === "open" &&
+      from.previewMode === 'open' &&
+      to.previewMode === 'open' &&
       from.previewUri?.toString() !== to.previewUri?.toString()
     ) {
       console.warn(
-        "State Validation: Cannot open a new preview while another is already active.",
+        'State Validation: Cannot open a new preview while another is already active.',
       );
       return false;
     }
@@ -145,11 +145,11 @@ export class EditorStateManager implements vscode.Disposable {
   private detectChangeType(
     from: EditorState,
     to: EditorState,
-  ): "preview" | "config" | "error" {
-    if (from.previewMode !== to.previewMode) return "preview";
-    if (from.configDirty !== to.configDirty) return "config";
-    if (from.lastError !== to.lastError) return "error";
-    return "config"; // 默认为config变化
+  ): 'preview' | 'config' | 'error' {
+    if (from.previewMode !== to.previewMode) {return 'preview';}
+    if (from.configDirty !== to.configDirty) {return 'config';}
+    if (from.lastError !== to.lastError) {return 'error';}
+    return 'config'; // 默认为config变化
   }
 
   /**
@@ -171,7 +171,7 @@ export class EditorStateManager implements vscode.Disposable {
     // 使用Promise.resolve().then()确保事件在下一个微任务中发出，
     // 避免在状态更新的同步流程中产生副作用
     await Promise.resolve().then(() =>
-      this.eventBus.emit("state-changed", event),
+      this.eventBus.emit('state-changed', event),
     );
   }
 }

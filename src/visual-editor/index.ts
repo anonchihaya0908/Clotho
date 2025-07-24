@@ -16,7 +16,7 @@
  */
 
 // 导出 clang-format 编辑器
-export * from "./clang-format";
+export * from './clang-format';
 
 // 为将来的扩展预留导出位置
 // export * from './clangd';

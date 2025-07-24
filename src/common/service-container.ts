@@ -24,20 +24,20 @@ import {
   PairCoordinator,
   PairCreatorService,
   PairCreatorUI,
-} from "../create-source-header-pair";
+} from '../create-source-header-pair';
 import {
   PairingRuleService,
   PairingRuleUI,
   PairingRuleCoordinator,
-} from "../pairing-rule-manager";
+} from '../pairing-rule-manager';
 import {
   SwitchCoordinator,
   SwitchService,
   SwitchUI,
-} from "../switch-header-source";
-import { MonitorCoordinator } from "../clangd-monitor";
-import { ClangFormatVisualEditorCoordinator } from "../visual-editor";
-import { ClangFormatGuideService } from "../visual-editor/clang-format/guide-service";
+} from '../switch-header-source';
+import { MonitorCoordinator } from '../clangd-monitor';
+import { ClangFormatVisualEditorCoordinator } from '../visual-editor';
+import { ClangFormatGuideService } from '../visual-editor/clang-format/guide-service';
 
 // A collection of factory functions for creating services
 type ServiceFactory<T> = (container: ServiceContainer) => T;
@@ -140,7 +140,7 @@ export class ServiceContainer {
    */
   public dispose(): void {
     for (const service of this.cache.values()) {
-      if (service && typeof (service as any).dispose === "function") {
+      if (service && typeof (service as any).dispose === 'function') {
         (service as any).dispose();
       }
     }

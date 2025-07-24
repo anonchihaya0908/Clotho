@@ -1,18 +1,18 @@
-import * as vscode from "vscode";
-import * as fs from "fs";
-import * as path from "path";
+import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   BaseManager,
   ManagerContext,
   WebviewMessage,
-} from "../../../common/types";
+} from '../../../common/types';
 
 /**
  * 占位符 Webview 管理器
  * 负责在代码预览关闭时创建占位符界面，维持布局稳定性
  */
 export class PlaceholderWebviewManager implements BaseManager {
-  readonly name = "PlaceholderManager";
+  readonly name = 'PlaceholderManager';
 
   private panel: vscode.WebviewPanel | undefined;
   private context!: ManagerContext;
@@ -36,8 +36,8 @@ export class PlaceholderWebviewManager implements BaseManager {
 
     try {
       this.panel = vscode.window.createWebviewPanel(
-        "clangFormatPlaceholder",
-        "Clang-Format 预览占位符",
+        'clangFormatPlaceholder',
+        'Clang-Format 预览占位符',
         {
           viewColumn: vscode.ViewColumn.Two,
           preserveFocus: true,
@@ -51,15 +51,15 @@ export class PlaceholderWebviewManager implements BaseManager {
       // 占位符被创建，意味着预览已经关闭
       await this.context.stateManager.updateState(
         {
-          previewMode: "closed",
+          previewMode: 'closed',
           previewUri: undefined,
           previewEditor: undefined,
         },
-        "placeholder-created",
+        'placeholder-created',
       );
     } catch (error: any) {
       await this.context.errorRecovery.handleError(
-        "placeholder-creation-failed",
+        'placeholder-creation-failed',
         error,
       );
     }
@@ -100,12 +100,12 @@ export class PlaceholderWebviewManager implements BaseManager {
    * 处理重新打开预览的请求
    */
   async handleReopenRequest(payload?: any): Promise<void> {
-    console.log("🔄 PlaceholderManager: Handling reopen preview request");
+    console.log('🔄 PlaceholderManager: Handling reopen preview request');
 
     // 【关键修复】先销毁占位符面板，避免同时存在两个面板
     if (this.panel) {
       console.log(
-        "🗑️ PlaceholderManager: Disposing placeholder panel before opening preview",
+        '🗑️ PlaceholderManager: Disposing placeholder panel before opening preview',
       );
       this.panel.dispose();
       this.panel = undefined;
@@ -115,20 +115,20 @@ export class PlaceholderWebviewManager implements BaseManager {
       // 强制重置状态
       await this.context.stateManager.updateState(
         {
-          previewMode: "closed",
+          previewMode: 'closed',
           previewUri: undefined,
           previewEditor: undefined,
         },
-        "force-reset-before-reopen",
+        'force-reset-before-reopen',
       );
 
       // 发送重新打开预览事件
-      this.context.eventBus.emit("open-preview-requested", {
-        source: "placeholder",
+      this.context.eventBus.emit('open-preview-requested', {
+        source: 'placeholder',
         forceReopen: true,
       });
     } catch (error) {
-      console.error("[PlaceholderManager] 处理重新打开预览请求时出错:", error);
+      console.error('[PlaceholderManager] 处理重新打开预览请求时出错:', error);
     }
   }
 
@@ -138,7 +138,7 @@ export class PlaceholderWebviewManager implements BaseManager {
   handlePlaceholderClosed(): void {
     this.panel = undefined; // 面板被销毁，重置引用
     // 当用户手动关闭占位符时，我们认为他们希望结束整个会话
-    this.context.eventBus.emit("editor-closed");
+    this.context.eventBus.emit('editor-closed');
   }
 
   dispose(): void {
@@ -150,7 +150,7 @@ export class PlaceholderWebviewManager implements BaseManager {
   }
 
   private setupEventListeners(): void {
-    this.context.eventBus.on("preview-closed", async () => {
+    this.context.eventBus.on('preview-closed', async () => {
       const state = this.context.stateManager.getState();
       if (state.isVisible && state.isInitialized) {
         await this.createPlaceholder();
@@ -158,9 +158,9 @@ export class PlaceholderWebviewManager implements BaseManager {
     });
 
     // 监听预览打开事件，清理占位符
-    this.context.eventBus.on("preview-opened", () => {
+    this.context.eventBus.on('preview-opened', () => {
       console.log(
-        "🔍 PlaceholderManager: Preview opened, disposing placeholder",
+        '🔍 PlaceholderManager: Preview opened, disposing placeholder',
       );
       if (this.panel) {
         this.panel.dispose();
@@ -170,7 +170,7 @@ export class PlaceholderWebviewManager implements BaseManager {
   }
 
   private setupPanelEventListeners(): void {
-    if (!this.panel) return;
+    if (!this.panel) {return;}
 
     // 监听占位符被关闭
     this.panel.onDidDispose(() => {
@@ -179,8 +179,8 @@ export class PlaceholderWebviewManager implements BaseManager {
 
     // 监听来自占位符的消息
     this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
-      if (message.type === "reopen-preview") {
-        console.log("[PlaceholderManager] 收到来自占位符的消息:", message);
+      if (message.type === 'reopen-preview') {
+        console.log('[PlaceholderManager] 收到来自占位符的消息:', message);
         await this.handleReopenRequest(message.payload);
       }
     });
@@ -194,7 +194,7 @@ export class PlaceholderWebviewManager implements BaseManager {
 
         if (this.panel) {
           this.panel.webview.postMessage({
-            type: "theme-changed",
+            type: 'theme-changed',
             payload: {
               isDark: isDarkTheme,
             },
@@ -214,12 +214,12 @@ export class PlaceholderWebviewManager implements BaseManager {
       localResourceRoots: [
         vscode.Uri.joinPath(
           this.context.extensionUri,
-          "webviews",
-          "visual-editor",
-          "clang-format",
-          "src",
-          "assets",
-          "images",
+          'webviews',
+          'visual-editor',
+          'clang-format',
+          'src',
+          'assets',
+          'images',
         ),
       ],
     };
@@ -240,7 +240,7 @@ export class PlaceholderWebviewManager implements BaseManager {
     const randomImagePath = this.getRandomCharacterImagePath();
     const randomImageUri = randomImagePath
       ? this.getWebviewImageUri(randomImagePath)
-      : "";
+      : '';
 
     return `<!DOCTYPE html>
         <html lang="zh-CN">
@@ -262,11 +262,11 @@ export class PlaceholderWebviewManager implements BaseManager {
                 :root {
                     --vscode-font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
                     --vscode-font-size: var(--vscode-font-size, 13px);
-                    --vscode-foreground: var(--vscode-foreground, ${isDarkTheme ? "#cccccc" : "#333333"});
-                    --vscode-background: var(--vscode-editor-background, ${isDarkTheme ? "#1e1e1e" : "#ffffff"});
-                    --vscode-button-background: var(--vscode-button-background, ${isDarkTheme ? "#0e639c" : "#007acc"});
-                    --vscode-button-hoverBackground: var(--vscode-button-hoverBackground, ${isDarkTheme ? "#1177bb" : "#005a9e"});
-                    --vscode-descriptionForeground: var(--vscode-descriptionForeground, ${isDarkTheme ? "#cccccc99" : "#717171"});
+                    --vscode-foreground: var(--vscode-foreground, ${isDarkTheme ? '#cccccc' : '#333333'});
+                    --vscode-background: var(--vscode-editor-background, ${isDarkTheme ? '#1e1e1e' : '#ffffff'});
+                    --vscode-button-background: var(--vscode-button-background, ${isDarkTheme ? '#0e639c' : '#007acc'});
+                    --vscode-button-hoverBackground: var(--vscode-button-hoverBackground, ${isDarkTheme ? '#1177bb' : '#005a9e'});
+                    --vscode-descriptionForeground: var(--vscode-descriptionForeground, ${isDarkTheme ? '#cccccc99' : '#717171'});
                 }
 
                 * {
@@ -397,7 +397,7 @@ export class PlaceholderWebviewManager implements BaseManager {
                 }
             </style>
         </head>
-        <body data-vscode-theme="${isDarkTheme ? "dark" : "light"}">
+        <body data-vscode-theme="${isDarkTheme ? 'dark' : 'light'}">
             <div class="placeholder-container">
                 <div class="placeholder-icon">
                     <img src="${randomImageUri}" 
@@ -507,15 +507,15 @@ export class PlaceholderWebviewManager implements BaseManager {
   private loadCharacterImagePaths(): void {
     const baseImagePath = path.join(
       this.context.extensionUri.fsPath,
-      "webviews",
-      "visual-editor",
-      "clang-format",
-      "src",
-      "assets",
-      "images",
+      'webviews',
+      'visual-editor',
+      'clang-format',
+      'src',
+      'assets',
+      'images',
     );
     const allImagePaths: string[] = [];
-    const characterFolders = ["Ave Mujica", "MyGO", "Girls-Band-Cry"];
+    const characterFolders = ['Ave Mujica', 'MyGO', 'Girls-Band-Cry'];
 
     try {
       for (const folder of characterFolders) {
@@ -523,7 +523,7 @@ export class PlaceholderWebviewManager implements BaseManager {
         if (fs.existsSync(folderPath)) {
           const files = fs.readdirSync(folderPath);
           for (const file of files) {
-            if (path.extname(file).toLowerCase() === ".webp") {
+            if (path.extname(file).toLowerCase() === '.webp') {
               // 使用 / 作为路径分隔符，以确保在 webview 中正确解析
               const relativePath = `${folder}/${file}`;
               allImagePaths.push(relativePath);
@@ -532,7 +532,7 @@ export class PlaceholderWebviewManager implements BaseManager {
         }
       }
     } catch (error) {
-      console.error("[PlaceholderManager] 加载角色图片时出错:", error);
+      console.error('[PlaceholderManager] 加载角色图片时出错:', error);
     }
 
     this.characterImagePaths = allImagePaths;
@@ -541,7 +541,7 @@ export class PlaceholderWebviewManager implements BaseManager {
         `[PlaceholderManager] 成功加载 ${this.characterImagePaths.length} 张角色图片。`,
       );
     } else {
-      console.warn("[PlaceholderManager] 未找到任何角色图片。");
+      console.warn('[PlaceholderManager] 未找到任何角色图片。');
     }
   }
 
@@ -550,7 +550,7 @@ export class PlaceholderWebviewManager implements BaseManager {
    */
   private getRandomCharacterImagePath(): string {
     if (this.characterImagePaths.length === 0) {
-      return "";
+      return '';
     }
     const randomIndex = Math.floor(
       Math.random() * this.characterImagePaths.length,
@@ -562,16 +562,16 @@ export class PlaceholderWebviewManager implements BaseManager {
    * 生成webview可用的图片URI
    */
   private getWebviewImageUri(imagePath: string): string {
-    if (!this.panel) return "";
+    if (!this.panel) {return '';}
 
     const imageFullPath = vscode.Uri.joinPath(
       this.context.extensionUri,
-      "webviews",
-      "visual-editor",
-      "clang-format",
-      "src",
-      "assets",
-      "images",
+      'webviews',
+      'visual-editor',
+      'clang-format',
+      'src',
+      'assets',
+      'images',
       imagePath,
     );
 
@@ -582,9 +582,9 @@ export class PlaceholderWebviewManager implements BaseManager {
    * 生成随机 nonce 用于 CSP 安全
    */
   private getNonce(): string {
-    let text = "";
+    let text = '';
     const possible =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     for (let i = 0; i < 32; i++) {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }

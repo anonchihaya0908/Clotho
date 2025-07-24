@@ -3,7 +3,7 @@
  * 处理快速操作和并发控制，确保界面稳定性
  */
 
-import { ErrorHandler } from "../../../common/error-handler";
+import { ErrorHandler } from '../../../common/error-handler';
 
 /**
  * 防抖配置选项
@@ -92,10 +92,10 @@ export class DebounceManager {
         });
       } catch (error) {
         ErrorHandler.handle(error, {
-          operation: "debounceExecution",
-          module: "DebounceManager",
+          operation: 'debounceExecution',
+          module: 'DebounceManager',
           showToUser: false,
-          logLevel: "error",
+          logLevel: 'error',
         });
         throw error;
       }
@@ -154,10 +154,10 @@ export class DebounceManager {
       }
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "withLock",
-        module: "DebounceManager",
+        operation: 'withLock',
+        module: 'DebounceManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
       throw error;
     }
@@ -224,10 +224,10 @@ export class DebounceManager {
       }
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "processQueue",
-        module: "DebounceManager",
+        operation: 'processQueue',
+        module: 'DebounceManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     } finally {
       // 清理空队列
@@ -290,7 +290,7 @@ export class DebounceManager {
     activeTimers: string[];
     activeLocks: string[];
     pendingQueues: string[];
-  } {
+    } {
     return {
       activeTimers: Array.from(this.timers.keys()),
       activeLocks: Array.from(this.locks),
@@ -306,6 +306,6 @@ export class DebounceManager {
     this.releaseAllLocks();
     this.pendingOperations.clear();
 
-    console.log("DebounceManager: All resources disposed");
+    console.log('DebounceManager: All resources disposed');
   }
 }

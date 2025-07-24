@@ -1,7 +1,7 @@
-import * as vscode from "vscode";
-import { EditorError } from "../../../common/types";
-import { EditorStateManager } from "../state/editor-state-manager";
-import { EventBus } from "../messaging/event-bus";
+import * as vscode from 'vscode';
+import { EditorError } from '../../../common/types';
+import { EditorStateManager } from '../state/editor-state-manager';
+import { EventBus } from '../messaging/event-bus';
 
 /**
  * 恢复策略接口
@@ -59,7 +59,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
       {
         lastError: editorError,
       },
-      "error-occurred",
+      'error-occurred',
     );
 
     if (editorError.recoverable) {
@@ -78,7 +78,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
     );
     await this.stateManager.resetToSafeState();
     vscode.window.showErrorMessage(
-      `Clang-Format Editor遇到严重错误，已重置到安全状态。详情请查看日志。`,
+      'Clang-Format Editor遇到严重错误，已重置到安全状态。详情请查看日志。',
     );
   }
 
@@ -104,7 +104,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
       );
       await this.stateManager.resetToSafeState();
       vscode.window.showWarningMessage(
-        `插件多次尝试恢复失败，已重置到安全状态。`,
+        '插件多次尝试恢复失败，已重置到安全状态。',
       );
       return;
     }
@@ -118,7 +118,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
         {
           recoveryAttempts: currentState.recoveryAttempts + 1,
         },
-        "recovery-attempt",
+        'recovery-attempt',
       );
 
       await strategy.recover(error, this.stateManager, this.eventBus);
@@ -129,7 +129,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
           lastError: undefined,
           recoveryAttempts: 0,
         },
-        "recovery-successful",
+        'recovery-successful',
       );
       console.log(`Recovery successful for ${errorCode}.`);
     } catch (recoveryError: any) {
@@ -144,37 +144,37 @@ export class ErrorRecoveryManager implements vscode.Disposable {
    */
   private setupRecoveryStrategies(): void {
     // 预览创建失败：现在只记录错误，因为没有彩蛋可以回退
-    this.recoveryStrategies.set("preview-creation-failed", {
+    this.recoveryStrategies.set('preview-creation-failed', {
       async recover(error, stateManager, eventBus) {
         console.error(
-          "Recovery: Preview creation failed and no fallback is available.",
+          'Recovery: Preview creation failed and no fallback is available.',
           error,
         );
         await stateManager.updateState(
-          { previewMode: "closed" },
-          "preview-creation-failed",
+          { previewMode: 'closed' },
+          'preview-creation-failed',
         );
-        vscode.window.showErrorMessage("无法打开预览窗口。");
+        vscode.window.showErrorMessage('无法打开预览窗口。');
       },
     });
 
     // 编辑器主面板创建失败：延迟重试
-    this.recoveryStrategies.set("editor-creation-failed", {
+    this.recoveryStrategies.set('editor-creation-failed', {
       async recover(error, stateManager, eventBus) {
-        console.log("Recovery: Retrying editor creation after a delay.");
+        console.log('Recovery: Retrying editor creation after a delay.');
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        eventBus.emit("create-editor-requested"); // 通知协调器重试
+        eventBus.emit('create-editor-requested'); // 通知协调器重试
       },
     });
 
     // 消息处理失败：通常忽略，只记录
-    this.recoveryStrategies.set("message-handling-failed", {
+    this.recoveryStrategies.set('message-handling-failed', {
       async recover(error, stateManager) {
         console.warn(`Ignoring message handling error: ${error.message}`);
         // 清除错误状态，因为这是一个非关键错误
         await stateManager.updateState(
           { lastError: undefined },
-          "ignore-message-error",
+          'ignore-message-error',
         );
       },
     });

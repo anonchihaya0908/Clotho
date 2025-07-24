@@ -3,7 +3,7 @@
  * 提供心跳闪烁动画效果的通用工具类
  */
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 
 export interface HeartbeatAnimationConfig {
   /** 动画间隔（毫秒），默认1000ms */
@@ -23,8 +23,8 @@ export interface HeartbeatAnimationConfig {
 export class HeartbeatAnimation {
   private static readonly DEFAULT_CONFIG: Required<HeartbeatAnimationConfig> = {
     interval: 1000,
-    baseIcon: "$(pulse)",
-    animationIcons: ["$(pulse)", ""],
+    baseIcon: '$(pulse)',
+    animationIcons: ['$(pulse)', ''],
     enabled: true,
   };
 
@@ -53,7 +53,7 @@ export class HeartbeatAnimation {
     const visibilityFrames = [true, false, true, false];
 
     const animate = () => {
-      if (!this.isRunning) return;
+      if (!this.isRunning) {return;}
 
       const isVisible = visibilityFrames[this.currentFrame];
       callback(isVisible);
@@ -73,7 +73,7 @@ export class HeartbeatAnimation {
    * @param callback 可选的停止回调
    */
   stop(callback?: () => void): void {
-    if (!this.isRunning) return;
+    if (!this.isRunning) {return;}
 
     this.isRunning = false;
 
@@ -145,7 +145,7 @@ export class HeartbeatAnimation {
 export function createInitializingHeartbeat(): HeartbeatAnimation {
   return new HeartbeatAnimation({
     interval: 500, // 500毫秒的快速闪烁
-    baseIcon: "$(pulse)",
+    baseIcon: '$(pulse)',
     animationIcons: [], // 不再使用，保留兼容性
     enabled: true,
   });
@@ -158,7 +158,7 @@ export function createInitializingHeartbeat(): HeartbeatAnimation {
 export function createActiveDisplay(): HeartbeatAnimation {
   return new HeartbeatAnimation({
     interval: 1000,
-    baseIcon: "$(pulse)",
+    baseIcon: '$(pulse)',
     animationIcons: [], // 不再使用
     enabled: false, // 禁用动画，只显示静态图标
   });
@@ -171,8 +171,8 @@ export function createActiveDisplay(): HeartbeatAnimation {
 export function createStandardHeartbeat(): HeartbeatAnimation {
   return new HeartbeatAnimation({
     interval: 1000,
-    baseIcon: "$(pulse)",
-    animationIcons: ["$(pulse)", ""],
+    baseIcon: '$(pulse)',
+    animationIcons: ['$(pulse)', ''],
     enabled: true,
   });
 }
@@ -184,21 +184,21 @@ export const HEARTBEAT_PRESETS = {
   /** 初始化状态：500ms快速闪烁 */
   INITIALIZING: {
     interval: 500,
-    baseIcon: "$(pulse)",
+    baseIcon: '$(pulse)',
     animationIcons: [], // 基于可见性状态，不再使用图标数组
     enabled: true,
   },
   /** 活跃状态：静态显示 */
   ACTIVE: {
     interval: 1000,
-    baseIcon: "$(pulse)",
+    baseIcon: '$(pulse)',
     animationIcons: [], // 不再使用
     enabled: false,
   },
   /** 标准心跳：1秒闪烁 */
   STANDARD: {
     interval: 1000,
-    baseIcon: "$(pulse)",
+    baseIcon: '$(pulse)',
     animationIcons: [], // 不再使用
     enabled: true,
   },

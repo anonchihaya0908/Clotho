@@ -6,21 +6,21 @@
 // Uses dependency injection and delegates all implementation details to
 // service and UI layers.
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 
-import { COMMANDS } from "../common/constants";
+import { COMMANDS } from '../common/constants';
 
-import { PairCreatorService } from "./service";
-import { PairCreatorUI } from "./ui";
+import { PairCreatorService } from './service';
+import { PairCreatorUI } from './ui';
 
 // PairCoordinator orchestrates the workflow between UI and Service layers.
 // It follows the single responsibility principle and uses dependency injection.
 export class PairCoordinator implements vscode.Disposable {
   private static readonly ERROR_MESSAGES = {
     NO_TARGET_DIRECTORY:
-      "Cannot determine target directory. Please open a folder or a file first.",
+      'Cannot determine target directory. Please open a folder or a file first.',
     FILE_EXISTS: (filePath: string) => `File already exists: ${filePath}`,
-    UNEXPECTED_ERROR: "An unexpected error occurred.",
+    UNEXPECTED_ERROR: 'An unexpected error occurred.',
   } as const;
 
   private newPairCommand: vscode.Disposable;

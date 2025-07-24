@@ -4,10 +4,10 @@
  * Combines memory and CPU monitoring into a single, elegant status bar item
  */
 
-import * as vscode from "vscode";
-import * as os from "os";
-import { CpuUsage, MemoryUsage } from "./types";
-import { HeartbeatAnimation, createInitializingHeartbeat } from "../common";
+import * as vscode from 'vscode';
+import * as os from 'os';
+import { CpuUsage, MemoryUsage } from './types';
+import { HeartbeatAnimation, createInitializingHeartbeat } from '../common';
 
 export interface StatusBarConfig {
   updateInterval?: number;
@@ -60,7 +60,7 @@ export class StatusBarPresenter {
       this.config.priority,
     );
 
-    this.statusBarItem.command = "clotho.showClangdDetails";
+    this.statusBarItem.command = 'clotho.showClangdDetails';
     this.updateDisplay();
     this.statusBarItem.show();
   }
@@ -127,44 +127,44 @@ export class StatusBarPresenter {
    * Display when clangd is not detected
    */
   private displayInactive(): void {
-    if (!this.statusBarItem) return;
+    if (!this.statusBarItem) {return;}
 
     // 如果动画还没开始，启动心跳动画
     if (!this.heartbeatAnimation.isAnimating()) {
       this.heartbeatAnimation.start((isVisible: boolean) => {
         if (this.statusBarItem) {
           // 文本内容永远不变，确保宽度恒定！
-          this.statusBarItem.text = `$(pulse) clangd: Initializing...`;
+          this.statusBarItem.text = '$(pulse) clangd: Initializing...';
 
           // 只改变颜色来实现闪烁效果
           if (isVisible) {
             // 设置为默认前景色 (可见)
-            this.statusBarItem.color = "#888888"; // Gray but visible
+            this.statusBarItem.color = '#888888'; // Gray but visible
           } else {
             // 设置为更暗的颜色 (几乎不可见)
-            this.statusBarItem.color = "#333333"; // Much darker
+            this.statusBarItem.color = '#333333'; // Much darker
           }
         }
       });
     }
 
     this.statusBarItem.tooltip =
-      "Clangd process not detected\nMonitoring inactive\nSearching for clangd process...";
+      'Clangd process not detected\nMonitoring inactive\nSearching for clangd process...';
   }
 
   /**
    * Display in compact mode (shorter text)
    */
   private displayCompact(): void {
-    if (!this.statusBarItem) return;
+    if (!this.statusBarItem) {return;}
 
     const memoryText = this.lastMemoryUsage
       ? `${this.formatMemorySize(this.lastMemoryUsage.memory)}`
-      : "---";
+      : '---';
 
     const cpuText = this.lastCpuUsage
       ? this.formatCpuUsage(this.lastCpuUsage, 1) // 1 decimal place for better precision
-      : "---";
+      : '---';
 
     const icon = this.getStatusIcon();
     const color = this.getStatusColor();
@@ -178,15 +178,15 @@ export class StatusBarPresenter {
    * Display in standard mode (more descriptive)
    */
   private displayStandard(): void {
-    if (!this.statusBarItem) return;
+    if (!this.statusBarItem) {return;}
 
     const memoryText = this.lastMemoryUsage
       ? `${this.formatMemorySize(this.lastMemoryUsage.memory)}`
-      : "---";
+      : '---';
 
     const cpuText = this.lastCpuUsage
       ? this.formatCpuUsage(this.lastCpuUsage, 1) // 1 decimal place in standard mode
-      : "---";
+      : '---';
 
     const icon = this.getStatusIcon();
     const color = this.getStatusColor();
@@ -201,23 +201,23 @@ export class StatusBarPresenter {
    */
   private getStatusIcon(): string {
     // Always use heart rate icon, color will differentiate status
-    return "$(pulse)"; // Heart rate icon for all states
+    return '$(pulse)'; // Heart rate icon for all states
   }
 
   /**
    * Get the current status level based on metrics
    */
-  private getStatusLevel(): "error" | "warning" | "normal" {
+  private getStatusLevel(): 'error' | 'warning' | 'normal' {
     // Check CPU usage first (higher priority)
     if (this.lastCpuUsage) {
       const normalizedCpu = this.getNormalizedCpu(this.lastCpuUsage.cpu);
       if (normalizedCpu >= 80) {
         // 80%+ CPU
-        return "error";
+        return 'error';
       }
       if (normalizedCpu >= 50) {
         // 50-80% CPU
-        return "warning";
+        return 'warning';
       }
     }
 
@@ -226,15 +226,15 @@ export class StatusBarPresenter {
       const memoryMB = this.lastMemoryUsage.memory / 1024 / 1024;
       if (memoryMB >= 4096) {
         // 4GB+ memory
-        return "error";
+        return 'error';
       }
       if (memoryMB >= 2048) {
         // 2-4GB memory
-        return "warning";
+        return 'warning';
       }
     }
 
-    return "normal";
+    return 'normal';
   }
 
   /**
@@ -244,12 +244,12 @@ export class StatusBarPresenter {
     const statusLevel = this.getStatusLevel();
 
     switch (statusLevel) {
-      case "error":
-        return "#ff4444"; // Red for critical issues
-      case "warning":
-        return "#ffaa00"; // Yellow for warnings
-      default:
-        return ""; // White (default) for normal operation
+    case 'error':
+      return '#ff4444'; // Red for critical issues
+    case 'warning':
+      return '#ffaa00'; // Yellow for warnings
+    default:
+      return ''; // White (default) for normal operation
     }
   }
 
@@ -258,13 +258,13 @@ export class StatusBarPresenter {
    */
   private buildTooltip(): string {
     if (!this.config.showDetailedTooltip) {
-      return "Clangd monitoring status";
+      return 'Clangd monitoring status';
     }
 
     const lines: string[] = [];
 
-    lines.push("Clangd Process Monitoring");
-    lines.push("------------------------");
+    lines.push('Clangd Process Monitoring');
+    lines.push('------------------------');
 
     if (this.isActive) {
       if (this.lastMemoryUsage) {
@@ -276,7 +276,7 @@ export class StatusBarPresenter {
           `  Last updated: ${this.lastMemoryUsage.timestamp.toLocaleTimeString()}`,
         );
       } else {
-        lines.push("Memory Usage: Unavailable");
+        lines.push('Memory Usage: Unavailable');
       }
 
       if (this.lastCpuUsage) {
@@ -294,25 +294,25 @@ export class StatusBarPresenter {
           `  Last updated: ${new Date(this.lastCpuUsage.timestamp).toLocaleTimeString()}`,
         );
       } else {
-        lines.push("CPU Usage: Unavailable");
+        lines.push('CPU Usage: Unavailable');
       }
     } else {
-      lines.push("Process Status: Not detected");
-      lines.push("Monitoring: Inactive");
+      lines.push('Process Status: Not detected');
+      lines.push('Monitoring: Inactive');
     }
 
-    lines.push("");
-    lines.push("Click for detailed view");
+    lines.push('');
+    lines.push('Click for detailed view');
 
-    return lines.join("\n");
+    return lines.join('\n');
   }
 
   /**
    * Format memory size in human-readable format
    */
   private formatMemorySize(bytes: number): string {
-    const sizes = ["B", "KB", "MB", "GB"];
-    if (bytes === 0) return "0 B";
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    if (bytes === 0) {return '0 B';}
 
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     const size = bytes / Math.pow(1024, i);

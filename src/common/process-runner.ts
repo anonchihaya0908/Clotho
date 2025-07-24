@@ -4,7 +4,7 @@
  * Provides consistent error handling, logging, and timeout management
  */
 
-import { ErrorHandler } from "./error-handler";
+import { ErrorHandler } from './error-handler';
 
 export interface CommandResult {
   stdout: string;
@@ -25,12 +25,12 @@ export interface CommandOptions {
  */
 export class ProcessRunner {
   private static readonly DEFAULT_OPTIONS: Required<
-    Omit<CommandOptions, "cwd">
+    Omit<CommandOptions, 'cwd'>
   > = {
-    timeout: 10000, // 10 seconds default timeout
-    encoding: "utf8",
-    logCommand: false,
-  };
+      timeout: 10000, // 10 seconds default timeout
+      encoding: 'utf8',
+      logCommand: false,
+    };
 
   /**
    * Execute a shell command and return the output
@@ -50,8 +50,8 @@ export class ProcessRunner {
     }
 
     try {
-      const { exec } = require("child_process");
-      const util = require("util");
+      const { exec } = require('child_process');
+      const util = require('util');
       const execAsync = util.promisify(exec);
 
       const execOptions: any = {
@@ -74,10 +74,10 @@ export class ProcessRunner {
       const errorMessage = `Command failed: ${command}`;
 
       ErrorHandler.handle(error, {
-        operation: "runCommand",
-        module: "ProcessRunner",
+        operation: 'runCommand',
+        module: 'ProcessRunner',
         showToUser: false,
-        logLevel: "debug",
+        logLevel: 'debug',
       });
 
       // Re-throw with more context
@@ -104,8 +104,8 @@ export class ProcessRunner {
     }
 
     try {
-      const { exec } = require("child_process");
-      const util = require("util");
+      const { exec } = require('child_process');
+      const util = require('util');
       const execAsync = util.promisify(exec);
 
       const execOptions: any = {
@@ -127,7 +127,7 @@ export class ProcessRunner {
     } catch (error: any) {
       // For exec, if the command fails, it throws an error with stdout/stderr
       return {
-        stdout: error.stdout || "",
+        stdout: error.stdout || '',
         stderr: error.stderr || error.message,
         exitCode: error.code || 1,
       };
@@ -142,7 +142,7 @@ export class ProcessRunner {
   public static async commandExists(command: string): Promise<boolean> {
     try {
       const checkCommand =
-        process.platform === "win32" ? `where ${command}` : `which ${command}`;
+        process.platform === 'win32' ? `where ${command}` : `which ${command}`;
 
       await ProcessRunner.runCommand(checkCommand, { logCommand: false });
       return true;
@@ -160,7 +160,7 @@ export class ProcessRunner {
     processName: string,
   ): Promise<Array<{ pid: number; ppid: number; memory: number }>> {
     try {
-      if (process.platform === "win32") {
+      if (process.platform === 'win32') {
         return await ProcessRunner.getWindowsProcessInfo(processName);
       } else {
         return await ProcessRunner.getUnixProcessInfo(processName);
@@ -189,15 +189,15 @@ export class ProcessRunner {
         logCommand: true,
       });
 
-      if (!stdout || stdout.includes("No Instance")) {
-        throw new Error("WMIC returned no instances");
+      if (!stdout || stdout.includes('No Instance')) {
+        throw new Error('WMIC returned no instances');
       }
 
       // Parse WMIC CSV output
-      const lines = stdout.split("\n");
+      const lines = stdout.split('\n');
       for (const line of lines) {
         if (line.includes(`${processName}.exe`)) {
-          const parts = line.split(",");
+          const parts = line.split(',');
           if (parts.length >= 4) {
             // CSV format: Node,Name,ParentProcessId,ProcessId,WorkingSetSize
             const ppid = parseInt(parts[2]?.trim());
@@ -214,7 +214,7 @@ export class ProcessRunner {
       return processes;
     } catch (wmicError) {
       console.debug(
-        "ProcessRunner: WMIC failed, trying PowerShell fallback:",
+        'ProcessRunner: WMIC failed, trying PowerShell fallback:',
         wmicError,
       );
 
@@ -252,8 +252,8 @@ export class ProcessRunner {
       logCommand: true,
     });
 
-    const lines = stdout.trim().split("\n");
-    if (lines.length === 0 || lines[0] === "") {
+    const lines = stdout.trim().split('\n');
+    if (lines.length === 0 || lines[0] === '') {
       return [];
     }
 

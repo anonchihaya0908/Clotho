@@ -3,20 +3,20 @@
  * 支持同时创建和管理多个编辑器实例
  */
 
-import * as vscode from "vscode";
-import { ClangFormatInstanceManager } from "./instance-manager";
-import { ClangFormatPanelManager } from "../ui/panel-manager";
-import { ErrorHandler } from "../../../common/error-handler";
-import { COMMANDS } from "../../../common/constants";
+import * as vscode from 'vscode';
+import { ClangFormatInstanceManager } from './instance-manager';
+import { ClangFormatPanelManager } from '../ui/panel-manager';
+import { ErrorHandler } from '../../../common/error-handler';
+import { COMMANDS } from '../../../common/constants';
 
 /**
  * 编辑器打开来源
  */
 export enum EditorOpenSource {
-  COMMAND_PALETTE = "commandPalette",
-  CODELENS = "codeLens",
-  STATUS_BAR = "statusBar",
-  DIRECT = "direct",
+  COMMAND_PALETTE = 'commandPalette',
+  CODELENS = 'codeLens',
+  STATUS_BAR = 'statusBar',
+  DIRECT = 'direct',
 }
 
 /**
@@ -48,7 +48,7 @@ export class MultiInstanceClangFormatCoordinator implements vscode.Disposable {
       // 尝试聚焦现有实例
       if (this.instanceManager.focusWorkspaceEditor(workspaceFolder)) {
         console.log(
-          "MultiInstanceCoordinator: Focused existing editor instance",
+          'MultiInstanceCoordinator: Focused existing editor instance',
         );
         return;
       }
@@ -58,14 +58,14 @@ export class MultiInstanceClangFormatCoordinator implements vscode.Disposable {
       await instance.initialize();
 
       console.log(
-        `MultiInstanceCoordinator: Created new editor instance for ${workspaceFolder?.name || "default"}`,
+        `MultiInstanceCoordinator: Created new editor instance for ${workspaceFolder?.name || 'default'}`,
       );
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "showEditor",
-        module: "MultiInstanceClangFormatCoordinator",
+        operation: 'showEditor',
+        module: 'MultiInstanceClangFormatCoordinator',
         showToUser: true,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -80,14 +80,14 @@ export class MultiInstanceClangFormatCoordinator implements vscode.Disposable {
       await instance.initialize();
 
       console.log(
-        "MultiInstanceCoordinator: Created new editor instance (forced)",
+        'MultiInstanceCoordinator: Created new editor instance (forced)',
       );
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "showNewEditor",
-        module: "MultiInstanceClangFormatCoordinator",
+        operation: 'showNewEditor',
+        module: 'MultiInstanceClangFormatCoordinator',
         showToUser: true,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -112,13 +112,13 @@ export class MultiInstanceClangFormatCoordinator implements vscode.Disposable {
   async closeAllInstances(): Promise<void> {
     try {
       this.instanceManager.destroyAll();
-      console.log("MultiInstanceCoordinator: All instances closed");
+      console.log('MultiInstanceCoordinator: All instances closed');
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "closeAllInstances",
-        module: "MultiInstanceClangFormatCoordinator",
+        operation: 'closeAllInstances',
+        module: 'MultiInstanceClangFormatCoordinator',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -130,7 +130,7 @@ export class MultiInstanceClangFormatCoordinator implements vscode.Disposable {
     totalInstances: number;
     activeInstances: number;
     panelStatistics: any;
-  } {
+    } {
     return {
       totalInstances: this.instanceManager.count(),
       activeInstances: this.instanceManager.getActiveInstances().length,
@@ -155,7 +155,7 @@ export class MultiInstanceClangFormatCoordinator implements vscode.Disposable {
     // 强制创建新实例的命令
     this.disposables.push(
       vscode.commands.registerCommand(
-        COMMANDS.OPEN_CLANG_FORMAT_EDITOR + ".new",
+        COMMANDS.OPEN_CLANG_FORMAT_EDITOR + '.new',
         async () => {
           await this.showNewEditor();
         },
@@ -165,7 +165,7 @@ export class MultiInstanceClangFormatCoordinator implements vscode.Disposable {
     // 关闭所有实例的命令
     this.disposables.push(
       vscode.commands.registerCommand(
-        COMMANDS.OPEN_CLANG_FORMAT_EDITOR + ".closeAll",
+        COMMANDS.OPEN_CLANG_FORMAT_EDITOR + '.closeAll',
         async () => {
           await this.closeAllInstances();
         },
@@ -175,7 +175,7 @@ export class MultiInstanceClangFormatCoordinator implements vscode.Disposable {
     // 显示统计信息的命令
     this.disposables.push(
       vscode.commands.registerCommand(
-        COMMANDS.OPEN_CLANG_FORMAT_EDITOR + ".stats",
+        COMMANDS.OPEN_CLANG_FORMAT_EDITOR + '.stats',
         () => {
           const stats = this.getStatistics();
           vscode.window.showInformationMessage(
@@ -216,13 +216,13 @@ export class MultiInstanceClangFormatCoordinator implements vscode.Disposable {
       this.disposables.forEach((d) => d.dispose());
       this.disposables = [];
 
-      console.log("MultiInstanceClangFormatCoordinator: Coordinator disposed");
+      console.log('MultiInstanceClangFormatCoordinator: Coordinator disposed');
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "disposeCoordinator",
-        module: "MultiInstanceClangFormatCoordinator",
+        operation: 'disposeCoordinator',
+        module: 'MultiInstanceClangFormatCoordinator',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }

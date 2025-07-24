@@ -3,7 +3,7 @@
  * Shared interfaces and types for the clangd monitoring functionality
  */
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 
 /**
  * Basic monitor interface that all monitors should implement
@@ -106,9 +106,9 @@ export interface CpuMonitorConfig {
  * Events emitted by monitors
  */
 export interface MonitorEvents {
-  "memory-updated": MemoryUsage;
-  "cpu-updated": CpuUsage;
-  "status-changed": ClangdStatus;
+  'memory-updated': MemoryUsage;
+  'cpu-updated': CpuUsage;
+  'status-changed': ClangdStatus;
   error: Error;
   warning: string;
 }

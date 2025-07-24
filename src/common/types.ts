@@ -3,27 +3,27 @@
  * Centralizes all shared types and interfaces
  */
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 
 // ===============================
 // Core Types
 // ===============================
 
-export type Language = "c" | "cpp";
-export type FileType = "header" | "source";
+export type Language = 'c' | 'cpp';
+export type FileType = 'header' | 'source';
 export type SearchMethod =
-  | "clangd"
-  | "same-directory"
-  | "src-include"
-  | "parallel-tests"
-  | "global-search";
+  | 'clangd'
+  | 'same-directory'
+  | 'src-include'
+  | 'parallel-tests'
+  | 'global-search';
 export type TemplateKey =
-  | "CPP_CLASS"
-  | "CPP_STRUCT"
-  | "C_STRUCT"
-  | "C_EMPTY"
-  | "CPP_EMPTY";
-export type ConfigScope = "workspace" | "user";
+  | 'CPP_CLASS'
+  | 'CPP_STRUCT'
+  | 'C_STRUCT'
+  | 'C_EMPTY'
+  | 'CPP_EMPTY';
+export type ConfigScope = 'workspace' | 'user';
 
 // ===============================
 // Configuration Interfaces
@@ -122,7 +122,7 @@ export interface ExtensionContext {
 export interface ConfigTemplate {
   name: string;
   description: string;
-  config: Omit<SwitchConfig, "excludePatterns">;
+  config: Omit<SwitchConfig, 'excludePatterns'>;
 }
 
 // ===============================
@@ -172,25 +172,25 @@ export interface CustomRuleSelection {
 // ===============================
 
 export function isValidLanguage(value: string): value is Language {
-  return value === "c" || value === "cpp";
+  return value === 'c' || value === 'cpp';
 }
 
 export function isValidFileType(value: string): value is FileType {
-  return value === "header" || value === "source";
+  return value === 'header' || value === 'source';
 }
 
 export function isValidSearchMethod(value: string): value is SearchMethod {
   return [
-    "clangd",
-    "same-directory",
-    "src-include",
-    "parallel-tests",
-    "global-search",
+    'clangd',
+    'same-directory',
+    'src-include',
+    'parallel-tests',
+    'global-search',
   ].includes(value);
 }
 
 export function isValidConfigScope(value: string): value is ConfigScope {
-  return value === "workspace" || value === "user";
+  return value === 'workspace' || value === 'user';
 }
 
 // ===============================
@@ -211,9 +211,9 @@ export type TextDocument = vscode.TextDocument;
  * 编辑器打开来源
  */
 export enum EditorOpenSource {
-  DIRECT = "direct",
-  COMMAND = "command",
-  CODE_LENS = "code_lens",
+  DIRECT = 'direct',
+  COMMAND = 'command',
+  CODE_LENS = 'code_lens',
 }
 
 /**
@@ -230,7 +230,7 @@ export interface EditorState {
   isVisible: boolean;
 
   // 预览状态
-  previewMode: "open" | "closed" | "transitioning";
+  previewMode: 'open' | 'closed' | 'transitioning';
   previewUri?: vscode.Uri;
   previewEditor?: vscode.TextEditor;
 
@@ -247,7 +247,7 @@ export interface EditorState {
  * 状态变化事件
  */
 export interface StateChangeEvent {
-  type: "preview" | "config" | "error";
+  type: 'preview' | 'config' | 'error';
   from: any;
   to: any;
   timestamp: number;
@@ -308,41 +308,41 @@ export interface WebviewMessage {
  */
 export enum WebviewMessageType {
   // 配置
-  CONFIG_CHANGED = "config-changed",
-  CONFIG_CHANGED_ALT = "configChanged", // WebView 实际发送的格式
-  APPLY_CONFIG = "apply-config",
-  RESET_CONFIG = "reset-config",
-  EXPORT_CONFIG = "export-config",
-  IMPORT_CONFIG = "import-config",
+  CONFIG_CHANGED = 'config-changed',
+  CONFIG_CHANGED_ALT = 'configChanged', // WebView 实际发送的格式
+  APPLY_CONFIG = 'apply-config',
+  RESET_CONFIG = 'reset-config',
+  EXPORT_CONFIG = 'export-config',
+  IMPORT_CONFIG = 'import-config',
 
   // 预览
-  REOPEN_PREVIEW = "reopen-preview",
-  UPDATE_PREVIEW = "update-preview",
+  REOPEN_PREVIEW = 'reopen-preview',
+  UPDATE_PREVIEW = 'update-preview',
 
   // 设置和交互
-  UPDATE_SETTINGS = "updateSettings",
-  CONFIG_OPTION_HOVER = "configOptionHover",
-  CONFIG_OPTION_FOCUS = "configOptionFocus",
-  CLEAR_HIGHLIGHTS = "clearHighlights",
+  UPDATE_SETTINGS = 'updateSettings',
+  CONFIG_OPTION_HOVER = 'configOptionHover',
+  CONFIG_OPTION_FOCUS = 'configOptionFocus',
+  CLEAR_HIGHLIGHTS = 'clearHighlights',
 
   // 生命周期
-  WEBVIEW_READY = "webview-ready",
+  WEBVIEW_READY = 'webview-ready',
 
   // 工具栏操作
-  LOAD_WORKSPACE_CONFIG = "loadWorkspaceConfig",
-  SAVE_CONFIG = "saveConfig",
-  IMPORT_CONFIG_FILE = "importConfig",
-  EXPORT_CONFIG_FILE = "exportConfig",
-  RESET_CONFIG_TO_DEFAULT = "resetConfig",
-  OPEN_CLANG_FORMAT_FILE = "openClangFormatFile",
+  LOAD_WORKSPACE_CONFIG = 'loadWorkspaceConfig',
+  SAVE_CONFIG = 'saveConfig',
+  IMPORT_CONFIG_FILE = 'importConfig',
+  EXPORT_CONFIG_FILE = 'exportConfig',
+  RESET_CONFIG_TO_DEFAULT = 'resetConfig',
+  OPEN_CLANG_FORMAT_FILE = 'openClangFormatFile',
 
   // 预览操作
-  GET_MICRO_PREVIEW = "getMicroPreview",
-  GET_MACRO_PREVIEW = "getMacroPreview",
-  TEST_PLACEHOLDER = "testPlaceholder",
+  GET_MICRO_PREVIEW = 'getMicroPreview',
+  GET_MACRO_PREVIEW = 'getMacroPreview',
+  TEST_PLACEHOLDER = 'testPlaceholder',
 
   // 通用
-  GET_STATE = "get-state",
-  SHOW_MESSAGE = "show-message",
-  CONFIG_LOADED = "CONFIG_LOADED",
+  GET_STATE = 'get-state',
+  SHOW_MESSAGE = 'show-message',
+  CONFIG_LOADED = 'CONFIG_LOADED',
 }

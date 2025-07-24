@@ -3,13 +3,13 @@
  * 专门处理来自webview的消息，分离消息处理逻辑
  */
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 import {
   WebviewMessage,
   WebviewMessageType,
-} from "../../../common/types/index";
-import { ClangFormatService } from "../format-service";
-import { ErrorHandler } from "../../../common/error-handler";
+} from '../../../common/types/index';
+import { ClangFormatService } from '../format-service';
+import { ErrorHandler } from '../../../common/error-handler';
 
 /**
  * Webview消息处理器接口
@@ -48,61 +48,61 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
       );
 
       switch (message.type) {
-        case WebviewMessageType.CONFIG_CHANGED:
-          await this.handleConfigChange(message.payload);
-          break;
+      case WebviewMessageType.CONFIG_CHANGED:
+        await this.handleConfigChange(message.payload);
+        break;
 
-        case WebviewMessageType.SAVE_CONFIG:
-          await this.handleSaveConfig(message.payload);
-          break;
+      case WebviewMessageType.SAVE_CONFIG:
+        await this.handleSaveConfig(message.payload);
+        break;
 
-        case WebviewMessageType.EXPORT_CONFIG:
-          await this.handleExportConfig();
-          break;
+      case WebviewMessageType.EXPORT_CONFIG:
+        await this.handleExportConfig();
+        break;
 
-        case WebviewMessageType.IMPORT_CONFIG:
-          await this.handleImportConfig();
-          break;
+      case WebviewMessageType.IMPORT_CONFIG:
+        await this.handleImportConfig();
+        break;
 
-        case WebviewMessageType.RESET_CONFIG:
-          await this.handleResetConfig();
-          break;
+      case WebviewMessageType.RESET_CONFIG:
+        await this.handleResetConfig();
+        break;
 
-        case WebviewMessageType.VALIDATE_CONFIG:
-          await this.handleValidateConfig();
-          break;
+      case WebviewMessageType.VALIDATE_CONFIG:
+        await this.handleValidateConfig();
+        break;
 
-        case WebviewMessageType.GET_MICRO_PREVIEW:
-          await this.handleGetMicroPreview(message.payload);
-          break;
+      case WebviewMessageType.GET_MICRO_PREVIEW:
+        await this.handleGetMicroPreview(message.payload);
+        break;
 
-        case WebviewMessageType.UPDATE_SETTINGS:
-          await this.handleUpdateSettings(message.payload);
-          break;
+      case WebviewMessageType.UPDATE_SETTINGS:
+        await this.handleUpdateSettings(message.payload);
+        break;
 
-        case WebviewMessageType.CONFIG_OPTION_HOVER:
-          await this.handleConfigOptionHover(message.payload);
-          break;
+      case WebviewMessageType.CONFIG_OPTION_HOVER:
+        await this.handleConfigOptionHover(message.payload);
+        break;
 
-        case WebviewMessageType.CONFIG_OPTION_FOCUS:
-          await this.handleConfigOptionFocus(message.payload);
-          break;
+      case WebviewMessageType.CONFIG_OPTION_FOCUS:
+        await this.handleConfigOptionFocus(message.payload);
+        break;
 
-        case WebviewMessageType.CLEAR_HIGHLIGHTS:
-          await this.handleClearHighlights();
-          break;
+      case WebviewMessageType.CLEAR_HIGHLIGHTS:
+        await this.handleClearHighlights();
+        break;
 
-        default:
-          console.warn(
-            `WebviewHandler[${this.instanceId}]: Unknown message type: ${message.type}`,
-          );
+      default:
+        console.warn(
+          `WebviewHandler[${this.instanceId}]: Unknown message type: ${message.type}`,
+        );
       }
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "handleWebviewMessage",
-        module: "ClangFormatWebviewHandler",
+        operation: 'handleWebviewMessage',
+        module: 'ClangFormatWebviewHandler',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -120,10 +120,10 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
       }
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "sendWebviewMessage",
-        module: "ClangFormatWebviewHandler",
+        operation: 'sendWebviewMessage',
+        module: 'ClangFormatWebviewHandler',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -181,22 +181,22 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
         payload: { success: true },
       });
 
-      vscode.window.showInformationMessage("Configuration saved to workspace");
+      vscode.window.showInformationMessage('Configuration saved to workspace');
       console.log(`WebviewHandler[${this.instanceId}]: Configuration saved`);
     } catch (error) {
       await this.sendMessage({
         type: WebviewMessageType.CONFIG_SAVED,
         payload: {
           success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         },
       });
 
       ErrorHandler.handle(error, {
-        operation: "saveConfig",
-        module: "ClangFormatWebviewHandler",
+        operation: 'saveConfig',
+        module: 'ClangFormatWebviewHandler',
         showToUser: true,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -207,9 +207,9 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
   private async handleExportConfig(): Promise<void> {
     try {
       const saveUri = await vscode.window.showSaveDialog({
-        defaultUri: vscode.Uri.file(".clang-format"),
+        defaultUri: vscode.Uri.file('.clang-format'),
         filters: {
-          "Clang-Format Config": ["clang-format", "yaml", "yml"],
+          'Clang-Format Config': ['clang-format', 'yaml', 'yml'],
         },
       });
 
@@ -219,7 +219,7 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
         );
         await vscode.workspace.fs.writeFile(
           saveUri,
-          Buffer.from(configContent, "utf8"),
+          Buffer.from(configContent, 'utf8'),
         );
         vscode.window.showInformationMessage(
           `Configuration exported to ${saveUri.fsPath}`,
@@ -227,10 +227,10 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
       }
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "exportConfig",
-        module: "ClangFormatWebviewHandler",
+        operation: 'exportConfig',
+        module: 'ClangFormatWebviewHandler',
         showToUser: true,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -244,7 +244,7 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
         canSelectFiles: true,
         canSelectMany: false,
         filters: {
-          "Clang-Format Config": ["clang-format", "yaml", "yml"],
+          'Clang-Format Config': ['clang-format', 'yaml', 'yml'],
         },
       });
 
@@ -260,15 +260,15 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
         });
 
         vscode.window.showInformationMessage(
-          "Configuration imported successfully",
+          'Configuration imported successfully',
         );
       }
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "importConfig",
-        module: "ClangFormatWebviewHandler",
+        operation: 'importConfig',
+        module: 'ClangFormatWebviewHandler',
         showToUser: true,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -278,12 +278,12 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
    */
   private async handleResetConfig(): Promise<void> {
     const choice = await vscode.window.showWarningMessage(
-      "Reset configuration to default values?",
-      "Reset",
-      "Cancel",
+      'Reset configuration to default values?',
+      'Reset',
+      'Cancel',
     );
 
-    if (choice === "Reset") {
+    if (choice === 'Reset') {
       // 重置到默认配置
       this.currentConfig = {};
 
@@ -322,7 +322,7 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
       const { optionName, config, previewSnippet } = payload;
 
       if (!optionName || !previewSnippet) {
-        throw new Error("Missing required parameters for micro preview");
+        throw new Error('Missing required parameters for micro preview');
       }
 
       const result = await this.formatService.format(previewSnippet, config);
@@ -338,10 +338,10 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
       });
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "handleGetMicroPreview",
-        module: "ClangFormatWebviewHandler",
+        operation: 'handleGetMicroPreview',
+        module: 'ClangFormatWebviewHandler',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -353,9 +353,9 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
     try {
       const { showGuideButton } = payload;
 
-      const config = vscode.workspace.getConfiguration("clotho.clangFormat");
+      const config = vscode.workspace.getConfiguration('clotho.clangFormat');
       await config.update(
-        "showGuideButton",
+        'showGuideButton',
         showGuideButton,
         vscode.ConfigurationTarget.Workspace,
       );
@@ -366,10 +366,10 @@ export class ClangFormatWebviewHandler implements WebviewMessageHandler {
       });
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "updateSettings",
-        module: "ClangFormatWebviewHandler",
+        operation: 'updateSettings',
+        module: 'ClangFormatWebviewHandler',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }

@@ -27,13 +27,13 @@
  */
 
 // Export types and classes for external usage
-export { MonitorCoordinator } from "./coordinator";
-export { MemoryMonitor } from "./monitors/memory-monitor";
-export { StatusMonitor } from "./monitors/status-monitor";
+export { MonitorCoordinator } from './coordinator';
+export { MemoryMonitor } from './monitors/memory-monitor';
+export { StatusMonitor } from './monitors/status-monitor';
 export type {
   IMonitor,
   MemoryUsage,
   ClangdStatus,
   MemoryMonitorConfig,
   MonitorConfig,
-} from "./types";
+} from './types';

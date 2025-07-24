@@ -3,10 +3,10 @@
  * Monitors clangd server status and connection state
  */
 
-import * as vscode from "vscode";
-import { exec } from "child_process";
-import { IMonitor, ClangdStatus } from "../types";
-import { ErrorHandler } from "../../common/error-handler";
+import * as vscode from 'vscode';
+import { exec } from 'child_process';
+import { IMonitor, ClangdStatus } from '../types';
+import { ErrorHandler } from '../../common/error-handler';
 
 /**
  * Status monitoring implementation that tracks clangd server status
@@ -35,15 +35,15 @@ export class StatusMonitor implements IMonitor {
       // Set up periodic status updates every 3 seconds
       this.updateInterval = setInterval(() => {
         this.updateStatus().catch((err) => {
-          console.warn("Clotho StatusMonitor: Error in periodic update:", err);
+          console.warn('Clotho StatusMonitor: Error in periodic update:', err);
         });
       }, 3000);
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "startStatusMonitor",
-        module: "StatusMonitor",
+        operation: 'startStatusMonitor',
+        module: 'StatusMonitor',
         showToUser: false,
-        logLevel: "warn",
+        logLevel: 'warn',
       });
     }
   }
@@ -70,7 +70,7 @@ export class StatusMonitor implements IMonitor {
    * Get human-readable name for this monitor
    */
   public getName(): string {
-    return "Clangd Status Monitor";
+    return 'Clangd Status Monitor';
   }
 
   /**
@@ -97,30 +97,30 @@ export class StatusMonitor implements IMonitor {
 
       // First, check if VS Code clangd extension is active (for isRunning status)
       const clangdExtension = vscode.extensions.getExtension(
-        "llvm-vs-code-extensions.vscode-clangd",
+        'llvm-vs-code-extensions.vscode-clangd',
       );
 
       if (clangdExtension && clangdExtension.isActive) {
         const api = clangdExtension.exports;
-        if (api && typeof api.getClient === "function") {
+        if (api && typeof api.getClient === 'function') {
           const client = api.getClient();
           if (client && client.state === 2) {
             status.isRunning = true;
-            status.statusMessage = "Connected and running";
+            status.statusMessage = 'Connected and running';
 
             // Try to get PID from VS Code client
             if (client._serverProcess?.pid) {
               status.pid = client._serverProcess.pid;
             }
           } else {
-            status.statusMessage = `Client not running (State: ${client?.state === 1 ? "Starting" : "Stopped"})`;
+            status.statusMessage = `Client not running (State: ${client?.state === 1 ? 'Starting' : 'Stopped'})`;
           }
         } else {
           status.statusMessage =
-            "Clangd API not available (extension may be starting)";
+            'Clangd API not available (extension may be starting)';
         }
       } else {
-        status.statusMessage = "Clangd extension not found or not active";
+        status.statusMessage = 'Clangd extension not found or not active';
       }
 
       // Now get the backend clangd version by executing clangd --version
@@ -129,34 +129,34 @@ export class StatusMonitor implements IMonitor {
         if (version) {
           status.version = version;
           console.debug(
-            "Clotho StatusMonitor: Found backend clangd version:",
+            'Clotho StatusMonitor: Found backend clangd version:',
             version,
           );
         } else {
-          status.version = "后端版本检测失败";
+          status.version = '后端版本检测失败';
           console.debug(
-            "Clotho StatusMonitor: Failed to detect backend clangd version",
+            'Clotho StatusMonitor: Failed to detect backend clangd version',
           );
         }
       } catch (error) {
-        status.version = "后端版本检测错误";
+        status.version = '后端版本检测错误';
         console.debug(
-          "Clotho StatusMonitor: Error detecting backend version:",
+          'Clotho StatusMonitor: Error detecting backend version:',
           error,
         );
       }
 
       this.currentStatus = status;
-      console.debug("Clotho StatusMonitor: Updated status:", status);
+      console.debug('Clotho StatusMonitor: Updated status:', status);
     } catch (error) {
       this.currentStatus = {
         isRunning: false,
         statusMessage:
-          "Error updating status: " +
-          (error instanceof Error ? error.message : "Unknown error"),
-        version: "版本检测失败",
+          'Error updating status: ' +
+          (error instanceof Error ? error.message : 'Unknown error'),
+        version: '版本检测失败',
       };
-      console.error("Clotho StatusMonitor: Error updating status:", error);
+      console.error('Clotho StatusMonitor: Error updating status:', error);
     }
   }
 
@@ -165,7 +165,7 @@ export class StatusMonitor implements IMonitor {
    */
   private async getClangdBackendVersion(): Promise<string | null> {
     // Strategy 1: Try system PATH clangd first
-    let version = await this.tryGetVersionFromPath("clangd");
+    let version = await this.tryGetVersionFromPath('clangd');
     if (version) {
       return version;
     }
@@ -177,7 +177,7 @@ export class StatusMonitor implements IMonitor {
     }
 
     console.debug(
-      "Clotho StatusMonitor: Both version detection methods failed",
+      'Clotho StatusMonitor: Both version detection methods failed',
     );
     return null;
   }
@@ -190,7 +190,7 @@ export class StatusMonitor implements IMonitor {
   ): Promise<string | null> {
     return new Promise((resolve) => {
       const command = `"${clangdPath}" --version`;
-      console.debug("Clotho StatusMonitor: Trying command:", command);
+      console.debug('Clotho StatusMonitor: Trying command:', command);
 
       exec(command, { timeout: 5000 }, (error, stdout, stderr) => {
         if (error) {
@@ -220,16 +220,16 @@ export class StatusMonitor implements IMonitor {
   private async tryGetVersionFromVSCodeSettings(): Promise<string | null> {
     try {
       // Get VS Code configuration
-      const config = vscode.workspace.getConfiguration("clangd");
-      const clangdPath = config.get<string>("path");
+      const config = vscode.workspace.getConfiguration('clangd');
+      const clangdPath = config.get<string>('path');
 
       console.debug(
-        "Clotho StatusMonitor: VS Code clangd.path setting:",
+        'Clotho StatusMonitor: VS Code clangd.path setting:',
         clangdPath,
       );
 
       if (!clangdPath) {
-        console.debug("Clotho StatusMonitor: No clangd.path found in settings");
+        console.debug('Clotho StatusMonitor: No clangd.path found in settings');
         return null;
       }
 
@@ -237,7 +237,7 @@ export class StatusMonitor implements IMonitor {
       return await this.tryGetVersionFromPath(clangdPath);
     } catch (error) {
       console.debug(
-        "Clotho StatusMonitor: Error reading VS Code settings:",
+        'Clotho StatusMonitor: Error reading VS Code settings:',
         error,
       );
       return null;
@@ -250,7 +250,7 @@ export class StatusMonitor implements IMonitor {
   private parseVersionFromOutput(output: string): string | null {
     const trimmedOutput = output.trim();
     console.debug(
-      "Clotho StatusMonitor: Parsing version from output:",
+      'Clotho StatusMonitor: Parsing version from output:',
       trimmedOutput,
     );
 
@@ -273,9 +273,9 @@ export class StatusMonitor implements IMonitor {
     }
 
     // If we have output but can't parse version, return first line that contains clangd
-    const lines = trimmedOutput.split("\n");
+    const lines = trimmedOutput.split('\n');
     for (const line of lines) {
-      if (line.toLowerCase().includes("clangd")) {
+      if (line.toLowerCase().includes('clangd')) {
         return line.trim();
       }
     }

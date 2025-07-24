@@ -3,13 +3,13 @@
  * 专门管理ClangFormat可视化编辑器实例
  */
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 import {
   BaseInstanceManager,
   Disposable,
-} from "../../../common/services/instance-manager";
-import { ErrorHandler } from "../../../common/error-handler";
-import { EditorState, InstanceState } from "../../../common/types/index";
+} from '../../../common/services/instance-manager';
+import { ErrorHandler } from '../../../common/error-handler';
+import { EditorState, InstanceState } from '../../../common/types/index';
 
 /**
  * ClangFormat编辑器实例接口
@@ -211,20 +211,20 @@ class ClangFormatEditorInstanceImpl implements ClangFormatEditorInstance {
   ) {
     // 创建webview面板
     this.panel = vscode.window.createWebviewPanel(
-      "clangFormatEditor",
+      'clangFormatEditor',
       this.getTitle(),
       vscode.ViewColumn.One,
       {
         enableScripts: true,
         retainContextWhenHidden: true,
         localResourceRoots: [
-          vscode.Uri.joinPath(extensionUri, "webviews"),
+          vscode.Uri.joinPath(extensionUri, 'webviews'),
           vscode.Uri.joinPath(
             extensionUri,
-            "webviews",
-            "visual-editor",
-            "clang-format",
-            "dist",
+            'webviews',
+            'visual-editor',
+            'clang-format',
+            'dist',
           ),
         ],
       },
@@ -241,15 +241,15 @@ class ClangFormatEditorInstanceImpl implements ClangFormatEditorInstance {
     this.panel.iconPath = {
       light: vscode.Uri.joinPath(
         extensionUri,
-        "resources",
-        "light",
-        "format.svg",
+        'resources',
+        'light',
+        'format.svg',
       ),
       dark: vscode.Uri.joinPath(
         extensionUri,
-        "resources",
-        "dark",
-        "format.svg",
+        'resources',
+        'dark',
+        'format.svg',
       ),
     };
 
@@ -275,10 +275,10 @@ class ClangFormatEditorInstanceImpl implements ClangFormatEditorInstance {
       console.log(`ClangFormatEditorInstance: Initialized instance ${this.id}`);
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "initializeInstance",
-        module: "ClangFormatEditorInstance",
+        operation: 'initializeInstance',
+        module: 'ClangFormatEditorInstance',
         showToUser: true,
-        logLevel: "error",
+        logLevel: 'error',
       });
       throw error;
     }
@@ -295,10 +295,10 @@ class ClangFormatEditorInstanceImpl implements ClangFormatEditorInstance {
       });
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "sendMessage",
-        module: "ClangFormatEditorInstance",
+        operation: 'sendMessage',
+        module: 'ClangFormatEditorInstance',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -317,10 +317,10 @@ class ClangFormatEditorInstanceImpl implements ClangFormatEditorInstance {
       // 实际实现中会根据消息类型进行不同的处理
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "handleMessage",
-        module: "ClangFormatEditorInstance",
+        operation: 'handleMessage',
+        module: 'ClangFormatEditorInstance',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -346,7 +346,7 @@ class ClangFormatEditorInstanceImpl implements ClangFormatEditorInstance {
     if (this.workspaceFolder) {
       return `Clang-Format Editor - ${this.workspaceFolder.name}`;
     }
-    return "Clang-Format Editor";
+    return 'Clang-Format Editor';
   }
 
   /**
@@ -397,10 +397,10 @@ class ClangFormatEditorInstanceImpl implements ClangFormatEditorInstance {
       console.log(`ClangFormatEditorInstance: Disposed instance ${this.id}`);
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "disposeInstance",
-        module: "ClangFormatEditorInstance",
+        operation: 'disposeInstance',
+        module: 'ClangFormatEditorInstance',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }

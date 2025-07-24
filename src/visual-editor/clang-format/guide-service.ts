@@ -3,9 +3,9 @@
  * 当用户编辑 .clang-format 文件时显示内联引导按钮到可视化编辑器
  */
 
-import * as vscode from "vscode";
-import { COMMANDS } from "../../common/constants";
-import { EditorOpenSource } from "../../common/types";
+import * as vscode from 'vscode';
+import { COMMANDS } from '../../common/constants';
+import { EditorOpenSource } from '../../common/types';
 
 export class ClangFormatGuideService implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
@@ -20,7 +20,7 @@ export class ClangFormatGuideService implements vscode.Disposable {
     // 注册 CodeLens 提供者
     this.disposables.push(
       vscode.languages.registerCodeLensProvider(
-        { pattern: "**/.clang-format" },
+        { pattern: '**/.clang-format' },
         this.codeLensProvider,
       ),
     );
@@ -36,7 +36,7 @@ export class ClangFormatGuideService implements vscode.Disposable {
     // 监听配置变化
     this.disposables.push(
       vscode.workspace.onDidChangeConfiguration((event) => {
-        if (event.affectsConfiguration("clotho.clangFormat.showGuideButton")) {
+        if (event.affectsConfiguration('clotho.clangFormat.showGuideButton')) {
           this.updateButtonVisibility();
           this.codeLensProvider.refresh();
         }
@@ -49,8 +49,8 @@ export class ClangFormatGuideService implements vscode.Disposable {
 
   private updateButtonVisibility(): void {
     // 检查用户设置
-    const config = vscode.workspace.getConfiguration("clotho.clangFormat");
-    const showGuideButton = config.get<boolean>("showGuideButton", true);
+    const config = vscode.workspace.getConfiguration('clotho.clangFormat');
+    const showGuideButton = config.get<boolean>('showGuideButton', true);
 
     const activeEditor = vscode.window.activeTextEditor;
     const isClangFormatFile =
@@ -59,8 +59,8 @@ export class ClangFormatGuideService implements vscode.Disposable {
     // 使用 VS Code 的 when 条件来控制按钮显示
     // 这将通过 setContext 来控制 package.json 中定义的按钮
     vscode.commands.executeCommand(
-      "setContext",
-      "clotho.isClangFormatFile",
+      'setContext',
+      'clotho.isClangFormatFile',
       isClangFormatFile && showGuideButton,
     );
   }
@@ -68,9 +68,9 @@ export class ClangFormatGuideService implements vscode.Disposable {
   private isClangFormatFile(document: vscode.TextDocument): boolean {
     const fileName = document.fileName.toLowerCase();
     return (
-      fileName.endsWith(".clang-format") ||
-      fileName.endsWith("_clang-format") ||
-      fileName.includes(".clang-format")
+      fileName.endsWith('.clang-format') ||
+      fileName.endsWith('_clang-format') ||
+      fileName.includes('.clang-format')
     );
   }
 
@@ -78,8 +78,8 @@ export class ClangFormatGuideService implements vscode.Disposable {
     this.disposables.forEach((d) => d.dispose());
     // 清理上下文
     vscode.commands.executeCommand(
-      "setContext",
-      "clotho.isClangFormatFile",
+      'setContext',
+      'clotho.isClangFormatFile',
       false,
     );
   }
@@ -99,8 +99,8 @@ class ClangFormatCodeLensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
   ): vscode.CodeLens[] | undefined {
     // 检查用户设置是否启用了引导按钮
-    const config = vscode.workspace.getConfiguration("clotho.clangFormat");
-    const showGuideButton = config.get<boolean>("showGuideButton", true);
+    const config = vscode.workspace.getConfiguration('clotho.clangFormat');
+    const showGuideButton = config.get<boolean>('showGuideButton', true);
 
     if (!showGuideButton) {
       return undefined;
@@ -118,9 +118,9 @@ class ClangFormatCodeLensProvider implements vscode.CodeLensProvider {
 
     // 主按钮：打开可视化编辑器
     const mainCodeLens = new vscode.CodeLens(topRange, {
-      title: "$(edit)\u00A0Visual Editor",
+      title: '$(edit)\u00A0Visual Editor',
       tooltip:
-        "Open Clang-Format Visual Editor - Edit settings with a user-friendly interface",
+        'Open Clang-Format Visual Editor - Edit settings with a user-friendly interface',
       command: COMMANDS.OPEN_CLANG_FORMAT_EDITOR,
       arguments: [EditorOpenSource.CODE_LENS], // 传递来源信息
     });
@@ -128,12 +128,12 @@ class ClangFormatCodeLensProvider implements vscode.CodeLensProvider {
 
     // 帮助按钮：紧跟在主按钮后面
     const helpCodeLens = new vscode.CodeLens(topRange, {
-      title: "$(question)\u00A0Reference",
-      tooltip: "Get help with clang-format configuration options",
-      command: "vscode.open",
+      title: '$(question)\u00A0Reference',
+      tooltip: 'Get help with clang-format configuration options',
+      command: 'vscode.open',
       arguments: [
         vscode.Uri.parse(
-          "https://clang.llvm.org/docs/ClangFormatStyleOptions.html",
+          'https://clang.llvm.org/docs/ClangFormatStyleOptions.html',
         ),
       ],
     });
@@ -145,9 +145,9 @@ class ClangFormatCodeLensProvider implements vscode.CodeLensProvider {
   private isClangFormatFile(document: vscode.TextDocument): boolean {
     const fileName = document.fileName.toLowerCase();
     return (
-      fileName.endsWith(".clang-format") ||
-      fileName.endsWith("_clang-format") ||
-      fileName.includes(".clang-format")
+      fileName.endsWith('.clang-format') ||
+      fileName.endsWith('_clang-format') ||
+      fileName.includes('.clang-format')
     );
   }
 }

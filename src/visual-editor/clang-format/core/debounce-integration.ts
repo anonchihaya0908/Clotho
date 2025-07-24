@@ -3,10 +3,10 @@
  * 将防抖机制集成到现有的ClangFormat coordinator中
  */
 
-import * as vscode from "vscode";
-import { DebounceManager } from "./debounce-manager";
-import { TransitionManager } from "./transition-manager";
-import { ErrorHandler } from "../../../common/error-handler";
+import * as vscode from 'vscode';
+import { DebounceManager } from './debounce-manager';
+import { TransitionManager } from './transition-manager';
+import { ErrorHandler } from '../../../common/error-handler';
 
 /**
  * 防抖集成器
@@ -28,7 +28,7 @@ export class DebounceIntegration {
     originalHandler: () => Promise<void>,
   ): () => Promise<void> {
     return this.debounceManager.debounce(
-      "preview-close-handler",
+      'preview-close-handler',
       async () => {
         if (!this.isEnabled) {
           await originalHandler();
@@ -36,17 +36,17 @@ export class DebounceIntegration {
         }
 
         console.log(
-          "🎭 DebounceIntegration: Handling preview close with debounce",
+          '🎭 DebounceIntegration: Handling preview close with debounce',
         );
 
         try {
           // 直接执行原始处理器，不再使用彩蛋过渡
           await originalHandler();
           console.log(
-            "✅ DebounceIntegration: Direct handler execution completed",
+            '✅ DebounceIntegration: Direct handler execution completed',
           );
         } catch (error) {
-          console.error("❌ DebounceIntegration: Handler execution failed");
+          console.error('❌ DebounceIntegration: Handler execution failed');
           await originalHandler();
         }
       },
@@ -65,10 +65,10 @@ export class DebounceIntegration {
     originalHandler: () => Promise<vscode.TextEditor>,
   ): () => Promise<void> {
     return this.debounceManager.debounce(
-      "preview-reopen-handler",
+      'preview-reopen-handler',
       async () => {
         console.log(
-          "📄 DebounceIntegration: Handling preview reopen with debounce",
+          '📄 DebounceIntegration: Handling preview reopen with debounce',
         );
 
         try {
@@ -78,10 +78,10 @@ export class DebounceIntegration {
           });
         } catch (error) {
           ErrorHandler.handle(error, {
-            operation: "debouncedPreviewReopen",
-            module: "DebounceIntegration",
+            operation: 'debouncedPreviewReopen',
+            module: 'DebounceIntegration',
             showToUser: false,
-            logLevel: "error",
+            logLevel: 'error',
           });
           throw error;
         }
@@ -99,7 +99,7 @@ export class DebounceIntegration {
    */
   setEnabled(enabled: boolean): void {
     this.isEnabled = enabled;
-    console.log(`DebounceIntegration: ${enabled ? "Enabled" : "Disabled"}`);
+    console.log(`DebounceIntegration: ${enabled ? 'Enabled' : 'Disabled'}`);
   }
 
   /**
@@ -119,6 +119,6 @@ export class DebounceIntegration {
   dispose(): void {
     this.debounceManager.dispose();
     this.transitionManager.dispose();
-    console.log("DebounceIntegration: Disposed");
+    console.log('DebounceIntegration: Disposed');
   }
 }

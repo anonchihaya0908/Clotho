@@ -3,10 +3,10 @@
  * Handles all business logic related to pairing rule management
  */
 
-import * as vscode from "vscode";
-import { ErrorHandler } from "../common/error-handler";
-import { CONFIG_KEYS } from "../common/constants";
-import { Language, PairingRule } from "../common/types";
+import * as vscode from 'vscode';
+import { ErrorHandler } from '../common/error-handler';
+import { CONFIG_KEYS } from '../common/constants';
+import { Language, PairingRule } from '../common/types';
 
 /**
  * Service class for managing pairing rules configuration
@@ -21,8 +21,8 @@ export class PairingRuleService {
       throw ErrorHandler.handle(
         new Error(`Invalid rule: ${JSON.stringify(rule)}`),
         {
-          operation: "validateRule",
-          module: "PairingRuleService",
+          operation: 'validateRule',
+          module: 'PairingRuleService',
           showToUser: true,
         },
       );
@@ -34,19 +34,19 @@ export class PairingRuleService {
    */
   getActiveRules(): ReadonlyArray<PairingRule> {
     return vscode.workspace
-      .getConfiguration("clotho")
+      .getConfiguration('clotho')
       .get<PairingRule[]>(CONFIG_KEYS.CREATE_PAIR_RULES, []);
   }
 
   /**
    * Check if custom rules exist for the specified scope (workspace or user)
    */
-  hasCustomRules(scope: "workspace" | "user"): boolean {
+  hasCustomRules(scope: 'workspace' | 'user'): boolean {
     const inspection = vscode.workspace
-      .getConfiguration("clotho")
+      .getConfiguration('clotho')
       .inspect<PairingRule[]>(CONFIG_KEYS.CREATE_PAIR_RULES);
     const value =
-      scope === "workspace"
+      scope === 'workspace'
         ? inspection?.workspaceValue
         : inspection?.globalValue;
     return Array.isArray(value);
@@ -55,11 +55,11 @@ export class PairingRuleService {
   /**
    * Get pairing rules for a specific scope (workspace or user)
    */
-  getRules(scope: "workspace" | "user"): PairingRule[] | undefined {
+  getRules(scope: 'workspace' | 'user'): PairingRule[] | undefined {
     const inspection = vscode.workspace
-      .getConfiguration("clotho")
+      .getConfiguration('clotho')
       .inspect<PairingRule[]>(CONFIG_KEYS.CREATE_PAIR_RULES);
-    return scope === "workspace"
+    return scope === 'workspace'
       ? inspection?.workspaceValue
       : inspection?.globalValue;
   }
@@ -69,26 +69,26 @@ export class PairingRuleService {
    */
   async writeRules(
     rules: PairingRule[],
-    scope: "workspace" | "user",
+    scope: 'workspace' | 'user',
   ): Promise<void> {
     const saveRules = ErrorHandler.wrapAsync(
       async () => {
         if (!Array.isArray(rules)) {
-          throw new Error("Rules must be an array");
+          throw new Error('Rules must be an array');
         }
         rules.forEach((rule) => this.validateRule(rule));
 
         const target =
-          scope === "workspace"
+          scope === 'workspace'
             ? vscode.ConfigurationTarget.Workspace
             : vscode.ConfigurationTarget.Global;
         await vscode.workspace
-          .getConfiguration("clotho")
+          .getConfiguration('clotho')
           .update(CONFIG_KEYS.CREATE_PAIR_RULES, rules, target);
       },
       {
-        operation: "writeRules",
-        module: "PairingRuleService",
+        operation: 'writeRules',
+        module: 'PairingRuleService',
         showToUser: true,
       },
     );
@@ -99,20 +99,20 @@ export class PairingRuleService {
   /**
    * Reset pairing rules for the specified scope (remove custom rules)
    */
-  async resetRules(scope: "workspace" | "user"): Promise<void> {
+  async resetRules(scope: 'workspace' | 'user'): Promise<void> {
     const resetRules = ErrorHandler.wrapAsync(
       async () => {
         const target =
-          scope === "workspace"
+          scope === 'workspace'
             ? vscode.ConfigurationTarget.Workspace
             : vscode.ConfigurationTarget.Global;
         await vscode.workspace
-          .getConfiguration("clotho")
+          .getConfiguration('clotho')
           .update(CONFIG_KEYS.CREATE_PAIR_RULES, undefined, target);
       },
       {
-        operation: "resetRules",
-        module: "PairingRuleService",
+        operation: 'resetRules',
+        module: 'PairingRuleService',
         showToUser: true,
       },
     );

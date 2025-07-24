@@ -1,15 +1,15 @@
-import * as vscode from "vscode";
-import { EditorOpenSource, ManagerContext } from "../../common/types";
-import { EventBus } from "./messaging/event-bus";
-import { EditorStateManager } from "./state/editor-state-manager";
-import { ErrorRecoveryManager } from "./error/error-recovery-manager";
-import { MessageHandler } from "./messaging/message-handler";
-import { ClangFormatEditorManager } from "./core/editor-manager";
-import { PreviewEditorManager } from "./core/preview-manager";
-import { ConfigActionManager } from "./core/config-action-manager";
-import { PlaceholderWebviewManager } from "./core/placeholder-manager";
-import { DEFAULT_CLANG_FORMAT_CONFIG } from "./config-options";
-import { WebviewMessageType } from "../../common/types/webview";
+import * as vscode from 'vscode';
+import { EditorOpenSource, ManagerContext } from '../../common/types';
+import { EventBus } from './messaging/event-bus';
+import { EditorStateManager } from './state/editor-state-manager';
+import { ErrorRecoveryManager } from './error/error-recovery-manager';
+import { MessageHandler } from './messaging/message-handler';
+import { ClangFormatEditorManager } from './core/editor-manager';
+import { PreviewEditorManager } from './core/preview-manager';
+import { ConfigActionManager } from './core/config-action-manager';
+import { PlaceholderWebviewManager } from './core/placeholder-manager';
+import { DEFAULT_CLANG_FORMAT_CONFIG } from './config-options';
+import { WebviewMessageType } from '../../common/types/webview';
 /**
  * 重构后的轻量级主协调器
  * 只负责初始化和协调各个管理器，不包含具体的业务逻辑
@@ -63,9 +63,9 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       }
 
       // 触发事件来创建编辑器
-      this.eventBus.emit("create-editor-requested", source);
+      this.eventBus.emit('create-editor-requested', source);
     } catch (error: any) {
-      await this.errorRecovery.handleError("coordinator-startup-failed", error);
+      await this.errorRecovery.handleError('coordinator-startup-failed', error);
     }
   }
 
@@ -107,32 +107,32 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
    */
   private setupEventListeners(): void {
     // Webview消息路由
-    this.eventBus.on("webview-message-received", (message) => {
+    this.eventBus.on('webview-message-received', (message) => {
       this.messageHandler.handleMessage(message);
     });
 
     // 监听配置变化请求
     this.eventBus.on(
-      "config-change-requested",
+      'config-change-requested',
       async (payload: { key: string; value: any }) => {
         await this.handleConfigChange(payload);
       },
     );
 
     // 监听主编辑器关闭事件，联动关闭所有
-    this.eventBus.on("editor-closed", () => {
+    this.eventBus.on('editor-closed', () => {
       // 【关键修复】主编辑器关闭时，直接清理预览，不发送 preview-closed 事件
       // 这样可以避免占位符在不合适的时机被创建
-      this.eventBus.emit("close-preview-requested");
+      this.eventBus.emit('close-preview-requested');
     });
 
     // 监听状态变化并打印日志
-    this.eventBus.on("state-changed", (event) => {});
+    this.eventBus.on('state-changed', (event) => {});
 
     // 监听 webview 完全准备就绪事件，自动打开预览
-    this.eventBus.on("editor-fully-ready", async () => {
+    this.eventBus.on('editor-fully-ready', async () => {
       // 自动加载逻辑已移至 ConfigActionManager
-      this.eventBus.emit("open-preview-requested");
+      this.eventBus.emit('open-preview-requested');
     });
 
     // Webview 的消息现在由 MessageHandler 统一处理，它会把消息转换为 EventBus 上的具体事件
@@ -153,7 +153,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       const currentState = this.stateManager.getState();
       const newConfig = { ...currentState.currentConfig };
 
-      if (value === "inherit" || value === undefined || value === null) {
+      if (value === 'inherit' || value === undefined || value === null) {
         delete newConfig[key];
       } else {
         newConfig[key] = value;
@@ -164,19 +164,19 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
           currentConfig: newConfig,
           configDirty: true,
         },
-        "config-changed",
+        'config-changed',
       );
 
       // 通知webview配置已更新
-      this.eventBus.emit("post-message-to-webview", {
+      this.eventBus.emit('post-message-to-webview', {
         type: WebviewMessageType.CONFIG_LOADED,
         payload: { config: newConfig },
       });
 
       // 通知预览更新
-      this.eventBus.emit("config-updated-for-preview", { newConfig });
+      this.eventBus.emit('config-updated-for-preview', { newConfig });
     } catch (error: any) {
-      await this.errorRecovery.handleError("config-change-failed", error, {
+      await this.errorRecovery.handleError('config-change-failed', error, {
         payload,
       });
     }
@@ -208,7 +208,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
    */
   private registerCommands(): void {
     const showCommand = vscode.commands.registerCommand(
-      "clotho.showClangFormatEditor",
+      'clotho.showClangFormatEditor',
       () => {
         this.showEditor(EditorOpenSource.COMMAND);
       },

@@ -1,32 +1,32 @@
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 import {
   BaseManager,
   ManagerContext,
   ManagerStatus,
-} from "../../../common/types";
-import { WebviewMessageType } from "../../../common/types/webview";
-import { ClangFormatService } from "../format-service";
-import { DEFAULT_CLANG_FORMAT_CONFIG } from "../config-options";
+} from '../../../common/types';
+import { WebviewMessageType } from '../../../common/types/webview';
+import { ClangFormatService } from '../format-service';
+import { DEFAULT_CLANG_FORMAT_CONFIG } from '../config-options';
 
 /**
  * 负责处理所有与用户配置操作相关的业务逻辑，
  * 例如加载、保存、导入、导出、重置等。
  */
 export class ConfigActionManager implements BaseManager {
-  readonly name = "ConfigActionManager";
+  readonly name = 'ConfigActionManager';
 
   private context!: ManagerContext;
   private formatService: ClangFormatService;
 
   constructor() {
     this.formatService = new ClangFormatService();
-    console.log("ConfigActionManager constructed.");
+    console.log('ConfigActionManager constructed.');
   }
 
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
     this.setupEventListeners();
-    console.log("ConfigActionManager initialized.");
+    console.log('ConfigActionManager initialized.');
   }
 
   dispose(): void {
@@ -49,19 +49,19 @@ export class ConfigActionManager implements BaseManager {
     const eventBus = this.context.eventBus;
 
     // 监听UI的动作请求
-    eventBus.on("load-workspace-config-requested", () =>
+    eventBus.on('load-workspace-config-requested', () =>
       this.handleLoadWorkspaceConfig(),
     );
-    eventBus.on("save-config-requested", () => this.handleSaveConfig());
-    eventBus.on("import-config-requested", () => this.handleImportConfig());
-    eventBus.on("export-config-requested", () => this.handleExportConfig());
-    eventBus.on("reset-config-requested", () => this.handleResetConfig());
-    eventBus.on("open-clang-format-file-requested", () =>
+    eventBus.on('save-config-requested', () => this.handleSaveConfig());
+    eventBus.on('import-config-requested', () => this.handleImportConfig());
+    eventBus.on('export-config-requested', () => this.handleExportConfig());
+    eventBus.on('reset-config-requested', () => this.handleResetConfig());
+    eventBus.on('open-clang-format-file-requested', () =>
       this.handleOpenClangFormatFile(),
     );
 
     // 监听生命周期事件以触发自动加载
-    eventBus.on("editor-fully-ready", () => this.autoLoadWorkspaceConfig());
+    eventBus.on('editor-fully-ready', () => this.autoLoadWorkspaceConfig());
   }
 
   // --- 配置操作处理方法 ---
@@ -76,17 +76,17 @@ export class ConfigActionManager implements BaseManager {
     }
     const fileUri = vscode.Uri.joinPath(
       workspaceFolders[0].uri,
-      ".clang-format",
+      '.clang-format',
     );
 
     try {
       await vscode.workspace.fs.stat(fileUri);
-      console.log("Found .clang-format file in workspace, auto-loading...");
+      console.log('Found .clang-format file in workspace, auto-loading...');
       await this.loadConfigFromFile(fileUri);
     } catch (error) {
       // 文件不存在，静默处理
       console.log(
-        ".clang-format file not found in workspace. Using default settings.",
+        '.clang-format file not found in workspace. Using default settings.',
       );
     }
   }
@@ -95,25 +95,25 @@ export class ConfigActionManager implements BaseManager {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
       vscode.window.showWarningMessage(
-        "Please open a workspace to manage .clang-format files.",
+        'Please open a workspace to manage .clang-format files.',
       );
       return undefined;
     }
-    return vscode.Uri.joinPath(workspaceFolders[0].uri, ".clang-format");
+    return vscode.Uri.joinPath(workspaceFolders[0].uri, '.clang-format');
   }
 
   private async loadConfigFromFile(fileUri: vscode.Uri): Promise<void> {
     try {
       const fileContentBytes = await vscode.workspace.fs.readFile(fileUri);
-      const fileContent = Buffer.from(fileContentBytes).toString("utf-8");
+      const fileContent = Buffer.from(fileContentBytes).toString('utf-8');
       const newConfig = this.formatService.parse(fileContent);
-      await this.updateConfigState(newConfig, "config-loaded-from-file");
+      await this.updateConfigState(newConfig, 'config-loaded-from-file');
       vscode.window.showInformationMessage(
         `Configuration loaded from ${vscode.workspace.asRelativePath(fileUri)}.`,
       );
     } catch (error: any) {
       await this.context.errorRecovery.handleError(
-        "config-load-failed",
+        'config-load-failed',
         error,
         { file: fileUri.toString() },
       );
@@ -129,18 +129,18 @@ export class ConfigActionManager implements BaseManager {
       const fileContent = this.formatService.stringify(currentConfig);
       await vscode.workspace.fs.writeFile(
         fileUri,
-        Buffer.from(fileContent, "utf-8"),
+        Buffer.from(fileContent, 'utf-8'),
       );
       await this.context.stateManager.updateState(
         { configDirty: false },
-        "config-saved",
+        'config-saved',
       );
       vscode.window.showInformationMessage(
         `Configuration saved to ${vscode.workspace.asRelativePath(fileUri)}.`,
       );
     } catch (error: any) {
       await this.context.errorRecovery.handleError(
-        "config-save-failed",
+        'config-save-failed',
         error,
         { file: fileUri.toString() },
       );
@@ -167,8 +167,8 @@ export class ConfigActionManager implements BaseManager {
   private async handleImportConfig(): Promise<void> {
     const options: vscode.OpenDialogOptions = {
       canSelectMany: false,
-      openLabel: "Import",
-      filters: { "Clang-Format Config": ["clang-format", ""] },
+      openLabel: 'Import',
+      filters: { 'Clang-Format Config': ['clang-format', ''] },
     };
     const fileUris = await vscode.window.showOpenDialog(options);
     if (fileUris && fileUris.length > 0) {
@@ -178,7 +178,7 @@ export class ConfigActionManager implements BaseManager {
 
   private async handleExportConfig(): Promise<void> {
     const options: vscode.SaveDialogOptions = {
-      saveLabel: "Export",
+      saveLabel: 'Export',
       defaultUri: await this.getWorkspaceClangFormatUri(),
     };
     const fileUri = await vscode.window.showSaveDialog(options);
@@ -188,25 +188,25 @@ export class ConfigActionManager implements BaseManager {
   }
 
   private async handleResetConfig(): Promise<void> {
-    await this.updateConfigState(DEFAULT_CLANG_FORMAT_CONFIG, "config-reset");
+    await this.updateConfigState(DEFAULT_CLANG_FORMAT_CONFIG, 'config-reset');
     vscode.window.showInformationMessage(
-      "Configuration has been reset to default.",
+      'Configuration has been reset to default.',
     );
   }
 
   private async handleOpenClangFormatFile(): Promise<void> {
     const fileUri = await this.getWorkspaceClangFormatUri();
-    if (!fileUri) return;
+    if (!fileUri) {return;}
 
     try {
       await vscode.workspace.fs.stat(fileUri);
     } catch (error) {
       const result = await vscode.window.showInformationMessage(
-        ".clang-format file not found. Do you want to create it with the current configuration?",
-        "Yes",
-        "No",
+        '.clang-format file not found. Do you want to create it with the current configuration?',
+        'Yes',
+        'No',
       );
-      if (result === "Yes") {
+      if (result === 'Yes') {
         await this.writeConfigToFile(fileUri);
       } else {
         return;
@@ -221,13 +221,13 @@ export class ConfigActionManager implements BaseManager {
     source: string,
   ): Promise<void> {
     await this.context.stateManager.updateState(
-      { currentConfig: newConfig, configDirty: source !== "config-saved" },
+      { currentConfig: newConfig, configDirty: source !== 'config-saved' },
       source,
     );
-    this.context.eventBus.emit("post-message-to-webview", {
+    this.context.eventBus.emit('post-message-to-webview', {
       type: WebviewMessageType.CONFIG_LOADED,
       payload: { config: newConfig },
     });
-    this.context.eventBus.emit("config-updated-for-preview", { newConfig });
+    this.context.eventBus.emit('config-updated-for-preview', { newConfig });
   }
 }

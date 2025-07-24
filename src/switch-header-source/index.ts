@@ -26,11 +26,11 @@
  */
 
 // Export main coordinator and service classes
-export { SwitchCoordinator } from "./coordinator";
-export { SwitchService, type SearchResult } from "./switch-service";
-export { SwitchUI } from "./switch-ui";
+export { SwitchCoordinator } from './coordinator';
+export { SwitchService, type SearchResult } from './switch-service';
+export { SwitchUI } from './switch-ui';
 export {
   SwitchConfigService,
   CONFIG_TEMPLATES,
   type SwitchConfig,
-} from "./config-manager";
+} from './config-manager';

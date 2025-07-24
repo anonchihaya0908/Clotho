@@ -3,11 +3,11 @@
  * Orchestrates the pairing rule management workflow between service and UI layers
  */
 
-import * as vscode from "vscode";
-import { ErrorHandler } from "../common/error-handler";
-import { COMMANDS } from "../common/constants";
-import { PairingRuleService } from "./service";
-import { PairingRuleUI } from "./ui";
+import * as vscode from 'vscode';
+import { ErrorHandler } from '../common/error-handler';
+import { COMMANDS } from '../common/constants';
+import { PairingRuleService } from './service';
+import { PairingRuleUI } from './ui';
 
 /**
  * Coordinator class that orchestrates pairing rule management workflow.
@@ -47,10 +47,10 @@ export class PairingRuleCoordinator implements vscode.Disposable {
       await this.ui.showConfigurationWizard();
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "configureRules",
-        module: "PairingRuleCoordinator",
+        operation: 'configureRules',
+        module: 'PairingRuleCoordinator',
         showToUser: true,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }

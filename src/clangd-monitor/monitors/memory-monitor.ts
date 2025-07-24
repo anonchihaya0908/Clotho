@@ -3,13 +3,13 @@
  * Monitors clangd process memory usage and displays it in the status bar
  */
 
-import * as vscode from "vscode";
-import { IMonitor, MemoryUsage, MemoryMonitorConfig } from "../types";
-import { ErrorHandler } from "../../common/error-handler";
-import { ProcessDetector } from "../../common/process-detector";
+import * as vscode from 'vscode';
+import { IMonitor, MemoryUsage, MemoryMonitorConfig } from '../types';
+import { ErrorHandler } from '../../common/error-handler';
+import { ProcessDetector } from '../../common/process-detector';
 
 // Import pidusage with proper typing
-import pidusage from "pidusage";
+import pidusage from 'pidusage';
 
 /**
  * Memory monitoring implementation that tracks clangd memory usage
@@ -44,9 +44,9 @@ export class MemoryMonitor implements IMonitor {
       100, // Priority - higher means more to the right
     );
 
-    this.statusBarItem.text = "$(pulse) Clangd: ---";
-    this.statusBarItem.tooltip = "Clangd memory usage monitoring";
-    this.statusBarItem.command = "clotho.showClangdDetails";
+    this.statusBarItem.text = '$(pulse) Clangd: ---';
+    this.statusBarItem.tooltip = 'Clangd memory usage monitoring';
+    this.statusBarItem.command = 'clotho.showClangdDetails';
     this.statusBarItem.show();
   }
 
@@ -72,10 +72,10 @@ export class MemoryMonitor implements IMonitor {
       this.startUpdateLoop();
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "startMemoryMonitor",
-        module: "MemoryMonitor",
+        operation: 'startMemoryMonitor',
+        module: 'MemoryMonitor',
         showToUser: false,
-        logLevel: "warn",
+        logLevel: 'warn',
       });
     }
   }
@@ -99,7 +99,7 @@ export class MemoryMonitor implements IMonitor {
    */
   public async reset(): Promise<void> {
     console.log(
-      "Clotho MemoryMonitor: Resetting PID and forcing re-detection (anti-stale mode)",
+      'Clotho MemoryMonitor: Resetting PID and forcing re-detection (anti-stale mode)',
     );
     this.currentPid = undefined;
     this.lastMemoryUsage = undefined;
@@ -107,7 +107,7 @@ export class MemoryMonitor implements IMonitor {
     // If monitoring is running, trigger immediate update with fresh detection
     if (this.running) {
       console.log(
-        "Clotho MemoryMonitor: Triggering immediate smart process re-detection...",
+        'Clotho MemoryMonitor: Triggering immediate smart process re-detection...',
       );
       await this.updateMemoryUsage();
     }
@@ -124,7 +124,7 @@ export class MemoryMonitor implements IMonitor {
    * Get human-readable name for this monitor
    */
   public getName(): string {
-    return "Clangd Memory Monitor";
+    return 'Clangd Memory Monitor';
   }
 
   /**
@@ -146,10 +146,10 @@ export class MemoryMonitor implements IMonitor {
     try {
       // Step 1: Check if clangd extension is available
       const clangdExtension = vscode.extensions.getExtension(
-        "llvm-vs-code-extensions.vscode-clangd",
+        'llvm-vs-code-extensions.vscode-clangd',
       );
       if (!clangdExtension) {
-        console.debug("Clotho MemoryMonitor: clangd extension not found");
+        console.debug('Clotho MemoryMonitor: clangd extension not found');
         return undefined;
       }
 
@@ -157,10 +157,10 @@ export class MemoryMonitor implements IMonitor {
       if (!clangdExtension.isActive) {
         try {
           await clangdExtension.activate();
-          console.debug("Clotho MemoryMonitor: clangd extension activated");
+          console.debug('Clotho MemoryMonitor: clangd extension activated');
         } catch (error) {
           console.debug(
-            "Clotho MemoryMonitor: Failed to activate clangd extension",
+            'Clotho MemoryMonitor: Failed to activate clangd extension',
           );
           return undefined;
         }
@@ -169,7 +169,7 @@ export class MemoryMonitor implements IMonitor {
       // Step 3: Check if the API is available
       const api = clangdExtension.exports;
       if (!api?.getClient) {
-        console.debug("Clotho MemoryMonitor: clangd API not available");
+        console.debug('Clotho MemoryMonitor: clangd API not available');
         return undefined;
       }
 
@@ -188,7 +188,7 @@ export class MemoryMonitor implements IMonitor {
 
       // Debug: Log all available properties
       console.debug(
-        "Clotho MemoryMonitor: Client properties:",
+        'Clotho MemoryMonitor: Client properties:',
         Object.keys(client),
       );
 
@@ -221,7 +221,7 @@ export class MemoryMonitor implements IMonitor {
         );
       }
       // Method 5: Check if client has a getServerProcess method
-      else if (typeof client.getServerProcess === "function") {
+      else if (typeof client.getServerProcess === 'function') {
         const serverProcess = client.getServerProcess();
         if (serverProcess?.pid) {
           pid = serverProcess.pid;
@@ -233,7 +233,7 @@ export class MemoryMonitor implements IMonitor {
       // Method 6: Try accessing the language client's connection
       else if (client.connection && client.connection.sendRequest) {
         console.debug(
-          "Clotho MemoryMonitor: Language client has connection but no direct PID access",
+          'Clotho MemoryMonitor: Language client has connection but no direct PID access',
         );
       }
 
@@ -245,19 +245,19 @@ export class MemoryMonitor implements IMonitor {
       }
 
       console.debug(
-        "Clotho MemoryMonitor: Could not extract PID from clangd client",
+        'Clotho MemoryMonitor: Could not extract PID from clangd client',
       );
       return undefined;
     } catch (error) {
       console.error(
-        "Clotho MemoryMonitor: Error in API-based PID detection:",
+        'Clotho MemoryMonitor: Error in API-based PID detection:',
         error,
       );
       ErrorHandler.handle(error, {
-        operation: "findClangdPidViaApi",
-        module: "MemoryMonitor",
+        operation: 'findClangdPidViaApi',
+        module: 'MemoryMonitor',
         showToUser: false,
-        logLevel: "debug",
+        logLevel: 'debug',
       });
       return undefined;
     }
@@ -278,11 +278,11 @@ export class MemoryMonitor implements IMonitor {
     }
 
     console.log(
-      "Clotho MemoryMonitor: 🔄 API detection failed, delegating to ProcessDetector...",
+      'Clotho MemoryMonitor: 🔄 API detection failed, delegating to ProcessDetector...',
     );
 
     // Strategy 2: Delegate to ProcessDetector - our "Ace Detective"
-    const mainProcess = await ProcessDetector.findMainProcessByName("clangd");
+    const mainProcess = await ProcessDetector.findMainProcessByName('clangd');
     if (mainProcess) {
       console.log(
         `Clotho MemoryMonitor: ✅ ProcessDetector found PID: ${mainProcess.pid}`,
@@ -290,7 +290,7 @@ export class MemoryMonitor implements IMonitor {
       return mainProcess.pid;
     }
 
-    console.log("Clotho MemoryMonitor: ❌ All detection strategies failed");
+    console.log('Clotho MemoryMonitor: ❌ All detection strategies failed');
     return undefined;
   } /**
    * 🧬 Perform the "DNA Test" - find our children and select the main one
@@ -326,11 +326,11 @@ export class MemoryMonitor implements IMonitor {
 
         if (!this.currentPid) {
           console.log(
-            "Clotho MemoryMonitor: 🔄 API detection failed, delegating to ProcessDetector...",
+            'Clotho MemoryMonitor: 🔄 API detection failed, delegating to ProcessDetector...',
           );
           // Strategy 2: Delegate to ProcessDetector
           const mainProcess =
-            await ProcessDetector.findMainProcessByName("clangd");
+            await ProcessDetector.findMainProcessByName('clangd');
           this.currentPid = mainProcess?.pid;
         }
 
@@ -366,10 +366,10 @@ export class MemoryMonitor implements IMonitor {
       this.updateStatusBarNoClangd();
 
       ErrorHandler.handle(error, {
-        operation: "updateMemoryUsage",
-        module: "MemoryMonitor",
+        operation: 'updateMemoryUsage',
+        module: 'MemoryMonitor',
         showToUser: false,
-        logLevel: "debug",
+        logLevel: 'debug',
       });
     }
   }
@@ -384,22 +384,22 @@ export class MemoryMonitor implements IMonitor {
 
     const memoryMB = Math.round(usage.memory / 1024 / 1024);
 
-    let icon = "$(pulse)";
+    let icon = '$(pulse)';
     let color: string | vscode.ThemeColor | undefined;
 
     // Determine icon and color based on memory usage
     if (memoryMB >= this.config.errorThreshold) {
       // 3GB+
-      icon = "$(error)";
-      color = "#ff4444"; // Red
+      icon = '$(error)';
+      color = '#ff4444'; // Red
     } else if (memoryMB >= this.config.warningThreshold) {
       // 2-3GB
-      icon = "$(warning)";
-      color = "#ffaa00"; // Yellow
+      icon = '$(warning)';
+      color = '#ffaa00'; // Yellow
     } else {
       // <2GB
-      icon = "$(pulse)";
-      color = ""; // White (default)
+      icon = '$(pulse)';
+      color = ''; // White (default)
     }
 
     // Build status text
@@ -410,13 +410,13 @@ export class MemoryMonitor implements IMonitor {
 
     // Update tooltip with detailed information
     const tooltip = new vscode.MarkdownString();
-    tooltip.appendMarkdown(`**Clangd Process Monitor**\n\n`);
+    tooltip.appendMarkdown('**Clangd Process Monitor**\n\n');
     tooltip.appendMarkdown(`- **Memory**: ${memoryMB} MB\n`);
     tooltip.appendMarkdown(`- **PID**: ${usage.pid}\n`);
     tooltip.appendMarkdown(
       `- **Last Updated**: ${usage.timestamp.toLocaleTimeString()}\n\n`,
     );
-    tooltip.appendMarkdown(`*Click for more details*`);
+    tooltip.appendMarkdown('*Click for more details*');
 
     this.statusBarItem.tooltip = tooltip;
   }
@@ -429,10 +429,10 @@ export class MemoryMonitor implements IMonitor {
       return;
     }
 
-    this.statusBarItem.text = "$(circle-slash) Clangd: Not Found";
-    this.statusBarItem.color = new vscode.ThemeColor("disabledForeground");
+    this.statusBarItem.text = '$(circle-slash) Clangd: Not Found';
+    this.statusBarItem.color = new vscode.ThemeColor('disabledForeground');
     this.statusBarItem.tooltip =
-      "Clangd process not found. Make sure clangd extension is installed and active.";
+      'Clangd process not found. Make sure clangd extension is installed and active.';
   }
 
   /**
@@ -443,9 +443,9 @@ export class MemoryMonitor implements IMonitor {
       return;
     }
 
-    this.statusBarItem.text = "$(debug-pause) Clangd: Stopped";
+    this.statusBarItem.text = '$(debug-pause) Clangd: Stopped';
     this.statusBarItem.color = undefined;
-    this.statusBarItem.tooltip = "Clangd memory monitoring is stopped";
+    this.statusBarItem.tooltip = 'Clangd memory monitoring is stopped';
   }
 
   /**
@@ -479,55 +479,55 @@ export class MemoryMonitor implements IMonitor {
    * Debug method to test clangd detection manually
    */
   public async debugClangdDetection(): Promise<void> {
-    console.log("=== Clotho Clangd Detection Debug ===");
+    console.log('=== Clotho Clangd Detection Debug ===');
 
     // Test extension availability
     const clangdExtension = vscode.extensions.getExtension(
-      "llvm-vs-code-extensions.vscode-clangd",
+      'llvm-vs-code-extensions.vscode-clangd',
     );
-    console.log("Clangd extension found:", !!clangdExtension);
-    console.log("Clangd extension active:", clangdExtension?.isActive);
+    console.log('Clangd extension found:', !!clangdExtension);
+    console.log('Clangd extension active:', clangdExtension?.isActive);
 
     if (clangdExtension && clangdExtension.isActive) {
       const api = clangdExtension.exports;
-      console.log("Extension exports available:", !!api);
-      console.log("getClient method available:", !!api?.getClient);
+      console.log('Extension exports available:', !!api);
+      console.log('getClient method available:', !!api?.getClient);
 
       if (api?.getClient) {
         const client = api.getClient();
-        console.log("Client available:", !!client);
-        console.log("Client state:", client?.state);
-        console.log("Client properties:", client ? Object.keys(client) : "N/A");
+        console.log('Client available:', !!client);
+        console.log('Client state:', client?.state);
+        console.log('Client properties:', client ? Object.keys(client) : 'N/A');
 
         if (client) {
-          console.log("_serverProcess:", !!client._serverProcess);
-          console.log("_childProcess:", !!client._childProcess);
-          console.log("initializeResult:", !!client.initializeResult);
-          console.log("clientOptions:", !!client.clientOptions);
+          console.log('_serverProcess:', !!client._serverProcess);
+          console.log('_childProcess:', !!client._childProcess);
+          console.log('initializeResult:', !!client.initializeResult);
+          console.log('clientOptions:', !!client.clientOptions);
         }
       }
     }
 
     // Test PID detection
-    console.log("--- Testing PID Detection ---");
+    console.log('--- Testing PID Detection ---');
     const pid = await this.findClangdPid();
-    console.log("Final detected PID:", pid);
+    console.log('Final detected PID:', pid);
 
     // Test ProcessDetector method
-    console.log("--- Testing ProcessDetector Method ---");
+    console.log('--- Testing ProcessDetector Method ---');
     const fallbackProcess =
-      await ProcessDetector.findMainProcessByName("clangd");
-    console.log("ProcessDetector result:", fallbackProcess);
+      await ProcessDetector.findMainProcessByName('clangd');
+    console.log('ProcessDetector result:', fallbackProcess);
 
     // Show result to user
     if (pid) {
       vscode.window.showInformationMessage(`Clangd PID detected: ${pid}`);
     } else {
       vscode.window.showWarningMessage(
-        "Failed to detect clangd PID. Check console for debug info.",
+        'Failed to detect clangd PID. Check console for debug info.',
       );
     }
 
-    console.log("=== Debug Complete ===");
+    console.log('=== Debug Complete ===');
   }
 }

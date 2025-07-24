@@ -3,8 +3,8 @@
  * 提供实例的创建、获取、销毁和生命周期管理
  */
 
-import * as vscode from "vscode";
-import { ErrorHandler } from "../error-handler";
+import * as vscode from 'vscode';
+import { ErrorHandler } from '../error-handler';
 
 /**
  * 通用实例管理器接口
@@ -75,7 +75,7 @@ export interface InstanceManagerConfig {
  * 通用实例管理器实现
  */
 export class BaseInstanceManager<T extends Disposable>
-  implements InstanceManager<T>, vscode.Disposable
+implements InstanceManager<T>, vscode.Disposable
 {
   private instances = new Map<string, T>();
   private config: InstanceManagerConfig;
@@ -129,10 +129,10 @@ export class BaseInstanceManager<T extends Disposable>
       return instance;
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "createInstance",
-        module: "InstanceManager",
+        operation: 'createInstance',
+        module: 'InstanceManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
       throw error;
     }
@@ -172,10 +172,10 @@ export class BaseInstanceManager<T extends Disposable>
       return true;
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "destroyInstance",
-        module: "InstanceManager",
+        operation: 'destroyInstance',
+        module: 'InstanceManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
       return false;
     }
@@ -190,13 +190,13 @@ export class BaseInstanceManager<T extends Disposable>
       for (const id of instanceIds) {
         this.destroy(id);
       }
-      console.log("InstanceManager: All instances destroyed");
+      console.log('InstanceManager: All instances destroyed');
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "destroyAllInstances",
-        module: "InstanceManager",
+        operation: 'destroyAllInstances',
+        module: 'InstanceManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -261,13 +261,13 @@ export class BaseInstanceManager<T extends Disposable>
       this.disposables.forEach((d) => d.dispose());
       this.disposables = [];
 
-      console.log("InstanceManager: Manager disposed");
+      console.log('InstanceManager: Manager disposed');
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "disposeManager",
-        module: "InstanceManager",
+        operation: 'disposeManager',
+        module: 'InstanceManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }

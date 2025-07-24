@@ -3,19 +3,19 @@
  * 处理webview切换过程中的稳定性和流畅性
  */
 
-import * as vscode from "vscode";
-import { DebounceManager } from "./debounce-manager";
-import { ErrorHandler } from "../../../common/error-handler";
+import * as vscode from 'vscode';
+import { DebounceManager } from './debounce-manager';
+import { ErrorHandler } from '../../../common/error-handler';
 
 /**
  * 过渡状态枚举
  */
 export enum TransitionState {
-  IDLE = "idle",
-  SWITCHING_TO_PREVIEW = "switching-to-preview",
-  SWITCHING_TO_EASTER_EGG = "switching-to-easter-egg",
-  CREATING_PLACEHOLDER = "creating-placeholder",
-  LOADING_CONTENT = "loading-content",
+  IDLE = 'idle',
+  SWITCHING_TO_PREVIEW = 'switching-to-preview',
+  SWITCHING_TO_EASTER_EGG = 'switching-to-easter-egg',
+  CREATING_PLACEHOLDER = 'creating-placeholder',
+  LOADING_CONTENT = 'loading-content',
 }
 
 /**
@@ -59,10 +59,10 @@ export class TransitionManager {
     onContentReady: () => Promise<vscode.WebviewPanel>,
   ): Promise<vscode.WebviewPanel> {
     const switchOperation = this.debounceManager.debounce(
-      "switch-to-easter-egg",
+      'switch-to-easter-egg',
       async () => {
         return await this.debounceManager.withLock(
-          "webview-transition",
+          'webview-transition',
           async () => {
             return await this.performEasterEggTransition(onContentReady);
           },
@@ -81,10 +81,10 @@ export class TransitionManager {
     onPreviewReady: () => Promise<vscode.TextEditor>,
   ): Promise<vscode.TextEditor> {
     const switchOperation = this.debounceManager.debounce(
-      "switch-to-preview",
+      'switch-to-preview',
       async () => {
         return await this.debounceManager.withLock(
-          "webview-transition",
+          'webview-transition',
           async () => {
             return await this.performPreviewTransition(onPreviewReady);
           },
@@ -106,7 +106,7 @@ export class TransitionManager {
       this.currentState = TransitionState.SWITCHING_TO_EASTER_EGG;
       this.transitionStartTime = Date.now();
 
-      console.log("TransitionManager: Starting easter egg transition");
+      console.log('TransitionManager: Starting easter egg transition');
 
       // 第一步：立即创建占位符（防止真空效应）
       if (this.options.enablePlaceholder) {
@@ -137,10 +137,10 @@ export class TransitionManager {
       this.cleanupPlaceholder();
 
       ErrorHandler.handle(error, {
-        operation: "performEasterEggTransition",
-        module: "TransitionManager",
+        operation: 'performEasterEggTransition',
+        module: 'TransitionManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
 
       throw error;
@@ -157,7 +157,7 @@ export class TransitionManager {
       this.currentState = TransitionState.SWITCHING_TO_PREVIEW;
       this.transitionStartTime = Date.now();
 
-      console.log("TransitionManager: Starting preview transition");
+      console.log('TransitionManager: Starting preview transition');
 
       // 清理彩蛋webview
       this.cleanupPlaceholder();
@@ -177,10 +177,10 @@ export class TransitionManager {
       this.currentState = TransitionState.IDLE;
 
       ErrorHandler.handle(error, {
-        operation: "performPreviewTransition",
-        module: "TransitionManager",
+        operation: 'performPreviewTransition',
+        module: 'TransitionManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
 
       throw error;
@@ -197,8 +197,8 @@ export class TransitionManager {
 
       // 创建极简的占位符webview
       this.placeholderPanel = vscode.window.createWebviewPanel(
-        "easterEggPlaceholder",
-        "Loading Character...",
+        'easterEggPlaceholder',
+        'Loading Character...',
         vscode.ViewColumn.Two,
         {
           enableScripts: false,
@@ -209,13 +209,13 @@ export class TransitionManager {
       // 设置占位符内容
       this.placeholderPanel.webview.html = this.generatePlaceholderHTML();
 
-      console.log("TransitionManager: Placeholder created");
+      console.log('TransitionManager: Placeholder created');
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "createPlaceholder",
-        module: "TransitionManager",
+        operation: 'createPlaceholder',
+        module: 'TransitionManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -255,13 +255,13 @@ export class TransitionManager {
       // 清理占位符
       this.cleanupPlaceholder();
 
-      console.log("TransitionManager: Placeholder replaced with content");
+      console.log('TransitionManager: Placeholder replaced with content');
     } catch (error) {
       ErrorHandler.handle(error, {
-        operation: "replacePlaceholderWithContent",
-        module: "TransitionManager",
+        operation: 'replacePlaceholderWithContent',
+        module: 'TransitionManager',
         showToUser: false,
-        logLevel: "error",
+        logLevel: 'error',
       });
     }
   }
@@ -335,7 +335,7 @@ export class TransitionManager {
     if (this.placeholderPanel && !this.placeholderPanel.disposed) {
       this.placeholderPanel.dispose();
       this.placeholderPanel = undefined;
-      console.log("TransitionManager: Placeholder cleaned up");
+      console.log('TransitionManager: Placeholder cleaned up');
     }
   }
 
@@ -362,7 +362,7 @@ export class TransitionManager {
     this.debounceManager.cancelAll();
     this.debounceManager.releaseAllLocks();
 
-    console.log("TransitionManager: Forced stop");
+    console.log('TransitionManager: Forced stop');
   }
 
   /**
@@ -373,7 +373,7 @@ export class TransitionManager {
     isTransitioning: boolean;
     elapsedTime: number;
     debounceStatus: any;
-  } {
+    } {
     return {
       currentState: this.currentState,
       isTransitioning: this.isTransitioning(),
@@ -392,6 +392,6 @@ export class TransitionManager {
     this.forceStop();
     this.debounceManager.dispose();
 
-    console.log("TransitionManager: Disposed");
+    console.log('TransitionManager: Disposed');
   }
 }

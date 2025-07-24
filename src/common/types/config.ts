@@ -5,13 +5,13 @@
 
 // 配置分类枚举
 export enum ConfigCategories {
-  GENERAL = "General",
-  ALIGNMENT = "Alignment",
-  BRACES = "Braces",
-  SPACING = "Spacing",
-  INDENTATION = "Indentation",
-  WRAPPING = "Wrapping",
-  COMMENTS = "Comments",
+  GENERAL = 'General',
+  ALIGNMENT = 'Alignment',
+  BRACES = 'Braces',
+  SPACING = 'Spacing',
+  INDENTATION = 'Indentation',
+  WRAPPING = 'Wrapping',
+  COMMENTS = 'Comments',
 }
 
 // Clang-Format 配置选项接口
@@ -19,7 +19,7 @@ export interface ClangFormatOption {
   key: string;
   name: string;
   description: string;
-  type: "boolean" | "integer" | "string" | "enum";
+  type: 'boolean' | 'integer' | 'string' | 'enum';
   defaultValue: any;
   possibleValues?: string[];
   category: ConfigCategories;

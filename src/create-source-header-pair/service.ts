@@ -7,11 +7,11 @@
 // and configuration management.
 //
 
-import * as path from "path";
-import * as vscode from "vscode";
+import * as path from 'path';
+import * as vscode from 'vscode';
 
-import { PairingRule, PairingRuleService } from "../pairing-rule-manager";
-import { ErrorHandler } from "../common/error-handler";
+import { PairingRule, PairingRuleService } from '../pairing-rule-manager';
+import { ErrorHandler } from '../common/error-handler';
 import {
   isHeaderFile,
   isSourceFile,
@@ -21,10 +21,10 @@ import {
   toSnakeCase,
   toPascalCase,
   toHeaderGuardCase,
-} from "../common/utils";
-import { Language, FileType } from "../common/types";
+} from '../common/utils';
+import { Language, FileType } from '../common/types';
 
-import { DEFAULT_PLACEHOLDERS, FILE_TEMPLATES, TemplateKey } from "./templates";
+import { DEFAULT_PLACEHOLDERS, FILE_TEMPLATES, TemplateKey } from './templates';
 
 // Service Layer - Core business logic
 export class PairCreatorService {
@@ -34,8 +34,8 @@ export class PairCreatorService {
 
   // Definitive file extensions for fast lookup
   private static readonly DEFINITIVE_EXTENSIONS = {
-    c: new Set([".c"]),
-    cpp: new Set([".cpp", ".cc", ".cxx", ".hh", ".hpp", ".hxx"]),
+    c: new Set(['.c']),
+    cpp: new Set(['.cpp', '.cc', '.cxx', '.hh', '.hpp', '.hxx']),
   } as const;
 
   constructor(private readonly pairingRuleService: PairingRuleService) {}
@@ -120,21 +120,21 @@ export class PairCreatorService {
     filePath?: string,
   ): Promise<{ language: Language; uncertain: boolean }> {
     if (!languageId || !filePath) {
-      return { language: "cpp", uncertain: true };
+      return { language: 'cpp', uncertain: true };
     }
 
     const ext = path.extname(filePath);
 
     // Fast path for definitive extensions
     if (PairCreatorService.DEFINITIVE_EXTENSIONS.c.has(ext)) {
-      return { language: "c", uncertain: false };
+      return { language: 'c', uncertain: false };
     }
     if (PairCreatorService.DEFINITIVE_EXTENSIONS.cpp.has(ext)) {
-      return { language: "cpp", uncertain: false };
+      return { language: 'cpp', uncertain: false };
     }
 
     // Special handling for .h files with companion file detection
-    if (ext === ".h") {
+    if (ext === '.h') {
       const result = await this.detectLanguageForHeaderFile(filePath);
       if (result) {
         return result;
@@ -142,7 +142,7 @@ export class PairCreatorService {
     }
 
     // Fallback to language ID
-    return { language: languageId === "c" ? "c" : "cpp", uncertain: true };
+    return { language: languageId === 'c' ? 'c' : 'cpp', uncertain: true };
   }
 
   // Optimized header file language detection by checking companion files
@@ -166,35 +166,35 @@ export class PairCreatorService {
   private async detectLanguageForHeaderFile(
     filePath: string,
   ): Promise<{ language: Language; uncertain: boolean } | null> {
-    const baseName = path.basename(filePath, ".h");
+    const baseName = path.basename(filePath, '.h');
     const dirPath = path.dirname(filePath);
 
     // Check for C companion file first (less common, check first for early
     // exit)
     const cFile = path.join(dirPath, `${baseName}.c`);
     if (await PairCreatorService.fileExists(cFile)) {
-      return { language: "c", uncertain: false };
+      return { language: 'c', uncertain: false };
     }
 
     // Check for C++ companion files in parallel
-    const cppExtensions = [".cpp", ".cc", ".cxx"];
+    const cppExtensions = ['.cpp', '.cc', '.cxx'];
     const cppChecks = cppExtensions.map((ext) =>
       PairCreatorService.fileExists(path.join(dirPath, `${baseName}${ext}`)),
     );
 
     const results = await Promise.all(cppChecks);
     if (results.some((exists: boolean) => exists)) {
-      return { language: "cpp", uncertain: false };
+      return { language: 'cpp', uncertain: false };
     }
 
-    return { language: "cpp", uncertain: true };
+    return { language: 'cpp', uncertain: true };
   }
 
   // Gets all available pairing rules (custom + workspace + user)
   public getAllPairingRules(): PairingRule[] {
     return [
-      ...(this.pairingRuleService.getRules("workspace") ?? []),
-      ...(this.pairingRuleService.getRules("user") ?? []),
+      ...(this.pairingRuleService.getRules('workspace') ?? []),
+      ...(this.pairingRuleService.getRules('user') ?? []),
     ];
   }
 
@@ -205,13 +205,13 @@ export class PairCreatorService {
   } | null {
     const allRules = this.getAllPairingRules();
     const cppCustomRule = allRules.find(
-      (rule: PairingRule) => rule.language === "cpp",
+      (rule: PairingRule) => rule.language === 'cpp',
     );
     return cppCustomRule
       ? {
-          headerExt: cppCustomRule.headerExt,
-          sourceExt: cppCustomRule.sourceExt,
-        }
+        headerExt: cppCustomRule.headerExt,
+        sourceExt: cppCustomRule.sourceExt,
+      }
       : null;
   }
 
@@ -219,7 +219,7 @@ export class PairCreatorService {
   private generateHeaderGuard(fileName: string, headerExt: string): string {
     // Create a consistent header guard using the utility function
     const baseName = toHeaderGuardCase(fileName);
-    const extPart = headerExt.replace(/^\./, "").toUpperCase();
+    const extPart = headerExt.replace(/^\./, '').toUpperCase();
     return `${baseName}_${extPart}_`;
   }
   // Generates file content with improved template selection
@@ -229,14 +229,14 @@ export class PairCreatorService {
     rule: PairingRule,
   ): { headerContent: string; sourceContent: string } {
     const templateKey: TemplateKey = rule.isClass
-      ? "CPP_CLASS"
+      ? 'CPP_CLASS'
       : rule.isStruct
-        ? rule.language === "cpp"
-          ? "CPP_STRUCT"
-          : "C_STRUCT"
-        : rule.language === "c"
-          ? "C_EMPTY"
-          : "CPP_EMPTY";
+        ? rule.language === 'cpp'
+          ? 'CPP_STRUCT'
+          : 'C_STRUCT'
+        : rule.language === 'c'
+          ? 'C_EMPTY'
+          : 'CPP_EMPTY';
 
     const templates = FILE_TEMPLATES[templateKey];
     const context = {
@@ -260,12 +260,12 @@ export class PairCreatorService {
     }
 
     if (rule.isStruct) {
-      return rule.language === "cpp"
+      return rule.language === 'cpp'
         ? DEFAULT_PLACEHOLDERS.CPP_STRUCT
         : DEFAULT_PLACEHOLDERS.C_STRUCT;
     }
 
-    return rule.language === "c"
+    return rule.language === 'c'
       ? DEFAULT_PLACEHOLDERS.C_EMPTY
       : DEFAULT_PLACEHOLDERS.CPP_EMPTY;
   }
@@ -273,14 +273,14 @@ export class PairCreatorService {
   // Optimized line ending detection based on VS Code settings and platform
   public getLineEnding(): string {
     const eolSetting = vscode.workspace
-      .getConfiguration("files")
-      .get<string>("eol");
+      .getConfiguration('files')
+      .get<string>('eol');
 
-    return eolSetting === "\n" || eolSetting === "\r\n"
+    return eolSetting === '\n' || eolSetting === '\r\n'
       ? eolSetting
-      : process.platform === "win32"
-        ? "\r\n"
-        : "\n";
+      : process.platform === 'win32'
+        ? '\r\n'
+        : '\n';
   }
 
   // Optimized template variable substitution using regex replacement
@@ -289,7 +289,7 @@ export class PairCreatorService {
     context: Record<string, string>,
   ): string {
     // Pre-compile regex for better performance if used frequently
-    return template.replace(/\{\{(\w+)\}\}/g, (_, key) => context[key] ?? "");
+    return template.replace(/\{\{(\w+)\}\}/g, (_, key) => context[key] ?? '');
   }
 
   // File existence check with parallel processing for multiple files
@@ -321,18 +321,18 @@ export class PairCreatorService {
       await Promise.all([
         vscode.workspace.fs.writeFile(
           headerPath,
-          Buffer.from(headerContent, "utf8"),
+          Buffer.from(headerContent, 'utf8'),
         ),
         vscode.workspace.fs.writeFile(
           sourcePath,
-          Buffer.from(sourceContent, "utf8"),
+          Buffer.from(sourceContent, 'utf8'),
         ),
       ]);
     };
 
     const wrappedWrite = ErrorHandler.wrapAsync(writeFilesInternal, {
-      operation: "writeFiles",
-      module: "PairCreatorService",
+      operation: 'writeFiles',
+      module: 'PairCreatorService',
       showToUser: true,
     });
 
@@ -369,7 +369,7 @@ export class PairCreatorService {
       return true;
     }
 
-    if (language === "c" && result.language === "cpp") {
+    if (language === 'c' && result.language === 'cpp') {
       return this.checkForCppFilesInDirectory(currentDir);
     }
 
@@ -406,7 +406,7 @@ export class PairCreatorService {
     language: Language,
   ): Promise<boolean> {
     const baseName = path.basename(filePath, path.extname(filePath));
-    const extensions = language === "c" ? [".c"] : [".cpp", ".cc", ".cxx"];
+    const extensions = language === 'c' ? ['.c'] : ['.cpp', '.cc', '.cxx'];
 
     const checks = extensions.map((ext) =>
       PairCreatorService.fileExists(path.join(dirPath, `${baseName}${ext}`)),
@@ -425,34 +425,34 @@ export class PairCreatorService {
    */
   public async handleOfferToSaveAsDefault(
     rule: PairingRule,
-    language: "c" | "cpp",
+    language: 'c' | 'cpp',
   ): Promise<void> {
     // Only offer for C++ rules
-    if (language !== "cpp") {
+    if (language !== 'cpp') {
       return;
     }
 
     // Check if user already has custom C++ rules configured
     const customRules = this.getAllPairingRules();
-    const hasCppCustomRules = customRules.some((r) => r.language === "cpp");
+    const hasCppCustomRules = customRules.some((r) => r.language === 'cpp');
     if (hasCppCustomRules) {
       return; // Don't prompt if they already have C++ configuration
     }
 
     // Check if this is a custom rule (has _custom suffix means user went
     // through extension selection)
-    const isCustomRule = rule.key.includes("custom");
+    const isCustomRule = rule.key.includes('custom');
     if (!isCustomRule) {
       return; // Don't prompt for built-in rules
     }
 
     const choice = await vscode.window.showInformationMessage(
       `Files created successfully! Would you like to save "${rule.headerExt}/${rule.sourceExt}" as your default C++ extensions for this workspace?`,
-      "Save as Default",
-      "Not Now",
+      'Save as Default',
+      'Not Now',
     );
 
-    if (choice === "Save as Default") {
+    if (choice === 'Save as Default') {
       await this.saveRuleAsDefault(rule);
     }
   }
@@ -462,19 +462,19 @@ export class PairCreatorService {
     const scopeChoice = await vscode.window.showQuickPick(
       [
         {
-          label: "Save for this Workspace",
-          description: "Recommended. Creates a .vscode/settings.json file.",
-          scope: "workspace",
+          label: 'Save for this Workspace',
+          description: 'Recommended. Creates a .vscode/settings.json file.',
+          scope: 'workspace',
         },
         {
-          label: "Save for all my Projects (Global)",
-          description: "Modifies your global user settings.",
-          scope: "user",
+          label: 'Save for all my Projects (Global)',
+          description: 'Modifies your global user settings.',
+          scope: 'user',
         },
       ],
       {
-        placeHolder: "Where would you like to save this configuration?",
-        title: "Save Configuration Scope",
+        placeHolder: 'Where would you like to save this configuration?',
+        title: 'Save Configuration Scope',
       },
     );
 
@@ -487,27 +487,27 @@ export class PairCreatorService {
         // Create a clean rule for saving (remove the 'custom' key suffix)
         const cleanRule: PairingRule = {
           ...rule,
-          key: rule.key.replace("_custom", ""),
+          key: rule.key.replace('_custom', ''),
           label: `${rule.language.toUpperCase()} Pair (${rule.headerExt}/${rule.sourceExt})`,
           description: `Creates a ${rule.headerExt}/${rule.sourceExt} file pair with header guards.`,
         };
 
         await this.pairingRuleService.writeRules(
           [cleanRule],
-          scopeChoice.scope as "workspace" | "user",
+          scopeChoice.scope as 'workspace' | 'user',
         );
 
         vscode.window.showInformationMessage(
           `Successfully saved '${rule.headerExt}/${rule.sourceExt}' as the default extension for ${
-            scopeChoice.scope === "workspace"
-              ? "this workspace"
-              : "all projects"
+            scopeChoice.scope === 'workspace'
+              ? 'this workspace'
+              : 'all projects'
           }.`,
         );
       },
       {
-        operation: "saveConfiguration",
-        module: "PairCreatorService",
+        operation: 'saveConfiguration',
+        module: 'PairCreatorService',
         showToUser: true,
       },
     );

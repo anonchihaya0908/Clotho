@@ -5,21 +5,21 @@
  * It implements the hybrid clangd + heuristic approach for finding partner files.
  */
 
-import * as vscode from "vscode";
-import * as path from "path";
-import { SwitchConfigService } from "./config-manager";
-import { ErrorHandler } from "../common/error-handler";
+import * as vscode from 'vscode';
+import * as path from 'path';
+import { SwitchConfigService } from './config-manager';
+import { ErrorHandler } from '../common/error-handler';
 import {
   HEADER_EXTENSIONS,
   SOURCE_EXTENSIONS,
   TEST_PATTERNS,
-} from "../common/constants";
+} from '../common/constants';
 import {
   LRUCache,
   isHeaderFile,
   isSourceFile,
   isValidCppFile,
-} from "../common/utils";
+} from '../common/utils';
 
 // ===============================
 // Interfaces and Type Definitions
@@ -31,11 +31,11 @@ import {
 export interface SearchResult {
   files: vscode.Uri[];
   method:
-    | "clangd"
-    | "same-directory"
-    | "src-include"
-    | "parallel-tests"
-    | "global-search";
+    | 'clangd'
+    | 'same-directory'
+    | 'src-include'
+    | 'parallel-tests'
+    | 'global-search';
 }
 
 /**
@@ -99,7 +99,7 @@ export class SwitchService {
    */
   public isClangdAvailable(): boolean {
     const clangdExtension = vscode.extensions.getExtension(
-      "llvm-vs-code-extensions.vscode-clangd",
+      'llvm-vs-code-extensions.vscode-clangd',
     );
     if (!clangdExtension?.isActive) {
       return false;
@@ -149,25 +149,25 @@ export class SwitchService {
     try {
       // Step 1: Check if clangd extension is available
       const clangdExtension = vscode.extensions.getExtension(
-        "llvm-vs-code-extensions.vscode-clangd",
+        'llvm-vs-code-extensions.vscode-clangd',
       );
       if (!clangdExtension) {
         console.debug(
-          "Clotho: clangd extension not found, using heuristic search",
+          'Clotho: clangd extension not found, using heuristic search',
         );
-        return { files: [], method: "clangd" };
+        return { files: [], method: 'clangd' };
       }
 
       // Step 2: Ensure the extension is activated
       if (!clangdExtension.isActive) {
         try {
           await clangdExtension.activate();
-          console.debug("Clotho: clangd extension activated");
+          console.debug('Clotho: clangd extension activated');
         } catch (error) {
           console.debug(
-            "Clotho: Failed to activate clangd extension, using heuristic search",
+            'Clotho: Failed to activate clangd extension, using heuristic search',
           );
-          return { files: [], method: "clangd" };
+          return { files: [], method: 'clangd' };
         }
       }
 
@@ -175,9 +175,9 @@ export class SwitchService {
       const api = clangdExtension.exports;
       if (!api?.getClient) {
         console.debug(
-          "Clotho: clangd API not available, using heuristic search",
+          'Clotho: clangd API not available, using heuristic search',
         );
-        return { files: [], method: "clangd" };
+        return { files: [], method: 'clangd' };
       }
 
       // Step 4: Get the language client
@@ -185,23 +185,23 @@ export class SwitchService {
       if (!client || client.state !== 2) {
         // 2 = Running state
         console.debug(
-          "Clotho: clangd client not running, using heuristic search",
+          'Clotho: clangd client not running, using heuristic search',
         );
-        return { files: [], method: "clangd" };
+        return { files: [], method: 'clangd' };
       }
 
       // Step 5: Send the switch request with timeout
       const textDocument = { uri: currentFile.toString() };
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("clangd request timeout")), 3000),
+        setTimeout(() => reject(new Error('clangd request timeout')), 3000),
       );
 
       const result = await Promise.race([
-        client.sendRequest("textDocument/switchSourceHeader", textDocument),
+        client.sendRequest('textDocument/switchSourceHeader', textDocument),
         timeoutPromise,
       ]);
 
-      if (result && typeof result === "string") {
+      if (result && typeof result === 'string') {
         const targetUri = vscode.Uri.parse(result);
         console.debug(`Clotho: clangd found partner file: ${targetUri.fsPath}`);
 
@@ -209,27 +209,27 @@ export class SwitchService {
         try {
           await vscode.workspace.fs.stat(targetUri);
           console.info(
-            "Clotho: Successfully used clangd for precise file switching",
+            'Clotho: Successfully used clangd for precise file switching',
           );
-          return { files: [targetUri], method: "clangd" };
+          return { files: [targetUri], method: 'clangd' };
         } catch {
           console.debug(
-            "Clotho: clangd result file does not exist, using heuristic search",
+            'Clotho: clangd result file does not exist, using heuristic search',
           );
-          return { files: [], method: "clangd" };
+          return { files: [], method: 'clangd' };
         }
       }
 
       console.debug(
-        "Clotho: clangd returned no result, using heuristic search",
+        'Clotho: clangd returned no result, using heuristic search',
       );
-      return { files: [], method: "clangd" };
+      return { files: [], method: 'clangd' };
     } catch (error) {
       console.debug(
-        "Clotho: clangd integration failed, using heuristic search:",
+        'Clotho: clangd integration failed, using heuristic search:',
         error,
       );
-      return { files: [], method: "clangd" };
+      return { files: [], method: 'clangd' };
     }
   }
 
@@ -303,7 +303,7 @@ export class SwitchService {
       }
     }
 
-    return { files: [], method: "global-search" };
+    return { files: [], method: 'global-search' };
   }
 
   // ===============================
@@ -329,7 +329,7 @@ export class SwitchService {
         // File does not exist, continue.
       }
     }
-    return { files, method: "same-directory" };
+    return { files, method: 'same-directory' };
   }
 
   /**
@@ -341,7 +341,7 @@ export class SwitchService {
     targetExtensions: string[],
   ): Promise<SearchResult> {
     const files: vscode.Uri[] = [];
-    const normalizedPath = path.normalize(currentPath).replace(/\\/g, "/");
+    const normalizedPath = path.normalize(currentPath).replace(/\\/g, '/');
 
     const config = SwitchConfigService.getConfig();
     const { sourceDirs, headerDirs } = config;
@@ -353,7 +353,7 @@ export class SwitchService {
     }> = [];
 
     // Check if current path contains any source directory
-    const sourceDirPattern = `(${sourceDirs.join("|")})`;
+    const sourceDirPattern = `(${sourceDirs.join('|')})`;
     const srcRegex = this.getCachedRegex(
       `^(.+?)\\/${sourceDirPattern}\\/(.*)$`,
     );
@@ -367,7 +367,7 @@ export class SwitchService {
     }
 
     // Check if current path contains any header directory
-    const headerDirPattern = `(${headerDirs.join("|")})`;
+    const headerDirPattern = `(${headerDirs.join('|')})`;
     const headerRegex = this.getCachedRegex(
       `^(.+?)\\/${headerDirPattern}\\/(.*)$`,
     );
@@ -388,7 +388,7 @@ export class SwitchService {
     );
     files.push(...foundFiles);
 
-    return { files, method: "src-include" };
+    return { files, method: 'src-include' };
   }
 
   /**
@@ -400,7 +400,7 @@ export class SwitchService {
     targetExtensions: string[],
   ): Promise<SearchResult> {
     const files: vscode.Uri[] = [];
-    const normalizedPath = path.normalize(currentPath).replace(/\\/g, "/");
+    const normalizedPath = path.normalize(currentPath).replace(/\\/g, '/');
 
     const config = SwitchConfigService.getConfig();
     const { sourceDirs, headerDirs, testDirs } = config;
@@ -412,7 +412,7 @@ export class SwitchService {
     }> = [];
 
     // Check if current path is in a test directory
-    const testDirPattern = `(${testDirs.join("|")})`;
+    const testDirPattern = `(${testDirs.join('|')})`;
     const testRegex = this.getCachedRegex(`^(.+?)\\/${testDirPattern}\\/(.*)$`);
     const testsMatch = normalizedPath.match(testRegex);
 
@@ -432,7 +432,7 @@ export class SwitchService {
       files.push(...foundFiles);
     }
 
-    return { files, method: "parallel-tests" };
+    return { files, method: 'parallel-tests' };
   }
 
   /**
@@ -443,19 +443,19 @@ export class SwitchService {
     targetExtensions: string[],
   ): Promise<SearchResult> {
     const config = SwitchConfigService.getConfig();
-    const extensionPattern = `{${targetExtensions.map((ext) => ext.substring(1)).join(",")}}`;
+    const extensionPattern = `{${targetExtensions.map((ext) => ext.substring(1)).join(',')}}`;
     const searchPattern = `**/${baseName}.${extensionPattern}`;
 
     try {
       const foundFiles = await vscode.workspace.findFiles(
         searchPattern,
-        `{${config.excludePatterns.join(",")}}`,
+        `{${config.excludePatterns.join(',')}}`,
         20,
       );
-      return { files: foundFiles, method: "global-search" };
+      return { files: foundFiles, method: 'global-search' };
     } catch (error) {
-      console.error("Clotho: Global file search failed:", error);
-      return { files: [], method: "global-search" };
+      console.error('Clotho: Global file search failed:', error);
+      return { files: [], method: 'global-search' };
     }
   }
 
