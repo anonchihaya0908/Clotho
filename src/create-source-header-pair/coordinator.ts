@@ -6,31 +6,36 @@
 // Uses dependency injection and delegates all implementation details to
 // service and UI layers.
 
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
-import { COMMANDS } from '../common/constants';
+import { COMMANDS } from "../common/constants";
 
-import { PairCreatorService } from './service';
-import { PairCreatorUI } from './ui';
+import { PairCreatorService } from "./service";
+import { PairCreatorUI } from "./ui";
 
 // PairCoordinator orchestrates the workflow between UI and Service layers.
 // It follows the single responsibility principle and uses dependency injection.
 export class PairCoordinator implements vscode.Disposable {
   private static readonly ERROR_MESSAGES = {
     NO_TARGET_DIRECTORY:
-      'Cannot determine target directory. Please open a folder or a file first.',
+      "Cannot determine target directory. Please open a folder or a file first.",
     FILE_EXISTS: (filePath: string) => `File already exists: ${filePath}`,
-    UNEXPECTED_ERROR: 'An unexpected error occurred.'
+    UNEXPECTED_ERROR: "An unexpected error occurred.",
   } as const;
 
   private newPairCommand: vscode.Disposable;
 
   // Constructor with dependency injection - receives pre-configured instances
-  constructor(private readonly service: PairCreatorService,
-    private readonly ui: PairCreatorUI) {
+  constructor(
+    private readonly service: PairCreatorService,
+    private readonly ui: PairCreatorUI,
+  ) {
     // Register commands
     this.newPairCommand = vscode.commands.registerCommand(
-      COMMANDS.NEW_SOURCE_PAIR, this.create, this);
+      COMMANDS.NEW_SOURCE_PAIR,
+      this.create,
+      this,
+    );
   }
 
   // Dispose method for cleanup when extension is deactivated
@@ -45,7 +50,8 @@ export class PairCoordinator implements vscode.Disposable {
       const targetDirectory = await this.getTargetDirectory();
       if (!targetDirectory) {
         vscode.window.showErrorMessage(
-          PairCoordinator.ERROR_MESSAGES.NO_TARGET_DIRECTORY);
+          PairCoordinator.ERROR_MESSAGES.NO_TARGET_DIRECTORY,
+        );
         return;
       }
 
@@ -53,30 +59,43 @@ export class PairCoordinator implements vscode.Disposable {
       const { language, uncertain } =
         await this.service.detectLanguageFromEditor();
       const rule = await this.ui.promptForPairingRule(language, uncertain);
-      if (!rule) { return; }
+      if (!rule) {
+        return;
+      }
 
       const fileName = await this.ui.promptForFileName(rule);
-      if (!fileName) { return; }
+      if (!fileName) {
+        return;
+      }
 
       // 3. Prepare file paths and check for conflicts
-      const { headerPath, sourcePath } =
-        this.service.createFilePaths(targetDirectory, fileName, rule);
-      const existingFilePath =
-        await this.service.checkFileExistence(headerPath, sourcePath);
+      const { headerPath, sourcePath } = this.service.createFilePaths(
+        targetDirectory,
+        fileName,
+        rule,
+      );
+      const existingFilePath = await this.service.checkFileExistence(
+        headerPath,
+        sourcePath,
+      );
       if (existingFilePath) {
         vscode.window.showErrorMessage(
-          PairCoordinator.ERROR_MESSAGES.FILE_EXISTS(existingFilePath));
+          PairCoordinator.ERROR_MESSAGES.FILE_EXISTS(existingFilePath),
+        );
         return;
       }
 
       // 4. Create the files
-      await this.service.generateAndWriteFiles(fileName, rule, headerPath,
-        sourcePath);
+      await this.service.generateAndWriteFiles(
+        fileName,
+        rule,
+        headerPath,
+        sourcePath,
+      );
 
       // 5. Show success and handle post-creation tasks
       await this.ui.showSuccessAndOpenFile(headerPath, sourcePath);
       await this.service.handleOfferToSaveAsDefault(rule, language);
-
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
@@ -88,9 +107,11 @@ export class PairCoordinator implements vscode.Disposable {
 
   // Determine target directory with fallback to workspace picker
   private async getTargetDirectory(): Promise<vscode.Uri | undefined> {
-    return await this.service.getTargetDirectory(
-      vscode.window.activeTextEditor?.document?.uri.fsPath,
-      vscode.workspace.workspaceFolders) ??
-      await this.ui.showWorkspaceFolderPicker();
+    return (
+      (await this.service.getTargetDirectory(
+        vscode.window.activeTextEditor?.document?.uri.fsPath,
+        vscode.workspace.workspaceFolders,
+      )) ?? (await this.ui.showWorkspaceFolderPicker())
+    );
   }
 }

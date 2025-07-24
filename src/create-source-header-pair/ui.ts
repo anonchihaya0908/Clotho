@@ -7,25 +7,25 @@
 // and template selection.
 //
 
-import * as path from 'path';
-import * as vscode from 'vscode';
+import * as path from "path";
+import * as vscode from "vscode";
 
 import {
   PairingRule,
   PairingRuleService,
-  PairingRuleUI
-} from '../pairing-rule-manager';
-import { ErrorHandler } from '../common/error-handler';
-import { toPascalCase } from '../common/utils';
+  PairingRuleUI,
+} from "../pairing-rule-manager";
+import { ErrorHandler } from "../common/error-handler";
+import { toPascalCase } from "../common/utils";
 
-import { PairCreatorService } from './service';
-import { Language, TEMPLATE_RULES, VALIDATION_PATTERNS } from './templates';
+import { PairCreatorService } from "./service";
+import { Language, TEMPLATE_RULES, VALIDATION_PATTERNS } from "./templates";
 
 // Type to clearly express user intent when selecting custom rules
 type CustomRuleSelection =
-  | { type: 'rule', rule: PairingRule; } // User selected a specific rule
-  | { type: 'use_default'; }                 // User wants to use default templates
-  | { type: 'cancelled'; };                  // User cancelled the operation
+  | { type: "rule"; rule: PairingRule } // User selected a specific rule
+  | { type: "use_default" } // User wants to use default templates
+  | { type: "cancelled" }; // User cancelled the operation
 
 // This type clearly expresses three distinct user intents:
 // - 'rule': User selected a specific pairing rule and it should be used
@@ -44,7 +44,7 @@ export class PairCreatorUI {
   constructor(
     service: PairCreatorService,
     pairingRuleService: PairingRuleService,
-    pairingRuleUI: PairingRuleUI
+    pairingRuleUI: PairingRuleUI,
   ) {
     this.service = service;
     this.pairingRuleService = pairingRuleService;
@@ -55,43 +55,47 @@ export class PairCreatorUI {
   // UI ADAPTERS - Data to View Conversion
   // ===============================
 
-  private adaptRuleForTemplateDisplay(rule: PairingRule): vscode.QuickPickItem
-    & PairingRule {
-    const categoryDesc =
-      rule.isClass ? 'Includes constructor, destructor, and basic structure'
-        : rule.isStruct
-          ? 'Simple data structure with member variables'
-          : `Basic ${rule.language.toUpperCase()} file pair with header guards`;
+  private adaptRuleForTemplateDisplay(
+    rule: PairingRule,
+  ): vscode.QuickPickItem & PairingRule {
+    const categoryDesc = rule.isClass
+      ? "Includes constructor, destructor, and basic structure"
+      : rule.isStruct
+        ? "Simple data structure with member variables"
+        : `Basic ${rule.language.toUpperCase()} file pair with header guards`;
 
     return { ...rule, description: categoryDesc, detail: rule.description };
   }
 
   // Converts a PairingRule to a QuickPickItem for custom rules selection
-  private adaptRuleForCustomRulesDisplay(rule: PairingRule, category: 'custom' |
-    'builtin' | 'alternative'):
-    vscode.QuickPickItem & PairingRule {
+  private adaptRuleForCustomRulesDisplay(
+    rule: PairingRule,
+    category: "custom" | "builtin" | "alternative",
+  ): vscode.QuickPickItem & PairingRule {
     const categoryMap = {
-      custom: 'Custom configuration for this workspace',
-      builtin: 'Built-in template with custom extensions',
-      alternative: `Alternative ${rule.language.toUpperCase()} template option`
+      custom: "Custom configuration for this workspace",
+      builtin: "Built-in template with custom extensions",
+      alternative: `Alternative ${rule.language.toUpperCase()} template option`,
     };
 
     return {
       ...rule,
       description: categoryMap[category],
-      detail: rule.description
+      detail: rule.description,
     };
   }
 
   // Creates the special "Use Default Templates" option
-  private createUseDefaultOption(): vscode.QuickPickItem &
-  { key: string, isSpecial: boolean; } {
+  private createUseDefaultOption(): vscode.QuickPickItem & {
+    key: string;
+    isSpecial: boolean;
+  } {
     return {
-      key: 'use_default',
-      label: '$(list-unordered) Use Default Templates',
-      description: 'Ignore custom settings and use built-in defaults',
-      detail: 'Standard .h/.cpp extensions',
-      isSpecial: true
+      key: "use_default",
+      label: "$(list-unordered) Use Default Templates",
+      description: "Ignore custom settings and use built-in defaults",
+      detail: "Standard .h/.cpp extensions",
+      isSpecial: true,
     };
   }
 
@@ -100,8 +104,10 @@ export class PairCreatorUI {
   // ===============================
 
   // Gets custom rules for the specified language
-  private getCustomRulesForLanguage(allRules: PairingRule[],
-    language: 'c' | 'cpp'): PairingRule[] {
+  private getCustomRulesForLanguage(
+    allRules: PairingRule[],
+    language: "c" | "cpp",
+  ): PairingRule[] {
     return allRules.filter((rule: PairingRule) => rule.language === language);
   }
 
@@ -119,70 +125,90 @@ export class PairCreatorUI {
    * @param language - Target language ('c' or 'cpp')
    * @returns Array of adapted built-in templates with custom extensions applied
    */
-  private getAdaptedBuiltinTemplates(customRules: PairingRule[],
-    language: 'c' | 'cpp'): PairingRule[] {
+  private getAdaptedBuiltinTemplates(
+    customRules: PairingRule[],
+    language: "c" | "cpp",
+  ): PairingRule[] {
     const customExt = customRules.length > 0 ? customRules[0] : null;
 
-    if (customExt && language === 'cpp') {
-      return TEMPLATE_RULES
-        .filter(template =>
-          template.language === 'cpp' &&
+    if (customExt && language === "cpp") {
+      return TEMPLATE_RULES.filter(
+        (template) =>
+          template.language === "cpp" &&
           // Complex filtering logic: exclude templates that have an exact custom rule match
           // by checking if any custom rule has the same class/struct characteristics
           !customRules.some(
-            customRule =>
+            (customRule) =>
               customRule.isClass === template.isClass &&
               customRule.isStruct === template.isStruct &&
-              (customRule.isClass || customRule.isStruct ||
-                (!customRule.isClass && !customRule.isStruct &&
-                  !template.isClass && !template.isStruct))))
-        .map(template => ({
-          ...template,
-          key: `${template.key}_adapted`,
-          headerExt: customExt.headerExt,
-          sourceExt: customExt.sourceExt,
-          description:
-            template.description
-              .replace(/Header\/Source/g, `${customExt.headerExt}/${customExt.sourceExt}`)
-              .replace(/\.h\/\.cpp/g, `${customExt.headerExt}/${customExt.sourceExt}`)
-              .replace(/basic \.h\/\.cpp/g,
-                `basic ${customExt.headerExt}/${customExt.sourceExt}`)
-              .replace(/Creates a \.h\/\.cpp/g,
-                `Creates a ${customExt.headerExt}/${customExt.sourceExt}`)
-        }));
+              (customRule.isClass ||
+                customRule.isStruct ||
+                (!customRule.isClass &&
+                  !customRule.isStruct &&
+                  !template.isClass &&
+                  !template.isStruct)),
+          ),
+      ).map((template) => ({
+        ...template,
+        key: `${template.key}_adapted`,
+        headerExt: customExt.headerExt,
+        sourceExt: customExt.sourceExt,
+        description: template.description
+          .replace(
+            /Header\/Source/g,
+            `${customExt.headerExt}/${customExt.sourceExt}`,
+          )
+          .replace(
+            /\.h\/\.cpp/g,
+            `${customExt.headerExt}/${customExt.sourceExt}`,
+          )
+          .replace(
+            /basic \.h\/\.cpp/g,
+            `basic ${customExt.headerExt}/${customExt.sourceExt}`,
+          )
+          .replace(
+            /Creates a \.h\/\.cpp/g,
+            `Creates a ${customExt.headerExt}/${customExt.sourceExt}`,
+          ),
+      }));
     } else {
-      return TEMPLATE_RULES
-        .filter(template =>
+      return TEMPLATE_RULES.filter(
+        (template) =>
           template.language === language &&
           // For non-C++ languages: exclude templates with identical extensions and types
           !customRules.some(
-            customRule =>
+            (customRule) =>
               customRule.headerExt === template.headerExt &&
               customRule.sourceExt === template.sourceExt &&
               customRule.isClass === template.isClass &&
-              customRule.isStruct === template.isStruct))
-        .map(template => this.adaptRuleForDisplayWithExtensions(template, undefined));
+              customRule.isStruct === template.isStruct,
+          ),
+      ).map((template) =>
+        this.adaptRuleForDisplayWithExtensions(template, undefined),
+      );
     }
   }
 
   // Gets cross-language template options
-  private getCrossLanguageTemplates(language: 'c' | 'cpp'): PairingRule[] {
-    return TEMPLATE_RULES.filter(template => template.language !== language)
-      .map(template => this.adaptRuleForDisplayWithExtensions(template, undefined));
+  private getCrossLanguageTemplates(language: "c" | "cpp"): PairingRule[] {
+    return TEMPLATE_RULES.filter(
+      (template) => template.language !== language,
+    ).map((template) =>
+      this.adaptRuleForDisplayWithExtensions(template, undefined),
+    );
   }
 
   // Cleans up custom rules with proper labels and descriptions
   private cleanCustomRules(rules: PairingRule[]): PairingRule[] {
-    return rules.map(
-      rule => ({
-        ...rule,
-        label: rule.label.includes('$(')
-          ? rule.label
-          : `$(new-file) ${rule.language === 'cpp' ? 'C++' : 'C'} Pair (${rule.headerExt}/${rule.sourceExt})`,
-        description: rule.description.startsWith('Creates a')
-          ? rule.description
-          : `Creates a ${rule.headerExt}/${rule.sourceExt} file pair with header guards.`
-      }));
+    return rules.map((rule) => ({
+      ...rule,
+      label: rule.label.includes("$(")
+        ? rule.label
+        : `$(new-file) ${rule.language === "cpp" ? "C++" : "C"} Pair (${rule.headerExt}/${rule.sourceExt})`,
+      description: rule.description.startsWith("Creates a")
+        ? rule.description
+        : `Creates a ${rule.headerExt}/${rule.sourceExt} file pair with header guards.`,
+    }));
   }
 
   // Gets placeholder name for input dialog, considering active file context
@@ -190,20 +216,21 @@ export class PairCreatorUI {
     const activeEditor = vscode.window.activeTextEditor;
 
     if (activeEditor?.document && !activeEditor.document.isUntitled) {
-      const fileName =
-        path.basename(activeEditor.document.fileName,
-          path.extname(activeEditor.document.fileName));
-      return rule.language === 'c' ? fileName
-        : toPascalCase(fileName);
+      const fileName = path.basename(
+        activeEditor.document.fileName,
+        path.extname(activeEditor.document.fileName),
+      );
+      return rule.language === "c" ? fileName : toPascalCase(fileName);
     }
 
     return this.service.getDefaultPlaceholder(rule);
   }
 
   // Checks if language mismatch warning should be shown with UI context
-  private async shouldShowLanguageMismatchWarning(language: Language,
-    result: PairingRule):
-    Promise<boolean> {
+  private async shouldShowLanguageMismatchWarning(
+    language: Language,
+    result: PairingRule,
+  ): Promise<boolean> {
     const activeEditor = vscode.window.activeTextEditor;
     const currentDir =
       activeEditor?.document && !activeEditor.document.isUntitled
@@ -215,7 +242,11 @@ export class PairCreatorUI {
         : undefined;
 
     return this.service.shouldShowLanguageMismatchWarning(
-      language, result, currentDir, activeFilePath);
+      language,
+      result,
+      currentDir,
+      activeFilePath,
+    );
   }
 
   // Adapts template rules for display in UI based on custom extensions
@@ -223,9 +254,11 @@ export class PairCreatorUI {
    * Pure function version that accepts custom extensions as parameter
    * to avoid redundant service calls and improve logic cohesion
    */
-  private adaptRuleForDisplayWithExtensions(rule: PairingRule,
-    customExtensions?: { headerExt: string, sourceExt: string; }): PairingRule {
-    if (rule.language !== 'cpp' || !customExtensions) {
+  private adaptRuleForDisplayWithExtensions(
+    rule: PairingRule,
+    customExtensions?: { headerExt: string; sourceExt: string },
+  ): PairingRule {
+    if (rule.language !== "cpp" || !customExtensions) {
       return rule;
     }
 
@@ -235,7 +268,9 @@ export class PairCreatorUI {
     const replacementPattern =
       /Header\/Source|\.h(?:h|pp|xx)?\/\.c(?:pp|c|xx)?/g;
     const newDescription = rule.description.replace(
-      replacementPattern, `${headerExt}/${sourceExt}`);
+      replacementPattern,
+      `${headerExt}/${sourceExt}`,
+    );
 
     return { ...rule, description: newDescription, headerExt, sourceExt };
   }
@@ -243,37 +278,44 @@ export class PairCreatorUI {
   // Legacy method for backward compatibility - delegates to service
   private adaptRuleForDisplay(rule: PairingRule): PairingRule {
     const customExtensions = this.service.getCustomCppExtensions();
-    return this.adaptRuleForDisplayWithExtensions(rule, customExtensions || undefined);
+    return this.adaptRuleForDisplayWithExtensions(
+      rule,
+      customExtensions || undefined,
+    );
   }
 
   // Prepares template choices for UI display with proper ordering and
   // adaptation
-  private prepareTemplateChoices(language: 'c' | 'cpp',
-    uncertain: boolean): PairingRule[] {
-    const desiredOrder =
-      uncertain
-        ? ['cpp_empty', 'c_empty', 'cpp_class', 'cpp_struct', 'c_struct']
-        : language === 'c'
-          ? ['c_empty', 'c_struct', 'cpp_empty', 'cpp_class', 'cpp_struct']
-          : ['cpp_empty', 'cpp_class', 'cpp_struct', 'c_empty', 'c_struct'];
+  private prepareTemplateChoices(
+    language: "c" | "cpp",
+    uncertain: boolean,
+  ): PairingRule[] {
+    const desiredOrder = uncertain
+      ? ["cpp_empty", "c_empty", "cpp_class", "cpp_struct", "c_struct"]
+      : language === "c"
+        ? ["c_empty", "c_struct", "cpp_empty", "cpp_class", "cpp_struct"]
+        : ["cpp_empty", "cpp_class", "cpp_struct", "c_empty", "c_struct"];
 
     return [...TEMPLATE_RULES]
-      .sort((a, b) =>
-        desiredOrder.indexOf(a.key) - desiredOrder.indexOf(b.key))
-      .map(rule => this.adaptRuleForDisplay(rule));
+      .sort((a, b) => desiredOrder.indexOf(a.key) - desiredOrder.indexOf(b.key))
+      .map((rule) => this.adaptRuleForDisplay(rule));
   }
 
   // Simplified function that delegates to smaller, focused functions
-  private prepareCustomRulesChoices(allRules: PairingRule[],
-    language: 'c' | 'cpp'): {
-      languageRules: PairingRule[],
-      adaptedDefaultTemplates: PairingRule[],
-      otherLanguageTemplates: PairingRule[],
-      cleanedCustomRules: PairingRule[];
-    } {
+  private prepareCustomRulesChoices(
+    allRules: PairingRule[],
+    language: "c" | "cpp",
+  ): {
+    languageRules: PairingRule[];
+    adaptedDefaultTemplates: PairingRule[];
+    otherLanguageTemplates: PairingRule[];
+    cleanedCustomRules: PairingRule[];
+  } {
     const languageRules = this.getCustomRulesForLanguage(allRules, language);
-    const adaptedDefaultTemplates =
-      this.getAdaptedBuiltinTemplates(languageRules, language);
+    const adaptedDefaultTemplates = this.getAdaptedBuiltinTemplates(
+      languageRules,
+      language,
+    );
     const otherLanguageTemplates = this.getCrossLanguageTemplates(language);
     const cleanedCustomRules = this.cleanCustomRules(allRules);
 
@@ -281,7 +323,7 @@ export class PairCreatorUI {
       languageRules,
       adaptedDefaultTemplates,
       otherLanguageTemplates,
-      cleanedCustomRules
+      cleanedCustomRules,
     };
   }
 
@@ -295,37 +337,46 @@ export class PairCreatorUI {
   // should proceed to the default template flow
   // - Returns 'rule' if the user selects a specific rule, and that rule should
   // be used directly
-  public async selectFromCustomRules(allRules: PairingRule[], language: 'c' |
-    'cpp'): Promise<CustomRuleSelection> {
+  public async selectFromCustomRules(
+    allRules: PairingRule[],
+    language: "c" | "cpp",
+  ): Promise<CustomRuleSelection> {
     const {
       cleanedCustomRules,
       adaptedDefaultTemplates,
-      otherLanguageTemplates
+      otherLanguageTemplates,
     } = this.prepareCustomRulesChoices(allRules, language);
 
     // Use adapters to create consistent UI items
     const choices = [
-      ...cleanedCustomRules.map(
-        rule => this.adaptRuleForCustomRulesDisplay(rule, 'custom')),
-      ...adaptedDefaultTemplates.map(
-        rule => this.adaptRuleForCustomRulesDisplay(rule, 'builtin')),
-      ...otherLanguageTemplates.map(
-        rule => this.adaptRuleForCustomRulesDisplay(rule, 'alternative')),
-      this.createUseDefaultOption()
+      ...cleanedCustomRules.map((rule) =>
+        this.adaptRuleForCustomRulesDisplay(rule, "custom"),
+      ),
+      ...adaptedDefaultTemplates.map((rule) =>
+        this.adaptRuleForCustomRulesDisplay(rule, "builtin"),
+      ),
+      ...otherLanguageTemplates.map((rule) =>
+        this.adaptRuleForCustomRulesDisplay(rule, "alternative"),
+      ),
+      this.createUseDefaultOption(),
     ];
 
     const result = await vscode.window.showQuickPick(choices, {
       placeHolder: `Select a ${language.toUpperCase()} pairing rule`,
-      title: 'Custom Pairing Rules Available',
+      title: "Custom Pairing Rules Available",
       matchOnDescription: true,
-      matchOnDetail: true
+      matchOnDetail: true,
     });
 
-    if (!result) { return { type: 'cancelled' }; } // User pressed ESC or cancelled
-    if ('isSpecial' in result && result.isSpecial) { return { type: 'use_default' }; } // User chose "Use Default Templates"
+    if (!result) {
+      return { type: "cancelled" };
+    } // User pressed ESC or cancelled
+    if ("isSpecial" in result && result.isSpecial) {
+      return { type: "use_default" };
+    } // User chose "Use Default Templates"
     return {
-      type: 'rule',
-      rule: result as PairingRule
+      type: "rule",
+      rule: result as PairingRule,
     }; // User selected a specific rule
   }
 
@@ -333,103 +384,125 @@ export class PairCreatorUI {
   // Offers common extension combinations or allows custom input
   // Saves the rule to workspace or global settings
   // Returns the created custom rule or undefined if cancelled
-  public async createCustomRules(language: 'c' |
-    'cpp'): Promise<PairingRule | undefined> {
-    if (language === 'c') { return undefined; }
+  public async createCustomRules(
+    language: "c" | "cpp",
+  ): Promise<PairingRule | undefined> {
+    if (language === "c") {
+      return undefined;
+    }
 
     const commonExtensions = [
-      { label: '.h / .cpp (Default)', headerExt: '.h', sourceExt: '.cpp' },
-      { label: '.hh / .cc (Alternative)', headerExt: '.hh', sourceExt: '.cc' }, {
-        label: '.hpp / .cpp (Header Plus Plus)',
-        headerExt: '.hpp',
-        sourceExt: '.cpp'
+      { label: ".h / .cpp (Default)", headerExt: ".h", sourceExt: ".cpp" },
+      { label: ".hh / .cc (Alternative)", headerExt: ".hh", sourceExt: ".cc" },
+      {
+        label: ".hpp / .cpp (Header Plus Plus)",
+        headerExt: ".hpp",
+        sourceExt: ".cpp",
       },
-      { label: '.hxx / .cxx (Extended)', headerExt: '.hxx', sourceExt: '.cxx' },
-      { label: 'Custom Extensions', headerExt: '', sourceExt: '' }
+      { label: ".hxx / .cxx (Extended)", headerExt: ".hxx", sourceExt: ".cxx" },
+      { label: "Custom Extensions", headerExt: "", sourceExt: "" },
     ];
 
-    const selectedExtension =
-      await vscode.window.showQuickPick(commonExtensions, {
-        placeHolder: 'Select file extensions for C++ files',
-        title: 'Choose File Extensions'
-      });
+    const selectedExtension = await vscode.window.showQuickPick(
+      commonExtensions,
+      {
+        placeHolder: "Select file extensions for C++ files",
+        title: "Choose File Extensions",
+      },
+    );
 
-    if (!selectedExtension) { return undefined; }
+    if (!selectedExtension) {
+      return undefined;
+    }
 
     let { headerExt, sourceExt } = selectedExtension;
 
     if (!headerExt || !sourceExt) {
       const validateExt = (text: string) =>
-        (!text || !text.startsWith('.') || text.length < 2)
-          ? 'Please enter a valid file extension starting with a dot (e.g., .h)'
+        !text || !text.startsWith(".") || text.length < 2
+          ? "Please enter a valid file extension starting with a dot (e.g., .h)"
           : null;
 
-      headerExt = await vscode.window.showInputBox({
-        prompt: 'Enter header file extension (e.g., .h, .hh, .hpp)',
-        placeHolder: '.h',
-        validateInput: validateExt
-      }) || '';
+      headerExt =
+        (await vscode.window.showInputBox({
+          prompt: "Enter header file extension (e.g., .h, .hh, .hpp)",
+          placeHolder: ".h",
+          validateInput: validateExt,
+        })) || "";
 
-      if (!headerExt) { return undefined; }
+      if (!headerExt) {
+        return undefined;
+      }
 
-      sourceExt = await vscode.window.showInputBox({
-        prompt: 'Enter source file extension for C++ (e.g., .cpp, .cc, .cxx)',
-        placeHolder: '.cpp',
-        validateInput: validateExt
-      }) || '';
+      sourceExt =
+        (await vscode.window.showInputBox({
+          prompt: "Enter source file extension for C++ (e.g., .cpp, .cc, .cxx)",
+          placeHolder: ".cpp",
+          validateInput: validateExt,
+        })) || "";
 
-      if (!sourceExt) { return undefined; }
+      if (!sourceExt) {
+        return undefined;
+      }
     }
 
     const customRule: PairingRule = {
       key: `custom_cpp_${Date.now()}`,
       label: `$(new-file) C++ Pair (${headerExt}/${sourceExt})`,
-      description:
-        `Creates a ${headerExt}/${sourceExt} file pair with header guards.`,
-      language: 'cpp',
+      description: `Creates a ${headerExt}/${sourceExt} file pair with header guards.`,
+      language: "cpp",
       headerExt,
-      sourceExt
+      sourceExt,
     };
 
     const saveLocation = await vscode.window.showQuickPick(
       [
         {
-          label: 'Workspace Settings',
-          description: 'Save to current workspace only',
-          value: 'workspace'
+          label: "Workspace Settings",
+          description: "Save to current workspace only",
+          value: "workspace",
         },
         {
-          label: 'Global Settings',
-          description: 'Save to user settings (available in all workspaces)',
-          value: 'user'
-        }
+          label: "Global Settings",
+          description: "Save to user settings (available in all workspaces)",
+          value: "user",
+        },
       ],
       {
-        placeHolder: 'Where would you like to save this custom rule?',
-        title: 'Save Location'
-      });
+        placeHolder: "Where would you like to save this custom rule?",
+        title: "Save Location",
+      },
+    );
 
-    if (!saveLocation) { return undefined; }
+    if (!saveLocation) {
+      return undefined;
+    }
 
-    const saveRule = ErrorHandler.wrapAsync(async () => {
-      const existingRules = this.pairingRuleService.getRules(
-        saveLocation.value as 'workspace' | 'user') ||
-        [];
-      await this.pairingRuleService.writeRules([...existingRules, customRule],
-        saveLocation.value as 'workspace' |
-        'user');
+    const saveRule = ErrorHandler.wrapAsync(
+      async () => {
+        const existingRules =
+          this.pairingRuleService.getRules(
+            saveLocation.value as "workspace" | "user",
+          ) || [];
+        await this.pairingRuleService.writeRules(
+          [...existingRules, customRule],
+          saveLocation.value as "workspace" | "user",
+        );
 
-      const locationText =
-        saveLocation.value === 'workspace' ? 'workspace' : 'global';
-      vscode.window.showInformationMessage(
-        `Custom pairing rule saved to ${locationText} settings.`);
+        const locationText =
+          saveLocation.value === "workspace" ? "workspace" : "global";
+        vscode.window.showInformationMessage(
+          `Custom pairing rule saved to ${locationText} settings.`,
+        );
 
-      return customRule;
-    }, {
-      operation: 'saveCustomRule',
-      module: 'PairCreatorUI',
-      showToUser: true
-    });
+        return customRule;
+      },
+      {
+        operation: "saveCustomRule",
+        module: "PairCreatorUI",
+        showToUser: true,
+      },
+    );
 
     try {
       return await saveRule();
@@ -442,22 +515,25 @@ export class PairCreatorUI {
   // MAIN ORCHESTRATOR - The Core Workflow
   // ===============================
 
-  public async promptForPairingRule(language: 'c' | 'cpp', uncertain: boolean):
-    Promise<PairingRule | undefined> {
-
-    const workspaceRules = this.pairingRuleService.getRules('workspace') || [];
-    const cppWorkspaceRules = workspaceRules.filter(r => r.language === 'cpp');
+  public async promptForPairingRule(
+    language: "c" | "cpp",
+    uncertain: boolean,
+  ): Promise<PairingRule | undefined> {
+    const workspaceRules = this.pairingRuleService.getRules("workspace") || [];
+    const cppWorkspaceRules = workspaceRules.filter(
+      (r) => r.language === "cpp",
+    );
 
     if (cppWorkspaceRules.length > 1) {
       const choice = await vscode.window.showWarningMessage(
         `Multiple C++ pairing rules were found in your workspace settings. This can cause unexpected behavior.`,
         { modal: false },
-        'Clear and Reconfigure',
-        'Cancel'
+        "Clear and Reconfigure",
+        "Cancel",
       );
 
-      if (choice === 'Clear and Reconfigure') {
-        await this.pairingRuleService.resetRules('workspace');
+      if (choice === "Clear and Reconfigure") {
+        await this.pairingRuleService.resetRules("workspace");
         // Re-run the command to start with a clean state
         return this.promptForPairingRule(language, uncertain);
       }
@@ -465,22 +541,22 @@ export class PairCreatorUI {
     }
 
     const allRules = this.service.getAllPairingRules();
-    const cppRules = allRules.filter(rule => rule.language === 'cpp');
+    const cppRules = allRules.filter((rule) => rule.language === "cpp");
 
     // If custom C++ rules exist, show the advanced selection UI
-    if (language === 'cpp' && cppRules.length > 0) {
+    if (language === "cpp" && cppRules.length > 0) {
       const selection = await this.selectFromCustomRules(allRules, language);
 
       switch (selection.type) {
-        case 'cancelled':
+        case "cancelled":
           // User pressed ESC, terminate the entire operation
           return undefined;
 
-        case 'rule':
+        case "rule":
           // User selected a specific rule, so we're done. Return it.
           return selection.rule;
 
-        case 'use_default':
+        case "use_default":
           // User wants to proceed to the default template selection.
           // We do nothing here and let the code "fall through" to the next section.
           break;
@@ -491,15 +567,22 @@ export class PairCreatorUI {
     // 1. There are no custom rules.
     // 2. The user explicitly chose "Use Default Templates" in the previous step.
 
-    const templateChoice =
-      await this.promptForTemplateTypeFirst(language, uncertain);
-    if (!templateChoice) { return undefined; }
+    const templateChoice = await this.promptForTemplateTypeFirst(
+      language,
+      uncertain,
+    );
+    if (!templateChoice) {
+      return undefined;
+    }
 
     // If a C++ template was chosen and no custom C++ rules are configured,
     // prompt the user for extensions for this one-time operation.
-    if (templateChoice.language === 'cpp' && cppRules.length === 0) {
-      const extensionChoice = await this.pairingRuleUI.promptForFileExtensions();
-      if (!extensionChoice) { return undefined; }
+    if (templateChoice.language === "cpp" && cppRules.length === 0) {
+      const extensionChoice =
+        await this.pairingRuleUI.promptForFileExtensions();
+      if (!extensionChoice) {
+        return undefined;
+      }
 
       // Apply the chosen extensions to the template to create a temporary rule
       return {
@@ -509,7 +592,8 @@ export class PairCreatorUI {
         sourceExt: extensionChoice.sourceExt,
         description: templateChoice.description.replace(
           /\.h\/\.cpp/g,
-          `${extensionChoice.headerExt}/${extensionChoice.sourceExt}`)
+          `${extensionChoice.headerExt}/${extensionChoice.sourceExt}`,
+        ),
       };
     }
 
@@ -519,35 +603,45 @@ export class PairCreatorUI {
   }
 
   // Simplified template selection with adapter pattern
-  private async promptForTemplateTypeFirst(language: 'c' | 'cpp',
-    uncertain: boolean):
-    Promise<PairingRule | null> {
+  private async promptForTemplateTypeFirst(
+    language: "c" | "cpp",
+    uncertain: boolean,
+  ): Promise<PairingRule | null> {
     const choices = this.prepareTemplateChoices(language, uncertain);
-    const enhancedChoices =
-      choices.map(rule => this.adaptRuleForTemplateDisplay(rule));
+    const enhancedChoices = choices.map((rule) =>
+      this.adaptRuleForTemplateDisplay(rule),
+    );
 
     const result = await vscode.window.showQuickPick(enhancedChoices, {
-      placeHolder: 'Please select the type of file pair to create.',
-      title: 'Create Source/Header Pair',
+      placeHolder: "Please select the type of file pair to create.",
+      title: "Create Source/Header Pair",
       matchOnDescription: true,
-      matchOnDetail: true
+      matchOnDetail: true,
     });
 
-    if (!result) { return null; } // User cancelled
+    if (!result) {
+      return null;
+    } // User cancelled
 
     if (result && !uncertain && language !== result.language) {
-      const shouldShowWarning =
-        await this.shouldShowLanguageMismatchWarning(language, result);
+      const shouldShowWarning = await this.shouldShowLanguageMismatchWarning(
+        language,
+        result,
+      );
 
       if (shouldShowWarning) {
-        const detectedLangName = language === 'c' ? 'C' : 'C++';
-        const selectedLangName = result.language === 'c' ? 'C' : 'C++';
+        const detectedLangName = language === "c" ? "C" : "C++";
+        const selectedLangName = result.language === "c" ? "C" : "C++";
 
         const shouldContinue = await vscode.window.showWarningMessage(
           `You're working in a ${detectedLangName} file but selected a ${selectedLangName} template. This may create files with incompatible extensions or content.`,
-          'Continue', 'Cancel');
+          "Continue",
+          "Cancel",
+        );
 
-        if (shouldContinue !== 'Continue') { return null; }
+        if (shouldContinue !== "Continue") {
+          return null;
+        }
       }
     }
 
@@ -562,19 +656,23 @@ export class PairCreatorUI {
     }
 
     const selected = await vscode.window.showQuickPick(
-      workspaceFolders.map(folder => ({
+      workspaceFolders.map((folder) => ({
         label: folder.name,
         description: folder.uri.fsPath,
-        folder: folder
+        folder: folder,
       })),
-      { placeHolder: 'Select workspace folder for new files' });
+      { placeHolder: "Select workspace folder for new files" },
+    );
 
     return selected?.folder.uri;
   }
 
   // Prompts the user to enter a name for the new file pair
-  public async promptForFileName(rule: PairingRule): Promise<string | undefined> {
-    const prompt = rule.isClass ? 'Please enter the name for the new C++ class.'
+  public async promptForFileName(
+    rule: PairingRule,
+  ): Promise<string | undefined> {
+    const prompt = rule.isClass
+      ? "Please enter the name for the new C++ class."
       : rule.isStruct
         ? `Please enter the name for the new ${rule.language.toUpperCase()} struct.`
         : `Please enter the base name for the new ${rule.language.toUpperCase()} file pair.`;
@@ -583,24 +681,29 @@ export class PairCreatorUI {
       prompt,
       placeHolder: this.getPlaceholder(rule),
       validateInput: (text) =>
-        VALIDATION_PATTERNS.IDENTIFIER.test(text?.trim() || '')
+        VALIDATION_PATTERNS.IDENTIFIER.test(text?.trim() || "")
           ? null
-          : 'Invalid C/C++ identifier.',
-      title: 'Create Source/Header Pair'
+          : "Invalid C/C++ identifier.",
+      title: "Create Source/Header Pair",
     });
   }
 
   // Shows success message and opens the newly created header file
-  public async showSuccessAndOpenFile(headerPath: vscode.Uri,
-    sourcePath: vscode.Uri): Promise<void> {
-    const openFile = ErrorHandler.wrapAsync(async () => {
-      const document = await vscode.workspace.openTextDocument(headerPath);
-      await vscode.window.showTextDocument(document);
-    }, {
-      operation: 'openCreatedFile',
-      module: 'PairCreatorUI',
-      showToUser: false // Don't show error to user for this non-critical operation
-    });
+  public async showSuccessAndOpenFile(
+    headerPath: vscode.Uri,
+    sourcePath: vscode.Uri,
+  ): Promise<void> {
+    const openFile = ErrorHandler.wrapAsync(
+      async () => {
+        const document = await vscode.workspace.openTextDocument(headerPath);
+        await vscode.window.showTextDocument(document);
+      },
+      {
+        operation: "openCreatedFile",
+        module: "PairCreatorUI",
+        showToUser: false, // Don't show error to user for this non-critical operation
+      },
+    );
 
     // Try to open the file, but don't let failure block the success message
     setTimeout(async () => {
@@ -614,7 +717,8 @@ export class PairCreatorUI {
     // Show success message
     setTimeout(() => {
       vscode.window.showInformationMessage(
-        `Successfully created ${path.basename(headerPath.fsPath)} and ${path.basename(sourcePath.fsPath)}.`);
+        `Successfully created ${path.basename(headerPath.fsPath)} and ${path.basename(sourcePath.fsPath)}.`,
+      );
     }, 50);
   }
 }
