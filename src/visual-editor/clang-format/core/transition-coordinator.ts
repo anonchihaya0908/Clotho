@@ -232,7 +232,9 @@ export class TransitionCoordinator {
         } else {
             // 简单切换：先隐藏占位符，再显示预览
             this.eventBus.emit('placeholder-hide-requested', { animated: false });
-            this.eventBus.emit('preview-show-requested', {
+            this.eventBus.emit('open-preview-requested', {
+                source: 'transition-coordinator',
+                forceReopen: true,
                 config: command.metadata?.config,
                 animated: true,
             });
@@ -243,7 +245,8 @@ export class TransitionCoordinator {
      * 执行直接预览
      */
     private async executeDirectPreview(command: TransitionCommand): Promise<void> {
-        this.eventBus.emit('preview-show-requested', {
+        this.eventBus.emit('open-preview-requested', {
+            source: 'transition-coordinator',
             config: command.metadata?.config,
             animated: this.config.enableAnimations,
         });

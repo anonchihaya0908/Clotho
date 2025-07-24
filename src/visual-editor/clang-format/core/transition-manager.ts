@@ -1,397 +1,375 @@
 /**
- * 过渡管理器
- * 处理webview切换过程中的稳定性和流畅性
+ * 平滑过渡管理器
+ * 提供 CSS 动画和 webview 切换的无缝体验
  */
 
 import * as vscode from 'vscode';
-import { DebounceManager } from './debounce-manager';
-import { ErrorHandler } from '../../../common/error-handler';
 
 /**
- * 过渡状态枚举
+ * 动画配置
  */
-export enum TransitionState {
-  IDLE = 'idle',
-  SWITCHING_TO_PREVIEW = 'switching-to-preview',
-  SWITCHING_TO_EASTER_EGG = 'switching-to-easter-egg',
-  CREATING_PLACEHOLDER = 'creating-placeholder',
-  LOADING_CONTENT = 'loading-content',
+export interface AnimationConfig {
+    duration: number;
+    easing: string;
+    delay?: number;
 }
 
 /**
- * 过渡配置选项
+ * 过渡状态
  */
-export interface TransitionOptions {
-  placeholderDelay: number;
-  contentLoadDelay: number;
-  maxTransitionTime: number;
-  enablePlaceholder: boolean;
+export enum AnimationState {
+    IDLE = 'idle',
+    FADING_IN = 'fading-in',
+    FADING_OUT = 'fading-out',
+    PREPARING = 'preparing',
 }
 
 /**
- * 过渡管理器
+ * 平滑过渡管理器
  */
-export class TransitionManager {
-  private currentState: TransitionState = TransitionState.IDLE;
-  private debounceManager: DebounceManager;
-  private placeholderPanel: vscode.WebviewPanel | undefined;
-  private transitionStartTime: number = 0;
+export class SmoothTransitionManager {
+    private currentState: AnimationState = AnimationState.IDLE;
+    private animationCallbacks = new Map<string, () => void>();
 
-  private readonly defaultOptions: TransitionOptions = {
-    placeholderDelay: 50, // 50ms内创建占位符
-    contentLoadDelay: 200, // 200ms后加载实际内容
-    maxTransitionTime: 2000, // 最大过渡时间2秒
-    enablePlaceholder: true,
-  };
+    constructor(private extensionUri: vscode.Uri) { }
 
-  constructor(
-    private extensionUri: vscode.Uri,
-    private options: Partial<TransitionOptions> = {},
-  ) {
-    this.debounceManager = new DebounceManager();
-    this.options = { ...this.defaultOptions, ...options };
-  }
+    /**
+     * 为 webview 面板添加过渡样式
+     */
+    public injectTransitionStyles(webview: vscode.Webview): void {
+        const transitionCSS = `
+      <style>
+        .transition-container {
+          opacity: 1;
+          transition: opacity 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+          will-change: opacity;
+        }
+        
+        .fade-out {
+          opacity: 0 !important;
+        }
+        
+        .fade-in {
+          opacity: 1 !important;
+        }
+        
+        .preparing {
+          opacity: 0;
+          transition: none;
+        }
+        
+        /* 为占位符添加特殊动画 */
+        .placeholder-content {
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        
+        .placeholder-content.show {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        
+        /* 预览编辑器过渡效果 */
+        .preview-container {
+          opacity: 1;
+          transition: opacity 0.25s ease-out;
+        }
+        
+        .preview-container.hide {
+          opacity: 0;
+        }
+        
+        /* 加载状态动画 */
+        @keyframes pulse {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+        
+        .loading {
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+      </style>
+    `;
 
-  /**
-   * 切换到彩蛋模式
-   */
-  async switchToEasterEgg(
-    onContentReady: () => Promise<vscode.WebviewPanel>,
-  ): Promise<vscode.WebviewPanel> {
-    const switchOperation = this.debounceManager.debounce(
-      'switch-to-easter-egg',
-      async () => {
-        return await this.debounceManager.withLock(
-          'webview-transition',
-          async () => {
-            return await this.performEasterEggTransition(onContentReady);
-          },
-        );
-      },
-      { delay: 10, leading: true }, // 立即执行，但防止重复调用
-    );
-
-    return await switchOperation();
-  }
-
-  /**
-   * 切换到预览模式
-   */
-  async switchToPreview(
-    onPreviewReady: () => Promise<vscode.TextEditor>,
-  ): Promise<vscode.TextEditor> {
-    const switchOperation = this.debounceManager.debounce(
-      'switch-to-preview',
-      async () => {
-        return await this.debounceManager.withLock(
-          'webview-transition',
-          async () => {
-            return await this.performPreviewTransition(onPreviewReady);
-          },
-        );
-      },
-      { delay: 10, leading: true },
-    );
-
-    return await switchOperation();
-  }
-
-  /**
-   * 执行彩蛋过渡
-   */
-  private async performEasterEggTransition(
-    onContentReady: () => Promise<vscode.WebviewPanel>,
-  ): Promise<vscode.WebviewPanel> {
-    try {
-      this.currentState = TransitionState.SWITCHING_TO_EASTER_EGG;
-      this.transitionStartTime = Date.now();
-
-      console.log('TransitionManager: Starting easter egg transition');
-
-      // 第一步：立即创建占位符（防止真空效应）
-      if (this.options.enablePlaceholder) {
-        this.currentState = TransitionState.CREATING_PLACEHOLDER;
-        await this.createPlaceholder();
-      }
-
-      // 第二步：异步加载实际内容
-      this.currentState = TransitionState.LOADING_CONTENT;
-      const contentPanel = await this.loadEasterEggContent(onContentReady);
-
-      // 确保面板在正确的位置显示
-      contentPanel.reveal(vscode.ViewColumn.Two, true);
-
-      // 第三步：替换占位符
-      await this.replacePlaceholderWithContent(contentPanel);
-
-      this.currentState = TransitionState.IDLE;
-
-      const transitionTime = Date.now() - this.transitionStartTime;
-      console.log(
-        `TransitionManager: Easter egg transition completed in ${transitionTime}ms`,
-      );
-
-      return contentPanel;
-    } catch (error) {
-      this.currentState = TransitionState.IDLE;
-      this.cleanupPlaceholder();
-
-      ErrorHandler.handle(error, {
-        operation: 'performEasterEggTransition',
-        module: 'TransitionManager',
-        showToUser: false,
-        logLevel: 'error',
-      });
-
-      throw error;
-    }
-  }
-
-  /**
-   * 执行预览过渡
-   */
-  private async performPreviewTransition(
-    onPreviewReady: () => Promise<vscode.TextEditor>,
-  ): Promise<vscode.TextEditor> {
-    try {
-      this.currentState = TransitionState.SWITCHING_TO_PREVIEW;
-      this.transitionStartTime = Date.now();
-
-      console.log('TransitionManager: Starting preview transition');
-
-      // 清理彩蛋webview
-      this.cleanupPlaceholder();
-
-      // 创建预览编辑器
-      const previewEditor = await onPreviewReady();
-
-      this.currentState = TransitionState.IDLE;
-
-      const transitionTime = Date.now() - this.transitionStartTime;
-      console.log(
-        `TransitionManager: Preview transition completed in ${transitionTime}ms`,
-      );
-
-      return previewEditor;
-    } catch (error) {
-      this.currentState = TransitionState.IDLE;
-
-      ErrorHandler.handle(error, {
-        operation: 'performPreviewTransition',
-        module: 'TransitionManager',
-        showToUser: false,
-        logLevel: 'error',
-      });
-
-      throw error;
-    }
-  }
-
-  /**
-   * 创建占位符webview
-   */
-  private async createPlaceholder(): Promise<void> {
-    try {
-      // 如果已经有占位符，先清理
-      this.cleanupPlaceholder();
-
-      // 创建极简的占位符webview
-      this.placeholderPanel = vscode.window.createWebviewPanel(
-        'easterEggPlaceholder',
-        'Loading Character...',
-        vscode.ViewColumn.Two,
-        {
-          enableScripts: false,
-          retainContextWhenHidden: false,
-        },
-      );
-
-      // 设置占位符内容
-      this.placeholderPanel.webview.html = this.generatePlaceholderHTML();
-
-      console.log('TransitionManager: Placeholder created');
-    } catch (error) {
-      ErrorHandler.handle(error, {
-        operation: 'createPlaceholder',
-        module: 'TransitionManager',
-        showToUser: false,
-        logLevel: 'error',
-      });
-    }
-  }
-
-  /**
-   * 加载彩蛋内容
-   */
-  private async loadEasterEggContent(
-    onContentReady: () => Promise<vscode.WebviewPanel>,
-  ): Promise<vscode.WebviewPanel> {
-    // 添加最小延迟，确保占位符有时间显示
-    if (this.options.contentLoadDelay! > 0) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, this.options.contentLoadDelay),
-      );
+        // 注入样式到 webview
+        webview.postMessage({
+            type: 'inject-styles',
+            styles: transitionCSS,
+        });
     }
 
-    // 检查过渡超时
-    const elapsedTime = Date.now() - this.transitionStartTime;
-    if (elapsedTime > this.options.maxTransitionTime!) {
-      throw new Error(`Transition timeout after ${elapsedTime}ms`);
+    /**
+     * 淡出 webview
+     */
+    public async fadeOut(
+        webview: vscode.Webview,
+        config: AnimationConfig = { duration: 300, easing: 'ease-out' }
+    ): Promise<void> {
+        return new Promise((resolve) => {
+            this.currentState = AnimationState.FADING_OUT;
+
+            webview.postMessage({
+                type: 'start-fadeout',
+                duration: config.duration,
+                easing: config.easing,
+            });
+
+            // 等待动画完成
+            setTimeout(() => {
+                this.currentState = AnimationState.IDLE;
+                resolve();
+            }, config.duration + 50);
+        });
     }
 
-    return await onContentReady();
-  }
+    /**
+     * 淡入 webview
+     */
+    public async fadeIn(
+        webview: vscode.Webview,
+        config: AnimationConfig = { duration: 300, easing: 'ease-in' }
+    ): Promise<void> {
+        return new Promise((resolve) => {
+            this.currentState = AnimationState.FADING_IN;
 
-  /**
-   * 用实际内容替换占位符
-   */
-  private async replacePlaceholderWithContent(
-    contentPanel: vscode.WebviewPanel,
-  ): Promise<void> {
-    try {
-      // 确保内容面板在正确的位置
-      contentPanel.reveal(vscode.ViewColumn.Two);
+            webview.postMessage({
+                type: 'start-fadein',
+                duration: config.duration,
+                easing: config.easing,
+            });
 
-      // 清理占位符
-      this.cleanupPlaceholder();
-
-      console.log('TransitionManager: Placeholder replaced with content');
-    } catch (error) {
-      ErrorHandler.handle(error, {
-        operation: 'replacePlaceholderWithContent',
-        module: 'TransitionManager',
-        showToUser: false,
-        logLevel: 'error',
-      });
+            // 等待动画完成
+            setTimeout(() => {
+                this.currentState = AnimationState.IDLE;
+                resolve();
+            }, config.duration + 50);
+        });
     }
-  }
 
-  /**
-   * 生成占位符HTML
-   */
-  private generatePlaceholderHTML(): string {
-    return `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Loading Character</title>
-                <style>
-                    body {
-                        margin: 0;
-                        padding: 0;
-                        height: 100vh;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        background: var(--vscode-editor-background);
-                        color: var(--vscode-editor-foreground);
-                        font-family: var(--vscode-font-family);
-                        font-size: var(--vscode-font-size);
-                    }
-                    
-                    .placeholder-container {
-                        text-align: center;
-                        opacity: 0;
-                        animation: fadeIn 0.3s ease-in-out forwards;
-                    }
-                    
-                    .placeholder-icon {
-                        font-size: 48px;
-                        margin-bottom: 16px;
-                        animation: pulse 1.5s ease-in-out infinite;
-                    }
-                    
-                    .placeholder-text {
-                        font-size: 16px;
-                        opacity: 0.8;
-                    }
-                    
-                    @keyframes fadeIn {
-                        to { opacity: 1; }
-                    }
-                    
-                    @keyframes pulse {
-                        0%, 100% { transform: scale(1); }
-                        50% { transform: scale(1.1); }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="placeholder-container">
-                    <div class="placeholder-icon">🎭</div>
-                    <div class="placeholder-text">Loading character...</div>
-                </div>
-            </body>
-            </html>
-        `;
-  }
+    /**
+     * 准备 webview（设置为不可见状态，但不销毁）
+     */
+    public prepareWebview(webview: vscode.Webview): void {
+        this.currentState = AnimationState.PREPARING;
 
-  /**
-   * 清理占位符
-   */
-  private cleanupPlaceholder(): void {
-    if (this.placeholderPanel && !this.placeholderPanel.disposed) {
-      this.placeholderPanel.dispose();
-      this.placeholderPanel = undefined;
-      console.log('TransitionManager: Placeholder cleaned up');
+        webview.postMessage({
+            type: 'prepare-transition',
+        });
     }
-  }
 
-  /**
-   * 获取当前状态
-   */
-  getCurrentState(): TransitionState {
-    return this.currentState;
-  }
+    /**
+     * 执行交叉淡入淡出
+     */
+    public async crossfade(
+        outgoingWebview: vscode.Webview,
+        incomingWebview: vscode.Webview,
+        duration: number = 300
+    ): Promise<void> {
+        // 先准备入场的 webview
+        this.prepareWebview(incomingWebview);
 
-  /**
-   * 检查是否正在过渡
-   */
-  isTransitioning(): boolean {
-    return this.currentState !== TransitionState.IDLE;
-  }
+        // 等待一帧确保准备完成
+        await new Promise(resolve => setTimeout(resolve, 16));
 
-  /**
-   * 强制停止过渡
-   */
-  forceStop(): void {
-    this.currentState = TransitionState.IDLE;
-    this.cleanupPlaceholder();
-    this.debounceManager.cancelAll();
-    this.debounceManager.releaseAllLocks();
+        // 同时执行淡出和淡入
+        const fadeOutPromise = this.fadeOut(outgoingWebview, { duration, easing: 'ease-out' });
+        const fadeInPromise = this.fadeIn(incomingWebview, { duration, easing: 'ease-in' });
 
-    console.log('TransitionManager: Forced stop');
-  }
+        await Promise.all([fadeOutPromise, fadeInPromise]);
+    }
 
-  /**
-   * 获取过渡统计信息
-   */
-  getStats(): {
-    currentState: TransitionState;
-    isTransitioning: boolean;
-    elapsedTime: number;
-    debounceStatus: any;
-    } {
-    return {
-      currentState: this.currentState,
-      isTransitioning: this.isTransitioning(),
-      elapsedTime:
-        this.transitionStartTime > 0
-          ? Date.now() - this.transitionStartTime
-          : 0,
-      debounceStatus: this.debounceManager.getStatus(),
-    };
-  }
+    /**
+     * 为占位符内容添加特殊动画
+     */
+    public animatePlaceholder(webview: vscode.Webview, show: boolean): void {
+        webview.postMessage({
+            type: 'animate-placeholder',
+            show,
+        });
+    }
 
-  /**
-   * 清理资源
-   */
-  dispose(): void {
-    this.forceStop();
-    this.debounceManager.dispose();
+    /**
+     * 显示加载状态
+     */
+    public showLoading(webview: vscode.Webview, message?: string): void {
+        webview.postMessage({
+            type: 'show-loading',
+            message: message || 'Preparing preview...',
+        });
+    }
 
-    console.log('TransitionManager: Disposed');
-  }
+    /**
+     * 隐藏加载状态
+     */
+    public hideLoading(webview: vscode.Webview): void {
+        webview.postMessage({
+            type: 'hide-loading',
+        });
+    }
+
+    /**
+     * 获取当前动画状态
+     */
+    public getCurrentState(): AnimationState {
+        return this.currentState;
+    }
+
+    /**
+     * 重置状态
+     */
+    public reset(): void {
+        this.currentState = AnimationState.IDLE;
+        this.animationCallbacks.clear();
+    }
+
+    /**
+     * 生成过渡 HTML 模板
+     */
+    public generateTransitionHTML(content: string): string {
+        return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Clang-Format Visual Editor</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            background: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            font-family: var(--vscode-font-family);
+            overflow: hidden;
+          }
+          
+          .transition-container {
+            width: 100%;
+            height: 100vh;
+            opacity: 1;
+            transition: opacity 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            will-change: opacity;
+          }
+          
+          .fade-out {
+            opacity: 0 !important;
+          }
+          
+          .fade-in {
+            opacity: 1 !important;
+          }
+          
+          .preparing {
+            opacity: 0;
+            transition: none;
+          }
+          
+          .placeholder-content {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+          }
+          
+          .placeholder-content.show {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          
+          .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+          }
+          
+          .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--vscode-progressBar-background);
+            border-top: 3px solid var(--vscode-progressBar-foreground);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          }
+          
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          
+          .loading-message {
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--vscode-descriptionForeground);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="transition-container" id="main-container">
+          ${content}
+        </div>
+        
+        <script>
+          const vscode = acquireVsCodeApi();
+          
+          window.addEventListener('message', event => {
+            const message = event.data;
+            const container = document.getElementById('main-container');
+            
+            switch (message.type) {
+              case 'inject-styles':
+                const style = document.createElement('style');
+                style.textContent = message.styles;
+                document.head.appendChild(style);
+                break;
+                
+              case 'start-fadeout':
+                container.style.transition = \`opacity \${message.duration}ms \${message.easing}\`;
+                container.classList.add('fade-out');
+                break;
+                
+              case 'start-fadein':
+                container.style.transition = \`opacity \${message.duration}ms \${message.easing}\`;
+                container.classList.remove('fade-out');
+                container.classList.add('fade-in');
+                break;
+                
+              case 'prepare-transition':
+                container.classList.add('preparing');
+                break;
+                
+              case 'animate-placeholder':
+                const placeholder = document.querySelector('.placeholder-content');
+                if (placeholder) {
+                  if (message.show) {
+                    placeholder.classList.add('show');
+                  } else {
+                    placeholder.classList.remove('show');
+                  }
+                }
+                break;
+                
+              case 'show-loading':
+                container.innerHTML = \`
+                  <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-message">\${message.message}</div>
+                  </div>
+                \`;
+                break;
+                
+              case 'hide-loading':
+                // 恢复原内容
+                break;
+            }
+          });
+          
+          // 通知扩展页面已准备就绪
+          vscode.postMessage({ type: 'webview-ready' });
+        </script>
+      </body>
+      </html>
+    `;
+    }
 }

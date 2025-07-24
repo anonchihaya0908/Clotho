@@ -8,6 +8,7 @@ import { ClangFormatEditorManager } from './core/editor-manager';
 import { PreviewEditorManager } from './core/preview-manager';
 import { ConfigActionManager } from './core/config-action-manager';
 import { PlaceholderWebviewManager } from './core/placeholder-manager';
+import { TransitionCoordinator } from './core/transition-coordinator';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from './config-options';
 import { WebviewMessageType } from '../../common/types/webview';
 /**
@@ -23,6 +24,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
   private previewManager: PreviewEditorManager;
   private configActionManager: ConfigActionManager;
   private placeholderManager: PlaceholderWebviewManager;
+  private transitionCoordinator: TransitionCoordinator;
 
   private disposables: vscode.Disposable[] = [];
   private isInitialized = false;
@@ -43,10 +45,23 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.configActionManager = new ConfigActionManager();
     this.placeholderManager = new PlaceholderWebviewManager();
 
-    // 3. 设置事件监听
+    // 3. 初始化过渡协调器
+    this.transitionCoordinator = new TransitionCoordinator(
+      this.eventBus,
+      this.stateManager,
+      extensionUri,
+      {
+        crossfadeDuration: 300,
+        enableAnimations: false, // 暂时禁用动画，确保功能正常
+        placeholderDelay: 100,
+        previewTimeout: 5000,
+      }
+    );
+
+    // 4. 设置事件监听
     this.setupEventListeners();
 
-    // 4. 注册VS Code命令
+    // 5. 注册VS Code命令
     this.registerCommands();
   }
 
@@ -100,6 +115,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.editorManager.dispose();
     this.previewManager.dispose();
     this.placeholderManager.dispose();
+    this.transitionCoordinator.dispose();
   }
 
   /**
@@ -118,6 +134,20 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
         await this.handleConfigChange(payload);
       },
     );
+
+    // 【新增】监听来自占位符的预览请求，使用平滑过渡
+    this.eventBus.on('preview-requested', (data) => {
+      console.log('Coordinator: Received preview request with smooth transition');
+
+      if (data.smoothTransition) {
+        // 使用过渡协调器处理平滑切换
+        // 过渡协调器会自动处理占位符到预览的切换
+        console.log('Coordinator: Delegating to transition coordinator');
+      } else {
+        // 回退到原有逻辑
+        this.eventBus.emit('open-preview-requested', data);
+      }
+    });
 
     // 监听主编辑器关闭事件，联动关闭所有
     this.eventBus.on('editor-closed', () => {

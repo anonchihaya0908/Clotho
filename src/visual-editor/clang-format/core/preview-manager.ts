@@ -156,7 +156,12 @@ export class PreviewEditorManager implements BaseManager {
       // 【关键修复】只有在应该创建占位符时才发送事件
       if (shouldCreatePlaceholder) {
         console.log('[PreviewManager] 发送预览关闭事件，以创建占位符');
-        this.context.eventBus.emit('preview-closed');
+        this.context.eventBus.emit('preview-closed', {
+          reason: 'programmatic-close',
+          source: 'preview-manager',
+          timestamp: Date.now(),
+          previewUri: previewUri?.toString()
+        });
       }
     }
   }
@@ -268,6 +273,12 @@ ${configEntries || '//   (using base style defaults)'}
           console.log(
             `[PreviewManager] 是否应创建占位符: ${shouldCreatePlaceholder}`,
           );
+          console.log('[PreviewManager] State details:', {
+            isVisible: state.isVisible,
+            isInitialized: state.isInitialized,
+            previewMode: state.previewMode,
+            shouldCreatePlaceholder
+          });
 
           // 清理预览内容
           this.previewProvider.clearContent(state.previewUri);
@@ -284,7 +295,12 @@ ${configEntries || '//   (using base style defaults)'}
 
           if (shouldCreatePlaceholder) {
             console.log('[PreviewManager] 发送预览关闭事件，以创建占位符');
-            this.context.eventBus.emit('preview-closed');
+            this.context.eventBus.emit('preview-closed', {
+              reason: 'user-closed-tab',
+              source: 'preview-manager',
+              timestamp: Date.now(),
+              previewUri: state.previewUri?.toString()
+            });
           }
           break;
         }

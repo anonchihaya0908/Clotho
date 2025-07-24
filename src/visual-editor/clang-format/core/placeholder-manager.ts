@@ -1,602 +1,466 @@
+/**
+ * 增强版占位符管理器 - 集成平滑过渡功能
+ * 演示如何将新的过渡系统集成到现有管理器中
+ */
+
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
-  BaseManager,
-  ManagerContext,
-  WebviewMessage,
+    BaseManager,
+    ManagerContext,
+    WebviewMessage,
 } from '../../../common/types';
+import { SmoothTransitionManager } from './smooth-transition-manager';
+import { TransitionReason } from './transition-coordinator';
 
 /**
- * 占位符 Webview 管理器
- * 负责在代码预览关闭时创建占位符界面，维持布局稳定性
+ * 事件数据接口
  */
-export class PlaceholderWebviewManager implements BaseManager {
-  readonly name = 'PlaceholderManager';
+interface EventData {
+    reason?: TransitionReason;
+    animated?: boolean;
+    duration?: number;
+    error?: string;
+}
 
-  private panel: vscode.WebviewPanel | undefined;
-  private context!: ManagerContext;
-  private disposables: vscode.Disposable[] = [];
-  private characterImagePaths: string[] = [];
+/**
+ * 增强版占位符 Webview 管理器
+ */
+export class EnhancedPlaceholderManager implements BaseManager {
+    readonly name = 'EnhancedPlaceholderManager';
 
-  async initialize(context: ManagerContext): Promise<void> {
-    this.context = context;
-    this.loadCharacterImagePaths();
-    this.setupEventListeners();
-  }
+    private panel: vscode.WebviewPanel | undefined;
+    private context!: ManagerContext;
+    private disposables: vscode.Disposable[] = [];
+    private characterImagePaths: string[] = [];
+    private transitionManager: SmoothTransitionManager;
+    private isPrepared = false;
 
-  /**
-   * 创建占位符 webview
-   */
-  async createPlaceholder(): Promise<void> {
-    if (this.panel) {
-      this.panel.reveal(vscode.ViewColumn.Two, false); // 不激活，仅显示
-      return;
+    constructor(private extensionUri: vscode.Uri) {
+        this.transitionManager = new SmoothTransitionManager(extensionUri);
     }
 
-    try {
-      this.panel = vscode.window.createWebviewPanel(
-        'clangFormatPlaceholder',
-        '实时代码预览已关闭',
-        {
-          viewColumn: vscode.ViewColumn.Two,
-          preserveFocus: true,
-        },
-        this.getWebviewOptions(),
-      );
-
-      this.updatePlaceholderContent();
-      this.setupPanelEventListeners();
-
-      // 占位符被创建，意味着预览已经关闭
-      await this.context.stateManager.updateState(
-        {
-          previewMode: 'closed',
-          previewUri: undefined,
-          previewEditor: undefined,
-        },
-        'placeholder-created',
-      );
-    } catch (error: any) {
-      await this.context.errorRecovery.handleError(
-        'placeholder-creation-failed',
-        error,
-      );
-    }
-  }
-
-  /**
-   * 更新占位符内容
-   */
-  updatePlaceholderContent(): void {
-    if (this.panel) {
-      this.panel.webview.html = this.generatePlaceholderContent();
-    }
-  }
-
-  /**
-   * 隐藏占位符
-   */
-  hidePlaceholder(): void {
-    // 实际上，VS Code 没有直接“隐藏”面板的 API
-    // 所以这里我们不做任何操作，因为预览会在同一个位置打开
-  }
-
-  /**
-   * 检查占位符是否处于活动状态
-   */
-  isPlaceholderActive(): boolean {
-    return !!this.panel;
-  }
-
-  /**
-   * 获取占位符面板
-   */
-  getPlaceholderPanel(): vscode.WebviewPanel | undefined {
-    return this.panel;
-  }
-
-  /**
-   * 处理重新打开预览的请求
-   */
-  async handleReopenRequest(payload?: any): Promise<void> {
-    console.log('🔄 PlaceholderManager: Handling reopen preview request');
-
-    // 【关键修复】先销毁占位符面板，避免同时存在两个面板
-    if (this.panel) {
-      console.log(
-        '🗑️ PlaceholderManager: Disposing placeholder panel before opening preview',
-      );
-      this.panel.dispose();
-      this.panel = undefined;
+    async initialize(context: ManagerContext): Promise<void> {
+        this.context = context;
+        this.loadCharacterImagePaths();
+        this.setupEventListeners();
     }
 
-    try {
-      // 强制重置状态
-      await this.context.stateManager.updateState(
-        {
-          previewMode: 'closed',
-          previewUri: undefined,
-          previewEditor: undefined,
-        },
-        'force-reset-before-reopen',
-      );
-
-      // 发送重新打开预览事件
-      this.context.eventBus.emit('open-preview-requested', {
-        source: 'placeholder',
-        forceReopen: true,
-      });
-    } catch (error) {
-      console.error('[PlaceholderManager] 处理重新打开预览请求时出错:', error);
+    /**
+     * 获取状态信息
+     */
+    getStatus(): { isInitialized: boolean; isHealthy: boolean; lastActivity: Date; errorCount: number } {
+        return {
+            isInitialized: !!this.context,
+            isHealthy: true,
+            lastActivity: new Date(),
+            errorCount: 0,
+        };
     }
-  }
 
-  /**
-   * 处理占位符被用户关闭的情况
-   */
-  handlePlaceholderClosed(): void {
-    this.panel = undefined; // 面板被销毁，重置引用
-    // 当用户手动关闭占位符时，我们认为他们希望结束整个会话
-    this.context.eventBus.emit('editor-closed');
-  }
+    /**
+     * 设置事件监听器，支持新的过渡事件
+     */
+    private setupEventListeners(): void {
+        // 原有事件监听器
+        this.context.eventBus.on('preview-closed', () => {
+            this.createPlaceholder();
+        });
 
-  dispose(): void {
-    this.disposables.forEach((d) => d.dispose());
-    this.disposables = [];
-    if (this.panel) {
-      this.panel.dispose();
+        // 新的过渡事件监听器
+        this.context.eventBus.on('placeholder-prepare-requested', (data: EventData) => {
+            this.preparePlaceholder(data.reason || TransitionReason.USER_CLOSED_TAB);
+        });
+
+        this.context.eventBus.on('placeholder-show-requested', (data: EventData) => {
+            this.showPlaceholder(data.reason || TransitionReason.USER_CLOSED_TAB, data.animated);
+        });
+
+        this.context.eventBus.on('placeholder-hide-requested', (data: EventData) => {
+            this.hidePlaceholder(data.animated);
+        });
+
+        this.context.eventBus.on('placeholder-fadein-requested', (data: EventData) => {
+            this.fadeIn(data.duration);
+        });
+
+        this.context.eventBus.on('placeholder-fadeout-requested', (data: EventData) => {
+            this.fadeOut(data.duration);
+        });
+
+        this.context.eventBus.on('placeholder-cleanup-requested', () => {
+            this.cleanup();
+        });
+
+        this.context.eventBus.on('placeholder-show-error', (data: EventData) => {
+            this.showError(data.error || 'Unknown error');
+        });
     }
-  }
 
-  private setupEventListeners(): void {
-    this.context.eventBus.on('preview-closed', async () => {
-      const state = this.context.stateManager.getState();
-      if (state.isVisible && state.isInitialized) {
-        await this.createPlaceholder();
-      }
-    });
-
-    // 监听预览打开事件，清理占位符
-    this.context.eventBus.on('preview-opened', () => {
-      console.log(
-        '🔍 PlaceholderManager: Preview opened, disposing placeholder',
-      );
-      if (this.panel) {
-        this.panel.dispose();
-        this.panel = undefined;
-      }
-    });
-  }
-
-  private setupPanelEventListeners(): void {
-    if (!this.panel) { return; }
-
-    // 监听占位符被关闭
-    this.panel.onDidDispose(() => {
-      this.handlePlaceholderClosed();
-    });
-
-    // 监听来自占位符的消息
-    this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
-      if (message.type === 'reopen-preview') {
-        console.log('[PlaceholderManager] 收到来自占位符的消息:', message);
-        await this.handleReopenRequest(message.payload);
-      }
-    });
-
-    // 监听主题变化
-    const themeChangeListener = vscode.window.onDidChangeActiveColorTheme(
-      (theme) => {
-        const isDarkTheme =
-          theme.kind === vscode.ColorThemeKind.Dark ||
-          theme.kind === vscode.ColorThemeKind.HighContrast;
-
+    /**
+     * 准备占位符（创建但不显示）
+     */
+    private async preparePlaceholder(reason: TransitionReason): Promise<void> {
         if (this.panel) {
-          this.panel.webview.postMessage({
-            type: 'theme-changed',
-            payload: {
-              isDark: isDarkTheme,
-            },
-          });
+            return; // 已经存在
         }
-      },
-    );
 
-    this.disposables.push(themeChangeListener);
-  }
+        try {
+            // 创建面板但设置为不可见
+            this.panel = vscode.window.createWebviewPanel(
+                'clangFormatPlaceholder',
+                '实时代码预览已关闭',
+                {
+                    viewColumn: vscode.ViewColumn.Two,
+                    preserveFocus: true,
+                },
+                this.getWebviewOptions(),
+            );
 
-  private getWebviewOptions(): vscode.WebviewOptions &
-    vscode.WebviewPanelOptions {
-    return {
-      enableScripts: true,
-      retainContextWhenHidden: true,
-      localResourceRoots: [
-        vscode.Uri.joinPath(
-          this.context.extensionUri,
-          'webviews',
-          'visual-editor',
-          'clang-format',
-          'src',
-          'assets',
-          'images',
-        ),
-      ],
-    };
-  }
+            // 注入过渡样式
+            this.transitionManager.injectTransitionStyles(this.panel.webview);
 
-  /**
-   * 生成占位符 HTML 内容
-   */
-  private generatePlaceholderContent(): string {
-    const currentTheme = vscode.window.activeColorTheme;
-    const isDarkTheme =
-      currentTheme.kind === vscode.ColorThemeKind.Dark ||
-      currentTheme.kind === vscode.ColorThemeKind.HighContrast;
+            // 更新内容但保持不可见状态
+            this.updatePlaceholderContent(reason, false);
+            this.setupPanelEventListeners();
 
-    const nonce = this.getNonce();
+            // 使用过渡管理器准备 webview
+            this.transitionManager.prepareWebview(this.panel.webview);
+            this.isPrepared = true;
 
-    // 【彩蛋功能】随机选择一张动漫角色图片
-    const randomImagePath = this.getRandomCharacterImagePath();
-    const randomImageUri = randomImagePath
-      ? this.getWebviewImageUri(randomImagePath)
-      : '';
+            // 通知准备完成
+            this.context.eventBus.emit('placeholder-prepared');
 
-    return `<!DOCTYPE html>
-        <html lang="zh-CN">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            
-            <meta http-equiv="Content-Security-Policy" content="
-                default-src 'none';
-                style-src 'nonce-${nonce}';
-                script-src 'nonce-${nonce}';
-                img-src ${this.panel?.webview.cspSource} https: data:;
-                font-src 'self';
-            ">
+            console.log('PlaceholderManager: Placeholder prepared (hidden)');
+        } catch (error) {
+            console.error('PlaceholderManager: Failed to prepare placeholder', error);
+        }
+    }
 
-            <title>实时代码预览已关闭</title>
-            
-            <style nonce="${nonce}">
-                :root {
-                    --vscode-font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
-                    --vscode-font-size: var(--vscode-font-size, 13px);
-                    --vscode-foreground: var(--vscode-foreground, ${isDarkTheme ? '#cccccc' : '#333333'});
-                    --vscode-background: var(--vscode-editor-background, ${isDarkTheme ? '#1e1e1e' : '#ffffff'});
-                    --vscode-button-background: var(--vscode-button-background, ${isDarkTheme ? '#0e639c' : '#007acc'});
-                    --vscode-button-hoverBackground: var(--vscode-button-hoverBackground, ${isDarkTheme ? '#1177bb' : '#005a9e'});
-                    --vscode-descriptionForeground: var(--vscode-descriptionForeground, ${isDarkTheme ? '#cccccc99' : '#717171'});
+    /**
+     * 显示占位符
+     */
+    private async showPlaceholder(reason: TransitionReason, animated: boolean = true): Promise<void> {
+        if (!this.panel) {
+            // 如果未准备，直接创建
+            await this.createPlaceholder(reason, animated);
+            return;
+        }
+
+        if (animated) {
+            // 显示加载状态
+            this.transitionManager.showLoading(this.panel.webview, 'Preparing placeholder...');
+
+            // 启动动画
+            this.transitionManager.animatePlaceholder(this.panel.webview, true);
+
+            // 隐藏加载状态
+            setTimeout(() => {
+                if (this.panel) {
+                    this.transitionManager.hideLoading(this.panel.webview);
                 }
+            }, 200);
+        }
 
-                * {
-                    box-sizing: border-box;
-                    margin: 0;
-                    padding: 0;
+        // 显示面板
+        this.panel.reveal(vscode.ViewColumn.Two, false);
+
+        console.log('PlaceholderManager: Placeholder shown');
+    }
+
+    /**
+     * 隐藏占位符
+     */
+    private async hidePlaceholder(animated: boolean = true): Promise<void> {
+        if (!this.panel) {
+            return;
+        }
+
+        if (animated) {
+            this.transitionManager.animatePlaceholder(this.panel.webview, false);
+
+            // 延迟隐藏面板
+            setTimeout(() => {
+                if (this.panel) {
+                    this.panel.dispose();
+                    this.panel = undefined;
                 }
+            }, 400);
+        } else {
+            this.panel.dispose();
+            this.panel = undefined;
+        }
 
-                body {
-                    font-family: var(--vscode-font-family);
-                    font-size: var(--vscode-font-size);
-                    color: var(--vscode-foreground);
-                    background-color: var(--vscode-background);
-                    height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    overflow: hidden;
-                }
+        console.log('PlaceholderManager: Placeholder hidden');
+    }
 
-                .placeholder-container {
-                    max-width: 420px;
-                    padding: 20px;
-                    text-align: center;
-                    animation: fadeIn 0.4s ease-out;
-                }
+    /**
+     * 淡入效果
+     */
+    private async fadeIn(duration: number = 300): Promise<void> {
+        if (this.panel) {
+            await this.transitionManager.fadeIn(this.panel.webview, { duration, easing: 'ease-in' });
+        }
+    }
 
-                @keyframes fadeIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(15px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
+    /**
+     * 淡出效果
+     */
+    private async fadeOut(duration: number = 300): Promise<void> {
+        if (this.panel) {
+            await this.transitionManager.fadeOut(this.panel.webview, { duration, easing: 'ease-out' });
+        }
+    }
 
-                .placeholder-icon {
-                    width: 256px; /* 用户指定尺寸 */
-                    height: 256px; /* 用户指定尺寸 */
-                    margin: 0 auto 30px auto;
-                    border-radius: 16px; /* 圆角正方形 */
-                    overflow: hidden;
-                }
+    /**
+     * 显示错误状态
+     */
+    private showError(error: string): void {
+        if (!this.panel) {
+            // 创建错误占位符
+            this.createErrorPlaceholder(error);
+            return;
+        }
 
-                .placeholder-icon img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                    display: block;
-                }
+        // 更新现有面板为错误状态
+        const errorContent = this.generateErrorContent(error);
+        this.panel.webview.html = this.transitionManager.generateTransitionHTML(errorContent);
+    }
 
-                .placeholder-title {
-                    font-size: 22px;
-                    font-weight: 600;
-                    margin-bottom: 15px;
-                    color: var(--vscode-foreground);
-                }
+    /**
+     * 清理占位符
+     */
+    private cleanup(): void {
+        if (this.panel) {
+            this.panel.dispose();
+            this.panel = undefined;
+        }
+        this.isPrepared = false;
+        this.transitionManager.reset();
+    }
 
-                .placeholder-description {
-                    font-size: 14px;
-                    color: var(--vscode-descriptionForeground);
-                    margin-bottom: 30px;
-                    line-height: 1.6;
-                    max-width: 380px;
-                    margin-left: auto;
-                    margin-right: auto;
-                }
+    /**
+     * 创建占位符（兼容原有接口）
+     */
+    async createPlaceholder(reason?: TransitionReason, animated: boolean = true): Promise<void> {
+        if (this.panel) {
+            this.panel.reveal(vscode.ViewColumn.Two, false);
+            return;
+        }
 
-                .placeholder-description kbd {
-                    background-color: rgba(128, 128, 128, 0.15);
-                    border-radius: 4px;
-                    padding: 2px 5px;
-                    border: 1px solid rgba(128, 128, 128, 0.1);
-                    font-family: var(--vscode-font-family);
-                }
+        try {
+            this.panel = vscode.window.createWebviewPanel(
+                'clangFormatPlaceholder',
+                '实时代码预览已关闭',
+                {
+                    viewColumn: vscode.ViewColumn.Two,
+                    preserveFocus: true,
+                },
+                this.getWebviewOptions(),
+            );
 
-                .reopen-button {
-                    background-color: var(--vscode-button-background);
-                    color: var(--vscode-button-foreground);
-                    border: none;
-                    padding: 10px 24px;
-                    font-size: 14px;
-                    font-family: var(--vscode-font-family);
-                    font-weight: 500;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    transition: background-color 0.2s ease;
-                    min-width: 180px;
-                }
+            // 注入过渡样式
+            this.transitionManager.injectTransitionStyles(this.panel.webview);
 
-                .reopen-button:hover {
-                    background-color: var(--vscode-button-hoverBackground);
-                }
+            this.updatePlaceholderContent(reason || TransitionReason.USER_CLOSED_TAB, animated);
+            this.setupPanelEventListeners();
 
-                .reopen-button:disabled {
-                    background-color: #555;
-                    color: #999;
-                    cursor: not-allowed;
-                    opacity: 0.7;
-                }
-
-                .placeholder-footer {
-                    margin-top: 35px;
-                    font-size: 12px;
-                    color: var(--vscode-descriptionForeground);
-                    opacity: 0.6;
-                }
-
-                .status-indicator {
-                    display: inline-block;
-                    width: 7px;
-                    height: 7px;
-                    background-color: var(--vscode-button-background);
-                    border-radius: 50%;
-                    margin-right: 7px;
-                    animation: blink 1.8s infinite ease-in-out;
-                }
-
-                @keyframes blink {
-                    0%, 100% {
-                        opacity: 1;
-                    }
-                    50% {
-                        opacity: 0.3;
-                    }
-                }
-            </style>
-        </head>
-        <body data-vscode-theme="${isDarkTheme ? 'dark' : 'light'}">
-            <div class="placeholder-container">
-                <div class="placeholder-icon">
-                    <img src="${randomImageUri}" 
-                         alt="Picture" 
-                         onerror="this.style.display='none'; this.parentElement.innerHTML='📋';" />
-                </div>
-                
-                <h2 class="placeholder-title">实时代码预览已关闭</h2>
-                
-                <p class="placeholder-description">
-                    您可以在左侧调整配置，然后点击下方按钮\n（或按 <kbd id="shortcut-hint"></kbd>）以查看格式化效果。
-                </p>
-                
-                <button class="reopen-button" id="reopenButton">
-                    重新打开实时预览
-                </button>
-                
-                <div class="placeholder-footer">
-                    丰川清告先生因重大判断失误致 TGW集团 损失168亿日元，已引咎辞职并被驱逐出家族。
-                    由 Oblivionis 于 集团公告。
-                </div>
-            </div>
-
-            <script nonce="${nonce}">
-                // 获取 VS Code API
-                const vscode = acquireVsCodeApi();
-                let messageCount = 0;
-
-                // 页面加载完成后的初始化
-                document.addEventListener('DOMContentLoaded', function() {
-                    // 智能显示快捷键
-                    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
-                    const shortcutHint = document.getElementById('shortcut-hint');
-                    if (shortcutHint) {
-                        shortcutHint.textContent = isMac ? '⌘ R' : 'Ctrl + R';
-                    }
-
-                    // 添加按钮点击事件监听器
-                    const reopenButton = document.getElementById('reopenButton');
-                    if (reopenButton) {
-                        reopenButton.addEventListener('click', reopenPreview);
-                    }
-                    
-                    // 添加键盘快捷键支持
-                    document.addEventListener('keydown', function(event) {
-                        // Ctrl/Cmd + R 重新打开预览
-                        if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
-                            event.preventDefault();
-                            reopenPreview();
-                        }
-                        
-                        // Enter 键重新打开预览
-                        if (event.key === 'Enter') {
-                            event.preventDefault();
-                            reopenPreview();
-                        }
-                    });
-                });
-
-                // 重新打开预览功能
-                function reopenPreview() {
-                    const messageId = ++messageCount;
-                    console.log('用户点击了重新打开预览按钮 [' + messageId + ']');
-                    
-                    // 禁用按钮，防止重复点击
-                    const button = document.getElementById('reopenButton');
-                    if(button) {
-                        button.disabled = true;
-                        button.textContent = '正在打开预览...';
-                    }
-                    
-                    // 发送消息到扩展
-                    vscode.postMessage({
-                        type: 'reopen-preview',
-                        payload: {
-                            timestamp: Date.now(),
-                            messageId: messageId
-                        }
-                    });
-                    
-                    // 添加视觉反馈
-                    const title = document.querySelector('.placeholder-title');
-                    if(title) {
-                       title.textContent = '正在打开预览...';
-                    }
-                }
-
-                // 监听主题变化
-                window.addEventListener('message', event => {
-                    const message = event.data;
-                    
-                    switch (message.type) {
-                        case 'theme-changed':
-                            document.body.setAttribute('data-vscode-theme', 
-                                message.payload.isDark ? 'dark' : 'light');
-                            break;
-                    }
-                });
-            </script>
-        </body>
-        </html>`;
-  }
-
-  /**
-   * 加载所有角色图片路径
-   */
-  private loadCharacterImagePaths(): void {
-    const baseImagePath = path.join(
-      this.context.extensionUri.fsPath,
-      'webviews',
-      'visual-editor',
-      'clang-format',
-      'src',
-      'assets',
-      'images',
-    );
-    const allImagePaths: string[] = [];
-    const characterFolders = ['Ave Mujica', 'MyGO', 'Girls-Band-Cry'];
-
-    try {
-      for (const folder of characterFolders) {
-        const folderPath = path.join(baseImagePath, folder);
-        if (fs.existsSync(folderPath)) {
-          const files = fs.readdirSync(folderPath);
-          for (const file of files) {
-            if (path.extname(file).toLowerCase() === '.webp') {
-              // 使用 / 作为路径分隔符，以确保在 webview 中正确解析
-              const relativePath = `${folder}/${file}`;
-              allImagePaths.push(relativePath);
+            if (animated) {
+                // 启动入场动画
+                this.transitionManager.animatePlaceholder(this.panel.webview, true);
             }
-          }
+
+            console.log('PlaceholderManager: Placeholder created');
+        } catch (error) {
+            console.error('PlaceholderManager: Failed to create placeholder', error);
         }
-      }
-    } catch (error) {
-      console.error('[PlaceholderManager] 加载角色图片时出错:', error);
     }
 
-    this.characterImagePaths = allImagePaths;
-    if (this.characterImagePaths.length > 0) {
-      console.log(
-        `[PlaceholderManager] 成功加载 ${this.characterImagePaths.length} 张角色图片。`,
-      );
-    } else {
-      console.warn('[PlaceholderManager] 未找到任何角色图片。');
+    /**
+     * 创建错误占位符
+     */
+    private async createErrorPlaceholder(error: string): Promise<void> {
+        if (this.panel) {
+            this.panel.dispose();
+        }
+
+        this.panel = vscode.window.createWebviewPanel(
+            'clangFormatError',
+            '预览错误',
+            {
+                viewColumn: vscode.ViewColumn.Two,
+                preserveFocus: true,
+            },
+            this.getWebviewOptions(),
+        );
+
+        const errorContent = this.generateErrorContent(error);
+        this.panel.webview.html = this.transitionManager.generateTransitionHTML(errorContent);
+        this.setupPanelEventListeners();
     }
-  }
 
-  /**
-   * 随机选择一张角色图片路径
-   */
-  private getRandomCharacterImagePath(): string {
-    if (this.characterImagePaths.length === 0) {
-      return '';
+    /**
+     * 更新占位符内容
+     */
+    private updatePlaceholderContent(reason: TransitionReason, animated: boolean = true): void {
+        if (!this.panel) return;
+
+        const content = this.generatePlaceholderContent(reason);
+        this.panel.webview.html = this.transitionManager.generateTransitionHTML(content);
     }
-    const randomIndex = Math.floor(
-      Math.random() * this.characterImagePaths.length,
-    );
-    return this.characterImagePaths[randomIndex];
-  }
 
-  /**
-   * 生成webview可用的图片URI
-   */
-  private getWebviewImageUri(imagePath: string): string {
-    if (!this.panel) { return ''; }
+    /**
+     * 生成占位符内容
+     */
+    private generatePlaceholderContent(reason: TransitionReason): string {
+        const randomImage = this.getRandomCharacterImage();
+        const { title, description } = this.getContentByReason(reason);
 
-    const imageFullPath = vscode.Uri.joinPath(
-      this.context.extensionUri,
-      'webviews',
-      'visual-editor',
-      'clang-format',
-      'src',
-      'assets',
-      'images',
-      imagePath,
-    );
-
-    return this.panel.webview.asWebviewUri(imageFullPath).toString();
-  }
-
-  /**
-   * 生成随机 nonce 用于 CSP 安全
-   */
-  private getNonce(): string {
-    let text = '';
-    const possible =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < 32; i++) {
-      text += possible.charAt(Math.floor(Math.random() * possible.length));
+        return `
+      <div class="placeholder-content">
+        <div class="placeholder-container">
+          <div class="placeholder-icon">
+            <img src="${randomImage}" alt="Character" style="width: 120px; height: 120px; object-fit: contain;" />
+          </div>
+          <h2 class="placeholder-title">${title}</h2>
+          <p class="placeholder-description">${description}</p>
+          <button class="reopen-button" id="reopenButton">
+            🔄 重新打开预览
+          </button>
+          <div class="placeholder-footer">
+            <p>💡 提示：双击配置项可快速预览效果</p>
+          </div>
+        </div>
+      </div>
+    `;
     }
-    return text;
-  }
 
-  getStatus() {
-    return {
-      isInitialized: !!this.context,
-      isHealthy: true,
-      lastActivity: new Date(),
-      errorCount: 0,
-    };
-  }
+    /**
+     * 生成错误内容
+     */
+    private generateErrorContent(error: string): string {
+        return `
+      <div class="error-content">
+        <div class="error-container">
+          <div class="error-icon">⚠️</div>
+          <h2 class="error-title">预览生成失败</h2>
+          <p class="error-description">${error}</p>
+          <button class="retry-button" id="retryButton">
+            🔄 重试
+          </button>
+        </div>
+      </div>
+    `;
+    }
+
+    /**
+     * 根据关闭原因获取内容
+     */
+    private getContentByReason(reason: TransitionReason): { title: string; description: string } {
+        switch (reason) {
+            case TransitionReason.USER_CLOSED_TAB:
+                return {
+                    title: '实时代码预览已关闭',
+                    description: '您关闭了预览标签页，但可以随时重新打开继续编辑配置。',
+                };
+
+            case TransitionReason.FORMAT_ERROR:
+                return {
+                    title: '预览暂时不可用',
+                    description: 'clang-format 处理时发生错误，请检查配置后重试。',
+                };
+
+            case TransitionReason.CONFIG_CHANGED:
+                return {
+                    title: '正在准备新预览',
+                    description: '配置已更新，新的预览正在生成中...',
+                };
+
+            default:
+                return {
+                    title: '实时代码预览已关闭',
+                    description: '点击下方按钮重新打开预览，继续编辑您的 clang-format 配置。',
+                };
+        }
+    }
+
+    /**
+     * 加载角色图片路径
+     */
+    private loadCharacterImagePaths(): void {
+        try {
+            // 模拟加载角色图片路径的逻辑
+            const webviewsPath = path.join(this.extensionUri.fsPath, 'webviews');
+            this.characterImagePaths = [
+                'character1.png',
+                'character2.png',
+                'character3.png',
+            ]; // 简化实现
+        } catch (error) {
+            console.warn('Failed to load character images:', error);
+            this.characterImagePaths = [];
+        }
+    }
+
+    /**
+     * 获取随机角色图片
+     */
+    private getRandomCharacterImage(): string {
+        if (this.characterImagePaths.length === 0) {
+            return '🎭'; // 默认表情符号
+        }
+
+        const randomIndex = Math.floor(Math.random() * this.characterImagePaths.length);
+        return this.characterImagePaths[randomIndex];
+    }
+
+    /**
+     * 获取 Webview 选项
+     */
+    private getWebviewOptions(): vscode.WebviewOptions & vscode.WebviewPanelOptions {
+        return {
+            enableScripts: true,
+            retainContextWhenHidden: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(this.context.extensionUri, 'webviews'),
+            ],
+        };
+    }
+
+    /**
+     * 设置面板事件监听器
+     */
+    private setupPanelEventListeners(): void {
+        if (!this.panel) return;
+
+        this.panel.onDidDispose(() => {
+            this.panel = undefined;
+            this.isPrepared = false;
+        });
+
+        this.panel.webview.onDidReceiveMessage(
+            (message: WebviewMessage) => {
+                switch (message.type) {
+                    case 'reopen-preview':
+                        this.context.eventBus.emit('preview-requested');
+                        break;
+                    case 'webview-ready':
+                        console.log('PlaceholderManager: Webview ready');
+                        break;
+                }
+            },
+            undefined,
+            this.disposables,
+        );
+    }
+
+    /**
+     * 销毁管理器
+     */
+    async dispose(): Promise<void> {
+        this.cleanup();
+        this.disposables.forEach(d => d.dispose());
+        this.disposables = [];
+    }
 }
