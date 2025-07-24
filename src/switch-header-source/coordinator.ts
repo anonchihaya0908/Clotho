@@ -23,11 +23,19 @@ import { SwitchConfigService } from './config-manager';
 export class SwitchCoordinator implements vscode.Disposable {
   private readonly service: SwitchService;
   private readonly ui: SwitchUI;
+  private readonly configService: SwitchConfigService;
   private readonly switchCommand: vscode.Disposable;
 
-  constructor(service?: SwitchService, ui?: SwitchUI) {
+  constructor(
+    service?: SwitchService,
+    ui?: SwitchUI,
+    configService?: SwitchConfigService
+  ) {
+    // Initialize config service first as it's a dependency for service
+    this.configService = configService ?? new SwitchConfigService();
+
     // Allow dependency injection for testing
-    this.service = service ?? new SwitchService();
+    this.service = service ?? new SwitchService(this.configService);
     this.ui = ui ?? new SwitchUI();
 
     // Register the switch command
@@ -85,7 +93,7 @@ export class SwitchCoordinator implements vscode.Disposable {
    */
   public async showConfigTemplate(): Promise<void> {
     try {
-      await SwitchConfigService.showTemplateSelector();
+      await this.configService.showTemplateSelector();
     } catch (error) {
       ErrorHandler.handle(error, {
         operation: 'showConfigTemplate',
@@ -100,7 +108,7 @@ export class SwitchCoordinator implements vscode.Disposable {
    */
   public showCurrentConfig(): void {
     try {
-      SwitchConfigService.showCurrentConfig();
+      this.configService.showCurrentConfig();
     } catch (error) {
       ErrorHandler.handle(error, {
         operation: 'showCurrentConfig',

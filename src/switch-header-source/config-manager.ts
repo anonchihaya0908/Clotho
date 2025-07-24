@@ -111,12 +111,13 @@ export const CONFIG_TEMPLATES = {
 
 /**
  * 配置服务类 - 负责读取和管理切换配置
+ * 重构为实例类以支持依赖注入和更好的测试性
  */
 export class SwitchConfigService {
   /**
    * 获取当前有效的配置
    */
-  public static getConfig(): SwitchConfig {
+  public getConfig(): SwitchConfig {
     const config = vscode.workspace.getConfiguration('clotho');
 
     return {
@@ -143,7 +144,7 @@ export class SwitchConfigService {
   /**
    * 应用配置模板
    */
-  public static async applyTemplate(
+  public async applyTemplate(
     templateKey: keyof typeof CONFIG_TEMPLATES,
   ): Promise<void> {
     const template = CONFIG_TEMPLATES[templateKey];
@@ -184,7 +185,7 @@ export class SwitchConfigService {
   /**
    * 显示配置模板选择对话框
    */
-  public static async showTemplateSelector(): Promise<void> {
+  public async showTemplateSelector(): Promise<void> {
     interface TemplateQuickPickItem extends vscode.QuickPickItem {
       templateKey: keyof typeof CONFIG_TEMPLATES;
     }
@@ -214,7 +215,7 @@ export class SwitchConfigService {
   /**
    * 显示当前配置信息
    */
-  public static showCurrentConfig(): void {
+  public showCurrentConfig(): void {
     const config = this.getConfig();
 
     const message = [

@@ -49,9 +49,11 @@ export class SwitchService {
   // ===============================
 
   private regexCache = new LRUCache<string, RegExp>(50); // Limit cache size
+  private configService: SwitchConfigService;
 
-  constructor() {
-    // Initialize any required state here if needed
+  constructor(configService?: SwitchConfigService) {
+    // Allow dependency injection for testing
+    this.configService = configService ?? new SwitchConfigService();
   }
 
   /**
@@ -343,7 +345,7 @@ export class SwitchService {
     const files: vscode.Uri[] = [];
     const normalizedPath = path.normalize(currentPath).replace(/\\/g, '/');
 
-    const config = SwitchConfigService.getConfig();
+    const config = this.configService.getConfig();
     const { sourceDirs, headerDirs } = config;
 
     const patterns: Array<{
@@ -402,7 +404,7 @@ export class SwitchService {
     const files: vscode.Uri[] = [];
     const normalizedPath = path.normalize(currentPath).replace(/\\/g, '/');
 
-    const config = SwitchConfigService.getConfig();
+    const config = this.configService.getConfig();
     const { sourceDirs, headerDirs, testDirs } = config;
 
     const patterns: Array<{
@@ -442,7 +444,7 @@ export class SwitchService {
     baseName: string,
     targetExtensions: string[],
   ): Promise<SearchResult> {
-    const config = SwitchConfigService.getConfig();
+    const config = this.configService.getConfig();
     const extensionPattern = `{${targetExtensions.map((ext) => ext.substring(1)).join(',')}}`;
     const searchPattern = `**/${baseName}.${extensionPattern}`;
 
