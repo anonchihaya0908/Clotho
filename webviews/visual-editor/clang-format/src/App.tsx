@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { WebviewMessageType } from '../../../../src/common/types/webview'; // 导入消息类型
 import { ConfigPanel } from './components/ConfigPanel';
-import { PreviewPlaceholder } from './components/PreviewPlaceholder';
+
 import { Toolbar } from './components/Toolbar';
 import { StatusBar } from './components/StatusBar';
 
@@ -121,23 +121,8 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
             case 'openClangFormatFile':
                 sendMessage(WebviewMessageType.OPEN_CLANG_FORMAT_FILE);
                 break;
-            case 'testPlaceholder':
-                // 调试功能：测试占位符显示
-                sendMessage(WebviewMessageType.TEST_PLACEHOLDER);
-                break;
         }
     }, [sendMessage]);
-
-    // 调试功能：手动切换占位符显示
-    const togglePlaceholder = useCallback(() => {
-        setState(prev => ({
-            ...prev,
-            previewState: {
-                ...prev.previewState,
-                showPlaceholder: !prev.previewState.showPlaceholder
-            }
-        }));
-    }, []);
 
     // 监听来自 VS Code 的消息
     useEffect(() => {
@@ -295,22 +280,6 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         }
     }, [state.isLoading, sendMessage]);
 
-    // 重新打开预览编辑器
-    const reopenPreview = useCallback(() => {
-        console.log('🔄 Attempting to reopen preview editor');
-        // 设置重新打开状态
-        setState(prev => ({
-            ...prev,
-            previewState: {
-                ...prev.previewState,
-                isReopening: true
-            }
-        }));
-
-        // 发送重新打开消息
-        sendMessage(WebviewMessageType.REOPEN_PREVIEW);
-    }, [sendMessage]);
-
     // 调试：监听预览状态变化
     useEffect(() => {
         console.log('🔍 Preview state changed:', state.previewState);
@@ -350,26 +319,6 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     onConfigOptionFocus={handleConfigOptionFocus}
                     onClearHighlights={handleClearHighlights}
                 />
-
-                {/* 预览占位符 - 当预览未打开时显示 */}
-                {state.previewState.showPlaceholder && (
-                    <PreviewPlaceholder
-                        onReopenPreview={reopenPreview}
-                        isReopening={state.previewState.isReopening}
-                    />
-                )}
-
-                {/* 调试按钮 - 仅在开发模式下显示 */}
-                {process.env.NODE_ENV === 'development' && (
-                    <div style={{ position: 'fixed', bottom: '10px', left: '10px', zIndex: 9999 }}>
-                        <button onClick={togglePlaceholder} style={{ marginRight: '8px' }}>
-                            切换占位符
-                        </button>
-                        <button onClick={() => handleToolbarAction('testPlaceholder')}>
-                            测试占位符
-                        </button>
-                    </div>
-                )}
             </div>
 
             <StatusBar

@@ -4,7 +4,6 @@
 
 /* Import utility classes */
 @import './utils.css';
-@import '../components/PreviewPlaceholder/style.css';
 
 /* Reset and base styles */
 * {
