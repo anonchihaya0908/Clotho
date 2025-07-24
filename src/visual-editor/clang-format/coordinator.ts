@@ -152,6 +152,25 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.eventBus.on('editor-fully-ready', async () => {
       this.eventBus.emit('open-preview-requested');
     });
+
+    // 【修复】重新添加对预览标签页关闭的检测逻辑
+    vscode.window.tabGroups.onDidChangeTabs(async (event) => {
+      const state = this.stateManager.getState();
+      if (!state.previewUri) {
+        return;
+      }
+
+      // 检查是否有预览标签被关闭
+      for (const tab of event.closed) {
+        const tabInput = tab.input as { uri?: vscode.Uri };
+        if (tabInput?.uri?.toString() === state.previewUri.toString()) {
+          // 预览标签被手动关闭，发出事件
+          // 接下来的复杂逻辑将由 DebounceIntegration 处理
+          this.eventBus.emit('preview-closed');
+          break;
+        }
+      }
+    });
   }
 
   /**

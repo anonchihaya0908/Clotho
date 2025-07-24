@@ -19,7 +19,8 @@ export class ConfigActionManager implements BaseManager {
   private formatService: ClangFormatService;
 
   constructor() {
-    this.formatService = new ClangFormatService();
+    // 由于 ClangFormatService 的构造函数是私有的，这里应通过其提供的静态方法获取实例
+    this.formatService = ClangFormatService.getInstance();
     console.log('ConfigActionManager constructed.');
   }
 

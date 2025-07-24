@@ -11,7 +11,7 @@ import { isDarkTheme } from '../../../common/platform-utils';
 
 /**
  * 占位符 Webview 管理器
- * 负责在代码预览关闭时创建占位符界面，维持布局稳定性
+ * 【重构后】只负责创建、销毁和更新占位符 Webview，不包含决策逻辑
  */
 export class PlaceholderWebviewManager implements BaseManager {
   readonly name = 'PlaceholderManager';
@@ -24,47 +24,50 @@ export class PlaceholderWebviewManager implements BaseManager {
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
     this.loadCharacterImagePaths();
-    this.setupEventListeners();
+    // setupEventListeners 已被移除，所有决策逻辑上移
   }
 
   /**
-   * 创建占位符 webview
+   * 创建占位符 webview (简化版) - 防止重复创建
    */
-  async createPlaceholder(): Promise<void> {
-    if (this.panel) {
-      this.panel.reveal(vscode.ViewColumn.Two, false); // 不激活，仅显示
-      return;
+  async createPlaceholder(): Promise<vscode.WebviewPanel> {
+    // 检查是否已经存在有效的面板
+    if (this.panel && this.panel.visible) {
+      console.log('🎭 PlaceholderManager: Reusing existing panel');
+      this.panel.reveal(vscode.ViewColumn.Two, false);
+      return this.panel;
     }
 
-    try {
-      this.panel = vscode.window.createWebviewPanel(
-        'clangFormatPlaceholder',
-        '实时代码预览已关闭',
-        {
-          viewColumn: vscode.ViewColumn.Two,
-          preserveFocus: true,
-        },
-        this.getWebviewOptions(),
-      );
-
-      this.updatePlaceholderContent();
-      this.setupPanelEventListeners();
-
-      // 占位符被创建，意味着预览已经关闭
-      await this.context.stateManager.updateState(
-        {
-          previewMode: 'closed',
-          previewUri: undefined,
-          previewEditor: undefined,
-        },
-        'placeholder-created',
-      );
-    } catch (error: any) {
-      await this.context.errorRecovery.handleError(
-        'placeholder-creation-failed',
-        error,
-      );
+    // 如果面板存在但不可见，说明可能已经被销毁，清理引用
+    if (this.panel && !this.panel.visible) {
+      console.log('🎭 PlaceholderManager: Cleaning up disposed panel reference');
+      this.panel = undefined;
     }
+
+    console.log('🎭 PlaceholderManager: Creating new placeholder panel');
+
+    this.panel = vscode.window.createWebviewPanel(
+      'clangFormatPlaceholder',
+      '实时代码预览已关闭',
+      {
+        viewColumn: vscode.ViewColumn.Two,
+        preserveFocus: true,
+      },
+      this.getWebviewOptions(),
+    );
+
+    this.updatePlaceholderContent();
+    this.setupPanelEventListeners();
+
+    // 状态更新的职责已上移
+    await this.context.stateManager.updateState(
+      {
+        previewMode: 'closed',
+      },
+      'placeholder-created',
+    );
+
+    return this.panel;
   }
 
   /**
@@ -99,38 +102,12 @@ export class PlaceholderWebviewManager implements BaseManager {
   }
 
   /**
-   * 处理重新打开预览的请求
+   * 销毁占位符面板
    */
-  async handleReopenRequest(payload?: any): Promise<void> {
-    console.log('🔄 PlaceholderManager: Handling reopen preview request');
-
-    // 【关键修复】先销毁占位符面板，避免同时存在两个面板
+  disposePanel(): void {
     if (this.panel) {
-      console.log(
-        '🗑️ PlaceholderManager: Disposing placeholder panel before opening preview',
-      );
       this.panel.dispose();
-      this.panel = undefined;
-    }
-
-    try {
-      // 强制重置状态
-      await this.context.stateManager.updateState(
-        {
-          previewMode: 'closed',
-          previewUri: undefined,
-          previewEditor: undefined,
-        },
-        'force-reset-before-reopen',
-      );
-
-      // 发送重新打开预览事件
-      this.context.eventBus.emit('open-preview-requested', {
-        source: 'placeholder',
-        forceReopen: true,
-      });
-    } catch (error) {
-      console.error('[PlaceholderManager] 处理重新打开预览请求时出错:', error);
+      // onDidDispose 事件会处理 this.panel = undefined 的逻辑
     }
   }
 
@@ -146,9 +123,7 @@ export class PlaceholderWebviewManager implements BaseManager {
   dispose(): void {
     this.disposables.forEach((d) => d.dispose());
     this.disposables = [];
-    if (this.panel) {
-      this.panel.dispose();
-    }
+    this.disposePanel();
   }
 
   private setupEventListeners(): void {
@@ -164,10 +139,7 @@ export class PlaceholderWebviewManager implements BaseManager {
       console.log(
         '🔍 PlaceholderManager: Preview opened, disposing placeholder',
       );
-      if (this.panel) {
-        this.panel.dispose();
-        this.panel = undefined;
-      }
+      this.disposePanel();
     });
   }
 
@@ -182,8 +154,11 @@ export class PlaceholderWebviewManager implements BaseManager {
     // 监听来自占位符的消息
     this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
       if (message.type === 'reopen-preview') {
-        console.log('[PlaceholderManager] 收到来自占位符的消息:', message);
-        await this.handleReopenRequest(message.payload);
+        // 请求重新打开的逻辑已上移到 Coordinator/MessageHandler
+        this.context.eventBus.emit('open-preview-requested', {
+          source: 'placeholder',
+          forceReopen: true,
+        });
       }
     });
 
@@ -490,6 +465,12 @@ export class PlaceholderWebviewManager implements BaseManager {
                                 message.payload.isDark ? 'dark' : 'light');
                             break;
                     }
+                });
+
+                // 【新增】通知扩展，webview内容已完全加载和渲染完毕
+                window.addEventListener('load', () => {
+                  vscode.postMessage({ type: 'content-ready' });
+                  console.log('[Placeholder] Content is fully loaded.');
                 });
             </script>
         </body>

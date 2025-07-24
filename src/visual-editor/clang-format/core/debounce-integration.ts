@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import { DebounceManager } from './debounce-manager';
 import { TransitionManager } from './transition-manager';
 import { ErrorHandler } from '../../../common/error-handler';
-import { BaseManager, ManagerContext } from '../../../common/types';
+import { BaseManager, ManagerContext, ManagerStatus } from '../../../common/types';
 import { PreviewEditorManager } from './preview-manager';
 import { PlaceholderWebviewManager } from './placeholder-manager';
 
@@ -30,6 +30,9 @@ export class DebounceIntegration implements BaseManager {
     this.debounceManager = new DebounceManager();
     this.transitionManager = new TransitionManager(extensionUri);
   }
+  getStatus(): ManagerStatus {
+    throw new Error('Method not implemented.');
+  }
 
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
@@ -42,6 +45,9 @@ export class DebounceIntegration implements BaseManager {
     return this.debounceManager.debounce(
       'preview-close-handler',
       async () => {
+        // 【修复】先关闭预览，再创建占位符
+        await this.previewManager.closePreview();
+
         if (!this.isEnabled) {
           await this.placeholderManager.createPlaceholder();
           return;
@@ -81,6 +87,9 @@ export class DebounceIntegration implements BaseManager {
         console.log(
           '📄 DebounceIntegration: Handling preview reopen with debounce',
         );
+
+        // 【修复】先关闭占位符，再打开预览
+        this.placeholderManager.disposePanel();
 
         try {
           // 使用过渡管理器切换回预览模式

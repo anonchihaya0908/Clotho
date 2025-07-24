@@ -50,8 +50,8 @@ export function isValidCppFile(filePath: string): boolean {
  * Gets the file type (header or source) from a file path
  */
 export function getFileType(filePath: string): FileType | null {
-  if (isHeaderFile(filePath)) {return 'header';}
-  if (isSourceFile(filePath)) {return 'source';}
+  if (isHeaderFile(filePath)) { return 'header'; }
+  if (isSourceFile(filePath)) { return 'source'; }
   return null;
 }
 
@@ -254,13 +254,13 @@ export function detectLanguageFromExtension(filePath: string): Language | null {
   const ext = path.extname(filePath).toLowerCase();
 
   // C-specific extensions
-  if (ext === '.c') {return 'c';}
+  if (ext === '.c') { return 'c'; }
 
   // C++-specific extensions
-  if (['.cpp', '.cc', '.cxx'].includes(ext)) {return 'cpp';}
+  if (['.cpp', '.cc', '.cxx'].includes(ext)) { return 'cpp'; }
 
   // Ambiguous extensions (could be either)
-  if (['.h', '.hpp', '.hh', '.hxx'].includes(ext)) {return null;}
+  if (['.h', '.hpp', '.hh', '.hxx'].includes(ext)) { return null; }
 
   return null;
 }
@@ -272,12 +272,12 @@ export function detectLanguageFromLanguageId(
   languageId: string,
 ): Language | null {
   switch (languageId) {
-  case 'c':
-    return 'c';
-  case 'cpp':
-    return 'cpp';
-  default:
-    return null;
+    case 'c':
+      return 'c';
+    case 'cpp':
+      return 'cpp';
+    default:
+      return null;
   }
 }
 

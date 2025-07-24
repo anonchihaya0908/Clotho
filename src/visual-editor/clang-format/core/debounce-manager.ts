@@ -35,12 +35,12 @@ export class DebounceManager {
   /**
    * 防抖执行函数
    */
-  debounce<T extends any[]>(
+  debounce<T, A extends any[]>(
     key: string,
-    fn: (...args: T) => Promise<void>,
+    fn: (...args: A) => Promise<T>,
     options: DebounceOptions = { delay: 100 },
-  ): (...args: T) => Promise<void> {
-    return async (...args: T) => {
+  ): (...args: A) => Promise<T | undefined> {
+    return async (...args: A) => {
       try {
         // 清除之前的定时器
         const existingTimer = this.timers.get(key);
@@ -51,21 +51,21 @@ export class DebounceManager {
 
         // 如果设置了leading，立即执行一次
         if (options.leading && !this.timers.has(key)) {
-          await fn(...args);
-          return;
+          return await fn(...args);
         }
 
         // 设置新的防抖定时器
-        return new Promise<void>((resolve, reject) => {
+        return new Promise<T | undefined>((resolve, reject) => {
           const timer = setTimeout(async () => {
             try {
               this.timers.delete(key);
 
               if (options.trailing !== false) {
-                await fn(...args);
+                const result = await fn(...args);
+                resolve(result);
+              } else {
+                resolve(undefined);
               }
-
-              resolve();
             } catch (error) {
               this.timers.delete(key);
               reject(error);
@@ -81,8 +81,8 @@ export class DebounceManager {
                 clearTimeout(timer);
                 this.timers.delete(key);
                 try {
-                  await fn(...args);
-                  resolve();
+                  const result = await fn(...args);
+                  resolve(result);
                 } catch (error) {
                   reject(error);
                 }

@@ -14,7 +14,6 @@ export enum TransitionState {
   IDLE = 'idle',
   SWITCHING_TO_PREVIEW = 'switching-to-preview',
   SWITCHING_TO_EASTER_EGG = 'switching-to-easter-egg',
-  CREATING_PLACEHOLDER = 'creating-placeholder',
   LOADING_CONTENT = 'loading-content',
 }
 
@@ -22,10 +21,7 @@ export enum TransitionState {
  * 过渡配置选项
  */
 export interface TransitionOptions {
-  placeholderDelay: number;
-  contentLoadDelay: number;
   maxTransitionTime: number;
-  enablePlaceholder: boolean;
 }
 
 /**
@@ -34,14 +30,10 @@ export interface TransitionOptions {
 export class TransitionManager {
   private currentState: TransitionState = TransitionState.IDLE;
   private debounceManager: DebounceManager;
-  private placeholderPanel: vscode.WebviewPanel | undefined;
   private transitionStartTime: number = 0;
 
   private readonly defaultOptions: TransitionOptions = {
-    placeholderDelay: 50, // 50ms内创建占位符
-    contentLoadDelay: 200, // 200ms后加载实际内容
     maxTransitionTime: 2000, // 最大过渡时间2秒
-    enablePlaceholder: true,
   };
 
   constructor(
@@ -53,47 +45,25 @@ export class TransitionManager {
   }
 
   /**
-   * 切换到彩蛋模式
+   * 切换到彩蛋模式 (简化版，只保留锁)
    */
   async switchToEasterEgg(
     onContentReady: () => Promise<vscode.WebviewPanel>,
   ): Promise<vscode.WebviewPanel> {
-    const switchOperation = this.debounceManager.debounce(
-      'switch-to-easter-egg',
-      async () => {
-        return await this.debounceManager.withLock(
-          'webview-transition',
-          async () => {
-            return await this.performEasterEggTransition(onContentReady);
-          },
-        );
-      },
-      { delay: 10, leading: true }, // 立即执行，但防止重复调用
-    );
-
-    return await switchOperation();
+    return await this.debounceManager.withLock('webview-transition', () => {
+      return this.performEasterEggTransition(onContentReady);
+    });
   }
 
   /**
-   * 切换到预览模式
+   * 切换到预览模式 (简化版，只保留锁)
    */
   async switchToPreview(
     onPreviewReady: () => Promise<vscode.TextEditor>,
   ): Promise<vscode.TextEditor> {
-    const switchOperation = this.debounceManager.debounce(
-      'switch-to-preview',
-      async () => {
-        return await this.debounceManager.withLock(
-          'webview-transition',
-          async () => {
-            return await this.performPreviewTransition(onPreviewReady);
-          },
-        );
-      },
-      { delay: 10, leading: true },
-    );
-
-    return await switchOperation();
+    return await this.debounceManager.withLock('webview-transition', () => {
+      return this.performPreviewTransition(onPreviewReady);
+    });
   }
 
   /**
@@ -108,21 +78,10 @@ export class TransitionManager {
 
       console.log('TransitionManager: Starting easter egg transition');
 
-      // 第一步：立即创建占位符（防止真空效应）
-      if (this.options.enablePlaceholder) {
-        this.currentState = TransitionState.CREATING_PLACEHOLDER;
-        await this.createPlaceholder();
-      }
-
-      // 第二步：异步加载实际内容
       this.currentState = TransitionState.LOADING_CONTENT;
-      const contentPanel = await this.loadEasterEggContent(onContentReady);
+      const contentPanel = await onContentReady();
 
-      // 确保面板在正确的位置显示
-      contentPanel.reveal(vscode.ViewColumn.Two, true);
-
-      // 第三步：替换占位符
-      await this.replacePlaceholderWithContent(contentPanel);
+      await this.waitForContentLoaded(contentPanel);
 
       this.currentState = TransitionState.IDLE;
 
@@ -134,7 +93,6 @@ export class TransitionManager {
       return contentPanel;
     } catch (error) {
       this.currentState = TransitionState.IDLE;
-      this.cleanupPlaceholder();
 
       ErrorHandler.handle(error, {
         operation: 'performEasterEggTransition',
@@ -145,6 +103,26 @@ export class TransitionManager {
 
       throw error;
     }
+  }
+
+  /**
+   * 等待 content-ready 消息
+   */
+  private async waitForContentLoaded(panel: vscode.WebviewPanel): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        disposable.dispose();
+        reject(new Error('Timeout waiting for webview content to be ready.'));
+      }, this.options.maxTransitionTime || 2000);
+
+      const disposable = panel.webview.onDidReceiveMessage((message) => {
+        if (message.type === 'content-ready') {
+          clearTimeout(timeout);
+          disposable.dispose();
+          resolve();
+        }
+      });
+    });
   }
 
   /**
@@ -159,10 +137,6 @@ export class TransitionManager {
 
       console.log('TransitionManager: Starting preview transition');
 
-      // 清理彩蛋webview
-      this.cleanupPlaceholder();
-
-      // 创建预览编辑器
       const previewEditor = await onPreviewReady();
 
       this.currentState = TransitionState.IDLE;
@@ -188,158 +162,6 @@ export class TransitionManager {
   }
 
   /**
-   * 创建占位符webview
-   */
-  private async createPlaceholder(): Promise<void> {
-    try {
-      // 如果已经有占位符，先清理
-      this.cleanupPlaceholder();
-
-      // 创建极简的占位符webview
-      this.placeholderPanel = vscode.window.createWebviewPanel(
-        'easterEggPlaceholder',
-        'Loading Character...',
-        vscode.ViewColumn.Two,
-        {
-          enableScripts: false,
-          retainContextWhenHidden: false,
-        },
-      );
-
-      // 设置占位符内容
-      this.placeholderPanel.webview.html = this.generatePlaceholderHTML();
-
-      console.log('TransitionManager: Placeholder created');
-    } catch (error) {
-      ErrorHandler.handle(error, {
-        operation: 'createPlaceholder',
-        module: 'TransitionManager',
-        showToUser: false,
-        logLevel: 'error',
-      });
-    }
-  }
-
-  /**
-   * 加载彩蛋内容
-   */
-  private async loadEasterEggContent(
-    onContentReady: () => Promise<vscode.WebviewPanel>,
-  ): Promise<vscode.WebviewPanel> {
-    // 添加最小延迟，确保占位符有时间显示
-    if (this.options.contentLoadDelay! > 0) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, this.options.contentLoadDelay),
-      );
-    }
-
-    // 检查过渡超时
-    const elapsedTime = Date.now() - this.transitionStartTime;
-    if (elapsedTime > this.options.maxTransitionTime!) {
-      throw new Error(`Transition timeout after ${elapsedTime}ms`);
-    }
-
-    return await onContentReady();
-  }
-
-  /**
-   * 用实际内容替换占位符
-   */
-  private async replacePlaceholderWithContent(
-    contentPanel: vscode.WebviewPanel,
-  ): Promise<void> {
-    try {
-      // 确保内容面板在正确的位置
-      contentPanel.reveal(vscode.ViewColumn.Two);
-
-      // 清理占位符
-      this.cleanupPlaceholder();
-
-      console.log('TransitionManager: Placeholder replaced with content');
-    } catch (error) {
-      ErrorHandler.handle(error, {
-        operation: 'replacePlaceholderWithContent',
-        module: 'TransitionManager',
-        showToUser: false,
-        logLevel: 'error',
-      });
-    }
-  }
-
-  /**
-   * 生成占位符HTML
-   */
-  private generatePlaceholderHTML(): string {
-    return `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Loading Character</title>
-                <style>
-                    body {
-                        margin: 0;
-                        padding: 0;
-                        height: 100vh;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        background: var(--vscode-editor-background);
-                        color: var(--vscode-editor-foreground);
-                        font-family: var(--vscode-font-family);
-                        font-size: var(--vscode-font-size);
-                    }
-                    
-                    .placeholder-container {
-                        text-align: center;
-                        opacity: 0;
-                        animation: fadeIn 0.3s ease-in-out forwards;
-                    }
-                    
-                    .placeholder-icon {
-                        font-size: 48px;
-                        margin-bottom: 16px;
-                        animation: pulse 1.5s ease-in-out infinite;
-                    }
-                    
-                    .placeholder-text {
-                        font-size: 16px;
-                        opacity: 0.8;
-                    }
-                    
-                    @keyframes fadeIn {
-                        to { opacity: 1; }
-                    }
-                    
-                    @keyframes pulse {
-                        0%, 100% { transform: scale(1); }
-                        50% { transform: scale(1.1); }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="placeholder-container">
-                    <div class="placeholder-icon">🎭</div>
-                    <div class="placeholder-text">Loading character...</div>
-                </div>
-            </body>
-            </html>
-        `;
-  }
-
-  /**
-   * 清理占位符
-   */
-  private cleanupPlaceholder(): void {
-    if (this.placeholderPanel && !this.placeholderPanel.disposed) {
-      this.placeholderPanel.dispose();
-      this.placeholderPanel = undefined;
-      console.log('TransitionManager: Placeholder cleaned up');
-    }
-  }
-
-  /**
    * 获取当前状态
    */
   getCurrentState(): TransitionState {
@@ -358,7 +180,6 @@ export class TransitionManager {
    */
   forceStop(): void {
     this.currentState = TransitionState.IDLE;
-    this.cleanupPlaceholder();
     this.debounceManager.cancelAll();
     this.debounceManager.releaseAllLocks();
 
@@ -373,7 +194,7 @@ export class TransitionManager {
     isTransitioning: boolean;
     elapsedTime: number;
     debounceStatus: any;
-    } {
+  } {
     return {
       currentState: this.currentState,
       isTransitioning: this.isTransitioning(),
