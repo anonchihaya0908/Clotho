@@ -28,7 +28,7 @@ yarn-error.log*
 .vscode/settings.json
 .vscode/launch.json
 .vscode/tasks.json
-
+.vscode
 # Test results
 coverage/
 .nyc_output/
@@ -55,3 +55,6 @@ Thumbs.db
 
 # TypeScript build info
 *.tsbuildinfo
+
+.kiro
+
