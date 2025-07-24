@@ -45,7 +45,6 @@ export class DebounceIntegration implements BaseManager {
     return this.debounceManager.debounce(
       'preview-close-handler',
       async () => {
-        // 【修复】先关闭预览，再创建占位符
         await this.previewManager.closePreview();
 
         if (!this.isEnabled) {
@@ -53,18 +52,12 @@ export class DebounceIntegration implements BaseManager {
           return;
         }
 
-        console.log(
-          '🎭 DebounceIntegration: Handling preview close with debounce',
-        );
-
         try {
-          // 使用过渡管理器切换到彩蛋模式
           await this.transitionManager.switchToEasterEgg(async () => {
             await this.placeholderManager.createPlaceholder();
             return this.placeholderManager.getPlaceholderPanel()!;
           });
         } catch (error) {
-          console.error('❌ DebounceIntegration: Handler execution failed');
           // 降级处理：直接创建占位符
           await this.placeholderManager.createPlaceholder();
         }
@@ -84,15 +77,9 @@ export class DebounceIntegration implements BaseManager {
     return this.debounceManager.debounce(
       'preview-reopen-handler',
       async () => {
-        console.log(
-          '📄 DebounceIntegration: Handling preview reopen with debounce',
-        );
-
-        // 【修复】先关闭占位符，再打开预览
         this.placeholderManager.disposePanel();
 
         try {
-          // 使用过渡管理器切换回预览模式
           await this.transitionManager.switchToPreview(async () => {
             await this.previewManager.openPreview();
             return this.context.stateManager.getState().previewEditor!;

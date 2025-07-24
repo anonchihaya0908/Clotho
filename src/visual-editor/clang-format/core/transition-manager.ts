@@ -1,6 +1,6 @@
 /**
  * 过渡管理器
- * 处理webview切换过程中的稳定性和流畅性
+ * 处理Webview切换的并发控制和流程编排
  */
 
 import * as vscode from 'vscode';
@@ -45,7 +45,7 @@ export class TransitionManager {
   }
 
   /**
-   * 切换到彩蛋模式 (简化版，只保留锁)
+   * 切换到彩蛋模式
    */
   async switchToEasterEgg(
     onContentReady: () => Promise<vscode.WebviewPanel>,
@@ -56,7 +56,7 @@ export class TransitionManager {
   }
 
   /**
-   * 切换到预览模式 (简化版，只保留锁)
+   * 切换到预览模式
    */
   async switchToPreview(
     onPreviewReady: () => Promise<vscode.TextEditor>,
@@ -76,20 +76,12 @@ export class TransitionManager {
       this.currentState = TransitionState.SWITCHING_TO_EASTER_EGG;
       this.transitionStartTime = Date.now();
 
-      console.log('TransitionManager: Starting easter egg transition');
-
       this.currentState = TransitionState.LOADING_CONTENT;
       const contentPanel = await onContentReady();
 
       await this.waitForContentLoaded(contentPanel);
 
       this.currentState = TransitionState.IDLE;
-
-      const transitionTime = Date.now() - this.transitionStartTime;
-      console.log(
-        `TransitionManager: Easter egg transition completed in ${transitionTime}ms`,
-      );
-
       return contentPanel;
     } catch (error) {
       this.currentState = TransitionState.IDLE;
@@ -135,17 +127,9 @@ export class TransitionManager {
       this.currentState = TransitionState.SWITCHING_TO_PREVIEW;
       this.transitionStartTime = Date.now();
 
-      console.log('TransitionManager: Starting preview transition');
-
       const previewEditor = await onPreviewReady();
 
       this.currentState = TransitionState.IDLE;
-
-      const transitionTime = Date.now() - this.transitionStartTime;
-      console.log(
-        `TransitionManager: Preview transition completed in ${transitionTime}ms`,
-      );
-
       return previewEditor;
     } catch (error) {
       this.currentState = TransitionState.IDLE;

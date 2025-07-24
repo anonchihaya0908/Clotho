@@ -20,6 +20,7 @@ export class PlaceholderWebviewManager implements BaseManager {
   private context!: ManagerContext;
   private disposables: vscode.Disposable[] = [];
   private characterImagePaths: string[] = [];
+  private generatedHtmlCache: string | undefined;
 
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
@@ -203,6 +204,10 @@ export class PlaceholderWebviewManager implements BaseManager {
    * 生成占位符 HTML 内容
    */
   private generatePlaceholderContent(): string {
+    if (this.generatedHtmlCache) {
+      return this.generatedHtmlCache;
+    }
+
     const dark = isDarkTheme();
     const nonce = getNonce();
 
@@ -212,7 +217,7 @@ export class PlaceholderWebviewManager implements BaseManager {
       ? this.getWebviewImageUri(randomImagePath)
       : '';
 
-    return `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
         <html lang="zh-CN">
         <head>
             <meta charset="UTF-8">
@@ -261,7 +266,7 @@ export class PlaceholderWebviewManager implements BaseManager {
                     max-width: 420px;
                     padding: 20px;
                     text-align: center;
-                    animation: fadeIn 0.4s ease-out;
+                    animation: fadeIn 0.15s ease-out;
                 }
 
                 @keyframes fadeIn {
@@ -475,6 +480,9 @@ export class PlaceholderWebviewManager implements BaseManager {
             </script>
         </body>
         </html>`;
+
+    this.generatedHtmlCache = html;
+    return html;
   }
 
   /**
