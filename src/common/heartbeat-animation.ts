@@ -51,7 +51,7 @@ export class HeartbeatAnimation {
     const visibilityFrames = [true, false, true, false];
 
     const animate = () => {
-      if (!this.isRunning) {return;}
+      if (!this.isRunning) { return; }
 
       const isVisible = visibilityFrames[this.currentFrame];
       callback(isVisible);
@@ -71,7 +71,7 @@ export class HeartbeatAnimation {
    * @param callback 可选的停止回调
    */
   stop(callback?: () => void): void {
-    if (!this.isRunning) {return;}
+    if (!this.isRunning) { return; }
 
     this.isRunning = false;
 

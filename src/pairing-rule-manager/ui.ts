@@ -53,7 +53,7 @@ export class PairingRuleUI {
     },
   ];
 
-  constructor(private readonly service: PairingRuleService) {}
+  constructor(private readonly service: PairingRuleService) { }
 
   /**
    * Create rule choices from extension options for QuickPick display
@@ -212,7 +212,7 @@ export class PairingRuleUI {
    */
   async promptForFileExtensions(): Promise<
     { headerExt: string; sourceExt: string } | undefined
-    > {
+  > {
     const selected = await vscode.window.showQuickPick(
       PairingRuleUI.EXTENSION_OPTIONS.map((option) => ({
         label: option.label,

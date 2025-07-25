@@ -403,10 +403,10 @@ export class ClangFormatService {
             value = [];
           }
         } catch (error) {
-            logger.warn(`Failed to parse array value for ${key}: ${valueStr}`, {
-              module: 'ClangFormatService', 
-              operation: 'parseConfigurationLine',
-            });
+          logger.warn(`Failed to parse array value for ${key}: ${valueStr}`, {
+            module: 'ClangFormatService',
+            operation: 'parseConfigurationLine',
+          });
           value = valueStr; // 保持原始字符串
         }
       }
@@ -416,7 +416,7 @@ export class ClangFormatService {
     }
 
     // 调试输出，帮助排查数据不准确的问题
-    logger.debug('Parsed configuration', { 
+    logger.debug('Parsed configuration', {
       config,
       module: 'ClangFormatService',
       operation: 'parseConfigurationLine',
