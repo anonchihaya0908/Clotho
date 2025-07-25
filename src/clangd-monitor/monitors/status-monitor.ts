@@ -130,10 +130,11 @@ export class StatusMonitor implements IMonitor {
         const version = await this.getClangdBackendVersion();
         if (version) {
           status.version = version;
-          this.logger.debug(
-            'Found backend clangd version:',
-            { version },
-          );
+          // 注释掉烦人的调试日志
+          // this.logger.debug(
+          //   'Found backend clangd version:',
+          //   { version },
+          // );
         } else {
           status.version = '后端版本检测失败';
           this.logger.debug(
@@ -149,7 +150,8 @@ export class StatusMonitor implements IMonitor {
       }
 
       this.currentStatus = status;
-      this.logger.debug('Updated status:', { status });
+      // 注释掉烦人的调试日志
+      // this.logger.debug('Updated status:', { status });
     } catch (error) {
       this.currentStatus = {
         isRunning: false,
@@ -192,7 +194,8 @@ export class StatusMonitor implements IMonitor {
   ): Promise<string | null> {
     return new Promise((resolve) => {
       const command = `"${clangdPath}" --version`;
-      this.logger.debug('Trying command:', { command });
+      // 注释掉烦人的调试日志
+      // this.logger.debug('Trying command:', { command });
 
       exec(command, { timeout: 5000 }, (error, stdout, stderr) => {
         if (error) {
@@ -206,10 +209,11 @@ export class StatusMonitor implements IMonitor {
 
         const version = this.parseVersionFromOutput(stdout);
         if (version) {
-          this.logger.debug(
-            `Version from ${clangdPath}:`,
-            { version },
-          );
+          // 注释掉烦人的调试日志
+          // this.logger.debug(
+          //   `Version from ${clangdPath}:`,
+          //   { version },
+          // );
         }
         resolve(version);
       });
@@ -251,10 +255,11 @@ export class StatusMonitor implements IMonitor {
    */
   private parseVersionFromOutput(output: string): string | null {
     const trimmedOutput = output.trim();
-    this.logger.debug(
-      'Parsing version from output:',
-      { output: trimmedOutput },
-    );
+    // 注释掉烦人的调试日志
+    // this.logger.debug(
+    //   'Parsing version from output:',
+    //   { output: trimmedOutput },
+    // );
 
     // Look for version pattern like "clangd version 20.1.8"
     const versionMatch = trimmedOutput.match(/clangd version (\d+\.\d+\.\d+)/);

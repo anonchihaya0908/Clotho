@@ -39,7 +39,8 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         error: null,
         validationState: { isValid: true, errors: [] },
         settings: { showGuideButton: true },
-        previewState: { isOpen: true, showPlaceholder: false, isReopening: false }
+        previewState: { isOpen: true, showPlaceholder: false, isReopening: false },
+        isConfigReset: false
     });
 
     // 发送消息到 VS Code
@@ -96,7 +97,13 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                 sendMessage(WebviewMessageType.IMPORT_CONFIG);
                 break;
             case 'reset':
+                // 设置重置标志
+                setState(prev => ({ ...prev, isConfigReset: true }));
                 sendMessage(WebviewMessageType.RESET_CONFIG);
+                // 3秒后清除重置标志
+                setTimeout(() => {
+                    setState(prev => ({ ...prev, isConfigReset: false }));
+                }, 3000);
                 break;
             case 'openClangFormatFile':
                 sendMessage(WebviewMessageType.OPEN_CLANG_FORMAT_FILE);
@@ -307,6 +314,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     onConfigOptionHover={handleConfigOptionHover}
                     onConfigOptionFocus={handleConfigOptionFocus}
                     onClearHighlights={handleClearHighlights}
+                    isConfigReset={state.isConfigReset}
                 />
             </div>
 

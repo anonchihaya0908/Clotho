@@ -25,7 +25,8 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
     currentConfig,
     onConfigOptionHover,
     onConfigOptionFocus,
-    onClearHighlights
+    onClearHighlights,
+    isConfigReset = false
 }) => {
     const [mode, setMode] = useState<ConfigMode>('quick');
     const [searchQuery, setSearchQuery] = useState('');
@@ -92,6 +93,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                                 ? dynamicPreviewResult
                                 : undefined
                         }
+                        isConfigReset={isConfigReset}
                     />
                 ) : (
                     <div className="micro-preview">

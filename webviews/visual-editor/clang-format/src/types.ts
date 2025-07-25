@@ -53,6 +53,7 @@ export interface AppState {
     success: boolean;
     error?: string;
   };
+  isConfigReset: boolean; // 标识配置是否刚被重置
 }
 
 // 前端特有的UI状态类型
@@ -86,6 +87,7 @@ export interface ConfigPanelProps {
   onConfigOptionHover?: (optionName: string) => void;
   onConfigOptionFocus?: (optionName: string) => void;
   onClearHighlights?: () => void;
+  isConfigReset?: boolean; // 标识配置是否刚被重置
 }
 
 export interface QuickSetupProps {

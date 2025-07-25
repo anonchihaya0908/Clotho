@@ -12,6 +12,7 @@ import { DEFAULT_CLANG_FORMAT_CONFIG } from './data/clang-format-options-databas
 import { WebviewMessageType } from '../../common/types/webview';
 import { DebounceIntegration } from './core/debounce-integration';
 import { ConfigChangeService } from './core/config-change-service';
+import { ClangFormatService } from './format-service';
 import { ManagerRegistry, ManagedComponent } from './core/manager-registry';
 
 /**
@@ -198,6 +199,47 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
           previewManager.updatePreviewWithConfig(newConfig);
         } else {
           console.warn('[Coordinator] 预览管理器未找到');
+        }
+      },
+    );
+
+    // 【新增】微观预览请求处理
+    this.eventBus.on(
+      'micro-preview-requested',
+      async ({ optionName, config, previewSnippet }: {
+        optionName: string;
+        config: Record<string, any>;
+        previewSnippet: string;
+      }) => {
+        try {
+          // 获取格式化服务
+          const formatService = ClangFormatService.getInstance();
+
+          // 格式化微观预览代码
+          const formatResult = await formatService.format(previewSnippet, config);
+
+          // 通过事件总线发送结果，让 placeholderManager 处理
+          this.eventBus.emit('post-message-to-webview', {
+            type: WebviewMessageType.UPDATE_MICRO_PREVIEW,
+            payload: {
+              optionName,
+              formattedCode: formatResult.formattedCode,
+              success: formatResult.success,
+              error: formatResult.error
+            }
+          });
+        } catch (error) {
+          console.error('[Coordinator] 微观预览处理失败:', error);
+          // 发送错误结果
+          this.eventBus.emit('post-message-to-webview', {
+            type: WebviewMessageType.UPDATE_MICRO_PREVIEW,
+            payload: {
+              optionName,
+              formattedCode: previewSnippet,
+              success: false,
+              error: error instanceof Error ? error.message : '未知错误'
+            }
+          });
         }
       },
     );

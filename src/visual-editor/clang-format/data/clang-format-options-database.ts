@@ -2174,67 +2174,204 @@ export const DEFAULT_CLANG_FORMAT_CONFIG: Record<string, any> = {
 };
 
 // 完整的示例代码，用于宏观预览
-export const MACRO_PREVIEW_CODE = `// Clotho .clang-format 编辑器预览代码
+export const MACRO_PREVIEW_CODE = `// =================================================================
+//  clang-format 功能演示 C++ 文件
+//
+//  这个文件包含了多种代码结构，用于直观展示不同 .clang-format
+//  配置选项带来的格式化效果。
+//
+// =================================================================
+
+// --- 1. 头文件 (Include Options) ---
+// 测试: IncludeCategories, SortIncludes, IncludeIsMainRegex
+#include "format_test.h" // 假设这是“主”头文件
 #include <vector>
 #include <string>
+#include "util/another_local_header.h"
+#include <algorithm>
 #include <iostream>
-#include <map>
+#include <gtest/gtest.h> // 模拟第三方库
 
-namespace example {
+// --- 2. 命名空间 (Namespace Options) ---
+// 测试: NamespaceIndentation, CompactNamespaces, FixNamespaceComments
+namespace MyOuterNamespace {
+namespace MyInnerNamespace {
 
-class MyClass {
-public:
-    MyClass(int value, const std::string& name);
-    virtual ~MyClass() = default;
-    
-    void setValues(int a, int b, int c);
-    int getValue() const { return value_; }
-    
+class MyClassInNamespace {};
+
+} // namespace MyInnerNamespace
+} // namespace MyOuterNamespace
+
+// 测试 CompactNamespaces: true
+namespace A { namespace B { namespace C {
+    class DeepClass {};
+} } }
+
+// --- 3. 类与结构体 (Class & Struct Options) ---
+// 测试: BreakBeforeBraces, BraceWrapping, BreakInheritanceList,
+//       AccessModifierOffset, IndentAccessModifiers, AlignConsecutiveDeclarations
+class MyDemoClass : public BaseClass,
+                    private IAnotherInterface // 测试 BreakInheritanceList
+{ // 测试 BreakBeforeBraces (Allman vs Attach) 和 BraceWrapping
+public: // 测试 AccessModifierOffset 和 IndentAccessModifiers
+    MyDemoClass(int val) : value(val), text("hello") {}
+    ~MyDemoClass() {}
+
+    // 测试 AlignConsecutiveDeclarations: true
+    int         value;
+    std::string text;
+    bool        isValid;
+
 private:
-    int value_;
-    std::string name_;
-    std::vector<int> data_;
+    void helperFunction();
 };
 
-// 构造函数实现
-MyClass::MyClass(int value, const std::string& name)
-    : value_(value), name_(name), data_{1, 2, 3, 4, 5} {
-    // 初始化代码
+struct SimpleStruct { int x; int y; }; // 测试 AllowShortBlocksOnASingleLine
+
+// --- 4. 函数声明与定义 (Function Options) ---
+// 测试: BreakAfterReturnType, BinPackParameters, AlignAfterOpenBracket, ColumnLimit
+// 尝试 BinPackParameters: false vs true(BinPack) vs AlwaysOnePerLine
+// 尝试 AlignAfterOpenBracket: Align vs DontAlign vs AlwaysBreak
+virtual std::vector<std::string> aVeryLongFunctionNameWithManyParameters(int parameterOne, const std::string& parameterTwo, double parameterThree, bool parameterFour, void* parameterFive);
+
+// 测试: AllowShortFunctionsOnASingleLine
+int get_answer() { return 42; }
+void do_nothing() {}
+
+// --- 5. 函数调用 (Function Call Options) ---
+void functionCaller() {
+    // 测试: BinPackArguments, ColumnLimit
+    aVeryLongFunctionNameWithManyParameters(1, "a very long string literal just to make sure the line exceeds the column limit", 3.1415926535, true, nullptr);
+
+    // 测试构造函数初始化列表的打包
+    // 测试: PackConstructorInitializers
+    MyDemoClass instance(12345, "some text", false, 987.65, "another long text to wrap");
 }
 
-// 函数实现
-void MyClass::setValues(int a, int b, int c) {
-    if (a > 0 && b > 0 && c > 0) {
-        value_ = a + b + c;
-        data_.clear();
-        data_.insert(data_.end(), {a, b, c});
+// --- 6. 指针、引用和操作符 (Pointer, Reference & Operator Options) ---
+void pointerAndOperatorDemo() {
+    // 测试: PointerAlignment (Left, Middle, Right), DerivePointerAlignment
+    const char* p1;
+    const char * p2;
+    const char *p3;
+    int& r1 = p1; // 测试 ReferenceAlignment
+
+    // 测试: SpaceAroundPointerQualifiers
+    int* const volatile p_qualifiers = nullptr;
+
+    // 测试: BreakBeforeBinaryOperators, AlignOperands
+    int result = a_very_long_variable_name_one + another_long_variable_name_two * a_third_long_variable_name - the_final_variable_name;
+
+    // 测试: SpaceBeforeAssignmentOperators
+    result=1;
+
+    // 测试: BreakBeforeTernaryOperators
+    int ternary_result = (result > 0) ? a_very_long_variable_name_one
+                                      : another_long_variable_name_two;
+}
+
+// --- 7. 控制流 (Control Flow Options) ---
+void controlFlowDemo(int condition) {
+    // 测试: AllowShortIfStatementsOnASingleLine, AllowShortLoopsOnASingleLine
+    if (condition < 0) return;
+
+    for (int i = 0; i < 10; ++i) continue;
+
+    while (condition--) break;
+
+    // 测试: SpaceBeforeParens (ControlStatements vs Always)
+    if(condition) {
+        // ...
+    }
+
+    // 测试: BreakBeforeBraces, BraceWrapping.BeforeElse, BraceWrapping.BeforeCatch
+    if (condition) {
+        // block
     } else {
-        throw std::invalid_argument("Values must be positive");
+        // another block
+    }
+
+    // 测试: IndentCaseLabels, IndentCaseBlocks, AllowShortCaseLabelsOnASingleLine
+    switch(condition) {
+    case 0:
+        break;
+    case 1: { // 测试 IndentCaseBlocks
+        int x = 1;
+        break;
+    }
+    default:
+        break;
     }
 }
 
-// 模板函数
-template<typename T>
-T max(T a, T b) {
-    return (a > b) ? a : b;
+// --- 8. 模板 (Template Options) ---
+// 测试: BreakTemplateDeclarations, SpacesInAngles
+template<typename T, typename U>
+class MyTemplateClass {};
+
+MyTemplateClass<std::vector<int>, std::string> myInstance; // 测试 SpacesInAngles
+
+// --- 9. C++11 及更高版本特性 (Modern C++ Features) ---
+void modernCppDemo() {
+    // 测试: Cpp11BracedListStyle
+    std::vector<int> v = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    int arr[] {1,2,3};
+
+    // 测试: AllowShortLambdasOnASingleLine
+    auto short_lambda = [](){ return 42; };
+    auto long_lambda = [](int a, int b){
+        // body
+        return a + b;
+    };
+
+    // 测试: Range-based for loop, SpaceBeforeRangeBasedForLoopColon
+    for (auto& item : v) {
+        // ...
+    }
+
+    // 测试: InsertTrailingCommas (TCS_Wrapped)
+    auto my_data_map = {
+        std::make_pair(1, "one"),
+        std::make_pair(2, "two"),
+        std::make_pair(3, "three")
+    };
 }
 
-// Lambda 表达式
-auto lambda = [](int x, int y) -> int {
-    return x * y + 42;
-};
 
-// 宏定义
-#define MAX_SIZE 100
-#define MIN_VALUE 0
-#define DEFAULT_NAME "example"
+// --- 10. 注释 (Comment Options) ---
+// 测试: ReflowComments.
+// 这是一个非常非常非常长的注释，它的目的是为了故意超出设定的行宽限制 (ColumnLimit)，以便 clang-format 有机会根据配置来决定是否要将这个长注释重排成多行。
 
-} // namespace example
+int var1 = 1;          // 测试: AlignTrailingComments
+std::string long_var = "hello"; // 通过对齐这些行尾注释来观察效果
+bool flag = true;      // true
+
+/*
+ * 测试: 块注释的格式化
+ */
+
+// IWYU pragma: keep - 测试 CommentPragmas，这个注释不应被修改
+
+// --- 11. 宏 (Macro Options) ---
+// 测试: ForEachMacros
+#define MY_FOR_EACH(item, container) for(auto& item : container)
+
+// 测试: MacroBlockBegin, MacroBlockEnd
+#define BEGIN_MY_BLOCK do {
+#define END_MY_BLOCK } while(0)
+
+void macroDemo() {
+    std::vector<int> v;
+    MY_FOR_EACH(i, v) {
+        std::cout << i;
+    }
+
+    BEGIN_MY_BLOCK
+        int x = 1;
+    END_MY_BLOCK;
 
 int main() {
-    example::MyClass obj(10, "test");
-    obj.setValues(1, 2, 3);
-    
-    std::cout << "Value: " << obj.getValue() << std::endl;
+    std::cout << "Welcome to Visual .clang-format Editor!" << std::endl;
     return 0;
+}
 }`;

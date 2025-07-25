@@ -1,136 +1,6 @@
 import React from 'react';
 import { ClangFormatOption } from '../../types';
 
-// 预览服务 - 在 webview 中的简化版本
-class WebviewPreviewService {
-    private static readonly PREVIEW_TEMPLATES = {
-        // 对齐相关预览模板
-        ALIGNMENT: {
-            BRACKET_ALIGN: `function(argument1,
-         argument2,
-         argument3);`,
-
-            CONSECUTIVE_ASSIGNMENTS: `int a = 1;
-int bb = 2;
-int ccc = 3;`,
-
-            CONSECUTIVE_DECLARATIONS: `int a;
-int bb;
-int ccc;`,
-
-            MACRO_DEFINITIONS: `#define A 1
-#define BB 2
-#define CCC 3`,
-        },
-
-        // 大括号相关预览模板
-        BRACES: {
-            BRACE_WRAPPING: `if (condition) {
-  statement;
-}`,
-
-            BREAK_BEFORE_BRACES: `if (condition)
-{
-  statement;
-}`,
-        },
-
-        // 间距相关预览模板
-        SPACING: {
-            SPACES_AROUND_OPERATORS: `a = b + c;
-x *= y;`,
-
-            SPACES_IN_BRACKETS: `array[index];
-func(arg1, arg2);`,
-
-            SPACES_IN_PARENTHESES: `if ( condition ) {
-  func( argument );
-}`,
-        },
-
-        // 缩进相关预览模板
-        INDENTATION: {
-            TAB_WIDTH: `function() {
-\tstatement1;
-\tstatement2;
-}`,
-
-            INDENT_WIDTH: `if (condition) {
-  statement1;
-  statement2;
-}`,
-        },
-
-        // 换行相关预览模板
-        WRAPPING: {
-            COLUMN_LIMIT: `// This is a very long comment that might exceed the column limit
-function veryLongFunctionName(parameter1, parameter2, parameter3);`,
-
-            ALLOW_SHORT_FUNCTIONS: `int getX() { return x; }
-int getLongFunctionName() {
-  return value;
-}`,
-        },
-
-        // 通用模板
-        GENERAL: {
-            DEFAULT: `void function() {
-  if (condition) {
-    statement;
-  }
-}`,
-        },
-    };
-
-    public static generatePreviewCode(key: string): string {
-        const keyLower = key.toLowerCase();
-
-        // 根据特定的配置项键名获取预览代码
-        if (keyLower.includes('alignafteropen')) {
-            return this.PREVIEW_TEMPLATES.ALIGNMENT.BRACKET_ALIGN;
-        }
-        if (keyLower.includes('alignconsecutiveassignments')) {
-            return this.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_ASSIGNMENTS;
-        }
-        if (keyLower.includes('alignconsecutivedeclarations')) {
-            return this.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_DECLARATIONS;
-        }
-        if (keyLower.includes('alignconsecutivemacros')) {
-            return this.PREVIEW_TEMPLATES.ALIGNMENT.MACRO_DEFINITIONS;
-        }
-        if (keyLower.includes('bracewrapping') || keyLower.includes('wrapbraces')) {
-            return this.PREVIEW_TEMPLATES.BRACES.BRACE_WRAPPING;
-        }
-        if (keyLower.includes('breakbeforebraces')) {
-            return this.PREVIEW_TEMPLATES.BRACES.BREAK_BEFORE_BRACES;
-        }
-        if (keyLower.includes('spacesinparentheses')) {
-            return this.PREVIEW_TEMPLATES.SPACING.SPACES_IN_PARENTHESES;
-        }
-        if (keyLower.includes('spacesinbrackets') || keyLower.includes('spacesinsquare')) {
-            return this.PREVIEW_TEMPLATES.SPACING.SPACES_IN_BRACKETS;
-        }
-        if (keyLower.includes('spacearound') || keyLower.includes('spacebefore') || keyLower.includes('spaceafter')) {
-            return this.PREVIEW_TEMPLATES.SPACING.SPACES_AROUND_OPERATORS;
-        }
-        if (keyLower.includes('tabwidth')) {
-            return this.PREVIEW_TEMPLATES.INDENTATION.TAB_WIDTH;
-        }
-        if (keyLower.includes('indentwidth') || keyLower.includes('indent')) {
-            return this.PREVIEW_TEMPLATES.INDENTATION.INDENT_WIDTH;
-        }
-        if (keyLower.includes('columnlimit')) {
-            return this.PREVIEW_TEMPLATES.WRAPPING.COLUMN_LIMIT;
-        }
-        if (keyLower.includes('allowshort') && keyLower.includes('function')) {
-            return this.PREVIEW_TEMPLATES.WRAPPING.ALLOW_SHORT_FUNCTIONS;
-        }
-
-        // 默认预览
-        return this.PREVIEW_TEMPLATES.GENERAL.DEFAULT;
-    }
-}
-
 interface DynamicMicroPreviewProps {
     option: ClangFormatOption;
     currentConfig: Record<string, any>;
@@ -141,30 +11,43 @@ interface DynamicMicroPreviewProps {
         success: boolean;
         error?: string;
     };
+    isConfigReset?: boolean; // 新增：标识配置是否被重置
 }
 
 const DynamicMicroPreview: React.FC<DynamicMicroPreviewProps> = ({
     option,
     currentConfig,
     onPreviewRequest,
-    previewResult
+    previewResult,
+    isConfigReset = false
 }) => {
-    // 获取配置项的预览代码片段 - 现在使用 PreviewService
+    // 获取配置项的预览代码片段 - 直接使用数据库中的 previewTemplate
     const getPreviewSnippet = (option: ClangFormatOption): string => {
-        // 使用新的 PreviewService 生成预览代码
-        return WebviewPreviewService.generatePreviewCode(option.key);
+        // 优先使用数据库中的专用预览模板
+        if (option.previewTemplate) {
+            return option.previewTemplate;
+        }
+
+        // 如果没有专用模板，返回通用默认模板
+        return `// ${option.name} 预览
+void function() {
+    // 此选项的效果将在这里显示
+    statement;
+}`;
     };
+
+    // 获取预览代码片段
+    const previewSnippet = getPreviewSnippet(option);
 
     // 触发预览请求
     React.useEffect(() => {
-        if (onPreviewRequest) {
-            const previewSnippet = getPreviewSnippet(option);
+        if (onPreviewRequest && previewSnippet) {
             onPreviewRequest(option.key, currentConfig, previewSnippet);
         }
-    }, [option.key, currentConfig, onPreviewRequest]);
+    }, [option.key, currentConfig, onPreviewRequest, previewSnippet]);
 
-    // 如果没有预览代码片段，显示占位符
-    if (!option.previewTemplate && !getPreviewSnippet(option)) {
+    // 如果没有预览代码片段，显示占位符（这种情况现在应该很少见）
+    if (!previewSnippet) {
         return (
             <div className="dynamic-micro-preview no-preview">
                 <span className="no-preview-text">No preview available</span>
@@ -178,17 +61,53 @@ const DynamicMicroPreview: React.FC<DynamicMicroPreviewProps> = ({
     const statusColor = previewResult?.optionName === option.key ?
         (previewResult.success ? 'green' : 'red') : 'orange';
 
+    // 检查是否有格式化结果
+    const hasFormattedResult = previewResult?.optionName === option.key && previewResult.success;
+    const hasError = previewResult?.optionName === option.key && previewResult.error;
+
+    // 检查格式化前后是否有差异
+    const hasVisibleChange = hasFormattedResult &&
+        previewResult.formattedCode.trim() !== previewSnippet.trim();
+
+    // 决定显示的代码内容
+    const displayCode = hasFormattedResult ? previewResult.formattedCode : previewSnippet;
+
+    // 决定样式类名 - 如果配置被重置，则不显示修改样式
+    const previewClassName = `micro-code-preview ${(hasVisibleChange && !isConfigReset) ? 'modified' : ''}`;
+
     return (
         <div className="dynamic-micro-preview">
             <div className="preview-header">
-                <span className="preview-label">Preview</span>
+                <span className="preview-label">
+                    微观预览 - {option.name}
+                </span>
                 <span className="preview-status" style={{ color: statusColor }}>
                     {resultStatus}
                 </span>
             </div>
+
+            {/* 显示当前配置值 */}
+            {currentConfig[option.key] !== undefined && (
+                <div className="config-value-display">
+                    <span className="config-key">{option.key}:</span>
+                    <span className="config-value">
+                        {JSON.stringify(currentConfig[option.key])}
+                    </span>
+                </div>
+            )}
+
+            {/* 显示代码预览 - 统一显示一套代码，用背景色表示状态 */}
+            <div className={previewClassName}>
+                <div className="code-label">
+                    {hasVisibleChange ? '格式化后' : '示例代码'}
+                    {hasFormattedResult && !hasVisibleChange && ' (无变化)'}
+                </div>
+                <pre><code>{displayCode}</code></pre>
+            </div>
+
             <div className="preview-notice">
-                <p>💡 实时预览在VS Code编辑器中显示</p>
-                {previewResult?.optionName === option.key && previewResult.error && (
+                <p>💡 完整预览在VS Code编辑器中显示</p>
+                {hasError && (
                     <div className="error-notice">
                         ⚠️ {previewResult.error}
                     </div>

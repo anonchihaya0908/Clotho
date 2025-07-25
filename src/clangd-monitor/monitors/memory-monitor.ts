@@ -355,9 +355,10 @@ export class MemoryMonitor implements IMonitor {
       this.lastMemoryUsage = memoryUsage;
       this.updateStatusBar(memoryUsage);
 
-      this.logger.debug(
-        `Updated - Memory: ${Math.round(memoryUsage.memory / 1024 / 1024)}MB`,
-      );
+      // 注释掉烦人的调试日志
+      // this.logger.debug(
+      //   `Updated - Memory: ${Math.round(memoryUsage.memory / 1024 / 1024)}MB`,
+      // );
     } catch (error) {
       // The process might have died. Clear PID and usage data.
       this.currentPid = undefined;
