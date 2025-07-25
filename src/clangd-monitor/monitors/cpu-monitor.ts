@@ -8,6 +8,7 @@ import * as os from 'os';
 import { IMonitor, CpuUsage, CpuMonitorConfig } from '../types';
 import { ErrorHandler } from '../../common/error-handler';
 import { ProcessDetector } from '../../common/process-detector';
+import { LoggerService } from '../../common/logger';
 
 // Import pidusage with proper typing
 import pidusage from 'pidusage';
@@ -32,6 +33,7 @@ export class CpuMonitor implements IMonitor {
   private lastPidUsageStats: any | undefined; // For pidusage state tracking
   private config: Required<CpuMonitorConfig>;
   private readonly coreCount: number;
+  private readonly logger = LoggerService.getInstance().createChildLogger('CpuMonitor');
 
   constructor(config: CpuMonitorConfig = {}, hideStatusBar = false) {
     this.config = { ...CpuMonitor.DEFAULT_CONFIG, ...config };
@@ -72,8 +74,8 @@ export class CpuMonitor implements IMonitor {
         // Still start monitoring - clangd might start later
       } else {
         this.currentPid = mainProcess.pid;
-        console.log(
-          `Clotho CpuMonitor: Started monitoring PID ${this.currentPid}`,
+        this.logger.info(
+          `Started monitoring PID ${this.currentPid}`,
         );
       }
 
@@ -105,7 +107,7 @@ export class CpuMonitor implements IMonitor {
 
     // Update status bar to show stopped state
     this.updateStatusBarNoClangd();
-    console.log('Clotho CpuMonitor: Stopped');
+    this.logger.info('Stopped');
   }
 
   /**
@@ -136,8 +138,8 @@ export class CpuMonitor implements IMonitor {
           return;
         }
 
-        console.log(
-          `Clotho CpuMonitor: ✅ ProcessDetector found PID: ${this.currentPid}`,
+        this.logger.info(
+          `✅ ProcessDetector found PID: ${this.currentPid}`,
         );
       }
 
@@ -159,8 +161,8 @@ export class CpuMonitor implements IMonitor {
     } catch (error) {
       // If we get an error, the process might have died
       if (this.currentPid) {
-        console.log(
-          `Clotho CpuMonitor: Lost PID ${this.currentPid}, will search again`,
+        this.logger.info(
+          `Lost PID ${this.currentPid}, will search again`,
         );
         this.currentPid = undefined;
         this.lastCpuUsage = undefined;

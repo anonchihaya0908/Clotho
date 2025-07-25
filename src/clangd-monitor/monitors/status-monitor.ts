@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import { exec } from 'child_process';
 import { IMonitor, ClangdStatus } from '../types';
 import { ErrorHandler } from '../../common/error-handler';
+import { LoggerService } from '../../common/logger';
 
 /**
  * Status monitoring implementation that tracks clangd server status
@@ -15,6 +16,7 @@ export class StatusMonitor implements IMonitor {
   private running = false;
   private currentStatus: ClangdStatus = { isRunning: false };
   private updateInterval: NodeJS.Timeout | undefined;
+  private readonly logger = LoggerService.getInstance().createChildLogger('StatusMonitor');
 
   constructor() {
     // Initialize status monitor
@@ -35,7 +37,7 @@ export class StatusMonitor implements IMonitor {
       // Set up periodic status updates every 3 seconds
       this.updateInterval = setInterval(() => {
         this.updateStatus().catch((err) => {
-          console.warn('Clotho StatusMonitor: Error in periodic update:', err);
+          this.logger.warn('Error in periodic update:', err);
         });
       }, 3000);
     } catch (error) {
@@ -128,26 +130,26 @@ export class StatusMonitor implements IMonitor {
         const version = await this.getClangdBackendVersion();
         if (version) {
           status.version = version;
-          console.debug(
-            'Clotho StatusMonitor: Found backend clangd version:',
-            version,
+          this.logger.debug(
+            'Found backend clangd version:',
+            { version },
           );
         } else {
           status.version = '后端版本检测失败';
-          console.debug(
-            'Clotho StatusMonitor: Failed to detect backend clangd version',
+          this.logger.debug(
+            'Failed to detect backend clangd version',
           );
         }
       } catch (error) {
         status.version = '后端版本检测错误';
-        console.debug(
-          'Clotho StatusMonitor: Error detecting backend version:',
-          error,
+        this.logger.debug(
+          'Error detecting backend version:',
+          { error },
         );
       }
 
       this.currentStatus = status;
-      console.debug('Clotho StatusMonitor: Updated status:', status);
+      this.logger.debug('Updated status:', { status });
     } catch (error) {
       this.currentStatus = {
         isRunning: false,
@@ -156,7 +158,7 @@ export class StatusMonitor implements IMonitor {
           (error instanceof Error ? error.message : 'Unknown error'),
         version: '版本检测失败',
       };
-      console.error('Clotho StatusMonitor: Error updating status:', error);
+      this.logger.error('Error updating status:', error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -176,8 +178,8 @@ export class StatusMonitor implements IMonitor {
       return version;
     }
 
-    console.debug(
-      'Clotho StatusMonitor: Both version detection methods failed',
+    this.logger.debug(
+      'Both version detection methods failed',
     );
     return null;
   }
@@ -190,13 +192,13 @@ export class StatusMonitor implements IMonitor {
   ): Promise<string | null> {
     return new Promise((resolve) => {
       const command = `"${clangdPath}" --version`;
-      console.debug('Clotho StatusMonitor: Trying command:', command);
+      this.logger.debug('Trying command:', { command });
 
       exec(command, { timeout: 5000 }, (error, stdout, stderr) => {
         if (error) {
-          console.debug(
-            `Clotho StatusMonitor: ${clangdPath} --version failed:`,
-            error.message,
+          this.logger.debug(
+            `${clangdPath} --version failed:`,
+            { error: error.message },
           );
           resolve(null);
           return;
@@ -204,9 +206,9 @@ export class StatusMonitor implements IMonitor {
 
         const version = this.parseVersionFromOutput(stdout);
         if (version) {
-          console.debug(
-            `Clotho StatusMonitor: Version from ${clangdPath}:`,
-            version,
+          this.logger.debug(
+            `Version from ${clangdPath}:`,
+            { version },
           );
         }
         resolve(version);
@@ -223,22 +225,22 @@ export class StatusMonitor implements IMonitor {
       const config = vscode.workspace.getConfiguration('clangd');
       const clangdPath = config.get<string>('path');
 
-      console.debug(
-        'Clotho StatusMonitor: VS Code clangd.path setting:',
-        clangdPath,
+      this.logger.debug(
+        'VS Code clangd.path setting:',
+        { clangdPath },
       );
 
       if (!clangdPath) {
-        console.debug('Clotho StatusMonitor: No clangd.path found in settings');
+        this.logger.debug('No clangd.path found in settings');
         return null;
       }
 
       // Try to get version from the configured path
       return await this.tryGetVersionFromPath(clangdPath);
     } catch (error) {
-      console.debug(
-        'Clotho StatusMonitor: Error reading VS Code settings:',
-        error,
+      this.logger.debug(
+        'Error reading VS Code settings:',
+        { error },
       );
       return null;
     }
@@ -249,9 +251,9 @@ export class StatusMonitor implements IMonitor {
    */
   private parseVersionFromOutput(output: string): string | null {
     const trimmedOutput = output.trim();
-    console.debug(
-      'Clotho StatusMonitor: Parsing version from output:',
-      trimmedOutput,
+    this.logger.debug(
+      'Parsing version from output:',
+      { output: trimmedOutput },
     );
 
     // Look for version pattern like "clangd version 20.1.8"

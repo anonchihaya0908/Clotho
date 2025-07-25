@@ -236,13 +236,13 @@ export class ManagerRegistry implements vscode.Disposable {
         }
 
         // 清理 disposables
-        this.disposables.forEach(d => {
+        for (const disposable of this.disposables) {
             try {
-                d.dispose();
+                disposable.dispose();
             } catch (error) {
                 console.warn('Error disposing disposable:', error);
             }
-        });
+        }
         this.disposables = [];
 
         // 重置状态

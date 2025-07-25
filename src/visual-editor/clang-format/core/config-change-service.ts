@@ -15,6 +15,7 @@ import { ErrorHandler } from '../../../common/error-handler';
 export interface ConfigChangeHandler {
     readonly name: string;
     readonly priority: number;
+    readonly isCritical: boolean;
     handle(context: ConfigChangeContext): Promise<void>;
 }
 
@@ -46,6 +47,7 @@ export interface ConfigChangeResult {
 class StateUpdateHandler implements ConfigChangeHandler {
     readonly name = 'StateUpdate';
     readonly priority = 100; // 最高优先级
+    readonly isCritical = true;
 
     async handle(context: ConfigChangeContext): Promise<void> {
         await context.stateManager.updateState(
@@ -64,6 +66,7 @@ class StateUpdateHandler implements ConfigChangeHandler {
 class WebviewNotificationHandler implements ConfigChangeHandler {
     readonly name = 'WebviewNotification';
     readonly priority = 90;
+    readonly isCritical = false;
 
     async handle(context: ConfigChangeContext): Promise<void> {
         context.eventBus.emit('post-message-to-webview', {
@@ -79,6 +82,7 @@ class WebviewNotificationHandler implements ConfigChangeHandler {
 class PreviewUpdateHandler implements ConfigChangeHandler {
     readonly name = 'PreviewUpdate';
     readonly priority = 80;
+    readonly isCritical = false;
 
     async handle(context: ConfigChangeContext): Promise<void> {
         context.eventBus.emit('config-updated-for-preview', {
@@ -93,6 +97,7 @@ class PreviewUpdateHandler implements ConfigChangeHandler {
 class ConfigPersistenceHandler implements ConfigChangeHandler {
     readonly name = 'ConfigPersistence';
     readonly priority = 70;
+    readonly isCritical = false;
 
     async handle(context: ConfigChangeContext): Promise<void> {
         // 在这里可以添加配置持久化逻辑
@@ -199,7 +204,7 @@ export class ConfigChangeService {
                     console.warn(`ConfigChangeHandler ${handler.name} failed:`, error);
 
                     // 但是对于关键处理器（如状态更新），我们需要记录错误
-                    if (handler.priority >= 90) {
+                    if (handler.isCritical) {
                         await this.errorRecovery.handleError(
                             `config-change-handler-${handler.name.toLowerCase()}-failed`,
                             error,

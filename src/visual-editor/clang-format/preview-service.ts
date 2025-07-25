@@ -7,6 +7,14 @@
 import { ConfigCategories } from '../../common/types/config';
 
 /**
+ * 配置键到预览模板的映射接口
+ */
+interface KeywordToTemplateMapping {
+    keywords: string[];
+    template: string;
+}
+
+/**
  * 预览代码生成服务
  * 根据配置项的类型和用途动态生成合适的预览代码
  */
@@ -122,6 +130,46 @@ private:
     };
 
     /**
+     * 配置关键词到预览模板的映射表
+     * 使用数组存储关键词，支持多关键词匹配
+     */
+    private static readonly KEYWORD_TO_TEMPLATE_MAP: KeywordToTemplateMapping[] = [
+        // 对齐相关
+        { keywords: ['alignafteropen'], template: PreviewService.PREVIEW_TEMPLATES.ALIGNMENT.BRACKET_ALIGN },
+        { keywords: ['alignconsecutiveassignments'], template: PreviewService.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_ASSIGNMENTS },
+        { keywords: ['alignconsecutivedeclarations'], template: PreviewService.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_DECLARATIONS },
+        { keywords: ['alignconsecutivemacros'], template: PreviewService.PREVIEW_TEMPLATES.ALIGNMENT.MACRO_DEFINITIONS },
+
+        // 大括号相关
+        { keywords: ['bracewrapping', 'wrapbraces'], template: PreviewService.PREVIEW_TEMPLATES.BRACES.BRACE_WRAPPING },
+        { keywords: ['breakbeforebraces'], template: PreviewService.PREVIEW_TEMPLATES.BRACES.BREAK_BEFORE_BRACES },
+        { keywords: ['compactnamespaces'], template: PreviewService.PREVIEW_TEMPLATES.BRACES.COMPACT_NAMESPACES },
+
+        // 间距相关
+        { keywords: ['spacesinparentheses'], template: PreviewService.PREVIEW_TEMPLATES.SPACING.SPACES_IN_PARENTHESES },
+        { keywords: ['spacesinbrackets', 'spacesinsquare'], template: PreviewService.PREVIEW_TEMPLATES.SPACING.SPACES_IN_BRACKETS },
+        { keywords: ['spacearound', 'spacebefore', 'spaceafter'], template: PreviewService.PREVIEW_TEMPLATES.SPACING.SPACES_AROUND_OPERATORS },
+
+        // 缩进相关
+        { keywords: ['tabwidth'], template: PreviewService.PREVIEW_TEMPLATES.INDENTATION.TAB_WIDTH },
+        { keywords: ['indentwidth', 'indent'], template: PreviewService.PREVIEW_TEMPLATES.INDENTATION.INDENT_WIDTH },
+        { keywords: ['continuation'], template: PreviewService.PREVIEW_TEMPLATES.INDENTATION.CONTINUATION_INDENT },
+
+        // 换行相关
+        { keywords: ['columnlimit'], template: PreviewService.PREVIEW_TEMPLATES.WRAPPING.COLUMN_LIMIT },
+        { keywords: ['breakbefore', 'binary'], template: PreviewService.PREVIEW_TEMPLATES.WRAPPING.BREAK_BEFORE_BINARY_OPERATORS },
+        { keywords: ['allowshort', 'function'], template: PreviewService.PREVIEW_TEMPLATES.WRAPPING.ALLOW_SHORT_FUNCTIONS },
+
+        // 注释相关
+        { keywords: ['reflowcomments'], template: PreviewService.PREVIEW_TEMPLATES.COMMENTS.REFLOW_COMMENTS },
+        { keywords: ['spacebeforecomments'], template: PreviewService.PREVIEW_TEMPLATES.COMMENTS.SPACE_BEFORE_COMMENTS },
+
+        // 类和命名空间相关
+        { keywords: ['class', 'access'], template: PreviewService.PREVIEW_TEMPLATES.GENERAL.CLASS_DEFINITION },
+        { keywords: ['namespace'], template: PreviewService.PREVIEW_TEMPLATES.GENERAL.NAMESPACE },
+    ];
+
+    /**
      * 根据配置项生成预览代码
      * @param key 配置项的键名
      * @param category 配置项的分类
@@ -145,82 +193,21 @@ private:
 
     /**
      * 根据特定的配置项键名获取预览代码
+     * 使用映射表替代冗长的 if 语句，提高性能和可维护性
      */
     private static getSpecificPreview(key: string): string | null {
         const keyLower = key.toLowerCase();
 
-        // 对齐相关
-        if (keyLower.includes('alignafteropen')) {
-            return this.PREVIEW_TEMPLATES.ALIGNMENT.BRACKET_ALIGN;
-        }
-        if (keyLower.includes('alignconsecutiveassignments')) {
-            return this.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_ASSIGNMENTS;
-        }
-        if (keyLower.includes('alignconsecutivedeclarations')) {
-            return this.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_DECLARATIONS;
-        }
-        if (keyLower.includes('alignconsecutivemacros')) {
-            return this.PREVIEW_TEMPLATES.ALIGNMENT.MACRO_DEFINITIONS;
-        }
-
-        // 大括号相关
-        if (keyLower.includes('bracewrapping') || keyLower.includes('wrapbraces')) {
-            return this.PREVIEW_TEMPLATES.BRACES.BRACE_WRAPPING;
-        }
-        if (keyLower.includes('breakbeforebraces')) {
-            return this.PREVIEW_TEMPLATES.BRACES.BREAK_BEFORE_BRACES;
-        }
-        if (keyLower.includes('compactnamespaces')) {
-            return this.PREVIEW_TEMPLATES.BRACES.COMPACT_NAMESPACES;
-        }
-
-        // 间距相关
-        if (keyLower.includes('spacesinparentheses')) {
-            return this.PREVIEW_TEMPLATES.SPACING.SPACES_IN_PARENTHESES;
-        }
-        if (keyLower.includes('spacesinbrackets') || keyLower.includes('spacesinsquare')) {
-            return this.PREVIEW_TEMPLATES.SPACING.SPACES_IN_BRACKETS;
-        }
-        if (keyLower.includes('spacearound') || keyLower.includes('spacebefore') || keyLower.includes('spaceafter')) {
-            return this.PREVIEW_TEMPLATES.SPACING.SPACES_AROUND_OPERATORS;
-        }
-
-        // 缩进相关
-        if (keyLower.includes('tabwidth')) {
-            return this.PREVIEW_TEMPLATES.INDENTATION.TAB_WIDTH;
-        }
-        if (keyLower.includes('indentwidth') || keyLower.includes('indent')) {
-            return this.PREVIEW_TEMPLATES.INDENTATION.INDENT_WIDTH;
-        }
-        if (keyLower.includes('continuation')) {
-            return this.PREVIEW_TEMPLATES.INDENTATION.CONTINUATION_INDENT;
-        }
-
-        // 换行相关
-        if (keyLower.includes('columnlimit')) {
-            return this.PREVIEW_TEMPLATES.WRAPPING.COLUMN_LIMIT;
-        }
-        if (keyLower.includes('breakbefore') && keyLower.includes('binary')) {
-            return this.PREVIEW_TEMPLATES.WRAPPING.BREAK_BEFORE_BINARY_OPERATORS;
-        }
-        if (keyLower.includes('allowshort') && keyLower.includes('function')) {
-            return this.PREVIEW_TEMPLATES.WRAPPING.ALLOW_SHORT_FUNCTIONS;
-        }
-
-        // 注释相关
-        if (keyLower.includes('reflowcomments')) {
-            return this.PREVIEW_TEMPLATES.COMMENTS.REFLOW_COMMENTS;
-        }
-        if (keyLower.includes('spacebeforecomments')) {
-            return this.PREVIEW_TEMPLATES.COMMENTS.SPACE_BEFORE_COMMENTS;
-        }
-
-        // 类和命名空间相关
-        if (keyLower.includes('class') || keyLower.includes('access')) {
-            return this.PREVIEW_TEMPLATES.GENERAL.CLASS_DEFINITION;
-        }
-        if (keyLower.includes('namespace')) {
-            return this.PREVIEW_TEMPLATES.GENERAL.NAMESPACE;
+        // 遍历映射表，查找匹配的关键词
+        for (const mapping of this.KEYWORD_TO_TEMPLATE_MAP) {
+            // 检查是否所有关键词都在配置键中出现
+            const allKeywordsMatch = mapping.keywords.every(keyword => 
+                keyLower.includes(keyword.toLowerCase())
+            );
+            
+            if (allKeywordsMatch) {
+                return mapping.template;
+            }
         }
 
         return null;

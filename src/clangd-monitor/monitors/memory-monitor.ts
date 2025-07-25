@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import { IMonitor, MemoryUsage, MemoryMonitorConfig } from '../types';
 import { ErrorHandler } from '../../common/error-handler';
 import { ProcessDetector } from '../../common/process-detector';
+import { createModuleLogger } from '../../common/logger';
 
 // Import pidusage with proper typing
 import pidusage from 'pidusage';
@@ -21,6 +22,7 @@ export class MemoryMonitor implements IMonitor {
     errorThreshold: 3072, // 3GB (red)
   };
 
+  private readonly logger = createModuleLogger('MemoryMonitor');
   private statusBarItem: vscode.StatusBarItem | undefined;
   private updateTimer: NodeJS.Timeout | undefined;
   private running = false;
@@ -98,16 +100,16 @@ export class MemoryMonitor implements IMonitor {
    * Used when clangd is restarted or when we want to avoid stale process locks
    */
   public async reset(): Promise<void> {
-    console.log(
-      'Clotho MemoryMonitor: Resetting PID and forcing re-detection (anti-stale mode)',
+    this.logger.info(
+      'Resetting PID and forcing re-detection (anti-stale mode)',
     );
     this.currentPid = undefined;
     this.lastMemoryUsage = undefined;
 
     // If monitoring is running, trigger immediate update with fresh detection
     if (this.running) {
-      console.log(
-        'Clotho MemoryMonitor: Triggering immediate smart process re-detection...',
+      this.logger.info(
+        'Triggering immediate smart process re-detection...',
       );
       await this.updateMemoryUsage();
     }
@@ -149,7 +151,7 @@ export class MemoryMonitor implements IMonitor {
         'llvm-vs-code-extensions.vscode-clangd',
       );
       if (!clangdExtension) {
-        console.debug('Clotho MemoryMonitor: clangd extension not found');
+        this.logger.debug('clangd extension not found');
         return undefined;
       }
 
@@ -157,10 +159,10 @@ export class MemoryMonitor implements IMonitor {
       if (!clangdExtension.isActive) {
         try {
           await clangdExtension.activate();
-          console.debug('Clotho MemoryMonitor: clangd extension activated');
+          this.logger.debug('clangd extension activated');
         } catch (error) {
-          console.debug(
-            'Clotho MemoryMonitor: Failed to activate clangd extension',
+          this.logger.debug(
+            'Failed to activate clangd extension',
           );
           return undefined;
         }
@@ -169,7 +171,7 @@ export class MemoryMonitor implements IMonitor {
       // Step 3: Check if the API is available
       const api = clangdExtension.exports;
       if (!api?.getClient) {
-        console.debug('Clotho MemoryMonitor: clangd API not available');
+        this.logger.debug('clangd API not available');
         return undefined;
       }
 
@@ -177,8 +179,8 @@ export class MemoryMonitor implements IMonitor {
       const client = api.getClient();
       if (!client || client.state !== 2) {
         // 2 = Running state
-        console.debug(
-          `Clotho MemoryMonitor: clangd client not running (state: ${client?.state})`,
+        this.logger.debug(
+          `clangd client not running (state: ${client?.state})`,
         );
         return undefined;
       }
@@ -187,37 +189,37 @@ export class MemoryMonitor implements IMonitor {
       let pid: number | undefined;
 
       // Debug: Log all available properties
-      console.debug(
-        'Clotho MemoryMonitor: Client properties:',
+      this.logger.debug(
+        'Client properties:',
         Object.keys(client),
       );
 
       // Method 1: Check if the client has direct process information
       if (client._serverProcess?.pid) {
         pid = client._serverProcess.pid;
-        console.debug(
-          `Clotho MemoryMonitor: Found PID via _serverProcess: ${pid}`,
+        this.logger.debug(
+          `Found PID via _serverProcess: ${pid}`,
         );
       }
       // Method 2: Check _childProcess (some language client implementations)
       else if (client._childProcess?.pid) {
         pid = client._childProcess.pid;
-        console.debug(
-          `Clotho MemoryMonitor: Found PID via _childProcess: ${pid}`,
+        this.logger.debug(
+          `Found PID via _childProcess: ${pid}`,
         );
       }
       // Method 3: Check the initializeResult for server info
       else if (client.initializeResult?.serverInfo?.processId) {
         pid = client.initializeResult.serverInfo.processId;
-        console.debug(
-          `Clotho MemoryMonitor: Found PID via initializeResult: ${pid}`,
+        this.logger.debug(
+          `Found PID via initializeResult: ${pid}`,
         );
       }
       // Method 4: Try accessing server options
       else if (client.clientOptions?.serverOptions?.process?.pid) {
         pid = client.clientOptions.serverOptions.process.pid;
-        console.debug(
-          `Clotho MemoryMonitor: Found PID via clientOptions: ${pid}`,
+        this.logger.debug(
+          `Found PID via clientOptions: ${pid}`,
         );
       }
       // Method 5: Check if client has a getServerProcess method
@@ -225,32 +227,32 @@ export class MemoryMonitor implements IMonitor {
         const serverProcess = client.getServerProcess();
         if (serverProcess?.pid) {
           pid = serverProcess.pid;
-          console.debug(
-            `Clotho MemoryMonitor: Found PID via getServerProcess: ${pid}`,
+          this.logger.debug(
+            `Found PID via getServerProcess: ${pid}`,
           );
         }
       }
       // Method 6: Try accessing the language client's connection
       else if (client.connection && client.connection.sendRequest) {
-        console.debug(
-          'Clotho MemoryMonitor: Language client has connection but no direct PID access',
+        this.logger.debug(
+          'Language client has connection but no direct PID access',
         );
       }
 
       if (pid) {
-        console.log(
-          `Clotho MemoryMonitor: Successfully found clangd PID via API: ${pid}`,
+        this.logger.info(
+          `Successfully found clangd PID via API: ${pid}`,
         );
         return pid;
       }
 
-      console.debug(
-        'Clotho MemoryMonitor: Could not extract PID from clangd client',
+      this.logger.debug(
+        'Could not extract PID from clangd client',
       );
       return undefined;
     } catch (error) {
-      console.error(
-        'Clotho MemoryMonitor: Error in API-based PID detection:',
+      this.logger.error(
+        'Error in API-based PID detection:',
         error,
       );
       ErrorHandler.handle(error, {
@@ -271,26 +273,26 @@ export class MemoryMonitor implements IMonitor {
     // Strategy 1: Try to get PID via clangd extension API (most reliable)
     const pidFromApi = await this.findClangdPidViaApi();
     if (pidFromApi) {
-      console.log(
-        `Clotho MemoryMonitor: ✅ PID detected via API: ${pidFromApi}`,
+      this.logger.info(
+        `✅ PID detected via API: ${pidFromApi}`,
       );
       return pidFromApi;
     }
 
-    console.log(
-      'Clotho MemoryMonitor: 🔄 API detection failed, delegating to ProcessDetector...',
+    this.logger.info(
+      '🔄 API detection failed, delegating to ProcessDetector...',
     );
 
     // Strategy 2: Delegate to ProcessDetector - our "Ace Detective"
     const mainProcess = await ProcessDetector.findMainProcessByName('clangd');
     if (mainProcess) {
-      console.log(
-        `Clotho MemoryMonitor: ✅ ProcessDetector found PID: ${mainProcess.pid}`,
+      this.logger.info(
+        `✅ ProcessDetector found PID: ${mainProcess.pid}`,
       );
       return mainProcess.pid;
     }
 
-    console.log('Clotho MemoryMonitor: ❌ All detection strategies failed');
+    this.logger.warn('❌ All detection strategies failed');
     return undefined;
   } /**
    * 🧬 Perform the "DNA Test" - find our children and select the main one
@@ -325,8 +327,8 @@ export class MemoryMonitor implements IMonitor {
         this.currentPid = await this.findClangdPidViaApi();
 
         if (!this.currentPid) {
-          console.log(
-            'Clotho MemoryMonitor: 🔄 API detection failed, delegating to ProcessDetector...',
+          this.logger.info(
+            '🔄 API detection failed, delegating to ProcessDetector...',
           );
           // Strategy 2: Delegate to ProcessDetector
           const mainProcess =
@@ -339,8 +341,8 @@ export class MemoryMonitor implements IMonitor {
           return;
         }
 
-        console.log(
-          `Clotho MemoryMonitor: ✅ Using PID ${this.currentPid} for monitoring`,
+        this.logger.info(
+          `✅ Using PID ${this.currentPid} for monitoring`,
         );
       }
 
@@ -356,8 +358,8 @@ export class MemoryMonitor implements IMonitor {
       this.lastMemoryUsage = memoryUsage;
       this.updateStatusBar(memoryUsage);
 
-      console.debug(
-        `Clotho MemoryMonitor: Updated - Memory: ${Math.round(memoryUsage.memory / 1024 / 1024)}MB`,
+      this.logger.debug(
+        `Updated - Memory: ${Math.round(memoryUsage.memory / 1024 / 1024)}MB`,
       );
     } catch (error) {
       // The process might have died. Clear PID and usage data.

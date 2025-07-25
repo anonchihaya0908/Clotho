@@ -317,7 +317,8 @@
     },
     "devDependencies": {
         "@types/mocha": "^10.0.10",
-        "@types/node": "22.x",
+        "@types/node": "^22.16.5",
+        "@types/pidusage": "^2.0.5",
         "@types/vscode": "^1.74.0",
         "@typescript-eslint/eslint-plugin": "^6.21.0",
         "@typescript-eslint/parser": "^6.21.0",
@@ -340,6 +341,7 @@
     "license": "Apache-2.0",
     "dependencies": {
         "pidusage": "^4.0.1",
+        "tslog": "^4.9.3",
         "vscode-languageclient": "^9.0.1"
     }
 }

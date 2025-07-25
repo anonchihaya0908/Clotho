@@ -9,6 +9,7 @@
 
 import * as vscode from 'vscode';
 import { ServiceContainer } from './common/service-container';
+import { logger } from './common/logger';
 import {
   PairCoordinator,
   PairCreatorService,
@@ -43,6 +44,13 @@ export let serviceContainer: ServiceContainer;
 export async function bootstrap(
   context: vscode.ExtensionContext,
 ): Promise<void> {
+  // 🚀 初始化 Logger 系统（优先级最高）
+  logger.initializeOutputChannel();
+  logger.info('Clotho 扩展启动中...', { 
+    module: 'Bootstrap', 
+    operation: 'startup' 
+  });
+
   // Initialize the service container
   serviceContainer = new ServiceContainer();
 
@@ -52,10 +60,18 @@ export async function bootstrap(
   // 激活 Clang-Format 可视化编辑器模块（注册虚拟文档提供者）
   try {
     ClangFormatPreviewProvider.register(context);
+    logger.info('ClangFormatPreviewProvider 注册成功', { 
+      module: 'Bootstrap', 
+      operation: 'registerPreviewProvider' 
+    });
   } catch (error) {
-    console.error(
-      'Clotho: Failed to register ClangFormatPreviewProvider',
-      error,
+    logger.error(
+      'ClangFormatPreviewProvider 注册失败',
+      error as Error,
+      { 
+        module: 'Bootstrap', 
+        operation: 'registerPreviewProvider' 
+      }
     );
     // 不抛出错误，允许扩展继续运行
   }
@@ -69,6 +85,12 @@ export async function bootstrap(
   // Register the service container for cleanup
   context.subscriptions.push({
     dispose: () => cleanup(),
+  });
+
+  // 🎉 启动完成
+  logger.info('Clotho 扩展启动完成', { 
+    module: 'Bootstrap', 
+    operation: 'startup_complete' 
   });
 }
 
@@ -185,9 +207,25 @@ async function initializeCoordinators(): Promise<void> {
   if (isMonitoringEnabled) {
     try {
       await monitorCoordinator.startMonitoring();
+      logger.info('Clangd 监控启动成功', { 
+        module: 'Bootstrap', 
+        operation: 'startMonitoring' 
+      });
     } catch (error) {
-      console.error('Clotho: Failed to start clangd monitoring:', error);
+      logger.error(
+        'Clangd 监控启动失败', 
+        error as Error,
+        { 
+          module: 'Bootstrap', 
+          operation: 'startMonitoring' 
+        }
+      );
     }
+  } else {
+    logger.info('Clangd 监控已被配置禁用', { 
+      module: 'Bootstrap', 
+      operation: 'startMonitoring' 
+    });
   }
 }
 
@@ -195,9 +233,22 @@ async function initializeCoordinators(): Promise<void> {
  * Clean up all services when the extension is deactivated.
  */
 export function cleanup(): void {
+  logger.info('Clotho 扩展正在清理资源...', { 
+    module: 'Bootstrap', 
+    operation: 'cleanup' 
+  });
+
   if (serviceContainer) {
     serviceContainer.dispose();
   }
+
+  // 清理 Logger 资源
+  logger.dispose();
+  
+  logger.info('Clotho 扩展清理完成', { 
+    module: 'Bootstrap', 
+    operation: 'cleanup_complete' 
+  });
 }
 
 /**
