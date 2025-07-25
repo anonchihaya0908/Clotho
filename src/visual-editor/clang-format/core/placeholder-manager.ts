@@ -209,10 +209,7 @@ export class PlaceholderWebviewManager implements BaseManager {
       // 【修改】只有在编辑器可见且初始化完成时才创建占位符
       // 这样当编辑器不可见时，预览关闭不会创建占位符，实现真正的"收起"
       if (state.isVisible && state.isInitialized) {
-        console.log('[PlaceholderManager] 编辑器可见，创建占位符');
         await this.createPlaceholder();
-      } else {
-        console.log('[PlaceholderManager] 编辑器不可见，不创建占位符（实现收起效果）');
       }
     });
 
@@ -227,14 +224,11 @@ export class PlaceholderWebviewManager implements BaseManager {
 
     // 【新增】监听主编辑器关闭事件 - 联动销毁占位符
     this.context.eventBus.on('editor-closed', () => {
-      console.log('[PlaceholderManager] 主编辑器已关闭，销毁占位符');
       this.disposePanel();
     });
 
     // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
     this.context.eventBus.on('editor-visibility-changed', ({ isVisible }: { isVisible: boolean }) => {
-      console.log(`[PlaceholderManager] 主编辑器可见性变化: ${isVisible}`);
-
       if (!this.panel) {
         return; // 没有占位符面板时不处理
       }
@@ -242,13 +236,11 @@ export class PlaceholderWebviewManager implements BaseManager {
       if (isVisible) {
         // 主编辑器变为可见，恢复占位符
         if (this.isHidden) {
-          console.log('[PlaceholderManager] 恢复占位符显示');
           this.showPlaceholder();
         }
       } else {
         // 主编辑器变为不可见，完全隐藏占位符（不保留在右侧）
         if (!this.isHidden) {
-          console.log('[PlaceholderManager] 完全隐藏占位符');
           this.disposePanel(); // 直接销毁而不是隐藏
         }
       }

@@ -229,6 +229,7 @@ export class ConfigActionManager implements BaseManager {
       type: WebviewMessageType.CONFIG_LOADED,
       payload: { config: newConfig },
     });
-    this.context.eventBus.emit('config-updated-for-preview', { newConfig });
+    // 注意：不再发送 'config-updated-for-preview' 事件
+    // 该事件现在由 ConfigChangeService 统一处理，避免重复调用
   }
 }

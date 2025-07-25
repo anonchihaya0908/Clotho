@@ -137,13 +137,10 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
   private setupEventListeners(): void {
     // 监听重新打开预览的请求
     this.eventBus.on('open-preview-requested', async () => {
-      console.log('[Coordinator] 收到 open-preview-requested 事件');
       const debounceIntegration = this.managerRegistry.getInstance<DebounceIntegration>('debounceIntegration');
       const handler = debounceIntegration?.createDebouncedPreviewReopenHandler();
       if (handler) {
-        console.log('[Coordinator] 调用防抖处理器');
         await handler();
-        console.log('[Coordinator] 防抖处理器完成');
       } else {
         console.error('[Coordinator] 防抖集成未找到');
       }
@@ -177,19 +174,13 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
 
     // 监听主编辑器关闭事件，联动关闭所有
     this.eventBus.on('editor-closed', () => {
-      console.log('[Coordinator] 收到 editor-closed 事件，触发 close-preview-requested');
       this.eventBus.emit('close-preview-requested');
     });
 
-    // 【新增】监听主编辑器可见性变化事件，添加调试日志
-    this.eventBus.on('editor-visibility-changed', ({ isVisible }: { isVisible: boolean }) => {
-      console.log(`[Coordinator] 收到 editor-visibility-changed 事件: isVisible=${isVisible}`);
-      // 事件会自动传播到所有监听器，无需额外路由
-    });
+    // 主编辑器可见性变化事件会自动传播到所有监听器，无需在此处理
 
     // 监听 webview 完全准备就绪事件，自动打开预览
     this.eventBus.on('editor-fully-ready', async () => {
-      console.log('[Coordinator] 收到 editor-fully-ready 事件，触发 open-preview-requested');
       this.eventBus.emit('open-preview-requested');
     });
 
@@ -201,18 +192,12 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.eventBus.on(
       'config-updated-for-preview',
       ({ newConfig }: { newConfig: Record<string, any> }) => {
-        if (process.env.CLOTHO_DEBUG === 'true') {
-          console.log('🎯 [DEBUG] 收到预览更新事件，配置键数量:', Object.keys(newConfig).length);
-        }
         // 通过注册表获取 previewManager 实例
         const previewManager = this.managerRegistry.getInstance<PreviewEditorManager>('previewManager');
         if (previewManager) {
           previewManager.updatePreviewWithConfig(newConfig);
-          if (process.env.CLOTHO_DEBUG === 'true') {
-            console.log('✅ [DEBUG] 预览更新已触发');
-          }
         } else {
-          console.warn('⚠️ [DEBUG] 预览管理器未找到');
+          console.warn('[Coordinator] 预览管理器未找到');
         }
       },
     );

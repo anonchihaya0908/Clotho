@@ -77,16 +77,13 @@ export class DebounceIntegration implements BaseManager {
     return this.debounceManager.debounce(
       'preview-reopen-handler',
       async () => {
-        console.log('[DebounceIntegration] 开始处理预览重新打开');
         this.placeholderManager.disposePanel();
 
         try {
-          console.log('[DebounceIntegration] 尝试使用转换管理器打开预览');
           await this.transitionManager.switchToPreview(async () => {
             await this.previewManager.openPreview();
             return this.context.stateManager.getState().previewEditor!;
           });
-          console.log('[DebounceIntegration] 转换管理器预览打开成功');
         } catch (error) {
           console.error('[DebounceIntegration] 转换管理器失败，使用降级处理:', error);
           errorHandler.handle(error, {
@@ -97,7 +94,6 @@ export class DebounceIntegration implements BaseManager {
           });
           // 降级处理
           await this.previewManager.openPreview();
-          console.log('[DebounceIntegration] 降级处理完成');
         }
       },
       {
@@ -113,7 +109,6 @@ export class DebounceIntegration implements BaseManager {
    */
   setEnabled(enabled: boolean): void {
     this.isEnabled = enabled;
-    console.log(`DebounceIntegration: ${enabled ? 'Enabled' : 'Disabled'}`);
   }
 
   /**
@@ -133,6 +128,5 @@ export class DebounceIntegration implements BaseManager {
   dispose(): void {
     this.debounceManager.dispose();
     this.transitionManager.dispose();
-    console.log('DebounceIntegration: Disposed');
   }
 }
