@@ -1,6 +1,6 @@
 /**
  * Clang-Format Configuration Options Metadata
- * 包含所有配置项的元数据和微观预览代码
+ * 包含所有配置项的元数据，预览代码由 PreviewService 动态生成
  */
 
 import { ClangFormatOption, ConfigCategories } from '../../common/types/index';
@@ -15,10 +15,7 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
     type: 'enum',
     defaultValue: 'Align',
     possibleValues: ['Align', 'DontAlign', 'AlwaysBreak', 'BlockIndent'],
-    category: ConfigCategories.ALIGNMENT,
-    microPreviewCode: `function(argument1,
-         argument2,
-         argument3);`,
+    category: ConfigCategories.ALIGNMENT
   },
   {
     key: 'AlignConsecutiveAssignments',
@@ -34,10 +31,7 @@ export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
       'AcrossComments',
       'AcrossEmptyLinesAndComments',
     ],
-    category: ConfigCategories.ALIGNMENT,
-    microPreviewCode: `int a = 1;
-int bb = 2;
-int ccc = 3;`,
+    category: ConfigCategories.ALIGNMENT
   },
   {
     key: 'AlignConsecutiveDeclarations',
@@ -53,10 +47,7 @@ int ccc = 3;`,
       'AcrossComments',
       'AcrossEmptyLinesAndComments',
     ],
-    category: ConfigCategories.ALIGNMENT,
-    microPreviewCode: `int a;
-double bb;
-char* ccc;`,
+    category: ConfigCategories.ALIGNMENT
   },
   {
     key: 'AlignConsecutiveMacros',
@@ -72,10 +63,7 @@ char* ccc;`,
       'AcrossComments',
       'AcrossEmptyLinesAndComments',
     ],
-    category: ConfigCategories.ALIGNMENT,
-    microPreviewCode: `#define A 1
-#define BB 22
-#define CCC 333`,
+    category: ConfigCategories.ALIGNMENT
   },
 
   // Braces 大括号相关
@@ -85,10 +73,7 @@ char* ccc;`,
     description: 'Control of individual brace wrapping cases.',
     type: 'string',
     defaultValue: 'Default',
-    category: ConfigCategories.BRACES,
-    microPreviewCode: `if (condition) {
-    statement;
-}`,
+    category: ConfigCategories.BRACES
   },
   {
     key: 'BreakBeforeBraces',
@@ -107,11 +92,7 @@ char* ccc;`,
       'WebKit',
       'Custom',
     ],
-    category: ConfigCategories.BRACES,
-    microPreviewCode: `if (condition)
-{
-    statement;
-}`,
+    category: ConfigCategories.BRACES
   },
 
   // Spacing 间距相关
@@ -130,10 +111,7 @@ char* ccc;`,
       'Always',
       'Custom',
     ],
-    category: ConfigCategories.SPACING,
-    microPreviewCode: `if (condition) {
-    function();
-}`,
+    category: ConfigCategories.SPACING
   },
   {
     key: 'SpacesInParentheses',
@@ -141,9 +119,7 @@ char* ccc;`,
     description: 'If true, spaces will be inserted after ( and before ).',
     type: 'boolean',
     defaultValue: false,
-    category: ConfigCategories.SPACING,
-    microPreviewCode: `function( arg1, arg2 );
-if ( condition ) {}`,
+    category: ConfigCategories.SPACING
   },
 
   // Indentation 缩进相关
@@ -153,13 +129,7 @@ if ( condition ) {}`,
     description: 'The number of columns to use for indentation.',
     type: 'integer',
     defaultValue: 2,
-    category: ConfigCategories.INDENTATION,
-    microPreviewCode: `if (condition) {
-  statement;
-  if (nested) {
-    nested_statement;
-  }
-}`,
+    category: ConfigCategories.INDENTATION
   },
   {
     key: 'UseTab',
@@ -173,13 +143,7 @@ if ( condition ) {}`,
       'ForContinuationAndIndentation',
       'Always',
     ],
-    category: ConfigCategories.INDENTATION,
-    microPreviewCode: `if (condition) {
-	statement;
-	if (nested) {
-		nested_statement;
-	}
-}`,
+    category: ConfigCategories.INDENTATION
   },
 
   // Wrapping 换行相关
@@ -191,7 +155,6 @@ if ( condition ) {}`,
     type: 'integer',
     defaultValue: 80,
     category: ConfigCategories.WRAPPING,
-    microPreviewCode: 'function_with_very_long_name(argument1, argument2, argument3, argument4);',
   },
   {
     key: 'AllowShortFunctionsOnASingleLine',
@@ -201,12 +164,7 @@ if ( condition ) {}`,
     type: 'enum',
     defaultValue: 'inherit',
     possibleValues: ['inherit', 'None', 'InlineOnly', 'Empty', 'Inline', 'All'],
-    category: ConfigCategories.WRAPPING,
-    microPreviewCode: `void shortFunction() { return; }
-
-void anotherFunction() {
-    statement;
-}`,
+    category: ConfigCategories.WRAPPING
   },
   {
     key: 'AllowShortIfStatementsOnASingleLine',
@@ -216,9 +174,7 @@ void anotherFunction() {
     type: 'enum',
     defaultValue: 'Never',
     possibleValues: ['Never', 'WithoutElse', 'OnlyFirstIf', 'AllIfsAndElse'],
-    category: ConfigCategories.WRAPPING,
-    microPreviewCode: `if (condition) return;
-if (condition) { statement; }`,
+    category: ConfigCategories.WRAPPING
   },
 
   // Comments 注释相关
@@ -228,10 +184,7 @@ if (condition) { statement; }`,
     description: 'If true, aligns trailing comments.',
     type: 'boolean',
     defaultValue: true,
-    category: ConfigCategories.COMMENTS,
-    microPreviewCode: `int a = 1;  // comment
-int bb = 2; // comment
-int ccc = 3;// comment`,
+    category: ConfigCategories.COMMENTS
   },
 
   // General 常规设置
@@ -250,19 +203,7 @@ int ccc = 3;// comment`,
       'Microsoft',
       'GNU',
     ],
-    category: ConfigCategories.GENERAL,
-    microPreviewCode: `// LLVM/Google: Attach braces
-class Example {
-public:
-    void method();
-};
-
-// Microsoft: Allman braces
-class Example
-{
-public:
-    void method();
-};`,
+    category: ConfigCategories.GENERAL
   },
 ];
 

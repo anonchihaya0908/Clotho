@@ -32,7 +32,7 @@ export const CONFIG_KEYS = {
   SWITCH_SOURCE_DIRS: 'switch.sourceDirs',
   SWITCH_HEADER_DIRS: 'switch.headerDirs',
   SWITCH_TEST_DIRS: 'switch.testDirs',
-  SWITCH_SEARCH_PATHS: 'switchHeaderSource.searchPaths',
+  SWITCH_SEARCH_PATHS: 'switch.searchPaths',
 } as const;
 
 // ===============================
@@ -45,7 +45,6 @@ export const COMMANDS = {
   CONFIGURE_RULES: 'clotho.configureRules',
   SHOW_CLANGD_DETAILS: 'clotho.showClangdDetails',
   OPEN_CLANG_FORMAT_EDITOR: 'clotho.openClangFormatEditor',
-  TEST_DEBOUNCE: 'clotho.testDebounce',
 } as const;
 
 // ===============================

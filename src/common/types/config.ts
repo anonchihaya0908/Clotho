@@ -23,7 +23,6 @@ export interface ClangFormatOption {
   defaultValue: any;
   possibleValues?: string[];
   category: ConfigCategories;
-  microPreviewCode?: string;
 }
 
 // Clang-Format 配置接口

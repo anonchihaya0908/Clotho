@@ -1,0 +1,284 @@
+/**
+ * Preview Service
+ * 负责为 Clang-Format 配置选项生成预览代码
+ * 将预览逻辑与配置元数据解耦
+ */
+
+import { ConfigCategories } from '../../common/types/config';
+
+/**
+ * 预览代码生成服务
+ * 根据配置项的类型和用途动态生成合适的预览代码
+ */
+export class PreviewService {
+    private static readonly PREVIEW_TEMPLATES = {
+        // 对齐相关预览模板
+        ALIGNMENT: {
+            BRACKET_ALIGN: `function(argument1,
+         argument2,
+         argument3);`,
+
+            CONSECUTIVE_ASSIGNMENTS: `int a = 1;
+int bb = 2;
+int ccc = 3;`,
+
+            CONSECUTIVE_DECLARATIONS: `int a;
+int bb;
+int ccc;`,
+
+            MACRO_DEFINITIONS: `#define A 1
+#define BB 2
+#define CCC 3`,
+        },
+
+        // 大括号相关预览模板
+        BRACES: {
+            BRACE_WRAPPING: `if (condition) {
+  statement;
+}`,
+
+            BREAK_BEFORE_BRACES: `if (condition)
+{
+  statement;
+}`,
+
+            COMPACT_NAMESPACES: `namespace A { namespace B {
+  function();
+}}`,
+        },
+
+        // 间距相关预览模板
+        SPACING: {
+            SPACES_AROUND_OPERATORS: `a = b + c;
+x *= y;`,
+
+            SPACES_IN_BRACKETS: `array[index];
+func(arg1, arg2);`,
+
+            SPACES_IN_PARENTHESES: `if ( condition ) {
+  func( argument );
+}`,
+        },
+
+        // 缩进相关预览模板
+        INDENTATION: {
+            TAB_WIDTH: `function() {
+\tstatement1;
+\tstatement2;
+}`,
+
+            INDENT_WIDTH: `if (condition) {
+  statement1;
+  statement2;
+}`,
+
+            CONTINUATION_INDENT: `function(veryLongParameterName,
+        anotherLongParameterName);`,
+        },
+
+        // 换行相关预览模板
+        WRAPPING: {
+            COLUMN_LIMIT: `// This is a very long comment that might exceed the column limit
+function veryLongFunctionName(parameter1, parameter2, parameter3);`,
+
+            BREAK_BEFORE_BINARY_OPERATORS: `bool value = argument1 &&
+             argument2 &&
+             argument3;`,
+
+            ALLOW_SHORT_FUNCTIONS: `int getX() { return x; }
+int getLongFunctionName() {
+  return value;
+}`,
+        },
+
+        // 注释相关预览模板
+        COMMENTS: {
+            REFLOW_COMMENTS: `// This is a long comment that might need to be
+// reflowed to fit within the column limit`,
+
+            SPACE_BEFORE_COMMENTS: `statement;    // comment
+anotherStatement; // another comment`,
+        },
+
+        // 通用模板
+        GENERAL: {
+            DEFAULT: `void function() {
+  if (condition) {
+    statement;
+  }
+}`,
+
+            CLASS_DEFINITION: `class MyClass {
+public:
+  void method();
+private:
+  int member;
+};`,
+
+            NAMESPACE: `namespace MyNamespace {
+  void function();
+}`,
+        },
+    };
+
+    /**
+     * 根据配置项生成预览代码
+     * @param key 配置项的键名
+     * @param category 配置项的分类
+     * @param type 配置项的类型
+     * @returns 生成的预览代码
+     */
+    public static generatePreviewCode(
+        key: string,
+        category: ConfigCategories,
+        type: 'boolean' | 'integer' | 'string' | 'enum'
+    ): string {
+        // 优先根据特定的键名生成预览
+        const specificPreview = this.getSpecificPreview(key);
+        if (specificPreview) {
+            return specificPreview;
+        }
+
+        // 根据分类生成通用预览
+        return this.getCategoryPreview(category, key);
+    }
+
+    /**
+     * 根据特定的配置项键名获取预览代码
+     */
+    private static getSpecificPreview(key: string): string | null {
+        const keyLower = key.toLowerCase();
+
+        // 对齐相关
+        if (keyLower.includes('alignafteropen')) {
+            return this.PREVIEW_TEMPLATES.ALIGNMENT.BRACKET_ALIGN;
+        }
+        if (keyLower.includes('alignconsecutiveassignments')) {
+            return this.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_ASSIGNMENTS;
+        }
+        if (keyLower.includes('alignconsecutivedeclarations')) {
+            return this.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_DECLARATIONS;
+        }
+        if (keyLower.includes('alignconsecutivemacros')) {
+            return this.PREVIEW_TEMPLATES.ALIGNMENT.MACRO_DEFINITIONS;
+        }
+
+        // 大括号相关
+        if (keyLower.includes('bracewrapping') || keyLower.includes('wrapbraces')) {
+            return this.PREVIEW_TEMPLATES.BRACES.BRACE_WRAPPING;
+        }
+        if (keyLower.includes('breakbeforebraces')) {
+            return this.PREVIEW_TEMPLATES.BRACES.BREAK_BEFORE_BRACES;
+        }
+        if (keyLower.includes('compactnamespaces')) {
+            return this.PREVIEW_TEMPLATES.BRACES.COMPACT_NAMESPACES;
+        }
+
+        // 间距相关
+        if (keyLower.includes('spacesinparentheses')) {
+            return this.PREVIEW_TEMPLATES.SPACING.SPACES_IN_PARENTHESES;
+        }
+        if (keyLower.includes('spacesinbrackets') || keyLower.includes('spacesinsquare')) {
+            return this.PREVIEW_TEMPLATES.SPACING.SPACES_IN_BRACKETS;
+        }
+        if (keyLower.includes('spacearound') || keyLower.includes('spacebefore') || keyLower.includes('spaceafter')) {
+            return this.PREVIEW_TEMPLATES.SPACING.SPACES_AROUND_OPERATORS;
+        }
+
+        // 缩进相关
+        if (keyLower.includes('tabwidth')) {
+            return this.PREVIEW_TEMPLATES.INDENTATION.TAB_WIDTH;
+        }
+        if (keyLower.includes('indentwidth') || keyLower.includes('indent')) {
+            return this.PREVIEW_TEMPLATES.INDENTATION.INDENT_WIDTH;
+        }
+        if (keyLower.includes('continuation')) {
+            return this.PREVIEW_TEMPLATES.INDENTATION.CONTINUATION_INDENT;
+        }
+
+        // 换行相关
+        if (keyLower.includes('columnlimit')) {
+            return this.PREVIEW_TEMPLATES.WRAPPING.COLUMN_LIMIT;
+        }
+        if (keyLower.includes('breakbefore') && keyLower.includes('binary')) {
+            return this.PREVIEW_TEMPLATES.WRAPPING.BREAK_BEFORE_BINARY_OPERATORS;
+        }
+        if (keyLower.includes('allowshort') && keyLower.includes('function')) {
+            return this.PREVIEW_TEMPLATES.WRAPPING.ALLOW_SHORT_FUNCTIONS;
+        }
+
+        // 注释相关
+        if (keyLower.includes('reflowcomments')) {
+            return this.PREVIEW_TEMPLATES.COMMENTS.REFLOW_COMMENTS;
+        }
+        if (keyLower.includes('spacebeforecomments')) {
+            return this.PREVIEW_TEMPLATES.COMMENTS.SPACE_BEFORE_COMMENTS;
+        }
+
+        // 类和命名空间相关
+        if (keyLower.includes('class') || keyLower.includes('access')) {
+            return this.PREVIEW_TEMPLATES.GENERAL.CLASS_DEFINITION;
+        }
+        if (keyLower.includes('namespace')) {
+            return this.PREVIEW_TEMPLATES.GENERAL.NAMESPACE;
+        }
+
+        return null;
+    }
+
+    /**
+     * 根据分类获取通用预览代码
+     */
+    private static getCategoryPreview(category: ConfigCategories, key: string): string {
+        switch (category) {
+            case ConfigCategories.ALIGNMENT:
+                return this.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_ASSIGNMENTS;
+
+            case ConfigCategories.BRACES:
+                return this.PREVIEW_TEMPLATES.BRACES.BRACE_WRAPPING;
+
+            case ConfigCategories.SPACING:
+                return this.PREVIEW_TEMPLATES.SPACING.SPACES_AROUND_OPERATORS;
+
+            case ConfigCategories.INDENTATION:
+                return this.PREVIEW_TEMPLATES.INDENTATION.INDENT_WIDTH;
+
+            case ConfigCategories.WRAPPING:
+                return this.PREVIEW_TEMPLATES.WRAPPING.COLUMN_LIMIT;
+
+            case ConfigCategories.COMMENTS:
+                return this.PREVIEW_TEMPLATES.COMMENTS.REFLOW_COMMENTS;
+
+            case ConfigCategories.GENERAL:
+            default:
+                return this.PREVIEW_TEMPLATES.GENERAL.DEFAULT;
+        }
+    }
+
+    /**
+     * 获取所有可用的预览模板（用于测试或调试）
+     */
+    public static getAllTemplates() {
+        return this.PREVIEW_TEMPLATES;
+    }
+
+    /**
+     * 验证预览代码是否为有效的 C++ 语法
+     * @param code 要验证的代码
+     * @returns 是否为有效代码
+     */
+    public static isValidPreviewCode(code: string): boolean {
+        // 简单的验证逻辑
+        if (!code || code.trim().length === 0) {
+            return false;
+        }
+
+        // 检查基本的语法完整性（简化版）
+        const openBraces = (code.match(/\{/g) || []).length;
+        const closeBraces = (code.match(/\}/g) || []).length;
+        const openParens = (code.match(/\(/g) || []).length;
+        const closeParens = (code.match(/\)/g) || []).length;
+
+        return openBraces === closeBraces && openParens === closeParens;
+    }
+}

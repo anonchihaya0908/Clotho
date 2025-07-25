@@ -58,11 +58,6 @@
                 "category": "Clotho"
             },
             {
-                "command": "clotho.debugClangdDetection",
-                "title": "Debug Clangd Detection",
-                "category": "Clotho"
-            },
-            {
                 "command": "clotho.restartClangd",
                 "title": "Restart Clangd Server",
                 "category": "Clotho"
@@ -72,71 +67,6 @@
                 "title": "Open Clang-Format Visual Editor",
                 "category": "Clotho",
                 "icon": "$(edit)"
-            },
-            {
-                "command": "clotho.testDebounce",
-                "title": "Test Debounce Mechanism",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.testDebounceManual",
-                "title": "Manual Debounce Test",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.testRapidSwitching",
-                "title": "Test Rapid Switching",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.testPlaceholder",
-                "title": "Test Placeholder Webview (All Tests)",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.testPlaceholderBasic",
-                "title": "Test Placeholder Basic Functionality",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.testMainEditorClose",
-                "title": "Test Main Editor Close Logic (Should NOT Create Placeholder)",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.testPreviewClose",
-                "title": "Test Preview Close Logic (Should Create Placeholder)",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.testDirectPlaceholder",
-                "title": "Test Direct Placeholder Creation (Debug Mode)",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.forceCreatePlaceholder",
-                "title": "Force Create Placeholder (Debug)",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.debugPlaceholder",
-                "title": "Debug Placeholder (Force Create)",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.debugLayout",
-                "title": "Debug Editor Layout",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.checkEditorGroups",
-                "title": "Check Editor Groups Status (Debug)",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.testPlaceholderSwitching",
-                "title": "Test Placeholder-Preview Switching",
-                "category": "Clotho"
             }
         ],
         "menus": {
@@ -177,46 +107,10 @@
                     "command": "clotho.showClangdDetails"
                 },
                 {
-                    "command": "clotho.debugClangdDetection"
-                },
-                {
                     "command": "clotho.restartClangd"
                 },
                 {
                     "command": "clotho.openClangFormatEditor"
-                },
-                {
-                    "command": "clotho.testDebounce"
-                },
-                {
-                    "command": "clotho.testDebounceManual"
-                },
-                {
-                    "command": "clotho.testRapidSwitching"
-                },
-                {
-                    "command": "clotho.testPlaceholder"
-                },
-                {
-                    "command": "clotho.testPlaceholderBasic"
-                },
-                {
-                    "command": "clotho.testMainEditorClose"
-                },
-                {
-                    "command": "clotho.testPreviewClose"
-                },
-                {
-                    "command": "clotho.testDirectPlaceholder"
-                },
-                {
-                    "command": "clotho.forceCreatePlaceholder"
-                },
-                {
-                    "command": "clotho.checkEditorGroups"
-                },
-                {
-                    "command": "clotho.testPlaceholderSwitching"
                 }
             ]
         },
@@ -289,20 +183,6 @@
                         ]
                     }
                 },
-                "clotho.switchHeaderSource.searchPaths": {
-                    "type": "array",
-                    "default": [
-                        ".",
-                        "../include",
-                        "../src",
-                        "./include",
-                        "./src"
-                    ],
-                    "description": "Additional paths to search for corresponding header/source files",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "clotho.switch.sourceDirs": {
                     "type": "array",
                     "default": [
@@ -371,6 +251,20 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Show guide button in status bar when editing .clang-format files"
+                },
+                "clotho.switch.searchPaths": {
+                    "type": "array",
+                    "default": [
+                        ".",
+                        "../include",
+                        "../src",
+                        "./include",
+                        "./src"
+                    ],
+                    "description": "Additional paths to search for corresponding header/source files",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         }
@@ -414,7 +308,6 @@
     "devDependencies": {
         "@types/mocha": "^10.0.10",
         "@types/node": "22.x",
-        "@types/pidusage": "^2.0.5",
         "@types/vscode": "^1.74.0",
         "@typescript-eslint/eslint-plugin": "^6.21.0",
         "@typescript-eslint/parser": "^6.21.0",

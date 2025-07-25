@@ -89,7 +89,7 @@ export class PairCreatorUI {
   private createUseDefaultOption(): vscode.QuickPickItem & {
     key: string;
     isSpecial: boolean;
-    } {
+  } {
     return {
       key: 'use_default',
       label: '$(list-unordered) Use Default Templates',
@@ -548,18 +548,18 @@ export class PairCreatorUI {
       const selection = await this.selectFromCustomRules(allRules, language);
 
       switch (selection.type) {
-      case 'cancelled':
-        // User pressed ESC, terminate the entire operation
-        return undefined;
+        case 'cancelled':
+          // User pressed ESC, terminate the entire operation
+          return undefined;
 
-      case 'rule':
-        // User selected a specific rule, so we're done. Return it.
-        return selection.rule;
+        case 'rule':
+          // User selected a specific rule, so we're done. Return it.
+          return selection.rule;
 
-      case 'use_default':
-        // User wants to proceed to the default template selection.
-        // We do nothing here and let the code "fall through" to the next section.
-        break;
+        case 'use_default':
+          // User wants to proceed to the default template selection.
+          // We do nothing here and let the code "fall through" to the next section.
+          break;
       }
     }
 
@@ -720,5 +720,13 @@ export class PairCreatorUI {
         `Successfully created ${path.basename(headerPath.fsPath)} and ${path.basename(sourcePath.fsPath)}.`,
       );
     }, 50);
+  }
+
+  /**
+   * Shows an error message to the user
+   * Uses consistent error handling pattern across the extension
+   */
+  public showError(message: string): void {
+    vscode.window.showErrorMessage(message);
   }
 }
