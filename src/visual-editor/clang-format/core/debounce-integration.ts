@@ -6,6 +6,7 @@
 import { DebounceManager } from './debounce-manager';
 import { TransitionManager } from './transition-manager';
 import { errorHandler } from '../../../common/error-handler';
+import { logger } from '../../../common/logger';
 import { BaseManager, ManagerContext, ManagerStatus } from '../../../common/types';
 import { PreviewEditorManager } from './preview-manager';
 import { PlaceholderWebviewManager } from './placeholder-manager';
@@ -20,6 +21,10 @@ export class DebounceIntegration implements BaseManager {
   private transitionManager: TransitionManager;
   private isEnabled: boolean = true;
   private context!: ManagerContext;
+
+  // 【新增】缓存防抖处理器，避免重复创建
+  private _previewCloseHandler?: () => Promise<void>;
+  private _previewReopenHandler?: () => Promise<void>;
 
   constructor(
     private previewManager: PreviewEditorManager,
@@ -40,66 +45,95 @@ export class DebounceIntegration implements BaseManager {
    * 防抖的预览关闭处理
    */
   createDebouncedPreviewCloseHandler(): () => Promise<void> {
-    return this.debounceManager.debounce(
-      'preview-close-handler',
-      async () => {
-        await this.previewManager.closePreview();
+    if (!this._previewCloseHandler) {
+      this._previewCloseHandler = this.debounceManager.debounce(
+        'preview-close-handler',
+        async () => {
+          await this.previewManager.closePreview();
 
-        if (!this.isEnabled) {
-          await this.placeholderManager.createPlaceholder();
-          return;
-        }
+          // 【新增】只有在编辑器可见且初始化完成时才创建占位符
+          const state = this.context?.stateManager.getState();
+          if (!state?.isVisible || !state?.isInitialized) {
+            logger.debug('Editor is not visible or not initialized, skipping placeholder creation', {
+              module: 'DebounceIntegration',
+              operation: 'createDebouncedPreviewCloseHandler',
+              isVisible: state?.isVisible,
+              isInitialized: state?.isInitialized,
+            });
+            return;
+          }
 
-        try {
-          await this.transitionManager.switchToEasterEgg(async () => {
+          if (!this.isEnabled) {
             await this.placeholderManager.createPlaceholder();
-            return this.placeholderManager.getPlaceholderPanel()!;
-          });
-        } catch (error) {
-          // 降级处理：直接创建占位符
-          await this.placeholderManager.createPlaceholder();
-        }
-      },
-      {
-        delay: 50,
-        leading: true,
-        trailing: false,
-      },
-    );
+            return;
+          }
+
+          try {
+            await this.transitionManager.switchToEasterEgg(async () => {
+              await this.placeholderManager.createPlaceholder();
+              return this.placeholderManager.getPlaceholderPanel()!;
+            });
+          } catch (error) {
+            // 降级处理：直接创建占位符
+            await this.placeholderManager.createPlaceholder();
+          }
+        },
+        {
+          delay: 50,
+          leading: true,
+          trailing: false,
+        },
+      );
+    }
+    return this._previewCloseHandler;
   }
 
   /**
    * 防抖的预览重新打开处理
    */
   createDebouncedPreviewReopenHandler(): () => Promise<void> {
-    return this.debounceManager.debounce(
-      'preview-reopen-handler',
-      async () => {
-        this.placeholderManager.disposePanel();
+    if (!this._previewReopenHandler) {
+      this._previewReopenHandler = this.debounceManager.debounce(
+        'preview-reopen-handler',
+        async () => {
+          // 【新增】检查预览是否已经存在，避免重复创建
+          const state = this.context?.stateManager.getState();
+          if (state?.previewMode === 'open' && state?.previewEditor && !state.previewEditor.document.isClosed) {
+            logger.debug('Preview already exists and is open, skipping creation', {
+              module: 'DebounceIntegration',
+              operation: 'createDebouncedPreviewReopenHandler',
+              previewMode: state.previewMode,
+            });
+            return;
+          }
 
-        try {
-          await this.transitionManager.switchToPreview(async () => {
+          this.placeholderManager.disposePanel();
+
+          try {
+            await this.transitionManager.switchToPreview(async () => {
+              await this.previewManager.openPreview();
+              return this.context.stateManager.getState().previewEditor!;
+            });
+          } catch (error) {
+            console.error('[DebounceIntegration] 转换管理器失败，使用降级处理:', error);
+            errorHandler.handle(error, {
+              operation: 'debouncedPreviewReopen',
+              module: 'DebounceIntegration',
+              showToUser: false,
+              logLevel: 'error',
+            });
+            // 降级处理
             await this.previewManager.openPreview();
-            return this.context.stateManager.getState().previewEditor!;
-          });
-        } catch (error) {
-          console.error('[DebounceIntegration] 转换管理器失败，使用降级处理:', error);
-          errorHandler.handle(error, {
-            operation: 'debouncedPreviewReopen',
-            module: 'DebounceIntegration',
-            showToUser: false,
-            logLevel: 'error',
-          });
-          // 降级处理
-          await this.previewManager.openPreview();
-        }
-      },
-      {
-        delay: 100,
-        leading: true,
-        trailing: false,
-      },
-    );
+          }
+        },
+        {
+          delay: 300, // 增加延迟，避免快速重复调用
+          leading: true,
+          trailing: false,
+        },
+      );
+    }
+    return this._previewReopenHandler;
   }
 
   /**

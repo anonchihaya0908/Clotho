@@ -19,6 +19,9 @@ export class PreviewEditorManager implements BaseManager {
   private isHidden: boolean = false;
   private hiddenViewColumn: vscode.ViewColumn | undefined;
 
+  // 【新增】防止并发创建的锁
+  private isCreatingPreview: boolean = false;
+
   constructor() {
     this.previewProvider = ClangFormatPreviewProvider.getInstance();
     this.formatService = ClangFormatService.getInstance();
@@ -34,6 +37,19 @@ export class PreviewEditorManager implements BaseManager {
    * 【新增】支持复用现有预览，避免重复创建
    */
   async openPreview(): Promise<vscode.TextEditor> {
+    // 【新增】防止并发创建
+    if (this.isCreatingPreview) {
+      console.log('[PreviewManager] 预览正在创建中，等待完成...');
+      // 等待当前创建完成，然后返回结果
+      while (this.isCreatingPreview) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      const state = this.context.stateManager.getState();
+      if (state.previewEditor && !state.previewEditor.document.isClosed) {
+        return state.previewEditor;
+      }
+    }
+
     const currentState = this.context.stateManager.getState();
 
     // 【优化】如果已有预览且未被关闭，直接复用
@@ -53,18 +69,21 @@ export class PreviewEditorManager implements BaseManager {
       }
     }
 
-    // 【完善】清理所有现有预览标签页
-    await this.cleanupAllExistingPreviews();
-
-    const previewUri = this.previewProvider.createPreviewUri(
-      `preview-${Date.now()}.cpp`,
-    );
-
-    // 初始化预览内容
-    const initialContent = MACRO_PREVIEW_CODE;
-    this.previewProvider.updateContent(previewUri, initialContent);
+    // 【新增】设置创建锁
+    this.isCreatingPreview = true;
 
     try {
+      // 【完善】清理所有现有预览标签页
+      await this.cleanupAllExistingPreviews();
+
+      const previewUri = this.previewProvider.createPreviewUri(
+        `preview-${Date.now()}.cpp`,
+      );
+
+      // 初始化预览内容
+      const initialContent = MACRO_PREVIEW_CODE;
+      this.previewProvider.updateContent(previewUri, initialContent);
+
       // 创建预览编辑器
       const editor = await vscode.window.showTextDocument(previewUri, {
         viewColumn: vscode.ViewColumn.Beside, // 使用 Beside 而不是 Two
@@ -91,6 +110,9 @@ export class PreviewEditorManager implements BaseManager {
     } catch (error) {
       console.error('[PreviewManager] 创建预览编辑器失败:', error);
       throw error;
+    } finally {
+      // 【新增】释放创建锁
+      this.isCreatingPreview = false;
     }
   }
 

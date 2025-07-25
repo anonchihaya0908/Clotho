@@ -22,10 +22,6 @@ export class PlaceholderWebviewManager implements BaseManager {
   private context!: ManagerContext;
   private disposables: vscode.Disposable[] = [];
   private characterImagePaths: string[] = [];
-
-  // 【新增】生命周期状态管理
-  private isHidden: boolean = false;
-  private hiddenViewColumn: vscode.ViewColumn | undefined;
   private readonly footerTexts: string[] = [
     'Clotho 由 Oblivionis小姐 和 丰川集团 赞助开发。',
     '丰川清告先生因重大判断失误致集团损失168亿日元，已引咎辞职并被驱逐出家族。',
@@ -108,29 +104,24 @@ export class PlaceholderWebviewManager implements BaseManager {
   }
 
   /**
-   * 【重构】隐藏占位符 - 通过销毁实现真正隐藏
+   * 【简化方案】隐藏占位符 - 直接销毁
+   * 当用户切换到普通文件时，简单地销毁占位符webview
    */
   hidePlaceholder(): void {
-    if (!this.panel || this.isHidden) {
+    if (!this.panel) {
       return;
     }
 
-    // 记录当前的ViewColumn以便恢复
-    this.hiddenViewColumn = this.panel.viewColumn;
-    this.isHidden = true;
-
-    // 由于VS Code没有直接隐藏webview的API，我们通过销毁面板来实现真正的隐藏
-    // 在需要显示时会重新创建
     try {
       this.panel.dispose();
       this.panel = undefined;
 
-      logger.debug('Placeholder hidden by disposing panel', {
+      logger.debug('Placeholder destroyed when switching away from clang-format editor', {
         module: this.name,
         operation: 'hidePlaceholder',
       });
     } catch (error) {
-      logger.warn('Failed to hide placeholder', {
+      logger.warn('Failed to destroy placeholder', {
         module: this.name,
         operation: 'hidePlaceholder',
         error: error instanceof Error ? error.message : String(error)
@@ -139,38 +130,12 @@ export class PlaceholderWebviewManager implements BaseManager {
   }
 
   /**
-   * 【新增】显示之前隐藏的占位符 - 重新创建已销毁的面板
+   * 【简化方案】显示占位符 - 仅在clang-format编辑器活跃时创建
    */
   async showPlaceholder(): Promise<void> {
-    if (!this.isHidden) {
-      return;
-    }
-
-    // 由于面板在隐藏时被销毁，需要重新创建
-    try {
+    // 简化：只有在没有面板时才创建新的
+    if (!this.panel) {
       await this.createPlaceholder();
-
-      // 如果有记录的ViewColumn，尝试恢复到原位置
-      if (this.hiddenViewColumn && this.panel) {
-        this.panel.reveal(this.hiddenViewColumn, true);
-      }
-
-      this.isHidden = false;
-      this.hiddenViewColumn = undefined;
-
-      logger.debug('Placeholder shown by recreating panel', {
-        module: this.name,
-        operation: 'showPlaceholder',
-      });
-    } catch (error) {
-      logger.warn('Failed to show placeholder', {
-        module: this.name,
-        operation: 'showPlaceholder',
-        error: error instanceof Error ? error.message : String(error)
-      });
-      // 如果恢复失败，重置状态
-      this.isHidden = false;
-      this.hiddenViewColumn = undefined;
     }
   }
 
@@ -196,10 +161,6 @@ export class PlaceholderWebviewManager implements BaseManager {
       this.panel.dispose();
       // onDidDispose 事件会处理 this.panel = undefined 的逻辑
     }
-
-    // 【新增】重置隐藏状态
-    this.isHidden = false;
-    this.hiddenViewColumn = undefined;
   }
 
   /**
@@ -207,10 +168,6 @@ export class PlaceholderWebviewManager implements BaseManager {
    */
   handlePlaceholderClosed(): void {
     this.panel = undefined; // 面板被销毁，重置引用
-
-    // 【新增】重置隐藏状态
-    this.isHidden = false;
-    this.hiddenViewColumn = undefined;
 
     // 当用户手动关闭占位符时，我们认为他们希望结束整个会话
     this.context.eventBus.emit('editor-closed');
@@ -223,14 +180,8 @@ export class PlaceholderWebviewManager implements BaseManager {
   }
 
   private setupEventListeners(): void {
-    this.context.eventBus.on('preview-closed', async () => {
-      const state = this.context.stateManager.getState();
-      // 【修改】只有在编辑器可见且初始化完成时才创建占位符
-      // 这样当编辑器不可见时，预览关闭不会创建占位符，实现真正的"收起"
-      if (state.isVisible && state.isInitialized) {
-        await this.createPlaceholder();
-      }
-    });
+    // 【移除】不再直接监听 preview-closed，改由 DebounceIntegration 统一处理
+    // this.context.eventBus.on('preview-closed', async () => { ... });
 
     // 监听预览打开事件，清理占位符
     this.context.eventBus.on('preview-opened', () => {
@@ -249,15 +200,14 @@ export class PlaceholderWebviewManager implements BaseManager {
     // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
     this.context.eventBus.on('editor-visibility-changed', async ({ isVisible }: { isVisible: boolean }) => {
       if (isVisible) {
-        // 主编辑器变为可见，恢复占位符
-        if (this.isHidden) {
-          await this.showPlaceholder();
-        }
+        // 主编辑器变为可见，请求恢复代码预览（而不是显示占位符）
+        this.context.eventBus.emit('open-preview-requested', {
+          source: 'editor-visibility-restored',
+          forceReopen: true,
+        });
       } else {
-        // 主编辑器变为不可见，隐藏占位符但不销毁
-        if (!this.isHidden && this.panel) {
-          this.hidePlaceholder();
-        }
+        // 主编辑器变为不可见，销毁占位符
+        this.hidePlaceholder();
       }
     });
 
