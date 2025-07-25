@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { CLANG_FORMAT_OPTIONS, ClangFormatOption } from '../../data/clangFormatOptions';
+import { ClangFormatOption } from '../../types';
 import './style.css';
 
 interface QuickSetupProps {
+    options: ClangFormatOption[];
     config: Record<string, any>;
     onChange: (key: string, value: any) => void;
     onOpenClangFormatFile?: () => void;
@@ -83,8 +84,8 @@ const getInheritedValue = (key: string, config: Record<string, any>): any => {
 };
 
 // 快速设置的常用配置项 - 基于完整选项数据库
-const getQuickConfigItem = (key: string): ClangFormatOption | undefined => {
-    return CLANG_FORMAT_OPTIONS.find(option => option.key === key);
+const getQuickConfigItem = (options: ClangFormatOption[], key: string): ClangFormatOption | undefined => {
+    return options.find(option => option.key === key);
 };
 
 const QUICK_CONFIG_CATEGORIES = [
@@ -150,7 +151,7 @@ const MicroPreview: React.FC<{ code: string }> = ({ code }) => {
     );
 };
 
-export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange, onOpenClangFormatFile }) => {
+export const QuickSetup: React.FC<QuickSetupProps> = ({ options, config, onChange, onOpenClangFormatFile }) => {
     // 折叠状态管理
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
         new Set(['基础样式', '缩进设置', '大括号样式', '空格设置']) // 默认展开常用分类
@@ -184,7 +185,7 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange, onOpen
                         return inheritedValue;
                     }
 
-                    const configOption = CLANG_FORMAT_OPTIONS.find(opt => opt.key === configKey);
+                    const configOption = options.find(opt => opt.key === configKey);
                     return configOption?.defaultValue;
                 };
 
@@ -499,7 +500,7 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ config, onChange, onOpen
                             {isExpanded && (
                                 <div className="category-items">
                                     {category.keys.map((key) => {
-                                        const option = getQuickConfigItem(key);
+                                        const option = getQuickConfigItem(options, key);
                                         // 所有选项都支持，因为只使用 C++
                                         const isDisabled = false;
 

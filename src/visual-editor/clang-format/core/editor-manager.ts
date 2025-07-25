@@ -83,7 +83,7 @@ export class ClangFormatEditorManager implements BaseManager {
     try {
       // 导入必要的配置数据 - 这些应该从原coordinator中迁移过来
       const { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG } =
-        await import('../config-options');
+        await import('../data/clang-format-options-database');
       const { ConfigCategories } = await import('../../../common/types/config');
 
       const currentState = this.context.stateManager.getState();

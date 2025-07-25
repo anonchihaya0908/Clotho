@@ -5,6 +5,7 @@
  */
 
 import { ConfigCategories } from '../../common/types/config';
+import { CLANG_FORMAT_OPTIONS } from './data/clang-format-options-database';
 
 /**
  * 配置键到预览模板的映射接口
@@ -179,8 +180,14 @@ private:
     public static generatePreviewCode(
         key: string,
         category: ConfigCategories,
-        type: 'boolean' | 'integer' | 'string' | 'enum'
+        type: 'boolean' | 'number' | 'string' | 'enum'
     ): string {
+        // 首先尝试从数据库中获取专门的预览模板
+        const option = CLANG_FORMAT_OPTIONS.find(opt => opt.key === key);
+        if (option && option.previewTemplate) {
+            return option.previewTemplate;
+        }
+
         // 优先根据特定的键名生成预览
         const specificPreview = this.getSpecificPreview(key);
         if (specificPreview) {
@@ -188,7 +195,7 @@ private:
         }
 
         // 根据分类生成通用预览
-        return this.getCategoryPreview(category, key);
+        return this.getCategoryPreview(category);
     }
 
     /**
@@ -216,7 +223,7 @@ private:
     /**
      * 根据分类获取通用预览代码
      */
-    private static getCategoryPreview(category: ConfigCategories, key: string): string {
+    private static getCategoryPreview(category: ConfigCategories): string {
         switch (category) {
             case ConfigCategories.ALIGNMENT:
                 return this.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_ASSIGNMENTS;
@@ -236,7 +243,17 @@ private:
             case ConfigCategories.COMMENTS:
                 return this.PREVIEW_TEMPLATES.COMMENTS.REFLOW_COMMENTS;
 
-            case ConfigCategories.GENERAL:
+            case ConfigCategories.CPP_FEATURES:
+                return this.PREVIEW_TEMPLATES.GENERAL.CLASS_DEFINITION;
+
+            case ConfigCategories.POINTERS_REFS:
+                return `int* ptr;\nconst char* str;`;
+
+            case ConfigCategories.EMPTY_LINES:
+                return `statement1;\n\nstatement2;`;
+
+            case ConfigCategories.MISC:
+            case ConfigCategories.BASIC:
             default:
                 return this.PREVIEW_TEMPLATES.GENERAL.DEFAULT;
         }

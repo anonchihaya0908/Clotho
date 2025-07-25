@@ -4,10 +4,12 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { ClangFormatOption, CLANG_FORMAT_OPTIONS } from '../../data/clangFormatOptions';
+import { ClangFormatOption, getOptionsByCategory } from '../../types';
 import DynamicMicroPreview from '../DynamicMicroPreview';
 
 interface MainConfigInterfaceProps {
+    options: ClangFormatOption[];
+    categories: string[];
     currentConfig: Record<string, any>;
     onConfigChange: (key: string, value: any) => void;
     onPreviewRequest?: (optionName: string, config: Record<string, any>, previewSnippet: string) => void;
@@ -22,6 +24,8 @@ interface MainConfigInterfaceProps {
 }
 
 export const MainConfigInterface: React.FC<MainConfigInterfaceProps> = ({
+    options,
+    categories,
     currentConfig,
     onConfigChange,
     onPreviewRequest,
@@ -31,8 +35,8 @@ export const MainConfigInterface: React.FC<MainConfigInterfaceProps> = ({
 }) => {
     // 获取当前分类的选项
     const categoryOptions = useMemo(() => {
-        return CLANG_FORMAT_OPTIONS.filter(option => option.category === selectedCategory);
-    }, [selectedCategory]);
+        return options.filter(option => option.category === selectedCategory);
+    }, [selectedCategory, options]);
 
     // 渲染配置选项的输入控件
     const renderConfigInput = (option: ClangFormatOption) => {
@@ -112,7 +116,7 @@ export const MainConfigInterface: React.FC<MainConfigInterfaceProps> = ({
                         </div>
 
                         {/* 预览始终显示 */}
-                        {option.previewSnippet && onPreviewRequest && (
+                        {option.previewTemplate && onPreviewRequest && (
                             <DynamicMicroPreview
                                 option={option}
                                 currentConfig={currentConfig}

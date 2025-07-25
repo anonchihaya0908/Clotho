@@ -15,7 +15,7 @@ import { getLineEnding } from '../../common/platform-utils';
 import {
   MACRO_PREVIEW_CODE,
   DEFAULT_CLANG_FORMAT_CONFIG,
-} from './config-options';
+} from './data/clang-format-options-database';
 import { FormatResult, ConfigValidationResult } from '../../common/types/index';
 
 export class ClangFormatService {

@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { WebviewMessageType } from '../../../../src/common/types/webview'; // 导入消息类型
 import { ConfigPanel } from './components/ConfigPanel';
 import { initializeWebviewLogger, webviewLog } from './utils/webview-logger';
+import { ClangFormatOption, CLANG_FORMAT_CATEGORIES } from './types';
 
 import { Toolbar } from './components/Toolbar';
 import { StatusBar } from './components/StatusBar';
@@ -15,7 +16,7 @@ export interface AppProps {
 }
 
 export interface AppState {
-    options: any[];
+    options: ClangFormatOption[];
     categories: string[];
     currentConfig: Record<string, any>;
     microPreviews: Record<string, string>;
@@ -53,7 +54,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
     const [state, setState] = useState<AppState>({
         options: [],
-        categories: [],
+        categories: CLANG_FORMAT_CATEGORIES,
         currentConfig: {},
         microPreviews: {},
         isLoading: true,
@@ -315,6 +316,8 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
             <div className="app-content">
                 <ConfigPanel
+                    options={state.options}
+                    categories={state.categories}
                     microPreviews={state.microPreviews}
                     settings={state.settings}
                     onConfigChange={handleConfigChange}

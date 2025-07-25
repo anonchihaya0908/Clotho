@@ -7,10 +7,12 @@ import { ConfigModeSelector, ConfigMode } from '../ConfigModeSelector';
 import { QuickSetup } from '../QuickSetup';
 import { SearchConfig } from '../SearchConfig';
 import DynamicMicroPreview from '../DynamicMicroPreview';
-import { CLANG_FORMAT_OPTIONS, ClangFormatOption } from '../../data/clangFormatOptions';
+import { ClangFormatOption, getOptionsByCategory } from '../../types';
 import './style.css';
 
 export interface ConfigPanelProps {
+    options: ClangFormatOption[];
+    categories: string[];
     microPreviews: Record<string, string>;
     settings: {
         // 预览设置已移除，预览始终显示
@@ -32,10 +34,9 @@ export interface ConfigPanelProps {
     onClearHighlights?: () => void;
 }
 
-// 获取分类列表
-const categories = [...new Set(CLANG_FORMAT_OPTIONS.map(option => option.category))];
-
 export const ConfigPanel: React.FC<ConfigPanelProps> = ({
+    options,
+    categories,
     microPreviews,
     settings,
     onConfigChange,
@@ -55,7 +56,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
     // 过滤选项
     const filteredOptions = React.useMemo(() => {
         if (mode === 'search' && searchQuery) {
-            return CLANG_FORMAT_OPTIONS.filter(option =>
+            return options.filter(option =>
                 option.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 option.name.includes(searchQuery) ||
                 option.description.includes(searchQuery) ||
@@ -63,17 +64,17 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
             );
         }
         if (mode === 'full') {
-            return CLANG_FORMAT_OPTIONS.filter(option => option.category === selectedCategory);
+            return options.filter(option => option.category === selectedCategory);
         }
         // 快速模式显示最常用的选项 - 从完整的选项列表中选择
         if (mode === 'quick') {
             const quickOptionKeys = ['IndentWidth', 'UseTab', 'BreakBeforeBraces', 'ColumnLimit', 'BasedOnStyle', 'PointerAlignment'];
-            return CLANG_FORMAT_OPTIONS.filter(option =>
+            return options.filter(option =>
                 quickOptionKeys.includes(option.key)
             );
         }
-        return CLANG_FORMAT_OPTIONS;
-    }, [mode, searchQuery, selectedCategory]);
+        return options;
+    }, [mode, searchQuery, selectedCategory, options]);
 
     // 渲染配置选项
     const renderConfigOption = (option: ClangFormatOption) => {
@@ -103,7 +104,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                 </div>
 
                 {/* 预览始终显示 */}
-                {option.previewSnippet ? (
+                {option.previewTemplate ? (
                     <DynamicMicroPreview
                         option={option}
                         currentConfig={currentConfig}
@@ -230,6 +231,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
             <div className="config-content">
                 {mode === 'quick' && (
                     <QuickSetup
+                        options={options}
                         config={currentConfig}
                         onChange={onConfigChange}
                         onOpenClangFormatFile={onOpenClangFormatFile}

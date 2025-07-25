@@ -4,10 +4,11 @@
  */
 
 import React from 'react';
-import { CLANG_FORMAT_OPTIONS, ClangFormatOption } from '../../data/clangFormatOptions';
+import { ClangFormatOption } from '../../types';
 import DynamicMicroPreview from '../DynamicMicroPreview';
 
 interface QuickSetupPanelProps {
+    options: ClangFormatOption[];
     currentConfig: Record<string, any>;
     onConfigChange: (key: string, value: any) => void;
     onPreviewRequest?: (optionName: string, config: Record<string, any>, previewSnippet: string) => void;
@@ -33,6 +34,7 @@ const QUICK_SETUP_OPTIONS = [
 ];
 
 export const QuickSetupPanel: React.FC<QuickSetupPanelProps> = ({
+    options,
     currentConfig,
     onConfigChange,
     onPreviewRequest,
@@ -40,7 +42,7 @@ export const QuickSetupPanel: React.FC<QuickSetupPanelProps> = ({
     showGuide = true
 }) => {
     // 获取快速设置的选项
-    const quickOptions = CLANG_FORMAT_OPTIONS.filter(option =>
+    const quickOptions = options.filter(option =>
         QUICK_SETUP_OPTIONS.includes(option.key)
     );
 
@@ -127,7 +129,7 @@ export const QuickSetupPanel: React.FC<QuickSetupPanelProps> = ({
                         </div>
 
                         {/* 预览始终显示 */}
-                        {option.previewSnippet && onPreviewRequest && (
+                        {option.previewTemplate && onPreviewRequest && (
                             <DynamicMicroPreview
                                 option={option}
                                 currentConfig={currentConfig}

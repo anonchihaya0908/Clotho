@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClangFormatOption } from '../../data/clangFormatOptions';
+import { ClangFormatOption } from '../../types';
 
 // 预览服务 - 在 webview 中的简化版本
 class WebviewPreviewService {
@@ -164,7 +164,7 @@ const DynamicMicroPreview: React.FC<DynamicMicroPreviewProps> = ({
     }, [option.key, currentConfig, onPreviewRequest]);
 
     // 如果没有预览代码片段，显示占位符
-    if (!option.previewSnippet && !getPreviewSnippet(option)) {
+    if (!option.previewTemplate && !getPreviewSnippet(option)) {
         return (
             <div className="dynamic-micro-preview no-preview">
                 <span className="no-preview-text">No preview available</span>

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { EditorState, StateChangeEvent } from '../../../common/types';
 import { EventBus } from '../messaging/event-bus';
-import { DEFAULT_CLANG_FORMAT_CONFIG } from '../config-options';
+import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';
 import { logger } from '../../../common/logger';
 
 type StateSnapshot = {

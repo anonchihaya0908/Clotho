@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ClangFormatOption } from '../../data/clangFormatOptions';
+import { ClangFormatOption, searchOptions } from '../../types';
 import './style.css';
 
 interface SearchConfigProps {

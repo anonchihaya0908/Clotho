@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { BaseManager, ManagerContext } from '../../../common/types';
 import { ClangFormatPreviewProvider } from '../preview-provider';
 import { ClangFormatService } from '../format-service';
-import { MACRO_PREVIEW_CODE } from '../config-options';
+import { MACRO_PREVIEW_CODE } from '../data/clang-format-options-database';
 
 /**
  * 预览编辑器管理器

@@ -8,7 +8,7 @@ import { ClangFormatEditorManager } from './core/editor-manager';
 import { PreviewEditorManager } from './core/preview-manager';
 import { ConfigActionManager } from './core/config-action-manager';
 import { PlaceholderWebviewManager } from './core/placeholder-manager';
-import { DEFAULT_CLANG_FORMAT_CONFIG } from './config-options';
+import { DEFAULT_CLANG_FORMAT_CONFIG } from './data/clang-format-options-database';
 import { WebviewMessageType } from '../../common/types/webview';
 import { DebounceIntegration } from './core/debounce-integration';
 import { ConfigChangeService } from './core/config-change-service';

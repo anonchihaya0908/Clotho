@@ -6,7 +6,7 @@ import {
 } from '../../../common/types';
 import { WebviewMessageType } from '../../../common/types/webview';
 import { ClangFormatService } from '../format-service';
-import { DEFAULT_CLANG_FORMAT_CONFIG } from '../config-options';
+import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';
 
 /**
  * 负责处理所有与用户配置操作相关的业务逻辑，
@@ -197,7 +197,7 @@ export class ConfigActionManager implements BaseManager {
 
   private async handleOpenClangFormatFile(): Promise<void> {
     const fileUri = await this.getWorkspaceClangFormatUri();
-    if (!fileUri) {return;}
+    if (!fileUri) { return; }
 
     try {
       await vscode.workspace.fs.stat(fileUri);
