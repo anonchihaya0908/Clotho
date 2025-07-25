@@ -1,37 +1,5 @@
 import * as vscode from 'vscode';
-
-/**
- * 头文件/源文件切换配置接口
- */
-export interface SwitchConfig {
-  sourceDirs: string[];
-  headerDirs: string[];
-  testDirs: string[];
-  searchPaths: string[];
-  excludePatterns: string[];
-}
-
-/**
- * 默认配置模板
- */
-export const DEFAULT_SWITCH_CONFIG: SwitchConfig = {
-  sourceDirs: ['src', 'source', 'lib'],
-  headerDirs: ['include', 'inc', 'headers', 'api'],
-  testDirs: ['test', 'tests', 'spec', 'unittest'],
-  searchPaths: ['.', '../include', '../src', './include', './src'],
-  excludePatterns: [
-    '**/node_modules/**',
-    '**/build/**',
-    '**/out/**',
-    '**/.git/**',
-    '**/dist/**',
-    '**/target/**',
-    '**/.vs/**',
-    '**/cmake-build-*/**',
-    '**/Debug/**',
-    '**/Release/**',
-  ],
-};
+import { SwitchConfig, DEFAULT_SWITCH_CONFIG } from '../common/constants';
 
 /**
  * 配置模板集合 - 为不同项目类型提供预设配置

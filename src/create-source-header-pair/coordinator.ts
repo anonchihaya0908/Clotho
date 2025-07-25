@@ -68,7 +68,7 @@ export class PairCoordinator implements vscode.Disposable {
   private async createFilePair(
     targetDirectory: vscode.Uri,
     fileName: string,
-    rule: any // TODO: Add proper type
+    rule: PairingRule
   ): Promise<void> {
     // Prepare file paths and check for conflicts
     const { headerPath, sourcePath } = this.service.createFilePaths(

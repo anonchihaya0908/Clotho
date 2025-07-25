@@ -294,10 +294,7 @@ export class MemoryMonitor implements IMonitor {
 
     this.logger.warn('❌ All detection strategies failed');
     return undefined;
-  } /**
-   * 🧬 Perform the "DNA Test" - find our children and select the main one
-   * This is the core logic that identifies legitimate children vs stale processes
-   */
+  }
 
   /**
    * Start the update loop that periodically checks memory usage

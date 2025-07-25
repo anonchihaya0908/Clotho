@@ -11,20 +11,12 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 
 import { PairingRule, PairingRuleService } from '../pairing-rule-manager';
-import { errorHandler, ErrorHandler } from '../common/error-handler';
-import {
-  isHeaderFile,
-  isSourceFile,
-  fileExists,
-  detectLanguageFromExtension,
-  validateIdentifier,
-  toSnakeCase,
-  toPascalCase,
-  toHeaderGuardCase,
-} from '../common/utils';
-import { Language, FileType } from '../common/types';
+import { errorHandler } from '../common/error-handler';
+import { toHeaderGuardCase } from '../common/utils';
+import { Language } from '../common/types';
+import { DEFAULT_PLACEHOLDERS } from '../common/constants';
 
-import { DEFAULT_PLACEHOLDERS, FILE_TEMPLATES, TemplateKey } from './templates';
+import { FILE_TEMPLATES, TemplateKey } from './templates';
 
 // Service Layer - Core business logic
 export class PairCreatorService {

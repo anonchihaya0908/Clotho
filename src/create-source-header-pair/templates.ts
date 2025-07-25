@@ -10,6 +10,7 @@
 //
 
 import { PairingRule, Language } from '../common/types';
+import { DEFAULT_PLACEHOLDERS } from '../common/constants';
 
 // Types for better type safety
 export type TemplateKey =
@@ -22,15 +23,6 @@ export type TemplateKey =
 // Regular expression patterns to validate C/C++ identifiers
 export const VALIDATION_PATTERNS = {
   IDENTIFIER: /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-};
-
-// Default placeholder names for different file types
-export const DEFAULT_PLACEHOLDERS = {
-  C_EMPTY: 'my_c_functions',
-  C_STRUCT: 'MyStruct',
-  CPP_EMPTY: 'utils',
-  CPP_CLASS: 'MyClass',
-  CPP_STRUCT: 'MyStruct',
 };
 
 // Template rules for available file pair types

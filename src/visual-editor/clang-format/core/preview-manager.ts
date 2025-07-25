@@ -320,12 +320,6 @@ ${configEntries || '//   (using base style defaults)'}
   }
 
   private setupEventListeners() {
-    // 【修复】移除重复的 open-preview-requested 监听器
-    // 这个事件已经在 Coordinator 中通过 DebounceIntegration 处理了
-    // this.context.eventBus.on('open-preview-requested', async () => {
-    //   await this.openPreview();
-    // });
-
     this.context.eventBus.on('close-preview-requested', () =>
       this.closePreview(),
     ); // 程序关闭，不创建占位符
