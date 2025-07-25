@@ -7,7 +7,7 @@ import { EventBus } from '../messaging/event-bus';
 import { EditorStateManager } from '../state/editor-state-manager';
 import { ErrorRecoveryManager } from '../error/error-recovery-manager';
 import { WebviewMessageType } from '../../../common/types/webview';
-import { ErrorHandler } from '../../../common/error-handler';
+import { logger } from '../../../common/logger';
 
 /**
  * 配置变化处理器接口
@@ -201,7 +201,12 @@ export class ConfigChangeService {
                     affectedHandlers.push(handler.name);
                 } catch (error: any) {
                     // 处理器错误不应该阻止其他处理器执行
-                    console.warn(`ConfigChangeHandler ${handler.name} failed:`, error);
+                    logger.warn(`ConfigChangeHandler ${handler.name} failed`, {
+                        module: 'ConfigChangeService',
+                        operation: 'processConfigChange',
+                        handlerName: handler.name,
+                        error: error.message
+                    });
 
                     // 但是对于关键处理器（如状态更新），我们需要记录错误
                     if (handler.isCritical) {

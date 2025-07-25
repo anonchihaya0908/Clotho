@@ -13,7 +13,7 @@ import './style.css';
 export interface ConfigPanelProps {
     microPreviews: Record<string, string>;
     settings: {
-        showGuideButton: boolean;
+        // 预览设置已移除，预览始终显示
     };
     onConfigChange: (key: string, value: any) => void;
     onSettingsChange: (setting: string, value: any) => void;
@@ -102,28 +102,27 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                     {option.description}
                 </div>
 
-                {settings.showGuideButton && (
-                    option.previewSnippet ? (
-                        <DynamicMicroPreview
-                            option={option}
-                            currentConfig={currentConfig}
-                            onPreviewRequest={onPreviewRequest}
-                            previewResult={
-                                dynamicPreviewResult?.optionName === option.key
-                                    ? dynamicPreviewResult
-                                    : undefined
-                            }
-                        />
-                    ) : (
-                        <div className="micro-preview">
-                            <h4>配置预览</h4>
-                            <div className="micro-code-preview no-preview">
-                                <span className="no-preview-text">
-                                    此选项暂无代码预览示例
-                                </span>
-                            </div>
+                {/* 预览始终显示 */}
+                {option.previewSnippet ? (
+                    <DynamicMicroPreview
+                        option={option}
+                        currentConfig={currentConfig}
+                        onPreviewRequest={onPreviewRequest}
+                        previewResult={
+                            dynamicPreviewResult?.optionName === option.key
+                                ? dynamicPreviewResult
+                                : undefined
+                        }
+                    />
+                ) : (
+                    <div className="micro-preview">
+                        <h4>配置预览</h4>
+                        <div className="micro-code-preview no-preview">
+                            <span className="no-preview-text">
+                                此选项暂无代码预览示例
+                            </span>
                         </div>
-                    )
+                    </div>
                 )}
             </div>
         );
@@ -209,17 +208,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         </div>
                     </div>
 
-                    <div className="config-settings">
-                        <label className="guide-toggle">
-                            <input
-                                type="checkbox"
-                                checked={settings.showGuideButton}
-                                onChange={(e) => onSettingsChange('showGuideButton', e.target.checked)}
-                            />
-                            <span className="toggle-slider"></span>
-                            <span className="toggle-label">显示预览</span>
-                        </label>
-                    </div>
+                    {/* 预览切换按钮已移除，预览始终显示 */}
                 </div>
             </div>
 

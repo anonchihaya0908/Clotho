@@ -166,6 +166,28 @@ export class ClangFormatEditorManager implements BaseManager {
     });
 
     this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
+      // 处理来自 webview 的日志消息
+      if (message.type === 'webview-log') {
+        const { level, message: logMessage, meta } = message.payload;
+        switch (level) {
+          case 'debug':
+            logger.debug(`[Webview] ${logMessage}`, meta);
+            break;
+          case 'info':
+            logger.info(`[Webview] ${logMessage}`, meta);
+            break;
+          case 'warn':
+            logger.warn(`[Webview] ${logMessage}`, meta);
+            break;
+          case 'error':
+            logger.error(`[Webview] ${logMessage}`, meta);
+            break;
+          default:
+            logger.info(`[Webview] ${logMessage}`, meta);
+        }
+        return; // 不需要进一步处理日志消息
+      }
+
       logger.debug(`Received webview message: ${message.type}`, {
         module: this.name,
         operation: 'onDidReceiveMessage',

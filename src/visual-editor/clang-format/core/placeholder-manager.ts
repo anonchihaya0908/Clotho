@@ -144,7 +144,11 @@ export class PlaceholderWebviewManager implements BaseManager {
       this.isHidden = false;
       this.hiddenViewColumn = undefined;
     } catch (error) {
-      console.warn('[PlaceholderManager] 显示占位符时出错:', error);
+      logger.warn('Failed to show placeholder', {
+        module: 'PlaceholderManager',
+        operation: 'showPlaceholder',
+        error: error instanceof Error ? error.message : String(error)
+      });
       // 如果恢复失败，重置状态
       this.isHidden = false;
       this.hiddenViewColumn = undefined;

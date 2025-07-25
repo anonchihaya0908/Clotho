@@ -4,6 +4,7 @@
  */
 
 import { errorHandler, ErrorHandler } from '../../../common/error-handler';
+import { logger } from '../../../common/logger';
 
 /**
  * 防抖配置选项
@@ -115,9 +116,10 @@ export class DebounceManager {
       if (this.locks.has(key)) {
         if (options.throwOnTimeout !== false) {
           // 使用更友好的日志级别
-          console.log(
-            `DebounceManager: Operation ${key} is already in progress, skipping duplicate call`,
-          );
+          logger.debug('Operation already in progress, skipping duplicate call', {
+            module: 'DebounceManager',
+            operation: key,
+          });
           throw new Error(`Operation ${key} is already in progress`);
         }
 
@@ -133,7 +135,11 @@ export class DebounceManager {
         const lockTimer = setTimeout(() => {
           this.locks.delete(key);
           this.lockTimers.delete(key);
-          console.warn(`Lock ${key} timed out after ${options.timeout}ms`);
+          logger.warn('Lock timed out', {
+            module: 'DebounceManager',
+            operation: key,
+            timeout: options.timeout
+          });
         }, options.timeout);
 
         this.lockTimers.set(key, lockTimer);
@@ -290,7 +296,7 @@ export class DebounceManager {
     activeTimers: string[];
     activeLocks: string[];
     pendingQueues: string[];
-    } {
+  } {
     return {
       activeTimers: Array.from(this.timers.keys()),
       activeLocks: Array.from(this.locks),

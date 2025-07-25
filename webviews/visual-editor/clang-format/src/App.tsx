@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { WebviewMessageType } from '../../../../src/common/types/webview'; // 导入消息类型
 import { ConfigPanel } from './components/ConfigPanel';
+import { initializeWebviewLogger, webviewLog } from './utils/webview-logger';
 
 import { Toolbar } from './components/Toolbar';
 import { StatusBar } from './components/StatusBar';
@@ -26,7 +27,7 @@ export interface AppState {
         warnings?: string[];
     };
     settings: {
-        showGuideButton: boolean;
+        // 预览相关设置已移除，预览始终显示
     };
     dynamicPreviewResult?: {
         optionName: string;
@@ -42,6 +43,14 @@ export interface AppState {
 }
 
 export const App: React.FC<AppProps> = ({ vscode }) => {
+    // 初始化 webview logger
+    React.useEffect(() => {
+        initializeWebviewLogger(vscode, {
+            enableConsoleOutput: true,
+            logLevel: 'debug'
+        });
+    }, [vscode]);
+
     const [state, setState] = useState<AppState>({
         options: [],
         categories: [],
@@ -50,13 +59,13 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         isLoading: true,
         error: null,
         validationState: { isValid: true },
-        settings: { showGuideButton: true },
+        settings: {},
         previewState: { isOpen: true, showPlaceholder: false, isReopening: false }
     });
 
     // 发送消息到 VS Code
     const sendMessage = useCallback((type: WebviewMessageType, payload?: any) => {
-        console.log('🔍 DEBUG: Sending message to VS Code:', type, payload);
+        webviewLog.debug('Sending message to VS Code', { type, payload });
         vscode.postMessage({ type, payload });
     }, [vscode]);
 
@@ -70,15 +79,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         sendMessage(WebviewMessageType.CONFIG_CHANGED, { key, value });
     }, [sendMessage]);
 
-    // 处理设置变更
-    const handleSettingsChange = useCallback((setting: string, value: any) => {
-        setState(prev => ({
-            ...prev,
-            settings: { ...prev.settings, [setting]: value }
-        }));
-
-        sendMessage(WebviewMessageType.UPDATE_SETTINGS, { [setting]: value });
-    }, [sendMessage]);
+    // 设置处理已移除，预览始终显示
 
     // 处理动态预览请求
     const handlePreviewRequest = useCallback((optionName: string, config: Record<string, any>, previewSnippet: string) => {
@@ -128,7 +129,10 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
             const message = event.data;
-            console.log('🔍 [Frontend] Received message from VS Code:', message.type, message);
+            webviewLog.debug('Received message from VS Code', {
+                messageType: message.type,
+                message
+            });
 
             switch (message.type) {
                 case WebviewMessageType.INITIALIZE:
@@ -200,7 +204,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     break;
 
                 case WebviewMessageType.PREVIEW_OPENED:
-                    console.log('🔍 DEBUG: Received previewOpened message');
+                    webviewLog.debug('Received previewOpened message');
                     setState(prev => ({
                         ...prev,
                         previewState: {
@@ -212,7 +216,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     break;
 
                 case WebviewMessageType.PREVIEW_CLOSED:
-                    console.log('🔍 DEBUG: Received previewClosed message');
+                    webviewLog.debug('Received previewClosed message');
                     setState(prev => ({
                         ...prev,
                         previewState: {
@@ -247,7 +251,10 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     break;
 
                 default:
-                    console.warn('🚨 [Frontend] Unknown message type:', message.type, 'Message:', message);
+                    webviewLog.warn('Unknown message type received', {
+                        messageType: message.type,
+                        message
+                    });
             }
         };
 
@@ -255,7 +262,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
         // 监听webview即将卸载，这时显示占位符
         const handleBeforeUnload = () => {
-            console.log('🔍 DEBUG: Webview is about to unload, showing placeholder');
+            webviewLog.debug('Webview is about to unload, showing placeholder');
             setState(prev => ({
                 ...prev,
                 previewState: {
@@ -283,7 +290,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
     // 调试：监听预览状态变化
     useEffect(() => {
-        console.log('🔍 Preview state changed:', state.previewState);
+        webviewLog.debug('Preview state changed', { previewState: state.previewState });
     }, [state.previewState]);
 
     if (state.isLoading) {
@@ -311,7 +318,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     microPreviews={state.microPreviews}
                     settings={state.settings}
                     onConfigChange={handleConfigChange}
-                    onSettingsChange={handleSettingsChange}
+                    onSettingsChange={() => { }} // 空函数，设置已移除
                     onPreviewRequest={handlePreviewRequest}
                     onOpenClangFormatFile={() => handleToolbarAction('openClangFormatFile')}
                     dynamicPreviewResult={state.dynamicPreviewResult}

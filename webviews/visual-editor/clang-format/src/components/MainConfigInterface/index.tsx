@@ -111,7 +111,8 @@ export const MainConfigInterface: React.FC<MainConfigInterfaceProps> = ({
                             {option.description}
                         </div>
 
-                        {showGuide && option.previewSnippet && onPreviewRequest && (
+                        {/* 预览始终显示 */}
+                        {option.previewSnippet && onPreviewRequest && (
                             <DynamicMicroPreview
                                 option={option}
                                 currentConfig={currentConfig}
