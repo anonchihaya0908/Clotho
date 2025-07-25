@@ -11,6 +11,7 @@ import {
   ERROR_MESSAGES,
   isValidCppFile,
   getFileType,
+  errorHandler,
 } from '../common';
 import { SwitchService } from './switch-service';
 import { SwitchUI } from './switch-ui';
@@ -86,7 +87,7 @@ export class SwitchCoordinator implements vscode.Disposable {
     try {
       await this.configService.showTemplateSelector();
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'showConfigTemplate',
         module: 'SwitchCoordinator',
         showToUser: true,
@@ -101,7 +102,7 @@ export class SwitchCoordinator implements vscode.Disposable {
     try {
       this.configService.showCurrentConfig();
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'showCurrentConfig',
         module: 'SwitchCoordinator',
         showToUser: true,

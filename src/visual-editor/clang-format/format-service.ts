@@ -10,7 +10,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { spawn } from 'child_process';
 import { ProcessRunner, CommandResult } from '../../common/process-runner';
-import { ErrorHandler, ErrorContext } from '../../common/error-handler';
+import { ErrorHandler, ErrorContext, errorHandler } from '../../common/error-handler';
 import { getLineEnding } from '../../common/platform-utils';
 import {
   MACRO_PREVIEW_CODE,
@@ -194,7 +194,7 @@ export class ClangFormatService {
         };
       }
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'validateConfig',
         module: 'ClangFormatService',
         showToUser: false,
@@ -307,7 +307,7 @@ export class ClangFormatService {
         `Clang-format configuration saved to ${configPath}`,
       );
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'applyConfigToWorkspace',
         module: 'ClangFormatService',
         showToUser: true,

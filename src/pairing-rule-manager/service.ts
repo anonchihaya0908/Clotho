@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode';
-import { ErrorHandler } from '../common/error-handler';
+import { errorHandler, ErrorHandler } from '../common/error-handler';
 import { CONFIG_KEYS } from '../common/constants';
 import { Language, PairingRule } from '../common/types';
 
@@ -18,7 +18,7 @@ export class PairingRuleService {
    */
   validateRule(rule: PairingRule): void {
     if (!rule.key || !rule.language || !rule.headerExt || !rule.sourceExt) {
-      throw ErrorHandler.handle(
+      throw errorHandler.handle(
         new Error(`Invalid rule: ${JSON.stringify(rule)}`),
         {
           operation: 'validateRule',
@@ -71,7 +71,7 @@ export class PairingRuleService {
     rules: PairingRule[],
     scope: 'workspace' | 'user',
   ): Promise<void> {
-    const saveRules = ErrorHandler.wrapAsync(
+    const saveRules = errorHandler.wrapAsync(
       async () => {
         if (!Array.isArray(rules)) {
           throw new Error('Rules must be an array');
@@ -100,7 +100,7 @@ export class PairingRuleService {
    * Reset pairing rules for the specified scope (remove custom rules)
    */
   async resetRules(scope: 'workspace' | 'user'): Promise<void> {
-    const resetRules = ErrorHandler.wrapAsync(
+    const resetRules = errorHandler.wrapAsync(
       async () => {
         const target =
           scope === 'workspace'

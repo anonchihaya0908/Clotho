@@ -15,7 +15,7 @@ import {
   PairingRuleService,
   PairingRuleUI,
 } from '../pairing-rule-manager';
-import { ErrorHandler } from '../common/error-handler';
+import { errorHandler, ErrorHandler } from '../common/error-handler';
 import { toPascalCase } from '../common/utils';
 
 import { PairCreatorService } from './service';
@@ -478,7 +478,7 @@ export class PairCreatorUI {
       return undefined;
     }
 
-    const saveRule = ErrorHandler.wrapAsync(
+    const saveRule = errorHandler.wrapAsync(
       async () => {
         const existingRules =
           this.pairingRuleService.getRules(
@@ -693,7 +693,7 @@ export class PairCreatorUI {
     headerPath: vscode.Uri,
     sourcePath: vscode.Uri,
   ): Promise<void> {
-    const openFile = ErrorHandler.wrapAsync(
+    const openFile = errorHandler.wrapAsync(
       async () => {
         const document = await vscode.workspace.openTextDocument(headerPath);
         await vscode.window.showTextDocument(document);

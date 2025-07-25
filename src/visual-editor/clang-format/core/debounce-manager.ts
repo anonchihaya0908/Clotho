@@ -3,7 +3,7 @@
  * 处理快速操作和并发控制，确保界面稳定性
  */
 
-import { ErrorHandler } from '../../../common/error-handler';
+import { errorHandler, ErrorHandler } from '../../../common/error-handler';
 
 /**
  * 防抖配置选项
@@ -91,7 +91,7 @@ export class DebounceManager {
           }
         });
       } catch (error) {
-        ErrorHandler.handle(error, {
+        errorHandler.handle(error, {
           operation: 'debounceExecution',
           module: 'DebounceManager',
           showToUser: false,
@@ -153,7 +153,7 @@ export class DebounceManager {
         }
       }
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'withLock',
         module: 'DebounceManager',
         showToUser: false,
@@ -223,7 +223,7 @@ export class DebounceManager {
         await operation();
       }
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'processQueue',
         module: 'DebounceManager',
         showToUser: false,

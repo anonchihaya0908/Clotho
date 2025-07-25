@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode';
-import { ErrorHandler } from '../common/error-handler';
+import { errorHandler, ErrorHandler } from '../common/error-handler';
 import { PairingRule } from '../common/types';
 import { PairingRuleService } from './service';
 
@@ -413,7 +413,7 @@ export class PairingRuleUI {
       return undefined;
     }
 
-    const saveRule = ErrorHandler.wrapAsync(
+    const saveRule = errorHandler.wrapAsync(
       async () => {
         const scope = saveLocation.value as 'workspace' | 'user';
         const existingRules = this.service.getRules(scope) || [];
