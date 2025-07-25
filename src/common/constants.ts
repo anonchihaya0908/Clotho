@@ -6,6 +6,9 @@
 // Constants
 import { SwitchConfig, TemplateContext } from './types';
 
+// Re-export types for convenience
+export type { SwitchConfig, TemplateContext };
+
 // ===============================
 // Extension Metadata
 // ===============================

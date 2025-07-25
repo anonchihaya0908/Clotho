@@ -70,6 +70,8 @@ export enum WebviewMessageType {
   PREVIEW_REOPENED = 'previewReopened',
   PREVIEW_REOPEN_FAILED = 'previewReopenFailed',
   WEBVIEW_READY = 'webviewReady',
+  WEBVIEW_LOG = 'webview-log',
+  REOPEN_PREVIEW = 'reopen-preview',
   // 新增：数据请求相关
   GET_OPTIONS_BY_CATEGORY = 'getOptionsByCategory',
   SEARCH_OPTIONS = 'searchOptions',

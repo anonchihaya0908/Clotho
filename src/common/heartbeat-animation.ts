@@ -29,7 +29,7 @@ export class HeartbeatAnimation {
   };
 
   private config: Required<HeartbeatAnimationConfig>;
-  private animationTimer: NodeJS.Timer | undefined;
+  private animationTimer: NodeJS.Timeout | undefined;
   private currentFrame = 0;
   private isRunning = false;
 

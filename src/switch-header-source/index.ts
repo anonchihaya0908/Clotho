@@ -32,5 +32,5 @@ export { SwitchUI } from './switch-ui';
 export {
   SwitchConfigService,
   CONFIG_TEMPLATES,
-  type SwitchConfig,
 } from './config-manager';
+export { type SwitchConfig } from '../common/constants';

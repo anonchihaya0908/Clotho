@@ -4,8 +4,8 @@ import * as path from 'path';
 import {
   BaseManager,
   ManagerContext,
-  WebviewMessage,
 } from '../../../common/types';
+import { WebviewMessage, WebviewMessageType } from '../../../common/types/webview';
 import { getNonce } from '../../../common/utils';
 import { isDarkTheme } from '../../../common/platform-utils';
 import { logger } from '../../../common/logger';
@@ -108,7 +108,7 @@ export class PlaceholderWebviewManager implements BaseManager {
   }
 
   /**
-   * 【重构】隐藏占位符但不销毁
+   * 【重构】隐藏占位符 - 通过销毁实现真正隐藏
    */
   hidePlaceholder(): void {
     if (!this.panel || this.isHidden) {
@@ -119,33 +119,52 @@ export class PlaceholderWebviewManager implements BaseManager {
     this.hiddenViewColumn = this.panel.viewColumn;
     this.isHidden = true;
 
-    // 通过将面板移到不可见位置来"隐藏"
-    // 注意：VS Code没有直接隐藏webview的API，这里使用一个变通方法
+    // 由于VS Code没有直接隐藏webview的API，我们通过销毁面板来实现真正的隐藏
+    // 在需要显示时会重新创建
     try {
-      // 将面板移到一个不常用的ViewColumn
-      this.panel.reveal(vscode.ViewColumn.Beside, true); // preserveFocus = true
+      this.panel.dispose();
+      this.panel = undefined;
+
+      logger.debug('Placeholder hidden by disposing panel', {
+        module: this.name,
+        operation: 'hidePlaceholder',
+      });
     } catch (error) {
-      // 如果reveal失败，至少记录状态
-      console.warn('[PlaceholderManager] 隐藏占位符时出错:', error);
+      logger.warn('Failed to hide placeholder', {
+        module: this.name,
+        operation: 'hidePlaceholder',
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 
   /**
-   * 【新增】显示之前隐藏的占位符
+   * 【新增】显示之前隐藏的占位符 - 重新创建已销毁的面板
    */
-  showPlaceholder(): void {
-    if (!this.panel || !this.isHidden) {
+  async showPlaceholder(): Promise<void> {
+    if (!this.isHidden) {
       return;
     }
 
-    // 恢复占位符的显示
+    // 由于面板在隐藏时被销毁，需要重新创建
     try {
-      this.panel.reveal(this.hiddenViewColumn || vscode.ViewColumn.Two, true);
+      await this.createPlaceholder();
+
+      // 如果有记录的ViewColumn，尝试恢复到原位置
+      if (this.hiddenViewColumn && this.panel) {
+        this.panel.reveal(this.hiddenViewColumn, true);
+      }
+
       this.isHidden = false;
       this.hiddenViewColumn = undefined;
+
+      logger.debug('Placeholder shown by recreating panel', {
+        module: this.name,
+        operation: 'showPlaceholder',
+      });
     } catch (error) {
       logger.warn('Failed to show placeholder', {
-        module: 'PlaceholderManager',
+        module: this.name,
         operation: 'showPlaceholder',
         error: error instanceof Error ? error.message : String(error)
       });
@@ -228,20 +247,16 @@ export class PlaceholderWebviewManager implements BaseManager {
     });
 
     // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
-    this.context.eventBus.on('editor-visibility-changed', ({ isVisible }: { isVisible: boolean }) => {
-      if (!this.panel) {
-        return; // 没有占位符面板时不处理
-      }
-
+    this.context.eventBus.on('editor-visibility-changed', async ({ isVisible }: { isVisible: boolean }) => {
       if (isVisible) {
         // 主编辑器变为可见，恢复占位符
         if (this.isHidden) {
-          this.showPlaceholder();
+          await this.showPlaceholder();
         }
       } else {
-        // 主编辑器变为不可见，完全隐藏占位符（不保留在右侧）
-        if (!this.isHidden) {
-          this.disposePanel(); // 直接销毁而不是隐藏
+        // 主编辑器变为不可见，隐藏占位符但不销毁
+        if (!this.isHidden && this.panel) {
+          this.hidePlaceholder();
         }
       }
     });
@@ -266,7 +281,7 @@ export class PlaceholderWebviewManager implements BaseManager {
 
     // 监听来自占位符的消息
     this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
-      if (message.type === 'reopen-preview') {
+      if (message.type === WebviewMessageType.REOPEN_PREVIEW) {
         // 请求重新打开的逻辑已上移到 Coordinator/MessageHandler
         this.context.eventBus.emit('open-preview-requested', {
           source: 'placeholder',

@@ -10,6 +10,7 @@ import * as vscode from 'vscode';
 
 import { COMMANDS, ERROR_MESSAGES } from '../common/constants';
 import { ErrorHandler } from '../common/error-handler';
+import { PairingRule } from '../common/types';
 
 import { PairCreatorService } from './service';
 import { PairCreatorUI } from './ui';

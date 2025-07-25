@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode';
-import { ErrorHandler } from '../common/error-handler';
+import { errorHandler } from '../common/error-handler';
 import { COMMANDS } from '../common/constants';
 import { PairingRuleService } from './service';
 import { PairingRuleUI } from './ui';
@@ -39,7 +39,7 @@ export class PairingRuleCoordinator implements vscode.Disposable {
     try {
       await this.ui.showConfigurationWizard();
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'configureRules',
         module: 'PairingRuleCoordinator',
         showToUser: true,

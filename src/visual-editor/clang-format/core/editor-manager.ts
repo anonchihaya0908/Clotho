@@ -3,8 +3,8 @@ import {
   BaseManager,
   ManagerContext,
   EditorOpenSource,
-  WebviewMessage,
 } from '../../../common/types';
+import { WebviewMessage, WebviewMessageType } from '../../../common/types/webview';
 import { getNonce } from '../../../common/utils';
 import { isDarkTheme } from '../../../common/platform-utils';
 import { logger } from '../../../common/logger';
@@ -92,8 +92,8 @@ export class ClangFormatEditorManager implements BaseManager {
       const config = vscode.workspace.getConfiguration('clotho.clangFormat');
       const showGuideButton = config.get<boolean>('showGuideButton', true);
 
-      const initMessage = {
-        type: 'initialize',
+      const initMessage: WebviewMessage = {
+        type: WebviewMessageType.INITIALIZE,
         payload: {
           options: CLANG_FORMAT_OPTIONS,
           categories: Object.values(ConfigCategories),
@@ -167,7 +167,7 @@ export class ClangFormatEditorManager implements BaseManager {
 
     this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
       // 处理来自 webview 的日志消息
-      if (message.type === 'webview-log') {
+      if (message.type === WebviewMessageType.WEBVIEW_LOG) {
         const { level, message: logMessage, meta } = message.payload;
         switch (level) {
           case 'debug':
