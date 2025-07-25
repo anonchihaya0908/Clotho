@@ -11,7 +11,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 
 import { PairingRule, PairingRuleService } from '../pairing-rule-manager';
-import { ErrorHandler } from '../common/error-handler';
+import { errorHandler, ErrorHandler } from '../common/error-handler';
 import {
   isHeaderFile,
   isSourceFile,
@@ -38,7 +38,7 @@ export class PairCreatorService {
     cpp: new Set(['.cpp', '.cc', '.cxx', '.hh', '.hpp', '.hxx']),
   } as const;
 
-  constructor(private readonly pairingRuleService: PairingRuleService) {}
+  constructor(private readonly pairingRuleService: PairingRuleService) { }
 
   /**
    * Creates file paths for header and source files
@@ -330,7 +330,7 @@ export class PairCreatorService {
       ]);
     };
 
-    const wrappedWrite = ErrorHandler.wrapAsync(writeFilesInternal, {
+    const wrappedWrite = errorHandler.wrapAsync(writeFilesInternal, {
       operation: 'writeFiles',
       module: 'PairCreatorService',
       showToUser: true,
@@ -482,7 +482,7 @@ export class PairCreatorService {
       return;
     }
 
-    const saveRule = ErrorHandler.wrapAsync(
+    const saveRule = errorHandler.wrapAsync(
       async () => {
         // Create a clean rule for saving (remove the 'custom' key suffix)
         const cleanRule: PairingRule = {
@@ -498,10 +498,9 @@ export class PairCreatorService {
         );
 
         vscode.window.showInformationMessage(
-          `Successfully saved '${rule.headerExt}/${rule.sourceExt}' as the default extension for ${
-            scopeChoice.scope === 'workspace'
-              ? 'this workspace'
-              : 'all projects'
+          `Successfully saved '${rule.headerExt}/${rule.sourceExt}' as the default extension for ${scopeChoice.scope === 'workspace'
+            ? 'this workspace'
+            : 'all projects'
           }.`,
         );
       },
