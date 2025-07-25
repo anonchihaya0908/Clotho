@@ -39,7 +39,6 @@ export class TransitionManager {
   };
 
   constructor(
-    private extensionUri: vscode.Uri,
     private options: Partial<TransitionOptions> = {},
   ) {
     this.debounceManager = new DebounceManager();

@@ -99,7 +99,7 @@ class ConfigPersistenceHandler implements ConfigChangeHandler {
     readonly priority = 70;
     readonly isCritical = false;
 
-    async handle(context: ConfigChangeContext): Promise<void> {
+    async handle(_context: ConfigChangeContext): Promise<void> {
         // 在这里可以添加配置持久化逻辑
         // 例如：保存到工作区设置、用户设置或云端
         // 目前为空实现，但展示了扩展性

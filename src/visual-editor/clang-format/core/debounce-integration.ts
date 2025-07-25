@@ -3,10 +3,9 @@
  * 将防抖机制集成到现有的ClangFormat coordinator中
  */
 
-import * as vscode from 'vscode';
 import { DebounceManager } from './debounce-manager';
 import { TransitionManager } from './transition-manager';
-import { errorHandler, ErrorHandler } from '../../../common/error-handler';
+import { errorHandler } from '../../../common/error-handler';
 import { BaseManager, ManagerContext, ManagerStatus } from '../../../common/types';
 import { PreviewEditorManager } from './preview-manager';
 import { PlaceholderWebviewManager } from './placeholder-manager';
@@ -23,12 +22,11 @@ export class DebounceIntegration implements BaseManager {
   private context!: ManagerContext;
 
   constructor(
-    private extensionUri: vscode.Uri,
     private previewManager: PreviewEditorManager,
     private placeholderManager: PlaceholderWebviewManager,
   ) {
     this.debounceManager = new DebounceManager();
-    this.transitionManager = new TransitionManager(extensionUri);
+    this.transitionManager = new TransitionManager();
   }
   getStatus(): ManagerStatus {
     throw new Error('Method not implemented.');

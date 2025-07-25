@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode';
-import { errorHandler, ErrorHandler } from '../common/error-handler';
+import { errorHandler } from '../common/error-handler';
 import { PairingRule } from '../common/types';
 import { PairingRuleService } from './service';
 

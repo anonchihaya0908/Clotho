@@ -146,7 +146,7 @@ export class MonitorCoordinator implements vscode.Disposable {
       }
 
       await new Promise<void>((resolve, reject) => {
-        exec(command, (error: any, stdout: string, stderr: string) => {
+        exec(command, (error: any, stdout: string, _stderr: string) => {
           if (
             error &&
             !error.message.includes('not found') &&
@@ -174,7 +174,7 @@ export class MonitorCoordinator implements vscode.Disposable {
   public async startMonitoring(): Promise<void> {
     try {
       // Start all individual monitors
-      for (const [name, monitor] of this.monitors) {
+      for (const [_name, monitor] of this.monitors) {
         await monitor.start();
         this.logger.info(`Started ${monitor.getName()}`);
       }
@@ -257,7 +257,7 @@ export class MonitorCoordinator implements vscode.Disposable {
       }
 
       // Stop all individual monitors
-      for (const [name, monitor] of this.monitors) {
+      for (const [_name, monitor] of this.monitors) {
         monitor.stop();
         this.logger.info(`Stopped ${monitor.getName()}`);
       }

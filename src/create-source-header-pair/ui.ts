@@ -15,7 +15,7 @@ import {
   PairingRuleService,
   PairingRuleUI,
 } from '../pairing-rule-manager';
-import { errorHandler, ErrorHandler } from '../common/error-handler';
+import { errorHandler } from '../common/error-handler';
 import { toPascalCase } from '../common/utils';
 
 import { PairCreatorService } from './service';

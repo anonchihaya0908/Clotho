@@ -7,15 +7,13 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { spawn } from 'child_process';
-import { ProcessRunner, CommandResult } from '../../common/process-runner';
-import { ErrorHandler, ErrorContext, errorHandler } from '../../common/error-handler';
+import { ProcessRunner } from '../../common/process-runner';
+import { errorHandler } from '../../common/error-handler';
 import { logger } from '../../common/logger';
 import { getLineEnding } from '../../common/platform-utils';
 import {
   MACRO_PREVIEW_CODE,
-  DEFAULT_CLANG_FORMAT_CONFIG,
 } from './data/clang-format-options-database';
 import { FormatResult, ConfigValidationResult } from '../../common/types/index';
 
@@ -317,102 +315,6 @@ export class ClangFormatService {
 
       throw error; // Re-throw for caller to handle
     }
-  }
-
-  /**
-   * 运行 clang-format 使用 stdin/stdout 流方案（为向后兼容保留）
-   * 修正版：绕过shell，直接与clang-format对话
-   */
-  private async runClangFormat(
-    code: string,
-    configPath: string,
-  ): Promise<FormatResult> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // 检查 clang-format 命令是否存在
-        const commandExists = await ProcessRunner.commandExists('clang-format');
-        if (!commandExists) {
-          return resolve({
-            success: false,
-            formattedCode: code,
-            error:
-              'clang-format executable not found in PATH. Please install clang-format.',
-          });
-        }
-
-        // 构建命令参数
-        const args: string[] = [`--style=file:${configPath}`];
-
-        // 【核心修正】使用 spawn 启动进程，移除 shell: true
-        const clangFormatProcess = spawn('clang-format', args, {
-          stdio: ['pipe', 'pipe', 'pipe'], // stdin, stdout, stderr
-        });
-
-        let formattedCode = '';
-        let errorOutput = '';
-
-        // 监听标准输出流 (stdout) - 格式化后的代码
-        clangFormatProcess.stdout.on('data', (data) => {
-          formattedCode += data.toString();
-        });
-
-        // 监听标准错误流 (stderr) - 错误信息
-        clangFormatProcess.stderr.on('data', (data) => {
-          errorOutput += data.toString();
-        });
-
-        // 监听进程结束事件
-        clangFormatProcess.on('close', (exitCode) => {
-          if (exitCode === 0) {
-            // 成功！
-            resolve({
-              success: true,
-              formattedCode: formattedCode,
-            });
-          } else {
-            // 失败！
-            const error = `clang-format exited with code ${exitCode}. Details: ${errorOutput}`;
-            resolve({
-              success: false,
-              formattedCode: code, // 返回原始代码
-              error: error,
-            });
-          }
-        });
-
-        // 监听进程创建错误
-        clangFormatProcess.on('error', (err) => {
-          resolve({
-            success: false,
-            formattedCode: code,
-            error: `Failed to start clang-format: ${err.message}`,
-          });
-        });
-
-        // 处理进程可能无法接收输入的情况
-        clangFormatProcess.stdin.on('error', (err) => {
-          resolve({
-            success: false,
-            formattedCode: code,
-            error: `Failed to write to clang-format stdin: ${err.message}`,
-          });
-        });
-
-        // 将代码"流"入 clang-format 的标准输入流 (stdin)
-        // 这是整个方案的核心：无文件、无权限问题、纯内存操作
-        clangFormatProcess.stdin.write(code, 'utf8');
-        clangFormatProcess.stdin.end(); // 告诉进程我们已经写完了
-      } catch (error) {
-        resolve({
-          success: false,
-          formattedCode: code,
-          error:
-            error instanceof Error
-              ? error.message
-              : 'Unknown error in clang-format execution',
-        });
-      }
-    });
   }
 
   private formatConfigValue(value: any): string {

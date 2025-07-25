@@ -3,7 +3,7 @@
  * 处理快速操作和并发控制，确保界面稳定性
  */
 
-import { errorHandler, ErrorHandler } from '../../../common/error-handler';
+import { errorHandler } from '../../../common/error-handler';
 import { logger } from '../../../common/logger';
 
 /**
@@ -258,7 +258,7 @@ export class DebounceManager {
    * 取消所有防抖操作
    */
   cancelAll(): void {
-    for (const [key, timer] of this.timers) {
+    for (const [_key, timer] of this.timers) {
       clearTimeout(timer);
     }
     this.timers.clear();
@@ -283,7 +283,7 @@ export class DebounceManager {
   releaseAllLocks(): void {
     this.locks.clear();
 
-    for (const [key, timer] of this.lockTimers) {
+    for (const [_key, timer] of this.lockTimers) {
       clearTimeout(timer);
     }
     this.lockTimers.clear();

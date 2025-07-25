@@ -4,9 +4,9 @@
  */
 
 import * as vscode from 'vscode';
-import { errorHandler, ErrorHandler } from '../common/error-handler';
+import { errorHandler } from '../common/error-handler';
 import { CONFIG_KEYS } from '../common/constants';
-import { Language, PairingRule } from '../common/types';
+import { PairingRule } from '../common/types';
 
 /**
  * Service class for managing pairing rules configuration

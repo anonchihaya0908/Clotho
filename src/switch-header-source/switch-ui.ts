@@ -7,7 +7,6 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { ERROR_MESSAGES } from '../common/constants';
 import { errorHandler } from '../common/error-handler';
 import { logger } from '../common/logger';
 

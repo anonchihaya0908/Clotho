@@ -10,7 +10,6 @@
 //
 
 import { PairingRule, Language } from '../common/types';
-import { DEFAULT_PLACEHOLDERS } from '../common/constants';
 
 // Types for better type safety
 export type TemplateKey =

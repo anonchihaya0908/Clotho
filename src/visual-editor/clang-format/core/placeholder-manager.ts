@@ -25,7 +25,7 @@ export class PlaceholderWebviewManager implements BaseManager {
 
   // 【新增】生命周期状态管理
   private isHidden: boolean = false;
-  private hiddenViewColumn: vscode.ViewColumn | undefined;;
+  private hiddenViewColumn: vscode.ViewColumn | undefined;
   private readonly footerTexts: string[] = [
     'Clotho 由 Oblivionis小姐 和 丰川集团 赞助开发。',
     '丰川清告先生因重大判断失误致集团损失168亿日元，已引咎辞职并被驱逐出家族。',

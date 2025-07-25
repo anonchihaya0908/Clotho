@@ -6,7 +6,7 @@
 import * as vscode from 'vscode';
 import { exec } from 'child_process';
 import { IMonitor, ClangdStatus } from '../types';
-import { errorHandler, ErrorHandler } from '../../common/error-handler';
+import { errorHandler } from '../../common/error-handler';
 import { LoggerService } from '../../common/logger';
 
 /**
@@ -197,7 +197,7 @@ export class StatusMonitor implements IMonitor {
       // 注释掉烦人的调试日志
       // this.logger.debug('Trying command:', { command });
 
-      exec(command, { timeout: 5000 }, (error, stdout, stderr) => {
+      exec(command, { timeout: 5000 }, (error, stdout, _stderr) => {
         if (error) {
           this.logger.debug(
             `${clangdPath} --version failed:`,

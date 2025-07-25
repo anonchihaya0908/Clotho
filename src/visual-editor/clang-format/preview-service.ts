@@ -180,7 +180,7 @@ private:
     public static generatePreviewCode(
         key: string,
         category: ConfigCategories,
-        type: 'boolean' | 'number' | 'string' | 'enum'
+        _type: 'boolean' | 'number' | 'string' | 'enum'
     ): string {
         // 首先尝试从数据库中获取专门的预览模板
         const option = CLANG_FORMAT_OPTIONS.find(opt => opt.key === key);

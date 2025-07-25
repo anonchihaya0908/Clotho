@@ -5,8 +5,6 @@
 
 import * as vscode from 'vscode';
 import { errorHandler } from '../common/error-handler';
-import { COMMANDS } from '../common/constants';
-import { PairingRuleService } from './service';
 import { PairingRuleUI } from './ui';
 
 /**
@@ -19,7 +17,6 @@ export class PairingRuleCoordinator implements vscode.Disposable {
    * Constructor with dependency injection - receives pre-configured instances
    */
   constructor(
-    private readonly service: PairingRuleService,
     private readonly ui: PairingRuleUI,
   ) {
     // Commands are now registered centrally in bootstrap.ts

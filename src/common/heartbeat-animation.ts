@@ -3,8 +3,6 @@
  * 提供心跳闪烁动画效果的通用工具类
  */
 
-import * as vscode from 'vscode';
-
 export interface HeartbeatAnimationConfig {
   /** 动画间隔（毫秒），默认1000ms */
   interval?: number;

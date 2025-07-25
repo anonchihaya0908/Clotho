@@ -114,7 +114,6 @@ function registerServices(context: vscode.ExtensionContext): void {
     'pairingRuleCoordinator',
     (container) =>
       new PairingRuleCoordinator(
-        container.get('pairingRuleService'),
         container.get('pairingRuleUI'),
       ),
   );

@@ -172,7 +172,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
   private setupRecoveryStrategies(): void {
     // 预览创建失败：现在只记录错误，因为没有彩蛋可以回退
     this.recoveryStrategies.set('preview-creation-failed', {
-      async recover(error, stateManager, eventBus) {
+      async recover(error, stateManager, _eventBus) {
         const logError = new Error('Recovery: Preview creation failed and no fallback is available.');
         logger.error(logError.message, logError, {
           module: 'ErrorRecoveryManager',
@@ -190,7 +190,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
 
     // 编辑器主面板创建失败：延迟重试
     this.recoveryStrategies.set('editor-creation-failed', {
-      async recover(error, stateManager, eventBus) {
+      async recover(_error, _stateManager, eventBus) {
         logger.info('Recovery: Retrying editor creation after a delay.', {
           module: 'ErrorRecoveryManager',
           operation: 'recover.editor-creation-failed',
@@ -202,8 +202,8 @@ export class ErrorRecoveryManager implements vscode.Disposable {
 
     // 消息处理失败：通常忽略，只记录
     this.recoveryStrategies.set('message-handling-failed', {
-      async recover(error, stateManager) {
-        logger.warn(`Ignoring message handling error: ${error.message}`, {
+      async recover(_error, stateManager) {
+        logger.warn(`Ignoring message handling error: ${_error.message}`, {
           module: 'ErrorRecoveryManager',
           operation: 'recover.message-handling-failed',
         });

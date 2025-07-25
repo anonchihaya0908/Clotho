@@ -6,7 +6,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import { IMonitor, CpuUsage, CpuMonitorConfig } from '../types';
-import { errorHandler, ErrorHandler } from '../../common/error-handler';
+import { errorHandler } from '../../common/error-handler';
 import { ProcessDetector } from '../../common/process-detector';
 import { LoggerService } from '../../common/logger';
 
@@ -30,7 +30,6 @@ export class CpuMonitor implements IMonitor {
   private running = false;
   private currentPid: number | undefined;
   private lastCpuUsage: CpuUsage | undefined;
-  private lastPidUsageStats: any | undefined; // For pidusage state tracking
   private config: Required<CpuMonitorConfig>;
   private readonly coreCount: number;
   private readonly logger = LoggerService.getInstance().createChildLogger('CpuMonitor');
@@ -103,7 +102,6 @@ export class CpuMonitor implements IMonitor {
     this.running = false;
     this.currentPid = undefined;
     this.lastCpuUsage = undefined;
-    this.lastPidUsageStats = undefined;
 
     // Update status bar to show stopped state
     this.updateStatusBarNoClangd();
@@ -362,7 +360,6 @@ export class CpuMonitor implements IMonitor {
   public async reset(): Promise<void> {
     this.currentPid = undefined;
     this.lastCpuUsage = undefined;
-    this.lastPidUsageStats = undefined;
     this.updateStatusBarNoClangd();
   }
 
@@ -386,7 +383,6 @@ export class CpuMonitor implements IMonitor {
   public setCurrentPid(pid: number | undefined): void {
     this.currentPid = pid;
     this.lastCpuUsage = undefined;
-    this.lastPidUsageStats = undefined;
 
     if (!pid) {
       this.updateStatusBarNoClangd();

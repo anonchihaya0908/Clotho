@@ -6,9 +6,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import {
-  ErrorHandler,
-  COMMANDS,
-  ERROR_MESSAGES,
   isValidCppFile,
   getFileType,
   errorHandler,

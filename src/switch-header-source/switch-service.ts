@@ -16,8 +16,6 @@ import {
 import {
   LRUCache,
   isHeaderFile,
-  isSourceFile,
-  isValidCppFile,
 } from '../common/utils';
 import { logger } from '../common/logger';
 import { errorHandler } from '../common/error-handler';
