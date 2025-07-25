@@ -40,6 +40,8 @@ import {
 import { MonitorCoordinator } from '../clangd-monitor';
 import { ClangFormatEditorCoordinator } from '../visual-editor';
 import { ClangFormatGuideService } from '../visual-editor/clang-format/guide-service';
+import { errorHandler } from './error-handler';
+import { logger } from './logger';
 
 /**
  * Service Map - The single source of truth for all services
@@ -106,9 +108,10 @@ export class ServiceContainer {
     factory: ServiceFactory<ServiceMap[K]>,
   ): void {
     if (this.factories.has(name)) {
-      console.warn(
-        `Service factory for "${String(name)}" is already registered.`,
-      );
+      logger.warn(`Service factory for "${String(name)}" is already registered.`, {
+        module: 'ServiceContainer',
+        operation: 'register',
+      });
     }
     this.factories.set(name, factory);
   }
@@ -205,6 +208,11 @@ export class ServiceContainer {
           (service as any).dispose();
           disposedServices.push(String(name));
         } catch (error) {
+          errorHandler.handle(error, {
+            module: 'ServiceContainer',
+            operation: `dispose.${String(name)}`,
+            showToUser: false, // Don't show individual disposal errors
+          });
           errors.push({
             service: String(name),
             error: error instanceof Error ? error : new Error(String(error))
@@ -215,11 +223,23 @@ export class ServiceContainer {
 
     // Log disposal results for debugging
     if (disposedServices.length > 0) {
-      console.log(`Clotho: Disposed services: ${disposedServices.join(', ')}`);
+      logger.info(`Disposed services: ${disposedServices.join(', ')}`, {
+        module: 'ServiceContainer',
+        operation: 'dispose',
+      });
     }
 
     if (errors.length > 0) {
-      console.error('Clotho: Errors during service disposal:', errors);
+      // Log a summary error if any services failed to dispose
+      errorHandler.handle(
+        new Error('One or more services failed to dispose.'),
+        {
+          module: 'ServiceContainer',
+          operation: 'dispose.summary',
+          showToUser: true, // Show a single summary notification
+          logLevel: 'warn',
+        },
+      );
     }
 
     this.cache.clear();

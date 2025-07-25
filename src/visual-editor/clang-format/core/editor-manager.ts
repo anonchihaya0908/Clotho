@@ -7,6 +7,8 @@ import {
 } from '../../../common/types';
 import { getNonce } from '../../../common/utils';
 import { isDarkTheme } from '../../../common/platform-utils';
+import { logger } from '../../../common/logger';
+import { errorHandler } from '../../../common/error-handler';
 
 /**
  * 编辑器管理器
@@ -22,7 +24,10 @@ export class ClangFormatEditorManager implements BaseManager {
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
     this.setupEventListeners();
-    console.log('EditorManager initialized.');
+    logger.debug('EditorManager initialized.', {
+      module: this.name,
+      operation: 'initialize',
+    });
   }
 
   /**
@@ -99,13 +104,16 @@ export class ClangFormatEditorManager implements BaseManager {
       };
 
       await this.postMessage(initMessage);
-      console.log('Sent initialization message to webview');
+      logger.debug('Sent initialization message to webview', {
+        module: this.name,
+        operation: 'sendInitializationMessage',
+      });
     } catch (error: any) {
-      console.error('Failed to send initialization message:', error);
-      await this.context.errorRecovery.handleError(
-        'initialization-message-failed',
-        error,
-      );
+      errorHandler.handle(error, {
+        module: this.name,
+        operation: 'initialization-message-failed',
+        showToUser: true,
+      });
     }
   }
 
@@ -116,7 +124,10 @@ export class ClangFormatEditorManager implements BaseManager {
     if (this.panel) {
       await this.panel.webview.postMessage(message);
     } else {
-      console.warn('Cannot post message: Editor panel is not available.');
+      logger.warn('Cannot post message: Editor panel is not available.', {
+        module: this.name,
+        operation: 'postMessage',
+      });
     }
   }
 
@@ -155,11 +166,11 @@ export class ClangFormatEditorManager implements BaseManager {
     });
 
     this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
-      console.log(
-        '🔍 DEBUG: Received webview message:',
-        message.type,
-        message.payload,
-      );
+      logger.debug(`Received webview message: ${message.type}`, {
+        module: this.name,
+        operation: 'onDidReceiveMessage',
+        payload: message.payload,
+      });
       await this.context.eventBus.emit('webview-message-received', message);
     });
 
@@ -235,10 +246,12 @@ export class ClangFormatEditorManager implements BaseManager {
     const scriptUri = webview.asWebviewUri(scriptPath);
     const styleUri = webview.asWebviewUri(stylePath);
 
-    // 添加调试日志
-    console.log('🔍 DEBUG: Creating webview content...');
-    console.log('🔍 DEBUG: Script URI:', scriptUri.toString());
-    console.log('🔍 DEBUG: Style URI:', styleUri.toString());
+    logger.debug('Creating webview content...', {
+      module: this.name,
+      operation: 'generateWebviewContent',
+      scriptUri: scriptUri.toString(),
+      styleUri: styleUri.toString(),
+    });
 
     const nonce = getNonce();
 

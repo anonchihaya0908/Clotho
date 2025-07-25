@@ -8,6 +8,8 @@ import {
 } from '../../../common/types';
 import { getNonce } from '../../../common/utils';
 import { isDarkTheme } from '../../../common/platform-utils';
+import { logger } from '../../../common/logger';
+import { errorHandler } from '../../../common/error-handler';
 
 /**
  * 占位符 Webview 管理器
@@ -46,18 +48,27 @@ export class PlaceholderWebviewManager implements BaseManager {
   async createPlaceholder(): Promise<vscode.WebviewPanel> {
     // 检查是否已经存在有效的面板
     if (this.panel && this.panel.visible) {
-      console.log('🎭 PlaceholderManager: Reusing existing panel');
+      logger.debug('Reusing existing placeholder panel', {
+        module: this.name,
+        operation: 'createPlaceholder',
+      });
       this.panel.reveal(vscode.ViewColumn.Two, false);
       return this.panel;
     }
 
     // 如果面板存在但不可见，说明可能已经被销毁，清理引用
     if (this.panel && !this.panel.visible) {
-      console.log('🎭 PlaceholderManager: Cleaning up disposed panel reference');
+      logger.debug('Cleaning up disposed placeholder panel reference', {
+        module: this.name,
+        operation: 'createPlaceholder',
+      });
       this.panel = undefined;
     }
 
-    console.log('🎭 PlaceholderManager: Creating new placeholder panel');
+    logger.debug('Creating new placeholder panel', {
+      module: this.name,
+      operation: 'createPlaceholder',
+    });
 
     this.panel = vscode.window.createWebviewPanel(
       'clangFormatPlaceholder',
@@ -96,7 +107,7 @@ export class PlaceholderWebviewManager implements BaseManager {
    * 隐藏占位符
    */
   hidePlaceholder(): void {
-    // 实际上，VS Code 没有直接“隐藏”面板的 API
+    // 实际上，VS Code 没有直接"隐藏"面板的 API
     // 所以这里我们不做任何操作，因为预览会在同一个位置打开
   }
 
@@ -149,9 +160,10 @@ export class PlaceholderWebviewManager implements BaseManager {
 
     // 监听预览打开事件，清理占位符
     this.context.eventBus.on('preview-opened', () => {
-      console.log(
-        '🔍 PlaceholderManager: Preview opened, disposing placeholder',
-      );
+      logger.debug('Preview opened, disposing placeholder', {
+        module: this.name,
+        operation: 'onPreviewOpened',
+      });
       this.disposePanel();
     });
   }
@@ -442,7 +454,7 @@ export class PlaceholderWebviewManager implements BaseManager {
                 // 重新打开预览功能
                 function reopenPreview() {
                     const messageId = ++messageCount;
-                    console.log('用户点击了重新打开预览按钮 [' + messageId + ']');
+                    // 使用logger记录用户点击事件
                     
                     // 禁用按钮，防止重复点击
                     const button = document.getElementById('reopenButton');
@@ -482,7 +494,6 @@ export class PlaceholderWebviewManager implements BaseManager {
                 // 【新增】通知扩展，webview内容已完全加载和渲染完毕
                 window.addEventListener('load', () => {
                   vscode.postMessage({ type: 'content-ready' });
-                  console.log('[Placeholder] Content is fully loaded.');
                 });
             </script>
         </body>
@@ -520,16 +531,24 @@ export class PlaceholderWebviewManager implements BaseManager {
         }
       }
     } catch (error) {
-      console.error('[PlaceholderManager] 加载角色图片时出错:', error);
+      errorHandler.handle(error, {
+        module: this.name,
+        operation: 'loadCharacterImagePaths',
+        showToUser: false,
+      });
     }
 
     this.characterImagePaths = allImagePaths;
     if (this.characterImagePaths.length > 0) {
-      console.log(
-        `[PlaceholderManager] 成功加载 ${this.characterImagePaths.length} 张角色图片。`,
+      logger.debug(
+        `Successfully loaded ${this.characterImagePaths.length} character images.`,
+        { module: this.name, operation: 'loadCharacterImagePaths' },
       );
     } else {
-      console.warn('[PlaceholderManager] 未找到任何角色图片。');
+      logger.warn('No character images found.', {
+        module: this.name,
+        operation: 'loadCharacterImagePaths',
+      });
     }
   }
 

@@ -58,7 +58,7 @@ export class LoggerService {
             name: config.name || 'Clotho',
             minLevel: config.minLevel || LogLevel.INFO,
             type: 'pretty',
-            prettyLogTemplate: config.prettyLogTemplate || 
+            prettyLogTemplate: config.prettyLogTemplate ||
                 '{{yyyy}}.{{mm}}.{{dd}} {{hh}}:{{MM}}:{{ss}}:{{ms}}\t{{logLevelName}}\t[{{name}}]\t{{filePathWithLine}}{{nameWithDelimiterPrefix}}\t',
         };
 
@@ -81,7 +81,7 @@ export class LoggerService {
     public initializeOutputChannel(): void {
         if (!this.outputChannel) {
             this.outputChannel = vscode.window.createOutputChannel('Clotho Logs');
-            
+
             // 重定向日志到 Output Channel
             this.logger.attachTransport((logObj) => {
                 this.logToOutputChannel(logObj);
@@ -98,7 +98,7 @@ export class LoggerService {
             const level = (logObj._meta?.logLevelName || 'INFO').toUpperCase();
             const module = logObj.module ? `[${logObj.module}]` : '';
             const operation = logObj.operation ? `{${logObj.operation}}` : '';
-            
+
             // 获取实际的日志消息
             const message = logObj[0] || logObj.message || 'No message';
             const logLine = `${timestamp} ${level} ${module}${operation} ${logObj._meta?.name || 'Clotho'}: ${message}`;
@@ -162,7 +162,7 @@ export class LoggerService {
                 stack: error.stack,
             }
         } : meta;
-        
+
         this.logger.error(message, errorMeta);
     }
 
@@ -178,7 +178,7 @@ export class LoggerService {
                 stack: error.stack,
             }
         } : meta;
-        
+
         this.logger.fatal(message, errorMeta);
     }
 
@@ -228,14 +228,14 @@ export class LoggerService {
         module?: string,
         meta?: Partial<ExtendedLogObj>
     ): void {
-        this.logForModule('INFO', module || 'Performance', operation, 
+        this.logForModule('INFO', module || 'Performance', operation,
             `Operation completed in ${duration}ms`, {
-                ...meta,
-                performance: {
-                    duration,
-                    operation,
-                }
-            });
+            ...meta,
+            performance: {
+                duration,
+                operation,
+            }
+        });
     }
 
     /**
@@ -246,11 +246,11 @@ export class LoggerService {
         module: string,
         meta?: Partial<ExtendedLogObj>
     ): void {
-        this.logForModule('INFO', module, 'UserAction', 
+        this.logForModule('INFO', module, 'UserAction',
             `User performed: ${action}`, {
-                ...meta,
-                userAction: action,
-            });
+            ...meta,
+            userAction: action,
+        });
     }
 
     /**

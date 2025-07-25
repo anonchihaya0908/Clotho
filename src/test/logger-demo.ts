@@ -50,7 +50,7 @@ export class LoggerDemoService {
 
         // 记录性能指标
         const startTime = Date.now();
-        
+
         // 模拟一些操作
         setTimeout(() => {
             const duration = Date.now() - startTime;
@@ -61,12 +61,12 @@ export class LoggerDemoService {
         }, 100);
 
         // 记录模块特定的操作
-        logger.logForModule('INFO', 'ClangdMonitor', 'processRestart', 
+        logger.logForModule('INFO', 'ClangdMonitor', 'processRestart',
             'Clangd 进程重启成功', {
-                processId: 12345,
-                memoryUsage: '128MB',
-                restartReason: 'user_request',
-            });
+            processId: 12345,
+            memoryUsage: '128MB',
+            restartReason: 'user_request',
+        });
     }
 
     /**
@@ -223,7 +223,7 @@ export class EnhancedErrorHandler {
         duration?: number,
         meta?: Record<string, any>
     ): void {
-        const message = duration 
+        const message = duration
             ? `操作成功完成: ${operation} (耗时: ${duration}ms)`
             : `操作成功完成: ${operation}`;
 

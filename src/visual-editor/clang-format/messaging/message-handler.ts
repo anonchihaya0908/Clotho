@@ -3,6 +3,7 @@ import {
   WebviewMessage,
   WebviewMessageType,
 } from '../../../common/types/webview';
+import { LoggerService } from '../../../common/logger';
 
 type MessageHandlerFunction = (
   payload: any,
@@ -18,17 +19,16 @@ export class MessageHandler implements BaseManager {
 
   private context!: ManagerContext;
   private messageHandlers = new Map<string, MessageHandlerFunction>();
+  private readonly logger = LoggerService.getInstance().createChildLogger('MessageHandler');
 
   constructor() {
     this.setupMessageHandlers();
-    console.log(
-      'Clotho-Debug: MessageHandler constructed. Handlers are now set up.',
-    );
+    this.logger.debug('MessageHandler constructed. Handlers are now set up.');
   }
 
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
-    console.log('Clotho-Debug: MessageHandler initialized.');
+    this.logger.debug('MessageHandler initialized.');
   }
 
   /**
@@ -36,11 +36,7 @@ export class MessageHandler implements BaseManager {
    * @param message 消息对象
    */
   async handleMessage(message: WebviewMessage): Promise<void> {
-    console.log(
-      '🔍 DEBUG: MessageHandler processing message:',
-      message.type,
-      message.payload,
-    );
+    this.logger.debug('Processing message:', { type: message.type, payload: message.payload });
 
     if (!this.validateMessage(message)) {
       const error = new Error(
@@ -56,18 +52,13 @@ export class MessageHandler implements BaseManager {
 
     const handler = this.messageHandlers.get(message.type);
     if (!handler) {
-      console.warn(
-        `Clotho-Debug: No handler found for message type: ${message.type}`,
-      );
-      console.log(
-        'Clotho-Debug: Available handlers at time of failure:',
-        Array.from(this.messageHandlers.keys()),
-      );
+      this.logger.warn(`No handler found for message type: ${message.type}`);
+      this.logger.debug('Available handlers:', Array.from(this.messageHandlers.keys()));
       return;
     }
 
     try {
-      console.log(`Handling message: ${message.type}`);
+      this.logger.debug(`Handling message: ${message.type}`);
       await handler(message.payload, this.context);
     } catch (error: any) {
       await this.context.errorRecovery.handleError(
@@ -90,7 +81,7 @@ export class MessageHandler implements BaseManager {
       payload: any,
       context: ManagerContext,
     ) => {
-      console.log('🔄 Config changed, delegating to coordinator:', payload);
+      this.logger.debug('Config changed, delegating to coordinator:', payload);
       // 不直接处理，而是触发事件让 coordinator 统一处理
       context.eventBus.emit('config-change-requested', payload);
     };
@@ -105,7 +96,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.LOAD_WORKSPACE_CONFIG,
       async (payload, context) => {
-        console.log('🔄 Loading workspace config...');
+        this.logger.info('Loading workspace config...');
         context.eventBus.emit('load-workspace-config-requested', payload);
       },
     );
@@ -114,7 +105,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.SAVE_CONFIG,
       async (payload, context) => {
-        console.log('💾 Saving config...');
+        this.logger.info('Saving config...');
         context.eventBus.emit('save-config-requested', payload);
       },
     );
@@ -123,7 +114,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.IMPORT_CONFIG,
       async (payload, context) => {
-        console.log('📥 Importing config...');
+        this.logger.info('Importing config...');
         context.eventBus.emit('import-config-requested', payload);
       },
     );
@@ -132,7 +123,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.EXPORT_CONFIG,
       async (payload, context) => {
-        console.log('📤 Exporting config...');
+        this.logger.info('Exporting config...');
         context.eventBus.emit('export-config-requested', payload);
       },
     );
@@ -141,7 +132,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.RESET_CONFIG,
       async (payload, context) => {
-        console.log('🔄 Resetting config...');
+        this.logger.info('Resetting config...');
         context.eventBus.emit('reset-config-requested', payload);
       },
     );
@@ -150,7 +141,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.OPEN_CLANG_FORMAT_FILE,
       async (payload, context) => {
-        console.log('📝 Opening clang-format file for text editing...');
+        this.logger.info('Opening clang-format file for text editing...');
         context.eventBus.emit('open-clang-format-file-requested', payload);
       },
     );
@@ -167,7 +158,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.GET_MICRO_PREVIEW,
       async (payload, context) => {
-        console.log('🔍 Micro preview requested:', payload);
+        this.logger.debug('Micro preview requested:', payload);
         context.eventBus.emit('micro-preview-requested', payload);
       },
     );
@@ -176,7 +167,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.GET_MACRO_PREVIEW,
       async (payload, context) => {
-        console.log('🔍 Macro preview requested:', payload);
+        this.logger.debug('Macro preview requested:', payload);
         context.eventBus.emit('macro-preview-requested', payload);
       },
     );
@@ -185,7 +176,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.UPDATE_SETTINGS,
       async (payload, context) => {
-        console.log('⚙️ Settings updated:', payload);
+        this.logger.debug('Settings updated:', payload);
         // 这里可以处理应用程序设置的更新
         // 比如显示/隐藏指南按钮等
         context.eventBus.emit('settings-updated', payload);
@@ -196,7 +187,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.CONFIG_OPTION_HOVER,
       async (payload, context) => {
-        console.log('🎯 Config option hover:', payload);
+        this.logger.debug('Config option hover:', payload);
         // 这里可以处理选项悬停时的预览高亮
         context.eventBus.emit('config-option-hover', payload);
       },
@@ -206,7 +197,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.CONFIG_OPTION_FOCUS,
       async (payload, context) => {
-        console.log('🎯 Config option focus:', payload);
+        this.logger.debug('Config option focus:', payload);
         // 这里可以处理选项获得焦点时的操作
         context.eventBus.emit('config-option-focus', payload);
       },
@@ -216,7 +207,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.CLEAR_HIGHLIGHTS,
       async (payload, context) => {
-        console.log('🧹 Clear highlights');
+        this.logger.debug('Clear highlights');
         // 这里可以处理清除预览高亮的操作
         context.eventBus.emit('clear-highlights', payload);
       },
@@ -226,7 +217,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.WEBVIEW_READY,
       async (payload, context) => {
-        console.log('✅ Webview is ready, triggering editor-fully-ready event');
+        this.logger.info('Webview is ready, triggering editor-fully-ready event');
         context.eventBus.emit('editor-fully-ready', payload);
       },
     );

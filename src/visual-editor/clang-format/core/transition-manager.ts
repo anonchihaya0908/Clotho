@@ -5,7 +5,8 @@
 
 import * as vscode from 'vscode';
 import { DebounceManager } from './debounce-manager';
-import { ErrorHandler } from '../../../common/error-handler';
+import { errorHandler } from '../../../common/error-handler';
+import { LoggerService } from '../../../common/logger';
 
 /**
  * 过渡状态枚举
@@ -31,6 +32,7 @@ export class TransitionManager {
   private currentState: TransitionState = TransitionState.IDLE;
   private debounceManager: DebounceManager;
   private transitionStartTime: number = 0;
+  private readonly logger = LoggerService.getInstance().createChildLogger('TransitionManager');
 
   private readonly defaultOptions: TransitionOptions = {
     maxTransitionTime: 2000, // 最大过渡时间2秒
@@ -86,7 +88,7 @@ export class TransitionManager {
     } catch (error) {
       this.currentState = TransitionState.IDLE;
 
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'performEasterEggTransition',
         module: 'TransitionManager',
         showToUser: false,
@@ -134,7 +136,7 @@ export class TransitionManager {
     } catch (error) {
       this.currentState = TransitionState.IDLE;
 
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'performPreviewTransition',
         module: 'TransitionManager',
         showToUser: false,
@@ -167,7 +169,7 @@ export class TransitionManager {
     this.debounceManager.cancelAll();
     this.debounceManager.releaseAllLocks();
 
-    console.log('TransitionManager: Forced stop');
+    this.logger.debug('Forced stop');
   }
 
   /**
@@ -197,6 +199,6 @@ export class TransitionManager {
     this.forceStop();
     this.debounceManager.dispose();
 
-    console.log('TransitionManager: Disposed');
+    this.logger.debug('Disposed');
   }
 }

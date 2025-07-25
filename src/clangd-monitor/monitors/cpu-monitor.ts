@@ -6,7 +6,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import { IMonitor, CpuUsage, CpuMonitorConfig } from '../types';
-import { ErrorHandler } from '../../common/error-handler';
+import { errorHandler, ErrorHandler } from '../../common/error-handler';
 import { ProcessDetector } from '../../common/process-detector';
 import { LoggerService } from '../../common/logger';
 
@@ -82,7 +82,7 @@ export class CpuMonitor implements IMonitor {
       this.running = true;
       this.startUpdateLoop();
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'startCpuMonitor',
         module: 'CpuMonitor',
         showToUser: false,
@@ -174,7 +174,7 @@ export class CpuMonitor implements IMonitor {
       if (
         !(error instanceof Error && error.message.includes('No such process'))
       ) {
-        ErrorHandler.handle(error, {
+        errorHandler.handle(error, {
           operation: 'updateCpuUsage',
           module: 'CpuMonitor',
           showToUser: false,

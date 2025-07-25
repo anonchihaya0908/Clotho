@@ -4,7 +4,8 @@
  */
 
 import * as vscode from 'vscode';
-import { ErrorHandler } from '../../../common/error-handler';
+import { errorHandler } from '../../../common/error-handler';
+import { LoggerService } from '../../../common/logger';
 
 /**
  * 面板配置选项
@@ -79,11 +80,11 @@ export interface PanelManager {
  * ClangFormat面板管理器实现
  */
 export class ClangFormatPanelManager
-implements PanelManager, vscode.Disposable
-{
+  implements PanelManager, vscode.Disposable {
   private panels = new Map<string, vscode.WebviewPanel>();
   private panelStates = new Map<string, PanelState>();
   private disposables: vscode.Disposable[] = [];
+  private readonly logger = LoggerService.getInstance().createChildLogger('PanelManager');
 
   constructor() {
     // 监听活跃编辑器变化
@@ -101,6 +102,15 @@ implements PanelManager, vscode.Disposable
     );
   }
 
+  private isPanelValid(panel: vscode.WebviewPanel): boolean {
+    try {
+      // 尝试访问面板属性来检查是否仍然有效
+      return panel.visible !== undefined;
+    } catch {
+      return false;
+    }
+  }
+
   /**
    * 创建新面板
    */
@@ -108,10 +118,8 @@ implements PanelManager, vscode.Disposable
     try {
       // 检查是否已存在
       const existingPanel = this.panels.get(id);
-      if (existingPanel && !existingPanel.disposed) {
-        console.log(
-          `PanelManager: Panel ${id} already exists, revealing existing panel`,
-        );
+      if (existingPanel && this.isPanelValid(existingPanel)) {
+        this.logger.debug(`Panel ${id} already exists, revealing existing panel`);
         existingPanel.reveal(options.viewColumn);
         this.updatePanelState(id, { lastActiveAt: new Date() });
         return existingPanel;
@@ -148,10 +156,10 @@ implements PanelManager, vscode.Disposable
       // 监听面板事件
       this.setupPanelEventListeners(id, panel);
 
-      console.log(`PanelManager: Created panel ${id}`);
+      this.logger.debug(`Created panel ${id}`);
       return panel;
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'createPanel',
         module: 'PanelManager',
         showToUser: true,
@@ -166,7 +174,7 @@ implements PanelManager, vscode.Disposable
    */
   getPanel(id: string): vscode.WebviewPanel | undefined {
     const panel = this.panels.get(id);
-    return panel && !panel.disposed ? panel : undefined;
+    return panel && this.isPanelValid(panel) ? panel : undefined;
   }
 
   /**
@@ -187,7 +195,7 @@ implements PanelManager, vscode.Disposable
       }
 
       // 销毁面板
-      if (!panel.disposed) {
+      if (this.isPanelValid(panel)) {
         panel.dispose();
       }
 
@@ -195,10 +203,10 @@ implements PanelManager, vscode.Disposable
       this.panels.delete(id);
       this.panelStates.delete(id);
 
-      console.log(`PanelManager: Destroyed panel ${id}`);
+      this.logger.debug(`Destroyed panel ${id}`);
       return true;
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'destroyPanel',
         module: 'PanelManager',
         showToUser: false,
@@ -221,10 +229,10 @@ implements PanelManager, vscode.Disposable
       panel.reveal();
       this.updatePanelState(id, { lastActiveAt: new Date() });
 
-      console.log(`PanelManager: Focused panel ${id}`);
+      this.logger.debug(`Focused panel ${id}`);
       return true;
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'focusPanel',
         module: 'PanelManager',
         showToUser: false,
@@ -242,7 +250,7 @@ implements PanelManager, vscode.Disposable
     const activePanels = new Map<string, vscode.WebviewPanel>();
 
     for (const [id, panel] of this.panels) {
-      if (!panel.disposed) {
+      if (this.isPanelValid(panel)) {
         activePanels.set(id, panel);
       } else {
         // 清理已销毁的面板
@@ -260,7 +268,7 @@ implements PanelManager, vscode.Disposable
   getActivePanelCount(): number {
     let count = 0;
     for (const [, panel] of this.panels) {
-      if (!panel.disposed && panel.visible) {
+      if (this.isPanelValid(panel) && panel.visible) {
         count++;
       }
     }
@@ -276,9 +284,9 @@ implements PanelManager, vscode.Disposable
       for (const id of panelIds) {
         this.destroyPanel(id);
       }
-      console.log('PanelManager: All panels destroyed');
+      this.logger.info('All panels destroyed');
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'destroyAllPanels',
         module: 'PanelManager',
         showToUser: false,
@@ -307,7 +315,7 @@ implements PanelManager, vscode.Disposable
     panel.onDidDispose(() => {
       this.panels.delete(id);
       this.panelStates.delete(id);
-      console.log(`PanelManager: Panel ${id} disposed`);
+      this.logger.debug(`Panel ${id} disposed`);
     });
   }
 
@@ -329,7 +337,7 @@ implements PanelManager, vscode.Disposable
    */
   private updatePanelStates(): void {
     for (const [id, panel] of this.panels) {
-      if (!panel.disposed) {
+      if (this.isPanelValid(panel)) {
         this.updatePanelState(id, {
           isVisible: panel.visible,
           isActive: panel.active,
@@ -346,7 +354,7 @@ implements PanelManager, vscode.Disposable
     activePanels: number;
     visiblePanels: number;
     oldestPanel?: { id: string; age: number };
-    } {
+  } {
     const allPanels = this.getAllPanels();
     const totalPanels = allPanels.size;
     let activePanels = 0;
@@ -358,8 +366,8 @@ implements PanelManager, vscode.Disposable
     for (const [id, panel] of allPanels) {
       const state = this.panelStates.get(id);
 
-      if (panel.active) {activePanels++;}
-      if (panel.visible) {visiblePanels++;}
+      if (panel.active) { activePanels++; }
+      if (panel.visible) { visiblePanels++; }
 
       if (state) {
         const age = now.getTime() - state.createdAt.getTime();
@@ -389,9 +397,9 @@ implements PanelManager, vscode.Disposable
       this.disposables.forEach((d) => d.dispose());
       this.disposables = [];
 
-      console.log('PanelManager: Manager disposed');
+      this.logger.info('Manager disposed');
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'disposePanelManager',
         module: 'PanelManager',
         showToUser: false,

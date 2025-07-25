@@ -6,7 +6,7 @@
 import * as vscode from 'vscode';
 import { DebounceManager } from './debounce-manager';
 import { TransitionManager } from './transition-manager';
-import { ErrorHandler } from '../../../common/error-handler';
+import { errorHandler, ErrorHandler } from '../../../common/error-handler';
 import { BaseManager, ManagerContext, ManagerStatus } from '../../../common/types';
 import { PreviewEditorManager } from './preview-manager';
 import { PlaceholderWebviewManager } from './placeholder-manager';
@@ -85,7 +85,7 @@ export class DebounceIntegration implements BaseManager {
             return this.context.stateManager.getState().previewEditor!;
           });
         } catch (error) {
-          ErrorHandler.handle(error, {
+          errorHandler.handle(error, {
             operation: 'debouncedPreviewReopen',
             module: 'DebounceIntegration',
             showToUser: false,

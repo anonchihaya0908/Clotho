@@ -5,6 +5,8 @@
 
 import * as vscode from 'vscode';
 import { ManagerContext } from '../../../common/types';
+import { logger } from '../../../common/logger';
+import { errorHandler } from '../../../common/error-handler';
 
 /**
  * 可管理的组件接口
@@ -60,7 +62,10 @@ export class ManagerRegistry implements vscode.Disposable {
         priority: number = 50,
     ): void {
         if (this.registrations.has(name)) {
-            console.warn(`Manager ${name} is already registered, replacing...`);
+            logger.warn(`Manager ${name} is already registered, replacing...`, {
+                module: 'ManagerRegistry',
+                operation: 'register',
+            });
         }
 
         this.registrations.set(name, {
@@ -85,7 +90,11 @@ export class ManagerRegistry implements vscode.Disposable {
             try {
                 registration.instance.dispose();
             } catch (error) {
-                console.warn(`Error disposing manager ${name}:`, error);
+                logger.warn(`Error disposing manager ${name}:`, {
+                    module: 'ManagerRegistry',
+                    operation: 'unregister',
+                    error,
+                });
             }
         }
 
@@ -151,7 +160,11 @@ export class ManagerRegistry implements vscode.Disposable {
                     error: wrappedError,
                 });
 
-                console.error(`Failed to initialize manager ${registration.name}:`, error);
+                errorHandler.handle(wrappedError, {
+                    module: 'ManagerRegistry',
+                    operation: `initializeAll.${registration.name}`,
+                    showToUser: false, // Will be summarized below
+                });
             }
         }
 
@@ -166,13 +179,17 @@ export class ManagerRegistry implements vscode.Disposable {
 
         // 记录初始化结果
         if (result.success) {
-            console.log(`✅ All ${initialized.length} managers initialized successfully in ${result.totalTimeMs}ms`);
-            if (process.env.CLOTHO_DEBUG === 'true') {
-                console.log('Initialization order:', initialized.join(' → '));
-            }
+            logger.info(`✅ All ${initialized.length} managers initialized successfully in ${result.totalTimeMs}ms`, {
+                module: 'ManagerRegistry',
+                operation: 'initializeAll',
+                detail: `Initialization order: ${initialized.join(' → ')}`,
+            });
         } else {
-            console.warn(`⚠️ Manager initialization completed with ${failed.length} failures:`);
-            failed.forEach(f => console.warn(`  - ${f.name}: ${f.error.message}`));
+            logger.warn(`⚠️ Manager initialization completed with ${failed.length} failures:`, {
+                module: 'ManagerRegistry',
+                operation: 'initializeAll',
+                failed: failed.map(f => ({ name: f.name, message: f.error.message })),
+            });
         }
 
         return result;
@@ -231,7 +248,11 @@ export class ManagerRegistry implements vscode.Disposable {
                     error: wrappedError,
                 });
 
-                console.error(`Failed to dispose manager ${registration.name}:`, error);
+                errorHandler.handle(wrappedError, {
+                    module: 'ManagerRegistry',
+                    operation: `dispose.${registration.name}`,
+                    showToUser: false, // Will be summarized below
+                });
             }
         }
 
@@ -240,7 +261,11 @@ export class ManagerRegistry implements vscode.Disposable {
             try {
                 disposable.dispose();
             } catch (error) {
-                console.warn('Error disposing disposable:', error);
+                logger.warn('Error disposing disposable:', {
+                    module: 'ManagerRegistry',
+                    operation: 'dispose',
+                    error,
+                });
             }
         }
         this.disposables = [];
@@ -250,13 +275,17 @@ export class ManagerRegistry implements vscode.Disposable {
 
         // 记录清理结果
         if (disposalErrors.length === 0) {
-            console.log(`✅ All ${disposedManagers.length} managers disposed successfully`);
-            if (process.env.CLOTHO_DEBUG === 'true') {
-                console.log('Disposal order:', disposedManagers.join(' → '));
-            }
+            logger.info(`✅ All ${disposedManagers.length} managers disposed successfully`, {
+                module: 'ManagerRegistry',
+                operation: 'dispose',
+                detail: `Disposal order: ${disposedManagers.join(' → ')}`,
+            });
         } else {
-            console.warn(`⚠️ Manager disposal completed with ${disposalErrors.length} errors:`);
-            disposalErrors.forEach(e => console.warn(`  - ${e.name}: ${e.error.message}`));
+            logger.warn(`⚠️ Manager disposal completed with ${disposalErrors.length} errors:`, {
+                module: 'ManagerRegistry',
+                operation: 'dispose',
+                errors: disposalErrors.map(e => ({ name: e.name, message: e.error.message })),
+            });
         }
     }
 

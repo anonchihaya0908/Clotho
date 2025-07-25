@@ -4,7 +4,8 @@
  */
 
 import * as vscode from 'vscode';
-import { ErrorHandler } from '../error-handler';
+import { errorHandler } from '../error-handler';
+import { LoggerService } from '../logger';
 
 /**
  * 通用实例管理器接口
@@ -75,12 +76,12 @@ export interface InstanceManagerConfig {
  * 通用实例管理器实现
  */
 export class BaseInstanceManager<T extends Disposable>
-implements InstanceManager<T>, vscode.Disposable
-{
+  implements InstanceManager<T>, vscode.Disposable {
   private instances = new Map<string, T>();
   private config: InstanceManagerConfig;
   private cleanupTimer?: NodeJS.Timeout;
   private disposables: vscode.Disposable[] = [];
+  private readonly logger = LoggerService.getInstance().createChildLogger('InstanceManager');
 
   constructor(config: InstanceManagerConfig = {}) {
     this.config = {
@@ -103,8 +104,8 @@ implements InstanceManager<T>, vscode.Disposable
       // 检查是否已存在
       if (this.instances.has(id)) {
         const existing = this.instances.get(id)!;
-        console.log(
-          `InstanceManager: Instance ${id} already exists, returning existing instance`,
+        this.logger.debug(
+          `Instance ${id} already exists, returning existing instance`,
         );
         return existing;
       }
@@ -123,12 +124,10 @@ implements InstanceManager<T>, vscode.Disposable
       const instance = factory();
       this.instances.set(id, instance);
 
-      console.log(
-        `InstanceManager: Created instance ${id}, total: ${this.instances.size}`,
-      );
+      this.logger.info(`Created instance ${id}, total: ${this.instances.size}`);
       return instance;
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'createInstance',
         module: 'InstanceManager',
         showToUser: false,
@@ -166,12 +165,10 @@ implements InstanceManager<T>, vscode.Disposable
       instance.dispose();
       this.instances.delete(id);
 
-      console.log(
-        `InstanceManager: Destroyed instance ${id}, remaining: ${this.instances.size}`,
-      );
+      this.logger.info(`Destroyed instance ${id}, remaining: ${this.instances.size}`);
       return true;
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'destroyInstance',
         module: 'InstanceManager',
         showToUser: false,
@@ -190,9 +187,9 @@ implements InstanceManager<T>, vscode.Disposable
       for (const id of instanceIds) {
         this.destroy(id);
       }
-      console.log('InstanceManager: All instances destroyed');
+      this.logger.info('All instances destroyed');
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'destroyAllInstances',
         module: 'InstanceManager',
         showToUser: false,
@@ -244,9 +241,7 @@ implements InstanceManager<T>, vscode.Disposable
   protected performCleanup(): void {
     // 基础实现：检查实例是否仍然有效
     // 子类可以重写此方法添加更复杂的清理逻辑
-    console.log(
-      `InstanceManager: Performing cleanup, current instances: ${this.instances.size}`,
-    );
+    this.logger.debug(`Performing cleanup, current instances: ${this.instances.size}`);
   }
 
   /**
@@ -261,9 +256,9 @@ implements InstanceManager<T>, vscode.Disposable
       this.disposables.forEach((d) => d.dispose());
       this.disposables = [];
 
-      console.log('InstanceManager: Manager disposed');
+      this.logger.info('Manager disposed');
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'disposeManager',
         module: 'InstanceManager',
         showToUser: false,

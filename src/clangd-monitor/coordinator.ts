@@ -10,7 +10,8 @@ import { MemoryMonitor } from './monitors/memory-monitor';
 import { CpuMonitor } from './monitors/cpu-monitor';
 import { StatusMonitor } from './monitors/status-monitor';
 import { StatusBarPresenter } from './status-bar-presenter';
-import { ErrorHandler } from '../common/error-handler';
+import { errorHandler } from '../common/error-handler';
+import { LoggerService } from '../common/logger';
 
 /**
  * Central coordinator class that manages all monitoring components
@@ -21,6 +22,7 @@ export class MonitorCoordinator implements vscode.Disposable {
   private readonly statusBarPresenter: StatusBarPresenter;
   private disposables: vscode.Disposable[] = [];
   private updateInterval: NodeJS.Timeout | undefined;
+  private readonly logger = LoggerService.getInstance().createChildLogger('MonitorCoordinator');
 
   constructor(config: MonitorConfig = {}) {
     this.config = config;
@@ -54,14 +56,14 @@ export class MonitorCoordinator implements vscode.Disposable {
       this.monitors.set('status', statusMonitor);
       this.disposables.push(statusMonitor);
 
-      console.log(
-        'Clotho MonitorCoordinator: All monitors initialized successfully',
+      this.logger.info(
+        'All monitors initialized successfully',
       );
-      console.log(`  - Memory Monitor: ${memoryMonitor.getName()}`);
-      console.log(`  - CPU Monitor: ${cpuMonitor.getName()}`);
-      console.log(`  - Status Monitor: ${statusMonitor.getName()}`);
+      this.logger.info(`  - Memory Monitor: ${memoryMonitor.getName()}`);
+      this.logger.info(`  - CPU Monitor: ${cpuMonitor.getName()}`);
+      this.logger.info(`  - Status Monitor: ${statusMonitor.getName()}`);
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'initializeMonitors',
         module: 'MonitorCoordinator',
         showToUser: false,
@@ -111,7 +113,7 @@ export class MonitorCoordinator implements vscode.Disposable {
       // Refresh the details panel after a delay to allow restart to complete
       setTimeout(() => this.showClangdDetails(), 3000);
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'restartClangd',
         module: 'MonitorCoordinator',
         showToUser: true,
@@ -137,8 +139,8 @@ export class MonitorCoordinator implements vscode.Disposable {
           command = 'pkill -f clangd';
           break;
         default:
-          console.warn(
-            `Clotho: Unsupported platform for killing clangd processes: ${process.platform}`,
+          this.logger.warn(
+            `Unsupported platform for killing clangd processes: ${process.platform}`,
           );
           return;
       }
@@ -153,15 +155,15 @@ export class MonitorCoordinator implements vscode.Disposable {
             // Only reject if it's not a "process not found" error
             reject(error);
           } else {
-            console.log(
-              `Clotho: Killed clangd processes on ${process.platform} - ${stdout}`,
+            this.logger.info(
+              `Killed clangd processes on ${process.platform} - ${stdout}`,
             );
             resolve();
           }
         });
       });
     } catch (error) {
-      console.warn('Clotho: Failed to kill clangd processes:', error);
+      this.logger.warn('Failed to kill clangd processes:', { error });
       // Don't throw - this is not critical
     }
   }
@@ -174,13 +176,13 @@ export class MonitorCoordinator implements vscode.Disposable {
       // Start all individual monitors
       for (const [name, monitor] of this.monitors) {
         await monitor.start();
-        console.log(`Clotho: Started ${monitor.getName()}`);
+        this.logger.info(`Started ${monitor.getName()}`);
       }
 
       // Start the update loop to feed data to status bar presenter
       this.startStatusBarUpdateLoop();
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'startMonitoring',
         module: 'MonitorCoordinator',
         showToUser: true,
@@ -236,9 +238,9 @@ export class MonitorCoordinator implements vscode.Disposable {
       const isActive = isClangdRunning || hasMonitoringData;
       this.statusBarPresenter.setActive(isActive);
     } catch (error) {
-      console.warn(
-        'Clotho MonitorCoordinator: Failed to update status bar:',
-        error,
+      this.logger.warn(
+        'Failed to update status bar:',
+        { error },
       );
     }
   }
@@ -257,13 +259,13 @@ export class MonitorCoordinator implements vscode.Disposable {
       // Stop all individual monitors
       for (const [name, monitor] of this.monitors) {
         monitor.stop();
-        console.log(`Clotho: Stopped ${monitor.getName()}`);
+        this.logger.info(`Stopped ${monitor.getName()}`);
       }
 
       // Set status bar to inactive
       this.statusBarPresenter.setActive(false);
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'stopMonitoring',
         module: 'MonitorCoordinator',
         showToUser: false,
@@ -342,7 +344,7 @@ export class MonitorCoordinator implements vscode.Disposable {
         this.disposables,
       );
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'showClangdDetails',
         module: 'MonitorCoordinator',
         showToUser: true,

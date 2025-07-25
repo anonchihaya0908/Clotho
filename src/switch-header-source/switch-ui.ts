@@ -8,7 +8,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { ERROR_MESSAGES } from '../common/constants';
-import { ErrorHandler } from '../common/error-handler';
+import { errorHandler } from '../common/error-handler';
+import { logger } from '../common/logger';
 
 /**
  * UI service class for switch header/source functionality.
@@ -55,7 +56,7 @@ export class SwitchUI {
    * Uses the standardized error handling pattern.
    */
   public showSwitchError(error: Error): void {
-    ErrorHandler.handle(error, {
+    errorHandler.handle(error, {
       operation: 'switchHeaderSource',
       module: 'SwitchUI',
       showToUser: true,
@@ -67,9 +68,10 @@ export class SwitchUI {
    * Shows debug information about the search method used.
    */
   public showDebugInfo(method: string, foundCount: number): void {
-    console.debug(
-      `Clotho: Found ${foundCount} file(s) using method: ${method}`,
-    );
+    logger.debug(`Found ${foundCount} file(s) using method: ${method}`, {
+      module: 'SwitchUI',
+      operation: 'showDebugInfo',
+    });
   }
 
   /**
@@ -113,20 +115,17 @@ export class SwitchUI {
     try {
       const document = await vscode.workspace.openTextDocument(fileUri);
       await vscode.window.showTextDocument(document);
-      console.debug(`Clotho: Successfully opened file - ${fileUri.fsPath}`);
+      logger.debug(`Successfully opened file - ${fileUri.fsPath}`, {
+        module: 'SwitchUI',
+        operation: 'openFile',
+      });
     } catch (error) {
-      console.error(`Clotho: Failed to open file ${fileUri.fsPath}:`, error);
-      const relativePath = vscode.workspace.asRelativePath(fileUri);
-      if (error instanceof vscode.FileSystemError) {
-        vscode.window.showWarningMessage(
-          `Could not open file: ${relativePath}. It may have been moved or deleted.`,
-        );
-      } else {
-        vscode.window.showErrorMessage(
-          `An error occurred while opening: ${relativePath}`,
-        );
-      }
-      throw error;
+      errorHandler.handle(error, {
+        module: 'SwitchUI',
+        operation: `openFile.${path.basename(fileUri.fsPath)}`,
+        showToUser: true,
+      });
+      throw error; // Re-throw to allow coordinator to know it failed
     }
   }
 

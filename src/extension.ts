@@ -8,7 +8,7 @@
 
 import * as vscode from 'vscode';
 import { bootstrap, cleanup } from './bootstrap';
-import { ErrorHandler } from './common/error-handler';
+import { errorHandler } from './common/error-handler';
 import { COMMANDS, UI_CONSTANTS } from './common/constants';
 
 /**
@@ -23,7 +23,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // Show welcome message on first activation
     showWelcomeMessage(context);
   } catch (error) {
-    ErrorHandler.handle(error, {
+    errorHandler.handle(error, {
       operation: 'activateExtension',
       module: 'Extension',
       showToUser: true,

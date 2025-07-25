@@ -8,7 +8,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { SwitchConfigService } from './config-manager';
-import { ErrorHandler } from '../common/error-handler';
 import {
   HEADER_EXTENSIONS,
   SOURCE_EXTENSIONS,
@@ -20,6 +19,8 @@ import {
   isSourceFile,
   isValidCppFile,
 } from '../common/utils';
+import { logger } from '../common/logger';
+import { errorHandler } from '../common/error-handler';
 
 // ===============================
 // Interfaces and Type Definitions
@@ -154,9 +155,10 @@ export class SwitchService {
         'llvm-vs-code-extensions.vscode-clangd',
       );
       if (!clangdExtension) {
-        console.debug(
-          'Clotho: clangd extension not found, using heuristic search',
-        );
+        logger.debug('clangd extension not found, using heuristic search', {
+          module: 'SwitchService',
+          operation: 'tryClangdSwitch',
+        });
         return { files: [], method: 'clangd' };
       }
 
@@ -164,11 +166,15 @@ export class SwitchService {
       if (!clangdExtension.isActive) {
         try {
           await clangdExtension.activate();
-          console.debug('Clotho: clangd extension activated');
+          logger.debug('clangd extension activated', {
+            module: 'SwitchService',
+            operation: 'tryClangdSwitch',
+          });
         } catch (error) {
-          console.debug(
-            'Clotho: Failed to activate clangd extension, using heuristic search',
-          );
+          logger.debug('Failed to activate clangd extension, using heuristic search', {
+            module: 'SwitchService',
+            operation: 'tryClangdSwitch',
+          });
           return { files: [], method: 'clangd' };
         }
       }
@@ -176,9 +182,10 @@ export class SwitchService {
       // Step 3: Check if the API is available
       const api = clangdExtension.exports;
       if (!api?.getClient) {
-        console.debug(
-          'Clotho: clangd API not available, using heuristic search',
-        );
+        logger.debug('clangd API not available, using heuristic search', {
+          module: 'SwitchService',
+          operation: 'tryClangdSwitch',
+        });
         return { files: [], method: 'clangd' };
       }
 
@@ -186,9 +193,10 @@ export class SwitchService {
       const client = api.getClient();
       if (!client || client.state !== 2) {
         // 2 = Running state
-        console.debug(
-          'Clotho: clangd client not running, using heuristic search',
-        );
+        logger.debug('clangd client not running, using heuristic search', {
+          module: 'SwitchService',
+          operation: 'tryClangdSwitch',
+        });
         return { files: [], method: 'clangd' };
       }
 
@@ -205,32 +213,39 @@ export class SwitchService {
 
       if (result && typeof result === 'string') {
         const targetUri = vscode.Uri.parse(result);
-        console.debug(`Clotho: clangd found partner file: ${targetUri.fsPath}`);
+        logger.debug(`clangd found partner file: ${targetUri.fsPath}`, {
+          module: 'SwitchService',
+          operation: 'tryClangdSwitch',
+        });
 
         // Verify the file exists
         try {
           await vscode.workspace.fs.stat(targetUri);
-          console.info(
-            'Clotho: Successfully used clangd for precise file switching',
-          );
+          logger.info('Successfully used clangd for precise file switching', {
+            module: 'SwitchService',
+            operation: 'tryClangdSwitch',
+          });
           return { files: [targetUri], method: 'clangd' };
         } catch {
-          console.debug(
-            'Clotho: clangd result file does not exist, using heuristic search',
-          );
+          logger.debug('clangd result file does not exist, using heuristic search', {
+            module: 'SwitchService',
+            operation: 'tryClangdSwitch',
+          });
           return { files: [], method: 'clangd' };
         }
       }
 
-      console.debug(
-        'Clotho: clangd returned no result, using heuristic search',
-      );
+      logger.debug('clangd returned no result, using heuristic search', {
+        module: 'SwitchService',
+        operation: 'tryClangdSwitch',
+      });
       return { files: [], method: 'clangd' };
     } catch (error) {
-      console.debug(
-        'Clotho: clangd integration failed, using heuristic search:',
+      logger.debug('clangd integration failed, using heuristic search', {
+        module: 'SwitchService',
+        operation: 'tryClangdSwitch',
         error,
-      );
+      });
       return { files: [], method: 'clangd' };
     }
   }
@@ -456,7 +471,11 @@ export class SwitchService {
       );
       return { files: foundFiles, method: 'global-search' };
     } catch (error) {
-      console.error('Clotho: Global file search failed:', error);
+      errorHandler.handle(error, {
+        module: 'SwitchService',
+        operation: 'searchGlobal',
+        showToUser: false, // This is a background search, so don't bother the user
+      });
       return { files: [], method: 'global-search' };
     }
   }

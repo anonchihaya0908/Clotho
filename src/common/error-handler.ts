@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode';
+import { logger, LoggerService } from './logger';
 
 export interface ErrorContext {
   operation: string;
@@ -26,15 +27,20 @@ export class ClothoError extends Error {
 }
 
 export class ErrorHandler {
-  private static readonly LOG_PREFIX = 'Clotho';
   private static errorCount = 0;
   private static readonly MAX_ERROR_RATE = 10; // 每分钟最大错误数
   private static errorTimestamps: number[] = [];
 
+  private logger: LoggerService;
+
+  constructor(logger: LoggerService) {
+    this.logger = logger;
+  }
+
   /**
    * Handles errors with consistent logging and user notification
    */
-  public static handle(error: unknown, context: ErrorContext): ClothoError {
+  public handle(error: unknown, context: ErrorContext): ClothoError {
     const clothoError = this.normalizeError(error, context);
 
     // 错误频率检查
@@ -48,19 +54,23 @@ export class ErrorHandler {
       this.showUserError(clothoError);
     }
 
+    if (context.rethrow) {
+      throw clothoError;
+    }
+
     return clothoError;
   }
 
   /**
    * Tracks error rate to prevent spam
    */
-  private static trackErrorRate(): void {
+  private trackErrorRate(): void {
     const now = Date.now();
-    this.errorCount++;
-    this.errorTimestamps.push(now);
+    ErrorHandler.errorCount++;
+    ErrorHandler.errorTimestamps.push(now);
 
     // 清理超过1分钟的错误记录
-    this.errorTimestamps = this.errorTimestamps.filter(
+    ErrorHandler.errorTimestamps = ErrorHandler.errorTimestamps.filter(
       timestamp => now - timestamp < 60000
     );
   }
@@ -68,21 +78,21 @@ export class ErrorHandler {
   /**
    * Checks if error rate limit is exceeded
    */
-  private static isErrorRateLimited(): boolean {
-    return this.errorTimestamps.length > this.MAX_ERROR_RATE;
+  private isErrorRateLimited(): boolean {
+    return ErrorHandler.errorTimestamps.length > ErrorHandler.MAX_ERROR_RATE;
   }
 
   /**
    * Gets error statistics for debugging
    */
-  public static getErrorStats(): {
+  public getErrorStats(): {
     totalErrors: number;
     recentErrors: number;
     isRateLimited: boolean;
   } {
     return {
-      totalErrors: this.errorCount,
-      recentErrors: this.errorTimestamps.length,
+      totalErrors: ErrorHandler.errorCount,
+      recentErrors: ErrorHandler.errorTimestamps.length,
       isRateLimited: this.isErrorRateLimited(),
     };
   }
@@ -90,15 +100,15 @@ export class ErrorHandler {
   /**
    * Resets error tracking (useful for testing)
    */
-  public static resetErrorTracking(): void {
-    this.errorCount = 0;
-    this.errorTimestamps = [];
+  public resetErrorTracking(): void {
+    ErrorHandler.errorCount = 0;
+    ErrorHandler.errorTimestamps = [];
   }
 
   /**
    * Converts any error to ClothoError with context
    */
-  private static normalizeError(
+  private normalizeError(
     error: unknown,
     context: ErrorContext,
   ): ClothoError {
@@ -113,37 +123,36 @@ export class ErrorHandler {
   /**
    * Logs error with appropriate level
    */
-  private static logError(error: ClothoError): void {
+  private logError(error: ClothoError): void {
     const { operation, module, logLevel = 'error' } = error.context;
-    const logMessage = `${this.LOG_PREFIX}: [${module}] ${operation} failed: ${error.message}`;
+    const message = `${operation} failed`;
 
-    switch (logLevel) {
-      case 'debug':
-        console.debug(logMessage, error.cause);
-        break;
-      case 'info':
-        console.info(logMessage);
-        break;
-      case 'warn':
-        console.warn(logMessage, error.cause);
-        break;
-      case 'error':
-      default:
-        console.error(logMessage, error.cause);
-        break;
-    }
+    this.logger.logForModule(
+      logLevel.toUpperCase() as any, // 确保类型匹配
+      module,
+      operation,
+      message,
+      {
+        error: {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          cause: error.cause,
+        },
+      },
+    );
   }
 
   /**
    * Shows user-friendly error message with rate limiting
    */
-  private static showUserError(error: ClothoError): void {
+  private showUserError(error: ClothoError): void {
     const { operation, module } = error.context;
     let userMessage = `Failed to ${operation}: ${error.message}`;
 
     // 如果错误频率过高，显示汇总信息
     if (this.isErrorRateLimited()) {
-      userMessage = `Multiple errors detected in ${module}. Please check the developer console for details.`;
+      userMessage = `Multiple errors detected in ${module}. Please check the logs for details.`;
     }
 
     vscode.window.showErrorMessage(userMessage);
@@ -152,7 +161,7 @@ export class ErrorHandler {
   /**
    * Enhanced async wrapper with better error recovery options
    */
-  public static wrapAsync<T extends any[], R>(
+  public wrapAsync<T extends any[], R>(
     fn: (...args: T) => Promise<R>,
     context: ErrorContext,
     fallbackValue?: R,
@@ -170,7 +179,7 @@ export class ErrorHandler {
   /**
    * Enhanced sync wrapper with better error recovery options
    */
-  public static wrapSync<T extends any[], R>(
+  public wrapSync<T extends any[], R>(
     fn: (...args: T) => R,
     context: ErrorContext,
     fallbackValue?: R,
@@ -188,7 +197,7 @@ export class ErrorHandler {
   /**
    * Creates a retry wrapper with exponential backoff
    */
-  public static withRetry<T extends any[], R>(
+  public withRetry<T extends any[], R>(
     fn: (...args: T) => Promise<R>,
     context: ErrorContext,
     options: {
@@ -240,7 +249,7 @@ export class ErrorHandler {
   /**
    * Batch error handler for multiple operations
    */
-  public static async handleBatch<T>(
+  public async handleBatch<T>(
     operations: Array<() => Promise<T>>,
     context: Omit<ErrorContext, 'operation'>,
   ): Promise<{
@@ -280,6 +289,12 @@ export class ErrorHandler {
 }
 
 /**
+ * Global instance of ErrorHandler
+ */
+export const errorHandler = new ErrorHandler(logger);
+
+
+/**
  * Enhanced decorator for automatic error handling in methods
  * Supports both sync and async methods with flexible error handling options
  */
@@ -310,7 +325,7 @@ export function handleErrors(context: Partial<ErrorContext> = {}) {
         if (result instanceof Promise) {
           // 异步方法处理
           return result.catch((error) => {
-            const handledError = ErrorHandler.handle(error, fullContext);
+            const handledError = errorHandler.handle(error, fullContext);
 
             if (fullContext.rethrow) {
               throw handledError;
@@ -325,7 +340,7 @@ export function handleErrors(context: Partial<ErrorContext> = {}) {
         }
       } catch (error) {
         // 同步方法出错
-        const handledError = ErrorHandler.handle(error, fullContext);
+        const handledError = errorHandler.handle(error, fullContext);
 
         if (fullContext.rethrow) {
           throw handledError;

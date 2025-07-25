@@ -201,10 +201,10 @@ private:
         // 遍历映射表，查找匹配的关键词
         for (const mapping of this.KEYWORD_TO_TEMPLATE_MAP) {
             // 检查是否所有关键词都在配置键中出现
-            const allKeywordsMatch = mapping.keywords.every(keyword => 
+            const allKeywordsMatch = mapping.keywords.every(keyword =>
                 keyLower.includes(keyword.toLowerCase())
             );
-            
+
             if (allKeywordsMatch) {
                 return mapping.template;
             }

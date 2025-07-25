@@ -5,9 +5,9 @@
 
 import * as vscode from 'vscode';
 import { IMonitor, MemoryUsage, MemoryMonitorConfig } from '../types';
-import { ErrorHandler } from '../../common/error-handler';
+import { errorHandler } from '../../common/error-handler';
 import { ProcessDetector } from '../../common/process-detector';
-import { createModuleLogger } from '../../common/logger';
+import { LoggerService } from '../../common/logger';
 
 // Import pidusage with proper typing
 import pidusage from 'pidusage';
@@ -22,7 +22,7 @@ export class MemoryMonitor implements IMonitor {
     errorThreshold: 3072, // 3GB (red)
   };
 
-  private readonly logger = createModuleLogger('MemoryMonitor');
+  private readonly logger = LoggerService.getInstance().createChildLogger('MemoryMonitor');
   private statusBarItem: vscode.StatusBarItem | undefined;
   private updateTimer: NodeJS.Timeout | undefined;
   private running = false;
@@ -73,7 +73,7 @@ export class MemoryMonitor implements IMonitor {
       this.running = true;
       this.startUpdateLoop();
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'startMemoryMonitor',
         module: 'MemoryMonitor',
         showToUser: false,
@@ -255,7 +255,7 @@ export class MemoryMonitor implements IMonitor {
         'Error in API-based PID detection:',
         error,
       );
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'findClangdPidViaApi',
         module: 'MemoryMonitor',
         showToUser: false,
@@ -367,7 +367,7 @@ export class MemoryMonitor implements IMonitor {
       this.lastMemoryUsage = undefined;
       this.updateStatusBarNoClangd();
 
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'updateMemoryUsage',
         module: 'MemoryMonitor',
         showToUser: false,

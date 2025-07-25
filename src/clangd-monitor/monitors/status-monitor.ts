@@ -6,7 +6,7 @@
 import * as vscode from 'vscode';
 import { exec } from 'child_process';
 import { IMonitor, ClangdStatus } from '../types';
-import { ErrorHandler } from '../../common/error-handler';
+import { errorHandler, ErrorHandler } from '../../common/error-handler';
 import { LoggerService } from '../../common/logger';
 
 /**
@@ -41,7 +41,7 @@ export class StatusMonitor implements IMonitor {
         });
       }, 3000);
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'startStatusMonitor',
         module: 'StatusMonitor',
         showToUser: false,

@@ -7,8 +7,9 @@
  */
 
 import { ProcessRunner } from './process-runner';
-import { ErrorHandler, handleErrors } from './error-handler';
+import { errorHandler } from './error-handler';
 import * as process from 'node:process';
+import { logger } from './logger';
 
 /**
  * Extended process information with metadata
@@ -76,14 +77,25 @@ export class ProcessDetector {
   private static log(level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any): void {
     if (level === 'debug' && !this.DEBUG) return;
 
-    const prefix = {
-      debug: '🔍',
-      info: 'ℹ️',
-      warn: '⚠️',
-      error: '❌'
-    }[level];
+    const moduleInfo = {
+      module: 'ProcessDetector',
+      operation: 'general',
+    };
 
-    console[level](`${prefix} ProcessDetector: ${message}`, data || '');
+    switch (level) {
+      case 'debug':
+        logger.debug(message, { ...moduleInfo, ...data });
+        break;
+      case 'info':
+        logger.info(message, { ...moduleInfo, ...data });
+        break;
+      case 'warn':
+        logger.warn(message, { ...moduleInfo, ...data });
+        break;
+      case 'error':
+        logger.error(message, data instanceof Error ? data : undefined, { ...moduleInfo, context: data });
+        break;
+    }
   }
   /**
    * 🧬 Finds the main process for a given application name using "DNA testing".
@@ -131,7 +143,7 @@ export class ProcessDetector {
 
       return result;
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'findMainProcessByName',
         module: 'ProcessDetector',
         showToUser: false,
@@ -288,7 +300,7 @@ export class ProcessDetector {
         debugInfo: `All strategies failed. Found ${candidateCount} candidates but none were legitimate children.`,
       };
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'detectProcessWithStrategy',
         module: 'ProcessDetector',
         showToUser: false,
@@ -337,7 +349,7 @@ export class ProcessDetector {
         },
       };
     } catch (error) {
-      ErrorHandler.handle(error, {
+      errorHandler.handle(error, {
         operation: 'getDiagnosticInfo',
         module: 'ProcessDetector',
         showToUser: false,

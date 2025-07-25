@@ -31,6 +31,7 @@ import { ClangFormatGuideService } from './visual-editor/clang-format/guide-serv
 import { ClangFormatPreviewProvider } from './visual-editor/clang-format/preview-provider';
 import { VisualEditorDebugHelper } from './visual-editor/clang-format/debug/visual-editor-debug-helper';
 import { COMMANDS } from './common/constants';
+import { errorHandler } from './common/error-handler';
 
 export let serviceContainer: ServiceContainer;
 
@@ -46,9 +47,9 @@ export async function bootstrap(
 ): Promise<void> {
   // 🚀 初始化 Logger 系统（优先级最高）
   logger.initializeOutputChannel();
-  logger.info('Clotho 扩展启动中...', { 
-    module: 'Bootstrap', 
-    operation: 'startup' 
+  logger.info('Clotho 扩展启动中...', {
+    module: 'Bootstrap',
+    operation: 'startup'
   });
 
   // Initialize the service container
@@ -60,17 +61,17 @@ export async function bootstrap(
   // 激活 Clang-Format 可视化编辑器模块（注册虚拟文档提供者）
   try {
     ClangFormatPreviewProvider.register(context);
-    logger.info('ClangFormatPreviewProvider 注册成功', { 
-      module: 'Bootstrap', 
-      operation: 'registerPreviewProvider' 
+    logger.info('ClangFormatPreviewProvider 注册成功', {
+      module: 'Bootstrap',
+      operation: 'registerPreviewProvider'
     });
   } catch (error) {
     logger.error(
       'ClangFormatPreviewProvider 注册失败',
       error as Error,
-      { 
-        module: 'Bootstrap', 
-        operation: 'registerPreviewProvider' 
+      {
+        module: 'Bootstrap',
+        operation: 'registerPreviewProvider'
       }
     );
     // 不抛出错误，允许扩展继续运行
@@ -88,9 +89,9 @@ export async function bootstrap(
   });
 
   // 🎉 启动完成
-  logger.info('Clotho 扩展启动完成', { 
-    module: 'Bootstrap', 
-    operation: 'startup_complete' 
+  logger.info('Clotho 扩展启动完成', {
+    module: 'Bootstrap',
+    operation: 'startup_complete'
   });
 }
 
@@ -207,24 +208,24 @@ async function initializeCoordinators(): Promise<void> {
   if (isMonitoringEnabled) {
     try {
       await monitorCoordinator.startMonitoring();
-      logger.info('Clangd 监控启动成功', { 
-        module: 'Bootstrap', 
-        operation: 'startMonitoring' 
+      logger.info('Clangd 监控启动成功', {
+        module: 'Bootstrap',
+        operation: 'startMonitoring'
       });
     } catch (error) {
       logger.error(
-        'Clangd 监控启动失败', 
+        'Clangd 监控启动失败',
         error as Error,
-        { 
-          module: 'Bootstrap', 
-          operation: 'startMonitoring' 
+        {
+          module: 'Bootstrap',
+          operation: 'startMonitoring'
         }
       );
     }
   } else {
-    logger.info('Clangd 监控已被配置禁用', { 
-      module: 'Bootstrap', 
-      operation: 'startMonitoring' 
+    logger.info('Clangd 监控已被配置禁用', {
+      module: 'Bootstrap',
+      operation: 'startMonitoring'
     });
   }
 }
@@ -233,9 +234,9 @@ async function initializeCoordinators(): Promise<void> {
  * Clean up all services when the extension is deactivated.
  */
 export function cleanup(): void {
-  logger.info('Clotho 扩展正在清理资源...', { 
-    module: 'Bootstrap', 
-    operation: 'cleanup' 
+  logger.info('Clotho 扩展正在清理资源...', {
+    module: 'Bootstrap',
+    operation: 'cleanup'
   });
 
   if (serviceContainer) {
@@ -244,10 +245,10 @@ export function cleanup(): void {
 
   // 清理 Logger 资源
   logger.dispose();
-  
-  logger.info('Clotho 扩展清理完成', { 
-    module: 'Bootstrap', 
-    operation: 'cleanup_complete' 
+
+  logger.info('Clotho 扩展清理完成', {
+    module: 'Bootstrap',
+    operation: 'cleanup_complete'
   });
 }
 
@@ -256,127 +257,76 @@ export function cleanup(): void {
  * This makes it easier to manage and maintain all command registrations.
  */
 function registerCommands(context: vscode.ExtensionContext): void {
-  // Pairing Rule Manager Commands
-  const configureRulesCommand = vscode.commands.registerCommand(
-    COMMANDS.CONFIGURE_RULES,
-    async () => {
+  const register = (command: string, handler: (...args: any[]) => any) => {
+    return vscode.commands.registerCommand(command, async (...args: any[]) => {
       try {
-        const coordinator = serviceContainer.get('pairingRuleCoordinator');
-        await coordinator.configureRules();
+        await handler(...args);
       } catch (error) {
-        console.error('Failed to configure rules:', error);
-        vscode.window.showErrorMessage(
-          'Failed to configure rules. See console for details.',
-        );
+        errorHandler.handle(error, {
+          module: 'CommandExecution',
+          operation: command,
+          showToUser: true,
+        });
       }
-    },
-  );
+    });
+  };
+
+  // Pairing Rule Manager Commands
+  const configureRulesCommand = register(COMMANDS.CONFIGURE_RULES, () => {
+    const coordinator = serviceContainer.get('pairingRuleCoordinator');
+    return coordinator.configureRules();
+  });
 
   // Create Source/Header Pair Commands
-  const newSourcePairCommand = vscode.commands.registerCommand(
-    COMMANDS.NEW_SOURCE_PAIR,
-    async () => {
-      try {
-        const coordinator = serviceContainer.get('pairCoordinator');
-        await coordinator.create();
-      } catch (error) {
-        console.error('Failed to create new source pair:', error);
-        vscode.window.showErrorMessage(
-          'Failed to create new source pair. See console for details.',
-        );
-      }
-    },
-  );
+  const newSourcePairCommand = register(COMMANDS.NEW_SOURCE_PAIR, () => {
+    const coordinator = serviceContainer.get('pairCoordinator');
+    return coordinator.create();
+  });
 
   // Switch Header/Source Commands
-  const switchHeaderSourceCommand = vscode.commands.registerCommand(
+  const switchHeaderSourceCommand = register(
     COMMANDS.SWITCH_HEADER_SOURCE,
-    async () => {
-      try {
-        const coordinator = serviceContainer.get('switchCoordinator');
-        await coordinator.switchHeaderSource();
-      } catch (error) {
-        console.error('Failed to switch header/source:', error);
-        vscode.window.showErrorMessage(
-          'Failed to switch header/source. See console for details.',
-        );
-      }
+    () => {
+      const coordinator = serviceContainer.get('switchCoordinator');
+      return coordinator.switchHeaderSource();
     },
   );
 
   // Clangd Monitor Commands
-  const showClangdDetailsCommand = vscode.commands.registerCommand(
+  const showClangdDetailsCommand = register(
     COMMANDS.SHOW_CLANGD_DETAILS,
-    async () => {
-      try {
-        const coordinator = serviceContainer.get('monitorCoordinator');
-        await coordinator.showClangdDetails();
-      } catch (error) {
-        console.error('Failed to show clangd details:', error);
-        vscode.window.showErrorMessage(
-          'Failed to show clangd details. See console for details.',
-        );
-      }
+    () => {
+      const coordinator = serviceContainer.get('monitorCoordinator');
+      return coordinator.showClangdDetails();
     },
   );
 
-  const restartClangdCommand = vscode.commands.registerCommand(
-    'clotho.restartClangd',
-    async () => {
-      try {
-        const coordinator = serviceContainer.get('monitorCoordinator');
-        await coordinator.restartClangd();
-      } catch (error) {
-        console.error('Failed to restart clangd:', error);
-        vscode.window.showErrorMessage(
-          'Failed to restart clangd. See console for details.',
-        );
-      }
-    },
-  );
+  const restartClangdCommand = register('clotho.restartClangd', () => {
+    const coordinator = serviceContainer.get('monitorCoordinator');
+    return coordinator.restartClangd();
+  });
 
   // Visual Editor Commands
-  const openClangFormatEditorCommand = vscode.commands.registerCommand(
+  const openClangFormatEditorCommand = register(
     COMMANDS.OPEN_CLANG_FORMAT_EDITOR,
-    async () => {
-      try {
-        const coordinator = serviceContainer.get('clangFormatEditorCoordinator');
-        await coordinator.showEditor();
-      } catch (error) {
-        console.error('Failed to open Clang-Format editor:', error);
-        vscode.window.showErrorMessage(
-          'Failed to open Clang-Format editor. See console for details.',
-        );
-      }
+    () => {
+      const coordinator = serviceContainer.get('clangFormatEditorCoordinator');
+      return coordinator.showEditor();
     },
   );
 
   // Debug Commands for Visual Editor
-  const diagnoseVisualEditorCommand = vscode.commands.registerCommand(
+  const diagnoseVisualEditorCommand = register(
     'clotho.diagnoseVisualEditor',
-    async () => {
-      try {
-        await VisualEditorDebugHelper.diagnosePreviewState();
-      } catch (error) {
-        console.error('Failed to diagnose visual editor:', error);
-        vscode.window.showErrorMessage(
-          'Failed to diagnose visual editor. See console for details.',
-        );
-      }
+    () => {
+      return VisualEditorDebugHelper.diagnosePreviewState();
     },
   );
 
-  const restartVisualEditorCommand = vscode.commands.registerCommand(
+  const restartVisualEditorCommand = register(
     'clotho.restartVisualEditor',
-    async () => {
-      try {
-        await VisualEditorDebugHelper.forceRestartPreview();
-      } catch (error) {
-        console.error('Failed to restart visual editor:', error);
-        vscode.window.showErrorMessage(
-          'Failed to restart visual editor. See console for details.',
-        );
-      }
+    () => {
+      return VisualEditorDebugHelper.forceRestartPreview();
     },
   );
 
