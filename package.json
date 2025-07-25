@@ -6,7 +6,6 @@
     "publisher": "your-publisher-name",
     "private": true,
     "workspaces": [
-        ".",
         "webviews/visual-editor/clang-format"
     ],
     "engines": {

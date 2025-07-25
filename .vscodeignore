@@ -11,9 +11,14 @@ tsconfig.json
 **/*.ts
 !out/**/*.js
 
+# Node modules and build artifacts
+node_modules/**
+**/node_modules/**
+package-lock.json
+**/package-lock.json
+
 # Webview source files (exclude source, include built dist)
 webviews/**/src/**
-webviews/**/node_modules/**
 webviews/**/package-lock.json
 webviews/**/*.ts
 webviews/**/*.tsx
@@ -26,4 +31,26 @@ webviews/**/webpack.config.js
 !webviews/**/dist/**/*.css
 !webviews/**/dist/**/*.webp
 !webviews/**/dist/**/*.png
+
+# Keep image assets even if in src directory (for unused assets)
+!webviews/**/src/assets/**/*.webp
+!webviews/**/src/assets/**/*.png
+!webviews/**/src/assets/**/*.jpg
+!webviews/**/src/assets/**/*.jpeg
+!webviews/**/src/assets/**/*.gif
+!webviews/**/src/assets/**/*.svg
+
+# Development and test files
+scripts/**
+specs/**
+test/**
+**/test/**
+**/*.test.ts
+**/*.test.js
+**/demo.ts
+**/*demo*.ts
+
+# Build configurations
+esbuild.config.mjs
+webpack.config.js
 
