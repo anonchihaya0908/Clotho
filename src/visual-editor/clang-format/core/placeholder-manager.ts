@@ -22,6 +22,10 @@ export class PlaceholderWebviewManager implements BaseManager {
   private context!: ManagerContext;
   private disposables: vscode.Disposable[] = [];
   private characterImagePaths: string[] = [];
+
+  // 【新增】生命周期状态管理
+  private isHidden: boolean = false;
+  private hiddenViewColumn: vscode.ViewColumn | undefined;;
   private readonly footerTexts: string[] = [
     'Clotho 由 Oblivionis小姐 和 丰川集团 赞助开发。',
     '丰川清告先生因重大判断失误致集团损失168亿日元，已引咎辞职并被驱逐出家族。',
@@ -39,7 +43,7 @@ export class PlaceholderWebviewManager implements BaseManager {
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
     this.loadCharacterImagePaths();
-    // setupEventListeners 已被移除，所有决策逻辑上移
+    this.setupEventListeners(); // 【修复】重新添加事件监听器设置
   }
 
   /**
@@ -104,11 +108,47 @@ export class PlaceholderWebviewManager implements BaseManager {
   }
 
   /**
-   * 隐藏占位符
+   * 【重构】隐藏占位符但不销毁
    */
   hidePlaceholder(): void {
-    // 实际上，VS Code 没有直接"隐藏"面板的 API
-    // 所以这里我们不做任何操作，因为预览会在同一个位置打开
+    if (!this.panel || this.isHidden) {
+      return;
+    }
+
+    // 记录当前的ViewColumn以便恢复
+    this.hiddenViewColumn = this.panel.viewColumn;
+    this.isHidden = true;
+
+    // 通过将面板移到不可见位置来"隐藏"
+    // 注意：VS Code没有直接隐藏webview的API，这里使用一个变通方法
+    try {
+      // 将面板移到一个不常用的ViewColumn
+      this.panel.reveal(vscode.ViewColumn.Beside, true); // preserveFocus = true
+    } catch (error) {
+      // 如果reveal失败，至少记录状态
+      console.warn('[PlaceholderManager] 隐藏占位符时出错:', error);
+    }
+  }
+
+  /**
+   * 【新增】显示之前隐藏的占位符
+   */
+  showPlaceholder(): void {
+    if (!this.panel || !this.isHidden) {
+      return;
+    }
+
+    // 恢复占位符的显示
+    try {
+      this.panel.reveal(this.hiddenViewColumn || vscode.ViewColumn.Two, true);
+      this.isHidden = false;
+      this.hiddenViewColumn = undefined;
+    } catch (error) {
+      console.warn('[PlaceholderManager] 显示占位符时出错:', error);
+      // 如果恢复失败，重置状态
+      this.isHidden = false;
+      this.hiddenViewColumn = undefined;
+    }
   }
 
   /**
@@ -133,6 +173,10 @@ export class PlaceholderWebviewManager implements BaseManager {
       this.panel.dispose();
       // onDidDispose 事件会处理 this.panel = undefined 的逻辑
     }
+
+    // 【新增】重置隐藏状态
+    this.isHidden = false;
+    this.hiddenViewColumn = undefined;
   }
 
   /**
@@ -140,6 +184,11 @@ export class PlaceholderWebviewManager implements BaseManager {
    */
   handlePlaceholderClosed(): void {
     this.panel = undefined; // 面板被销毁，重置引用
+
+    // 【新增】重置隐藏状态
+    this.isHidden = false;
+    this.hiddenViewColumn = undefined;
+
     // 当用户手动关闭占位符时，我们认为他们希望结束整个会话
     this.context.eventBus.emit('editor-closed');
   }
@@ -165,6 +214,35 @@ export class PlaceholderWebviewManager implements BaseManager {
         operation: 'onPreviewOpened',
       });
       this.disposePanel();
+    });
+
+    // 【新增】监听主编辑器关闭事件 - 联动销毁占位符
+    this.context.eventBus.on('editor-closed', () => {
+      console.log('[PlaceholderManager] 主编辑器已关闭，销毁占位符');
+      this.disposePanel();
+    });
+
+    // 【新增】监听主编辑器可见性变化事件 - 隐藏/显示占位符
+    this.context.eventBus.on('editor-visibility-changed', ({ isVisible }: { isVisible: boolean }) => {
+      console.log(`[PlaceholderManager] 主编辑器可见性变化: ${isVisible}`);
+
+      if (!this.panel) {
+        return; // 没有占位符面板时不处理
+      }
+
+      if (isVisible) {
+        // 主编辑器变为可见，恢复占位符
+        if (this.isHidden) {
+          console.log('[PlaceholderManager] 恢复占位符显示');
+          this.showPlaceholder();
+        }
+      } else {
+        // 主编辑器变为不可见，隐藏占位符
+        if (!this.isHidden) {
+          console.log('[PlaceholderManager] 隐藏占位符');
+          this.hidePlaceholder();
+        }
+      }
     });
   }
 

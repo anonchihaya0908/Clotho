@@ -172,7 +172,14 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
 
     // 监听主编辑器关闭事件，联动关闭所有
     this.eventBus.on('editor-closed', () => {
+      console.log('[Coordinator] 收到 editor-closed 事件，触发 close-preview-requested');
       this.eventBus.emit('close-preview-requested');
+    });
+
+    // 【新增】监听主编辑器可见性变化事件，添加调试日志
+    this.eventBus.on('editor-visibility-changed', ({ isVisible }: { isVisible: boolean }) => {
+      console.log(`[Coordinator] 收到 editor-visibility-changed 事件: isVisible=${isVisible}`);
+      // 事件会自动传播到所有监听器，无需额外路由
     });
 
     // 监听 webview 完全准备就绪事件，自动打开预览
