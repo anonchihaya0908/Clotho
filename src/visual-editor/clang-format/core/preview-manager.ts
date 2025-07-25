@@ -30,10 +30,34 @@ export class PreviewEditorManager implements BaseManager {
   }
 
   /**
-   * 打开预览编辑器 (简化版)
-   * 不再处理状态或防抖，只负责创建
+   * 打开预览编辑器 (优化版)
+   * 【新增】支持复用现有预览，避免重复创建
    */
   async openPreview(): Promise<vscode.TextEditor> {
+    const currentState = this.context.stateManager.getState();
+
+    // 【优化】如果已有预览且未被关闭，直接复用
+    if (currentState.previewUri && currentState.previewEditor) {
+      try {
+        // 检查编辑器是否仍然有效
+        if (!currentState.previewEditor.document.isClosed) {
+          console.log('[PreviewManager] 复用现有预览文档');
+
+          // 如果预览被隐藏，恢复显示
+          if (this.isHidden) {
+            await this.showPreview();
+          }
+
+          return currentState.previewEditor;
+        }
+      } catch (error) {
+        console.log('[PreviewManager] 现有预览无效，创建新预览');
+      }
+    }
+
+    // 【完善】清理所有现有预览标签页
+    await this.cleanupAllExistingPreviews();
+
     const previewUri = this.previewProvider.createPreviewUri(
       `preview-${Date.now()}.cpp`,
     );
@@ -42,6 +66,8 @@ export class PreviewEditorManager implements BaseManager {
     const initialContent = MACRO_PREVIEW_CODE;
     this.previewProvider.updateContent(previewUri, initialContent);
 
+    console.log(`[PreviewManager] 创建新预览文档: ${previewUri.toString()}`);
+
     // 创建预览编辑器
     const editor = await vscode.window.showTextDocument(previewUri, {
       viewColumn: vscode.ViewColumn.Two,
@@ -49,7 +75,11 @@ export class PreviewEditorManager implements BaseManager {
       preview: false,
     });
 
-    // 更新状态的职责已上移
+    // 重置隐藏状态
+    this.isHidden = false;
+    this.hiddenViewColumn = undefined;
+
+    // 更新状态
     await this.context.stateManager.updateState(
       {
         previewMode: 'open',
@@ -64,7 +94,31 @@ export class PreviewEditorManager implements BaseManager {
   }
 
   /**
-   * 关闭预览编辑器 (简化版)
+   * 【新增】清理所有现有的预览标签页
+   */
+  private async cleanupAllExistingPreviews(): Promise<void> {
+    const previewScheme = 'clotho-clang-format-preview';
+    const tabsToClose: vscode.Tab[] = [];
+
+    // 查找所有预览标签页
+    for (const tabGroup of vscode.window.tabGroups.all) {
+      for (const tab of tabGroup.tabs) {
+        const tabInput = tab.input as { uri?: vscode.Uri };
+        if (tabInput?.uri?.scheme === previewScheme) {
+          tabsToClose.push(tab);
+        }
+      }
+    }
+
+    // 批量关闭
+    if (tabsToClose.length > 0) {
+      console.log(`[PreviewManager] 清理 ${tabsToClose.length} 个现有预览标签页`);
+      await vscode.window.tabGroups.close(tabsToClose);
+    }
+  }
+
+  /**
+   * 关闭预览编辑器 (优化版)
    */
   async closePreview(): Promise<void> {
     const { previewUri } = this.context.stateManager.getState();
@@ -89,46 +143,111 @@ export class PreviewEditorManager implements BaseManager {
   }
 
   /**
-   * 【新增】隐藏预览编辑器但不销毁
+   * 【优化】隐藏预览编辑器（真正关闭标签页但保留内容）
    */
   async hidePreview(): Promise<void> {
-    const { previewEditor } = this.context.stateManager.getState();
-    if (!previewEditor || this.isHidden) {
+    const { previewEditor, previewUri } = this.context.stateManager.getState();
+    if (!previewEditor || !previewUri || this.isHidden) {
       return;
     }
 
-    // 记录当前的ViewColumn以便恢复
-    this.hiddenViewColumn = previewEditor.viewColumn;
-    this.isHidden = true;
+    try {
+      // 记录当前的ViewColumn以便恢复
+      this.hiddenViewColumn = previewEditor.viewColumn;
 
-    // 通过将焦点切换到主编辑器来"隐藏"预览
-    // VS Code没有直接隐藏编辑器的API，所以我们通过焦点管理来实现
-    const activeEditor = vscode.window.activeTextEditor;
-    if (activeEditor && activeEditor !== previewEditor) {
-      await vscode.window.showTextDocument(activeEditor.document, {
-        viewColumn: activeEditor.viewColumn,
-        preserveFocus: false,
-      });
+      console.log(`[PreviewManager] 隐藏预览，记录位置: ${this.hiddenViewColumn}`);
+      console.log(`[PreviewManager] 预览内容存在: ${this.previewProvider.hasContent(previewUri)}`);
+
+      // 查找并关闭预览标签页（但不清理内容）
+      for (const tabGroup of vscode.window.tabGroups.all) {
+        for (const tab of tabGroup.tabs) {
+          const tabInput = tab.input as { uri?: vscode.Uri };
+          if (tabInput?.uri?.toString() === previewUri.toString()) {
+            // 【关键修复】在关闭标签页之前设置隐藏状态
+            // 这样 tabGroups.onDidChangeTabs 事件处理器就能正确识别这是程序隐藏
+            this.isHidden = true;
+            console.log('[PreviewManager] 设置隐藏状态，准备关闭标签页');
+
+            await vscode.window.tabGroups.close(tab);
+            console.log('[PreviewManager] 预览标签页已隐藏（内容保留）');
+
+            // 【重要】不清理 previewProvider 的内容，只关闭标签页
+            // 这样恢复时可以重新打开相同的内容
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[PreviewManager] 隐藏预览失败:', error);
     }
   }
 
   /**
-   * 【新增】显示之前隐藏的预览编辑器
+   * 【优化】显示之前隐藏的预览编辑器（智能恢复策略）
    */
   async showPreview(): Promise<void> {
-    const { previewUri, previewEditor } = this.context.stateManager.getState();
-    if (!previewUri || !previewEditor || !this.isHidden) {
+    const { previewUri } = this.context.stateManager.getState();
+    if (!previewUri || !this.isHidden) {
       return;
     }
 
-    // 恢复预览编辑器的显示
-    await vscode.window.showTextDocument(previewEditor.document, {
-      viewColumn: this.hiddenViewColumn || vscode.ViewColumn.Two,
-      preserveFocus: true,
-    });
+    try {
+      console.log(`[PreviewManager] 恢复预览显示，位置: ${this.hiddenViewColumn}`);
 
-    this.isHidden = false;
-    this.hiddenViewColumn = undefined;
+      // 【修复】检查预览内容是否仍然存在
+      const hasContent = this.previewProvider.hasContent(previewUri);
+      if (!hasContent) {
+        console.log('[PreviewManager] 预览内容已丢失，重新创建');
+        // 重新创建预览内容
+        const initialContent = MACRO_PREVIEW_CODE;
+        this.previewProvider.updateContent(previewUri, initialContent);
+      }
+
+      // 重新打开预览编辑器
+      const editor = await vscode.window.showTextDocument(previewUri, {
+        viewColumn: this.hiddenViewColumn || vscode.ViewColumn.Two,
+        preserveFocus: true,
+        preview: false,
+      });
+
+      // 更新状态中的编辑器引用
+      await this.context.stateManager.updateState(
+        { previewEditor: editor },
+        'preview-restored',
+      );
+
+      this.isHidden = false;
+      this.hiddenViewColumn = undefined;
+
+      console.log('[PreviewManager] 预览恢复成功');
+    } catch (error) {
+      console.error('[PreviewManager] 恢复预览失败，尝试重新创建:', error);
+
+      // 【修复】如果恢复失败，尝试重新创建预览
+      try {
+        this.isHidden = false;
+        this.hiddenViewColumn = undefined;
+
+        // 清理旧状态
+        await this.context.stateManager.updateState(
+          {
+            previewMode: 'closed',
+            previewUri: undefined,
+            previewEditor: undefined,
+          },
+          'preview-recovery-failed',
+        );
+
+        // 重新创建预览
+        console.log('[PreviewManager] 重新创建预览');
+        await this.openPreview();
+      } catch (recreateError) {
+        console.error('[PreviewManager] 重新创建预览也失败:', recreateError);
+        // 完全重置状态
+        this.isHidden = false;
+        this.hiddenViewColumn = undefined;
+      }
+    }
   }
 
   /**
@@ -186,7 +305,7 @@ export class PreviewEditorManager implements BaseManager {
    */
   private generateConfigComment(config: Record<string, any>): string {
     const configEntries = Object.entries(config)
-      .filter(([key, value]) => value !== undefined && value !== null)
+      .filter(([, value]) => value !== undefined && value !== null)
       .map(([key, value]) => `//   ${key}: ${JSON.stringify(value)}`)
       .join('\n');
 
@@ -240,7 +359,7 @@ ${configEntries || '//   (using base style defaults)'}
       }
     });
 
-    // 【新增】监听主编辑器可见性变化事件 - 隐藏/显示预览
+    // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
     this.context.eventBus.on('editor-visibility-changed', async ({ isVisible }: { isVisible: boolean }) => {
       console.log(`[PreviewManager] 主编辑器可见性变化: ${isVisible}`);
 
@@ -256,15 +375,21 @@ ${configEntries || '//   (using base style defaults)'}
           await this.showPreview();
         }
       } else {
-        // 主编辑器变为不可见，隐藏预览
+        // 主编辑器变为不可见，真正隐藏预览（不显示占位符）
         if (!this.isHidden) {
-          console.log('[PreviewManager] 隐藏预览');
+          console.log('[PreviewManager] 收起预览（不显示占位符）');
           await this.hidePreview();
+
+          // 【关键】阻止占位符显示
+          // 通过发送特殊事件告诉占位符管理器不要创建占位符
+          this.context.eventBus.emit('preview-hidden-by-visibility', {
+            reason: 'editor-not-visible'
+          });
         }
       }
     });
 
-    // 【保留】监听编辑器标签关闭事件 - 更可靠的检测方式
+    // 【修复】监听编辑器标签关闭事件 - 区分手动关闭和程序隐藏
     vscode.window.tabGroups.onDidChangeTabs(async (event) => {
       const state = this.context.stateManager.getState();
       if (!state.previewUri) {
@@ -275,7 +400,15 @@ ${configEntries || '//   (using base style defaults)'}
       for (const tab of event.closed) {
         const tabInput = tab.input as { uri?: vscode.Uri };
         if (tabInput?.uri?.toString() === state.previewUri.toString()) {
-          console.log('[PreviewManager] 预览标签被手动关闭');
+          console.log('[PreviewManager] 预览标签被关闭');
+
+          // 【关键修复】如果是程序隐藏导致的关闭，不要清理状态
+          if (this.isHidden) {
+            console.log('[PreviewManager] 这是程序隐藏导致的关闭，保持状态');
+            return; // 不处理程序隐藏导致的标签关闭
+          }
+
+          console.log('[PreviewManager] 这是用户手动关闭');
 
           // 检查主编辑器是否仍然活跃
           const shouldCreatePlaceholder =
@@ -286,7 +419,7 @@ ${configEntries || '//   (using base style defaults)'}
             `[PreviewManager] 是否应创建占位符: ${shouldCreatePlaceholder}`,
           );
 
-          // 清理预览内容
+          // 清理预览内容（只有用户手动关闭时才清理）
           this.previewProvider.clearContent(state.previewUri);
 
           // 更新状态 - 无论如何都要确保状态被设置为closed

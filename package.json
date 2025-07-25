@@ -31,7 +31,11 @@
     ],
     "activationEvents": [
         "onLanguage:c",
-        "onLanguage:cpp"
+        "onLanguage:cpp",
+        "onLanguage:objective-c",
+        "onLanguage:objective-cpp",
+        "workspaceContains:**/.clang-format",
+        "workspaceContains:**/_clang-format"
     ],
     "main": "./out/bundle.js",
     "contributes": {

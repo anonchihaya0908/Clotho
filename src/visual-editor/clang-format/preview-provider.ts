@@ -8,8 +8,7 @@
 import * as vscode from 'vscode';
 
 export class ClangFormatPreviewProvider
-implements vscode.TextDocumentContentProvider
-{
+  implements vscode.TextDocumentContentProvider {
   private static readonly SCHEME = 'clotho-preview';
   private static instance: ClangFormatPreviewProvider | undefined;
 
@@ -23,7 +22,7 @@ implements vscode.TextDocumentContentProvider
   // 当前活跃的预览URI
   private currentPreviewUri: vscode.Uri | undefined;
 
-  private constructor() {}
+  private constructor() { }
 
   /**
    * 获取单例实例
@@ -83,6 +82,13 @@ implements vscode.TextDocumentContentProvider
    */
   public getCurrentPreviewUri(): vscode.Uri | undefined {
     return this.currentPreviewUri;
+  }
+
+  /**
+   * 检查指定URI是否有内容
+   */
+  public hasContent(uri: vscode.Uri): boolean {
+    return this.content.has(uri.toString());
   }
 
   /**

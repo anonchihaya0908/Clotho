@@ -30,7 +30,7 @@ export class PlaceholderWebviewManager implements BaseManager {
     'Clotho 由 Oblivionis小姐 和 丰川集团 赞助开发。',
     '丰川清告先生因重大判断失误致集团损失168亿日元，已引咎辞职并被驱逐出家族。',
     `近日，本集团不幸遭遇重大经济诈骗事件，损失金额高达168亿日元。        
-    经集团审计部门与第三方调查机构联合调查确认，事件的主要责任人丰川清告先生。
+    经集团审计部门与第三方调查机构联合调查确认，事件的主要责任人为丰川清告先生。
     在此次对外投资案中，丰川清告先生作为主要决策人，严重缺乏风险识别与把控能力，未能履行基本的尽职调查义务，草率推进与不明背景企业的合作，最终导致集团陷入诈骗陷阱，蒙受巨额损失。
     面对错误，丰川清告先生已正式向董事会提交引咎辞职申请，董事会一致通过并立即生效。同时，依据丰川家族章程及集团管理条例，丰川清告先生被永久驱逐出家族核心成员名单，其所持有的全部职权与权益即刻失效。
     集团管理委员会将全面加强内部治理与风控机制，杜绝任何类似事件再次发生。
@@ -202,8 +202,13 @@ export class PlaceholderWebviewManager implements BaseManager {
   private setupEventListeners(): void {
     this.context.eventBus.on('preview-closed', async () => {
       const state = this.context.stateManager.getState();
+      // 【修改】只有在编辑器可见且初始化完成时才创建占位符
+      // 这样当编辑器不可见时，预览关闭不会创建占位符，实现真正的"收起"
       if (state.isVisible && state.isInitialized) {
+        console.log('[PlaceholderManager] 编辑器可见，创建占位符');
         await this.createPlaceholder();
+      } else {
+        console.log('[PlaceholderManager] 编辑器不可见，不创建占位符（实现收起效果）');
       }
     });
 
@@ -222,7 +227,7 @@ export class PlaceholderWebviewManager implements BaseManager {
       this.disposePanel();
     });
 
-    // 【新增】监听主编辑器可见性变化事件 - 隐藏/显示占位符
+    // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
     this.context.eventBus.on('editor-visibility-changed', ({ isVisible }: { isVisible: boolean }) => {
       console.log(`[PlaceholderManager] 主编辑器可见性变化: ${isVisible}`);
 
@@ -237,11 +242,20 @@ export class PlaceholderWebviewManager implements BaseManager {
           this.showPlaceholder();
         }
       } else {
-        // 主编辑器变为不可见，隐藏占位符
+        // 主编辑器变为不可见，完全隐藏占位符（不保留在右侧）
         if (!this.isHidden) {
-          console.log('[PlaceholderManager] 隐藏占位符');
-          this.hidePlaceholder();
+          console.log('[PlaceholderManager] 完全隐藏占位符');
+          this.disposePanel(); // 直接销毁而不是隐藏
         }
+      }
+    });
+
+    // 【新增】监听预览因可见性隐藏的事件
+    this.context.eventBus.on('preview-hidden-by-visibility', () => {
+      console.log('[PlaceholderManager] 预览因可见性隐藏，不创建占位符');
+      // 如果有占位符，也要销毁它
+      if (this.panel) {
+        this.disposePanel();
       }
     });
   }

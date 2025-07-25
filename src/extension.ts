@@ -53,6 +53,7 @@ function showWelcomeMessage(context: vscode.ExtensionContext) {
       .showInformationMessage(
         'Welcome to Clotho! This is a tool that enhances C++ development efficiency, and it works even better when used with clangd.',
         'Configure Rules',
+        'Not Now',
         'Don\'t Show Again',
       )
       .then((selection: string | undefined) => {

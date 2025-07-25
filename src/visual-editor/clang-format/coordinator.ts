@@ -187,21 +187,9 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       this.eventBus.emit('open-preview-requested');
     });
 
-    // 检测用户手动关闭预览标签页
-    vscode.window.tabGroups.onDidChangeTabs(async (event) => {
-      const state = this.stateManager.getState();
-      if (!state.previewUri) {
-        return;
-      }
-
-      for (const tab of event.closed) {
-        const tabInput = tab.input as { uri?: vscode.Uri };
-        if (tabInput?.uri?.toString() === state.previewUri.toString()) {
-          this.eventBus.emit('preview-closed');
-          break;
-        }
-      }
-    });
+    // 【移除】检测用户手动关闭预览标签页的逻辑
+    // 这个逻辑已经在 PreviewManager 中更完善地处理了，包括区分程序隐藏和用户手动关闭
+    // 移除这个重复的监听器，避免在程序隐藏时错误地触发 preview-closed 事件
 
     // 【修复】重新添加对配置更新的监听，以刷新预览
     this.eventBus.on(
