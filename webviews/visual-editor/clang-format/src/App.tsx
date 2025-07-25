@@ -3,10 +3,14 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { WebviewMessageType } from '../../../../src/common/types/webview'; // 导入消息类型
 import { ConfigPanel } from './components/ConfigPanel';
 import { initializeWebviewLogger, webviewLog } from './utils/webview-logger';
-import { ClangFormatOption, CLANG_FORMAT_CATEGORIES } from './types';
+import {
+    ClangFormatOption,
+    CONFIG_CATEGORIES_ARRAY,
+    WebviewMessageType,
+    AppState as WebviewAppState
+} from './types';
 
 import { Toolbar } from './components/Toolbar';
 import { StatusBar } from './components/StatusBar';
@@ -15,33 +19,7 @@ export interface AppProps {
     vscode: any;
 }
 
-export interface AppState {
-    options: ClangFormatOption[];
-    categories: string[];
-    currentConfig: Record<string, any>;
-    microPreviews: Record<string, string>;
-    isLoading: boolean;
-    error: string | null;
-    validationState: {
-        isValid: boolean;
-        error?: string;
-        warnings?: string[];
-    };
-    settings: {
-        // 预览相关设置已移除，预览始终显示
-    };
-    dynamicPreviewResult?: {
-        optionName: string;
-        formattedCode: string;
-        success: boolean;
-        error?: string;
-    };
-    previewState: {
-        isOpen: boolean;
-        showPlaceholder: boolean;
-        isReopening: boolean;
-    };
-}
+// 使用从types.ts导入的WebviewAppState
 
 export const App: React.FC<AppProps> = ({ vscode }) => {
     // 初始化 webview logger
@@ -52,15 +30,15 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         });
     }, [vscode]);
 
-    const [state, setState] = useState<AppState>({
+    const [state, setState] = useState<WebviewAppState>({
         options: [],
-        categories: CLANG_FORMAT_CATEGORIES,
+        categories: CONFIG_CATEGORIES_ARRAY,
         currentConfig: {},
         microPreviews: {},
         isLoading: true,
         error: null,
-        validationState: { isValid: true },
-        settings: {},
+        validationState: { isValid: true, errors: [] },
+        settings: { showGuideButton: true },
         previewState: { isOpen: true, showPlaceholder: false, isReopening: false }
     });
 
@@ -72,7 +50,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
     // 处理配置变更
     const handleConfigChange = useCallback((key: string, value: any) => {
-        setState(prev => ({
+        setState((prev: WebviewAppState) => ({
             ...prev,
             currentConfig: { ...prev.currentConfig, [key]: value }
         }));
@@ -137,7 +115,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
             switch (message.type) {
                 case WebviewMessageType.INITIALIZE:
-                    setState(prev => ({
+                    setState((prev: WebviewAppState) => ({
                         ...prev,
                         options: message.payload.options,
                         categories: message.payload.categories,
@@ -149,14 +127,14 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     break;
 
                 case WebviewMessageType.CONFIG_LOADED:
-                    setState(prev => ({
+                    setState((prev: WebviewAppState) => ({
                         ...prev,
                         currentConfig: message.payload.config
                     }));
                     break;
 
                 case WebviewMessageType.MICRO_PREVIEW_UPDATE:
-                    setState(prev => ({
+                    setState((prev: WebviewAppState) => ({
                         ...prev,
                         microPreviews: {
                             ...prev.microPreviews,
@@ -166,24 +144,24 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     break;
 
                 case WebviewMessageType.VALIDATION_RESULT:
-                    setState(prev => ({
+                    setState((prev: WebviewAppState) => ({
                         ...prev,
                         validationState: message.payload
                     }));
                     break;
 
                 case WebviewMessageType.VALIDATION_ERROR:
-                    setState(prev => ({
+                    setState((prev: WebviewAppState) => ({
                         ...prev,
                         validationState: {
                             isValid: false,
-                            error: message.payload.error
+                            errors: [message.payload.error]
                         }
                     }));
                     break;
 
                 case WebviewMessageType.SETTINGS_UPDATED:
-                    setState(prev => ({
+                    setState((prev: WebviewAppState) => ({
                         ...prev,
                         settings: {
                             ...prev.settings,
@@ -193,7 +171,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     break;
 
                 case WebviewMessageType.UPDATE_MICRO_PREVIEW:
-                    setState(prev => ({
+                    setState((prev: WebviewAppState) => ({
                         ...prev,
                         dynamicPreviewResult: {
                             optionName: message.payload.optionName,
@@ -206,7 +184,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
                 case WebviewMessageType.PREVIEW_OPENED:
                     webviewLog.debug('Received previewOpened message');
-                    setState(prev => ({
+                    setState((prev: WebviewAppState) => ({
                         ...prev,
                         previewState: {
                             isOpen: true,
@@ -218,7 +196,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
                 case WebviewMessageType.PREVIEW_CLOSED:
                     webviewLog.debug('Received previewClosed message');
-                    setState(prev => ({
+                    setState((prev: WebviewAppState) => ({
                         ...prev,
                         previewState: {
                             isOpen: false,
@@ -229,7 +207,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     break;
 
                 case WebviewMessageType.PREVIEW_REOPENED:
-                    setState(prev => ({
+                    setState((prev: WebviewAppState) => ({
                         ...prev,
                         previewState: {
                             isOpen: true,
@@ -241,7 +219,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
                 case WebviewMessageType.PREVIEW_REOPEN_FAILED:
                     // 重新打开失败时，保持占位符显示
-                    setState(prev => ({
+                    setState((prev: WebviewAppState) => ({
                         ...prev,
                         previewState: {
                             isOpen: false,

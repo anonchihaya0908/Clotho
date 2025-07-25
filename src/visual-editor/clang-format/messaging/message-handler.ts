@@ -2,7 +2,7 @@ import { BaseManager, ManagerContext } from '../../../common/types';
 import {
   WebviewMessage,
   WebviewMessageType,
-} from '../../../common/types/webview';
+} from '../../../common/types/clang-format-shared';
 import { LoggerService } from '../../../common/logger';
 
 type MessageHandlerFunction = (

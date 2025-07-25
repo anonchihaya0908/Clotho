@@ -4,22 +4,10 @@
  */
 
 import React from 'react';
-import { ClangFormatOption } from '../../types';
+import { ClangFormatOption, QuickSetupPanelProps } from '../../types';
 import DynamicMicroPreview from '../DynamicMicroPreview';
 
-interface QuickSetupPanelProps {
-    options: ClangFormatOption[];
-    currentConfig: Record<string, any>;
-    onConfigChange: (key: string, value: any) => void;
-    onPreviewRequest?: (optionName: string, config: Record<string, any>, previewSnippet: string) => void;
-    previewResult?: {
-        optionName: string;
-        formattedCode: string;
-        success: boolean;
-        error?: string;
-    };
-    showGuide?: boolean;
-}
+// 使用共享的QuickSetupPanelProps类型
 
 // 快速设置的核心配置项
 const QUICK_SETUP_OPTIONS = [

@@ -34,7 +34,13 @@ export class PreviewEditorManager implements BaseManager {
    * 【新增】支持复用现有预览，避免重复创建
    */
   async openPreview(): Promise<vscode.TextEditor> {
+    console.log('[PreviewManager] openPreview() 开始执行');
     const currentState = this.context.stateManager.getState();
+    console.log('[PreviewManager] 当前状态:', {
+      hasPreviewUri: !!currentState.previewUri,
+      hasPreviewEditor: !!currentState.previewEditor,
+      previewMode: currentState.previewMode
+    });
 
     // 【优化】如果已有预览且未被关闭，直接复用
     if (currentState.previewUri && currentState.previewEditor) {
@@ -51,7 +57,7 @@ export class PreviewEditorManager implements BaseManager {
           return currentState.previewEditor;
         }
       } catch (error) {
-        console.log('[PreviewManager] 现有预览无效，创建新预览');
+        console.log('[PreviewManager] 现有预览无效，创建新预览:', error);
       }
     }
 
@@ -61,36 +67,53 @@ export class PreviewEditorManager implements BaseManager {
     const previewUri = this.previewProvider.createPreviewUri(
       `preview-${Date.now()}.cpp`,
     );
+    console.log('[PreviewManager] 创建预览URI:', previewUri.toString());
 
     // 初始化预览内容
     const initialContent = MACRO_PREVIEW_CODE;
     this.previewProvider.updateContent(previewUri, initialContent);
+    console.log('[PreviewManager] 预览内容已设置，长度:', initialContent.length);
 
-    console.log(`[PreviewManager] 创建新预览文档: ${previewUri.toString()}`);
+    console.log(`[PreviewManager] 准备打开预览文档: ${previewUri.toString()}`);
 
-    // 创建预览编辑器
-    const editor = await vscode.window.showTextDocument(previewUri, {
-      viewColumn: vscode.ViewColumn.Two,
-      preserveFocus: false,
-      preview: false,
-    });
+    try {
+      // 确保有足够的编辑器列
+      console.log('[PreviewManager] 当前活动编辑器:', vscode.window.activeTextEditor?.viewColumn);
+      console.log('[PreviewManager] 可见编辑器数量:', vscode.window.visibleTextEditors.length);
 
-    // 重置隐藏状态
-    this.isHidden = false;
-    this.hiddenViewColumn = undefined;
+      // 创建预览编辑器
+      const editor = await vscode.window.showTextDocument(previewUri, {
+        viewColumn: vscode.ViewColumn.Beside, // 使用 Beside 而不是 Two
+        preserveFocus: false,
+        preview: false,
+      });
+      console.log('[PreviewManager] 预览编辑器创建成功:', {
+        viewColumn: editor.viewColumn,
+        documentUri: editor.document.uri.toString(),
+        scheme: editor.document.uri.scheme
+      });
 
-    // 更新状态
-    await this.context.stateManager.updateState(
-      {
-        previewMode: 'open',
-        previewUri,
-        previewEditor: editor,
-      },
-      'preview-opened',
-    );
-    this.context.eventBus.emit('preview-opened');
+      // 重置隐藏状态
+      this.isHidden = false;
+      this.hiddenViewColumn = undefined;
 
-    return editor;
+      // 更新状态
+      await this.context.stateManager.updateState(
+        {
+          previewMode: 'open',
+          previewUri,
+          previewEditor: editor,
+        },
+        'preview-opened',
+      );
+      this.context.eventBus.emit('preview-opened');
+      console.log('[PreviewManager] 预览状态已更新，事件已发送');
+
+      return editor;
+    } catch (error) {
+      console.error('[PreviewManager] 创建预览编辑器失败:', error);
+      throw error;
+    }
   }
 
   /**
@@ -320,6 +343,10 @@ ${configEntries || '//   (using base style defaults)'}
   }
 
   private setupEventListeners() {
+    // 注意：不再直接监听 'open-preview-requested' 事件
+    // 该事件现在由 Coordinator 统一处理，通过防抖集成调用 openPreview()
+    // 这样避免了重复执行的问题
+
     this.context.eventBus.on('close-preview-requested', () =>
       this.closePreview(),
     ); // 程序关闭，不创建占位符

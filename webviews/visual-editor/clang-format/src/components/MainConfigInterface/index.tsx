@@ -4,24 +4,10 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { ClangFormatOption, getOptionsByCategory } from '../../types';
+import { ClangFormatOption, MainConfigInterfaceProps, OptionFilters } from '../../types';
 import DynamicMicroPreview from '../DynamicMicroPreview';
 
-interface MainConfigInterfaceProps {
-    options: ClangFormatOption[];
-    categories: string[];
-    currentConfig: Record<string, any>;
-    onConfigChange: (key: string, value: any) => void;
-    onPreviewRequest?: (optionName: string, config: Record<string, any>, previewSnippet: string) => void;
-    previewResult?: {
-        optionName: string;
-        formattedCode: string;
-        success: boolean;
-        error?: string;
-    };
-    showGuide?: boolean;
-    selectedCategory?: string;
-}
+// 使用共享的MainConfigInterfaceProps类型
 
 export const MainConfigInterface: React.FC<MainConfigInterfaceProps> = ({
     options,

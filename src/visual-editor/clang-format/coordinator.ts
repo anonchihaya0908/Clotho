@@ -136,11 +136,16 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
    */
   private setupEventListeners(): void {
     // 监听重新打开预览的请求
-    this.eventBus.on('open-preview-requested', () => {
+    this.eventBus.on('open-preview-requested', async () => {
+      console.log('[Coordinator] 收到 open-preview-requested 事件');
       const debounceIntegration = this.managerRegistry.getInstance<DebounceIntegration>('debounceIntegration');
       const handler = debounceIntegration?.createDebouncedPreviewReopenHandler();
       if (handler) {
-        handler();
+        console.log('[Coordinator] 调用防抖处理器');
+        await handler();
+        console.log('[Coordinator] 防抖处理器完成');
+      } else {
+        console.error('[Coordinator] 防抖集成未找到');
       }
     });
 
@@ -184,6 +189,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
 
     // 监听 webview 完全准备就绪事件，自动打开预览
     this.eventBus.on('editor-fully-ready', async () => {
+      console.log('[Coordinator] 收到 editor-fully-ready 事件，触发 open-preview-requested');
       this.eventBus.emit('open-preview-requested');
     });
 

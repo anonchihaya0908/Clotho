@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
-import { ClangFormatOption } from '../../types';
+import { ClangFormatOption, QuickSetupProps } from '../../types';
 import './style.css';
-
-interface QuickSetupProps {
-    options: ClangFormatOption[];
-    config: Record<string, any>;
-    onChange: (key: string, value: any) => void;
-    onOpenClangFormatFile?: () => void;
-}
 
 // 各种基础风格的默认值映射
 const STYLE_DEFAULTS: Record<string, Record<string, any>> = {

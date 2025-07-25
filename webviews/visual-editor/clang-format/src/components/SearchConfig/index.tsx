@@ -1,13 +1,8 @@
 import React, { useMemo } from 'react';
-import { ClangFormatOption, searchOptions } from '../../types';
+import { ClangFormatOption, SearchConfigProps, OptionFilters } from '../../types';
 import './style.css';
 
-interface SearchConfigProps {
-    options: ClangFormatOption[];
-    searchQuery: string;
-    config: Record<string, any>;
-    onChange: (key: string, value: any) => void;
-}
+// 使用共享的SearchConfigProps类型
 
 // 配置项的中英文映射，便于搜索
 const CONFIG_SEARCH_MAP: Record<string, string[]> = {

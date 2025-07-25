@@ -7,32 +7,10 @@ import { ConfigModeSelector, ConfigMode } from '../ConfigModeSelector';
 import { QuickSetup } from '../QuickSetup';
 import { SearchConfig } from '../SearchConfig';
 import DynamicMicroPreview from '../DynamicMicroPreview';
-import { ClangFormatOption, getOptionsByCategory } from '../../types';
+import { ClangFormatOption, ConfigPanelProps } from '../../types';
 import './style.css';
 
-export interface ConfigPanelProps {
-    options: ClangFormatOption[];
-    categories: string[];
-    microPreviews: Record<string, string>;
-    settings: {
-        // 预览设置已移除，预览始终显示
-    };
-    onConfigChange: (key: string, value: any) => void;
-    onSettingsChange: (setting: string, value: any) => void;
-    onPreviewRequest: (optionName: string, config: Record<string, any>, previewSnippet: string) => void;
-    onOpenClangFormatFile?: () => void;
-    dynamicPreviewResult?: {
-        optionName: string;
-        formattedCode: string;
-        success: boolean;
-        error?: string;
-    };
-    currentConfig: Record<string, any>;
-    // 新增：交互联动回调
-    onConfigOptionHover?: (optionName: string) => void;
-    onConfigOptionFocus?: (optionName: string) => void;
-    onClearHighlights?: () => void;
-}
+// 使用共享的ConfigPanelProps类型
 
 export const ConfigPanel: React.FC<ConfigPanelProps> = ({
     options,
