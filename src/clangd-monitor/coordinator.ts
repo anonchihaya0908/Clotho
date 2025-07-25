@@ -31,7 +31,7 @@ export class MonitorCoordinator implements vscode.Disposable {
     });
     this.disposables.push(this.statusBarPresenter);
     this.initializeMonitors();
-    this.registerCommands();
+    // Commands are now registered centrally in bootstrap.ts
   }
 
   /**
@@ -71,25 +71,9 @@ export class MonitorCoordinator implements vscode.Disposable {
   }
 
   /**
-   * Register VS Code commands for monitor interaction
-   */
-  private registerCommands(): void {
-    this.disposables.push(
-      vscode.commands.registerCommand(
-        'clotho.showClangdDetails',
-        this.showClangdDetails,
-        this,
-      ),
-      vscode.commands.registerCommand('clotho.restartClangd', () =>
-        this.restartClangd(),
-      ),
-    );
-  }
-
-  /**
    * Restarts the clangd language server by executing its restart command.
    */
-  private async restartClangd(): Promise<void> {
+  public async restartClangd(): Promise<void> {
     try {
       // First, kill all clangd processes manually to ensure clean restart
       await this.killAllClangdProcesses();
@@ -298,7 +282,7 @@ export class MonitorCoordinator implements vscode.Disposable {
   /**
    * Show detailed clangd information in a dialog
    */
-  private async showClangdDetails(): Promise<void> {
+  public async showClangdDetails(): Promise<void> {
     try {
       const memoryMonitor = this.getMonitor<MemoryMonitor>('memory');
       const statusMonitor = this.getMonitor<StatusMonitor>('status');

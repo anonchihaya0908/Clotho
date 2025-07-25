@@ -163,12 +163,12 @@ export class ServiceContainer {
     registered: ServiceName[];
   } {
     const registered = this.getRegisteredServices();
-    
+
     // Extract all keys from ServiceMap type programmatically
     // This ensures we don't have to manually maintain this list
     const expectedServices: ServiceName[] = [
       'pairingRuleService',
-      'pairingRuleUI', 
+      'pairingRuleUI',
       'pairingRuleCoordinator',
       'pairCreatorService',
       'pairCreatorUI',
@@ -180,9 +180,9 @@ export class ServiceContainer {
       'clangFormatEditorCoordinator',
       'clangFormatGuideService'
     ];
-    
+
     const missing = expectedServices.filter(service => !registered.includes(service));
-    
+
     return {
       isValid: missing.length === 0,
       missing,
@@ -205,8 +205,8 @@ export class ServiceContainer {
           (service as any).dispose();
           disposedServices.push(String(name));
         } catch (error) {
-          errors.push({ 
-            service: String(name), 
+          errors.push({
+            service: String(name),
             error: error instanceof Error ? error : new Error(String(error))
           });
         }
@@ -217,7 +217,7 @@ export class ServiceContainer {
     if (disposedServices.length > 0) {
       console.log(`Clotho: Disposed services: ${disposedServices.join(', ')}`);
     }
-    
+
     if (errors.length > 0) {
       console.error('Clotho: Errors during service disposal:', errors);
     }

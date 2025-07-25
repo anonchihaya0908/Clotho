@@ -3,6 +3,7 @@
  * Centralizes all magic numbers, strings, and configuration defaults
  */
 
+// Constants
 import { SwitchConfig, TemplateContext } from './types';
 
 // ===============================

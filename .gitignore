@@ -55,7 +55,7 @@ Thumbs.db
 
 # TypeScript build info
 *.tsbuildinfo
-
+docs
 .kiro
 cursor.md
 *.md

@@ -28,6 +28,7 @@ import { MonitorCoordinator } from './clangd-monitor';
 import { ClangFormatEditorCoordinator } from './visual-editor/clang-format/coordinator';
 import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
 import { ClangFormatPreviewProvider } from './visual-editor/clang-format/preview-provider';
+import { VisualEditorDebugHelper } from './visual-editor/clang-format/debug/visual-editor-debug-helper';
 import { COMMANDS } from './common/constants';
 
 export let serviceContainer: ServiceContainer;
@@ -62,25 +63,8 @@ export async function bootstrap(
   // Initialize main coordinators
   await initializeCoordinators();
 
-  // 注册命令：打开Clang-Format编辑器
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      COMMANDS.OPEN_CLANG_FORMAT_EDITOR,
-      async () => {
-        try {
-          const coordinator = serviceContainer.get(
-            'clangFormatEditorCoordinator',
-          );
-          await coordinator.showEditor();
-        } catch (error) {
-          console.error('Failed to open Clang-Format editor:', error);
-          vscode.window.showErrorMessage(
-            'Failed to open Clang-Format editor. See console for details.',
-          );
-        }
-      },
-    ),
-  );
+  // Register all commands in one place
+  registerCommands(context);
 
   // Register the service container for cleanup
   context.subscriptions.push({
@@ -214,4 +198,146 @@ export function cleanup(): void {
   if (serviceContainer) {
     serviceContainer.dispose();
   }
+}
+
+/**
+ * Register all VS Code commands in one centralized place.
+ * This makes it easier to manage and maintain all command registrations.
+ */
+function registerCommands(context: vscode.ExtensionContext): void {
+  // Pairing Rule Manager Commands
+  const configureRulesCommand = vscode.commands.registerCommand(
+    COMMANDS.CONFIGURE_RULES,
+    async () => {
+      try {
+        const coordinator = serviceContainer.get('pairingRuleCoordinator');
+        await coordinator.configureRules();
+      } catch (error) {
+        console.error('Failed to configure rules:', error);
+        vscode.window.showErrorMessage(
+          'Failed to configure rules. See console for details.',
+        );
+      }
+    },
+  );
+
+  // Create Source/Header Pair Commands
+  const newSourcePairCommand = vscode.commands.registerCommand(
+    COMMANDS.NEW_SOURCE_PAIR,
+    async () => {
+      try {
+        const coordinator = serviceContainer.get('pairCoordinator');
+        await coordinator.create();
+      } catch (error) {
+        console.error('Failed to create new source pair:', error);
+        vscode.window.showErrorMessage(
+          'Failed to create new source pair. See console for details.',
+        );
+      }
+    },
+  );
+
+  // Switch Header/Source Commands
+  const switchHeaderSourceCommand = vscode.commands.registerCommand(
+    COMMANDS.SWITCH_HEADER_SOURCE,
+    async () => {
+      try {
+        const coordinator = serviceContainer.get('switchCoordinator');
+        await coordinator.switchHeaderSource();
+      } catch (error) {
+        console.error('Failed to switch header/source:', error);
+        vscode.window.showErrorMessage(
+          'Failed to switch header/source. See console for details.',
+        );
+      }
+    },
+  );
+
+  // Clangd Monitor Commands
+  const showClangdDetailsCommand = vscode.commands.registerCommand(
+    COMMANDS.SHOW_CLANGD_DETAILS,
+    async () => {
+      try {
+        const coordinator = serviceContainer.get('monitorCoordinator');
+        await coordinator.showClangdDetails();
+      } catch (error) {
+        console.error('Failed to show clangd details:', error);
+        vscode.window.showErrorMessage(
+          'Failed to show clangd details. See console for details.',
+        );
+      }
+    },
+  );
+
+  const restartClangdCommand = vscode.commands.registerCommand(
+    'clotho.restartClangd',
+    async () => {
+      try {
+        const coordinator = serviceContainer.get('monitorCoordinator');
+        await coordinator.restartClangd();
+      } catch (error) {
+        console.error('Failed to restart clangd:', error);
+        vscode.window.showErrorMessage(
+          'Failed to restart clangd. See console for details.',
+        );
+      }
+    },
+  );
+
+  // Visual Editor Commands
+  const openClangFormatEditorCommand = vscode.commands.registerCommand(
+    COMMANDS.OPEN_CLANG_FORMAT_EDITOR,
+    async () => {
+      try {
+        const coordinator = serviceContainer.get('clangFormatEditorCoordinator');
+        await coordinator.showEditor();
+      } catch (error) {
+        console.error('Failed to open Clang-Format editor:', error);
+        vscode.window.showErrorMessage(
+          'Failed to open Clang-Format editor. See console for details.',
+        );
+      }
+    },
+  );
+
+  // Debug Commands for Visual Editor
+  const diagnoseVisualEditorCommand = vscode.commands.registerCommand(
+    'clotho.diagnoseVisualEditor',
+    async () => {
+      try {
+        await VisualEditorDebugHelper.diagnosePreviewState();
+      } catch (error) {
+        console.error('Failed to diagnose visual editor:', error);
+        vscode.window.showErrorMessage(
+          'Failed to diagnose visual editor. See console for details.',
+        );
+      }
+    },
+  );
+
+  const restartVisualEditorCommand = vscode.commands.registerCommand(
+    'clotho.restartVisualEditor',
+    async () => {
+      try {
+        await VisualEditorDebugHelper.forceRestartPreview();
+      } catch (error) {
+        console.error('Failed to restart visual editor:', error);
+        vscode.window.showErrorMessage(
+          'Failed to restart visual editor. See console for details.',
+        );
+      }
+    },
+  );
+
+  // Register all commands with the extension context for proper cleanup
+  context.subscriptions.push(
+    configureRulesCommand,
+    newSourcePairCommand,
+    switchHeaderSourceCommand,
+    showClangdDetailsCommand,
+    restartClangdCommand,
+    openClangFormatEditorCommand,
+    diagnoseVisualEditorCommand,
+    restartVisualEditorCommand,
+  );
 }

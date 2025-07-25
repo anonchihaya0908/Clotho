@@ -15,8 +15,6 @@ import { PairingRuleUI } from './ui';
  * service and UI layers.
  */
 export class PairingRuleCoordinator implements vscode.Disposable {
-  private configureRulesCommand: vscode.Disposable;
-
   /**
    * Constructor with dependency injection - receives pre-configured instances
    */
@@ -24,19 +22,14 @@ export class PairingRuleCoordinator implements vscode.Disposable {
     private readonly service: PairingRuleService,
     private readonly ui: PairingRuleUI,
   ) {
-    // Register the configure rules command
-    this.configureRulesCommand = vscode.commands.registerCommand(
-      COMMANDS.CONFIGURE_RULES,
-      this.configureRules,
-      this,
-    );
+    // Commands are now registered centrally in bootstrap.ts
   }
 
   /**
    * Dispose method for cleanup when extension is deactivated
    */
   dispose(): void {
-    this.configureRulesCommand.dispose();
+    // No resources to dispose since commands are managed centrally
   }
 
   /**

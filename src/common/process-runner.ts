@@ -5,6 +5,15 @@
  */
 
 import { ErrorHandler } from './error-handler';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+// 执行选项的明确类型定义
+interface ExecOptions {
+  timeout: number;
+  encoding: BufferEncoding;
+  cwd?: string;
+}
 
 export interface CommandResult {
   stdout: string;
@@ -32,6 +41,67 @@ export class ProcessRunner {
       logCommand: false,
     };
 
+  // 调试模式控制
+  private static readonly DEBUG = process.env.CLOTHO_DEBUG === 'true';
+
+  // 异步执行器，避免重复 promisify
+  private static readonly execAsync = promisify(exec);
+
+  /**
+   * 统一的分级日志输出（消除日志记录不一致问题）
+   */
+  private static log(level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any): void {
+    if (level === 'debug' && !this.DEBUG) return;
+
+    const prefix = {
+      debug: '🔍',
+      info: 'ℹ️',
+      warn: '⚠️',
+      error: '❌'
+    }[level];
+
+    console[level](`${prefix} ProcessRunner: ${message}`, data || '');
+  }
+
+  /**
+   * 通用的命令执行核心方法（消除代码重复）
+   */
+  private static async executeCommand(
+    command: string,
+    options: CommandOptions
+  ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+    const mergedOptions = { ...this.DEFAULT_OPTIONS, ...options };
+
+    this.log('debug', `Executing command: ${command}`);
+
+    // 使用明确类型而非 any
+    const execOptions: ExecOptions = {
+      timeout: mergedOptions.timeout,
+      encoding: mergedOptions.encoding,
+    };
+
+    if (options.cwd) {
+      execOptions.cwd = options.cwd;
+    }
+
+    try {
+      const { stdout, stderr } = await this.execAsync(command, execOptions);
+
+      if (stderr) {
+        this.log('debug', `Command stderr: ${stderr}`);
+      }
+
+      return { stdout, stderr, exitCode: 0 };
+    } catch (error: any) {
+      // 对于失败的命令，返回错误信息而不是抛出异常
+      return {
+        stdout: error.stdout || '',
+        stderr: error.stderr || error.message,
+        exitCode: error.code || 1,
+      };
+    }
+  }
+
   /**
    * Execute a shell command and return the output
    * @param command The command to execute
@@ -43,33 +113,14 @@ export class ProcessRunner {
     command: string,
     options: CommandOptions = {},
   ): Promise<string> {
-    const mergedOptions = { ...ProcessRunner.DEFAULT_OPTIONS, ...options };
-
-    if (mergedOptions.logCommand) {
-      console.debug(`ProcessRunner: Executing command: ${command}`);
-    }
-
     try {
-      const { exec } = require('child_process');
-      const util = require('util');
-      const execAsync = util.promisify(exec);
+      const result = await this.executeCommand(command, options);
 
-      const execOptions: any = {
-        timeout: mergedOptions.timeout,
-        encoding: mergedOptions.encoding,
-      };
-
-      if (options.cwd) {
-        execOptions.cwd = options.cwd;
+      if (result.exitCode !== 0) {
+        throw new Error(`Command failed with exit code ${result.exitCode}: ${result.stderr}`);
       }
 
-      const { stdout, stderr } = await execAsync(command, execOptions);
-
-      if (mergedOptions.logCommand && stderr) {
-        console.debug(`ProcessRunner: Command stderr: ${stderr}`);
-      }
-
-      return stdout;
+      return result.stdout;
     } catch (error: any) {
       const errorMessage = `Command failed: ${command}`;
 
@@ -95,43 +146,16 @@ export class ProcessRunner {
     command: string,
     options: CommandOptions = {},
   ): Promise<CommandResult> {
-    const mergedOptions = { ...ProcessRunner.DEFAULT_OPTIONS, ...options };
+    this.log('debug', `Executing command with details: ${command}`);
 
-    if (mergedOptions.logCommand) {
-      console.debug(
-        `ProcessRunner: Executing command with details: ${command}`,
-      );
-    }
+    // 使用通用执行方法，消除代码重复
+    const result = await this.executeCommand(command, options);
 
-    try {
-      const { exec } = require('child_process');
-      const util = require('util');
-      const execAsync = util.promisify(exec);
-
-      const execOptions: any = {
-        timeout: mergedOptions.timeout,
-        encoding: mergedOptions.encoding,
-      };
-
-      if (options.cwd) {
-        execOptions.cwd = options.cwd;
-      }
-
-      const { stdout, stderr } = await execAsync(command, execOptions);
-
-      return {
-        stdout,
-        stderr,
-        exitCode: 0,
-      };
-    } catch (error: any) {
-      // For exec, if the command fails, it throws an error with stdout/stderr
-      return {
-        stdout: error.stdout || '',
-        stderr: error.stderr || error.message,
-        exitCode: error.code || 1,
-      };
-    }
+    return {
+      stdout: result.stdout,
+      stderr: result.stderr,
+      exitCode: result.exitCode,
+    };
   }
 
   /**
@@ -166,10 +190,12 @@ export class ProcessRunner {
         return await ProcessRunner.getUnixProcessInfo(processName);
       }
     } catch (error) {
-      console.debug(
-        `ProcessRunner: Failed to get process info for ${processName}:`,
-        error,
-      );
+      ErrorHandler.handle(error, {
+        operation: 'getProcessInfo',
+        module: 'ProcessRunner',
+        showToUser: false,
+        logLevel: 'debug',
+      });
       return [];
     }
   }
@@ -185,9 +211,7 @@ export class ProcessRunner {
     try {
       // Try WMIC first
       const wmicCommand = `wmic process where "name='${processName}.exe'" get processid,parentprocessid,workingsetsize /format:csv`;
-      const stdout = await ProcessRunner.runCommand(wmicCommand, {
-        logCommand: true,
-      });
+      const stdout = await ProcessRunner.runCommand(wmicCommand);
 
       if (!stdout || stdout.includes('No Instance')) {
         throw new Error('WMIC returned no instances');
@@ -213,16 +237,11 @@ export class ProcessRunner {
 
       return processes;
     } catch (wmicError) {
-      console.debug(
-        'ProcessRunner: WMIC failed, trying PowerShell fallback:',
-        wmicError,
-      );
+      this.log('debug', 'WMIC failed, trying PowerShell fallback', wmicError);
 
       // PowerShell fallback
       const psCommand = `powershell "Get-WmiObject -Class Win32_Process -Filter \\"name='${processName}.exe'\\" | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json"`;
-      const psOutput = await ProcessRunner.runCommand(psCommand, {
-        logCommand: true,
-      });
+      const psOutput = await ProcessRunner.runCommand(psCommand);
 
       if (!psOutput.trim()) {
         return [];
@@ -248,9 +267,7 @@ export class ProcessRunner {
     processName: string,
   ): Promise<Array<{ pid: number; ppid: number; memory: number }>> {
     const command = `ps -eo pid,ppid,rss,comm | grep ${processName} | grep -v grep`;
-    const stdout = await ProcessRunner.runCommand(command, {
-      logCommand: true,
-    });
+    const stdout = await ProcessRunner.runCommand(command);
 
     const lines = stdout.trim().split('\n');
     if (lines.length === 0 || lines[0] === '') {

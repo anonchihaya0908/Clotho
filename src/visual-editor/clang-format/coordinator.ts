@@ -11,6 +11,8 @@ import { PlaceholderWebviewManager } from './core/placeholder-manager';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from './config-options';
 import { WebviewMessageType } from '../../common/types/webview';
 import { DebounceIntegration } from './core/debounce-integration';
+import { ConfigChangeService } from './core/config-change-service';
+import { ManagerRegistry, ManagedComponent } from './core/manager-registry';
 
 /**
  * 主协调器
@@ -20,12 +22,8 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
   private eventBus: EventBus;
   private stateManager: EditorStateManager;
   private errorRecovery: ErrorRecoveryManager;
-  private messageHandler: MessageHandler;
-  private editorManager: ClangFormatEditorManager;
-  private previewManager: PreviewEditorManager;
-  private configActionManager: ConfigActionManager;
-  private placeholderManager: PlaceholderWebviewManager;
-  private debounceIntegration: DebounceIntegration;
+  private configChangeService: ConfigChangeService;
+  private managerRegistry: ManagerRegistry;
 
   private disposables: vscode.Disposable[] = [];
   private isInitialized = false;
@@ -39,23 +37,43 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       this.eventBus,
     );
 
-    // 2. 初始化管理器
-    this.messageHandler = new MessageHandler();
-    this.editorManager = new ClangFormatEditorManager();
-    this.previewManager = new PreviewEditorManager();
-    this.configActionManager = new ConfigActionManager();
-    this.placeholderManager = new PlaceholderWebviewManager();
-    this.debounceIntegration = new DebounceIntegration(
-      this.extensionUri,
-      this.previewManager,
-      this.placeholderManager,
+    // 2. 初始化配置变化服务
+    this.configChangeService = new ConfigChangeService(
+      this.stateManager,
+      this.eventBus,
+      this.errorRecovery,
     );
 
-    // 3. 设置事件监听
-    this.setupEventListeners();
+    // 3. 初始化管理器注册表
+    this.managerRegistry = new ManagerRegistry();
+    this.registerManagers();
+  }
 
-    // 4. 注册VS Code命令
-    this.registerCommands();
+  /**
+   * 注册所有管理器到注册表
+   */
+  private registerManagers(): void {
+    // 创建管理器实例
+    const messageHandler = new MessageHandler();
+    const editorManager = new ClangFormatEditorManager();
+    const previewManager = new PreviewEditorManager();
+    const configActionManager = new ConfigActionManager();
+    const placeholderManager = new PlaceholderWebviewManager();
+
+    // 按优先级注册管理器（debounceIntegration 需要在其依赖的管理器之后创建）
+    this.managerRegistry.register('messageHandler', messageHandler, 100);
+    this.managerRegistry.register('editorManager', editorManager, 90);
+    this.managerRegistry.register('previewManager', previewManager, 80);
+    this.managerRegistry.register('configActionManager', configActionManager, 70);
+    this.managerRegistry.register('placeholderManager', placeholderManager, 60);
+
+    // DebounceIntegration 最后创建，因为它依赖于 previewManager 和 placeholderManager
+    const debounceIntegration = new DebounceIntegration(
+      this.extensionUri,
+      previewManager,
+      placeholderManager,
+    );
+    this.managerRegistry.register('debounceIntegration', debounceIntegration, 50);
   }
 
   /**
@@ -92,7 +110,12 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       eventBus: this.eventBus,
     };
 
-    await this.initializeManagers(context);
+    // 先初始化所有管理器
+    await this.managerRegistry.initializeAll(context);
+
+    // 然后设置事件监听器（确保管理器已经初始化）
+    this.setupEventListeners();
+
     this.isInitialized = true;
   }
 
@@ -104,11 +127,8 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.eventBus.dispose();
     this.stateManager.dispose();
     this.errorRecovery.dispose();
-    this.messageHandler.dispose();
-    this.editorManager.dispose();
-    this.previewManager.dispose();
-    this.placeholderManager.dispose();
-    this.debounceIntegration.dispose();
+    this.managerRegistry.dispose();
+    this.configChangeService = null as any;
   }
 
   /**
@@ -116,25 +136,37 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
    */
   private setupEventListeners(): void {
     // 监听重新打开预览的请求
-    const debouncedReopenHandler =
-      this.debounceIntegration.createDebouncedPreviewReopenHandler();
-    this.eventBus.on('open-preview-requested', debouncedReopenHandler);
+    this.eventBus.on('open-preview-requested', () => {
+      const debounceIntegration = this.managerRegistry.getInstance<DebounceIntegration>('debounceIntegration');
+      const handler = debounceIntegration?.createDebouncedPreviewReopenHandler();
+      if (handler) {
+        handler();
+      }
+    });
 
     // 监听预览关闭事件
-    const debouncedCloseHandler =
-      this.debounceIntegration.createDebouncedPreviewCloseHandler();
-    this.eventBus.on('preview-closed', debouncedCloseHandler);
+    this.eventBus.on('preview-closed', () => {
+      const debounceIntegration = this.managerRegistry.getInstance<DebounceIntegration>('debounceIntegration');
+      const handler = debounceIntegration?.createDebouncedPreviewCloseHandler();
+      if (handler) {
+        handler();
+      }
+    });
 
     // Webview消息路由
     this.eventBus.on('webview-message-received', (message) => {
-      this.messageHandler.handleMessage(message);
+      const messageHandler = this.managerRegistry.getInstance<MessageHandler>('messageHandler');
+      messageHandler?.handleMessage(message);
     });
 
-    // 监听配置变化请求
+    // 监听配置变化请求 - 使用新的配置变化服务
     this.eventBus.on(
       'config-change-requested',
       async (payload: { key: string; value: any }) => {
-        await this.handleConfigChange(payload);
+        if (process.env.CLOTHO_DEBUG === 'true') {
+          console.log('🔧 [DEBUG] 收到配置变化请求:', payload);
+        }
+        await this.configChangeService.handleConfigChange(payload);
       },
     );
 
@@ -168,87 +200,21 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.eventBus.on(
       'config-updated-for-preview',
       ({ newConfig }: { newConfig: Record<string, any> }) => {
-        // 直接调用 previewManager 的方法来更新预览内容
-        this.previewManager.updatePreviewWithConfig(newConfig);
+        if (process.env.CLOTHO_DEBUG === 'true') {
+          console.log('🎯 [DEBUG] 收到预览更新事件，配置键数量:', Object.keys(newConfig).length);
+        }
+        // 通过注册表获取 previewManager 实例
+        const previewManager = this.managerRegistry.getInstance<PreviewEditorManager>('previewManager');
+        if (previewManager) {
+          previewManager.updatePreviewWithConfig(newConfig);
+          if (process.env.CLOTHO_DEBUG === 'true') {
+            console.log('✅ [DEBUG] 预览更新已触发');
+          }
+        } else {
+          console.warn('⚠️ [DEBUG] 预览管理器未找到');
+        }
       },
     );
   }
 
-  /**
-   * 处理配置变化请求
-   */
-  private async handleConfigChange(payload: {
-    key: string;
-    value: any;
-  }): Promise<void> {
-    try {
-      const { key, value } = payload;
-
-      // 更新配置状态
-      const currentState = this.stateManager.getState();
-      const newConfig = { ...currentState.currentConfig };
-
-      if (value === 'inherit' || value === undefined || value === null) {
-        delete newConfig[key];
-      } else {
-        newConfig[key] = value;
-      }
-
-      await this.stateManager.updateState(
-        {
-          currentConfig: newConfig,
-          configDirty: true,
-        },
-        'config-changed',
-      );
-
-      // 通知webview配置已更新
-      this.eventBus.emit('post-message-to-webview', {
-        type: WebviewMessageType.CONFIG_LOADED,
-        payload: { config: newConfig },
-      });
-
-      // 通知预览更新
-      this.eventBus.emit('config-updated-for-preview', { newConfig });
-    } catch (error: any) {
-      await this.errorRecovery.handleError('config-change-failed', error, {
-        payload,
-      });
-    }
-  }
-
-  /**
-   * 初始化所有管理器
-   */
-  private async initializeManagers(context: ManagerContext): Promise<void> {
-    const managers = [
-      this.messageHandler,
-      this.editorManager,
-      this.previewManager,
-      this.configActionManager,
-      this.placeholderManager,
-      this.debounceIntegration,
-    ];
-
-    for (const manager of managers) {
-      try {
-        await manager.initialize(context);
-      } catch (error: any) {
-        throw error;
-      }
-    }
-  }
-
-  /**
-   * 注册需要在VS Code中使用的命令
-   */
-  private registerCommands(): void {
-    const showCommand = vscode.commands.registerCommand(
-      'clotho.showClangFormatEditor',
-      () => {
-        this.showEditor(EditorOpenSource.COMMAND);
-      },
-    );
-    this.disposables.push(showCommand);
-  }
 }

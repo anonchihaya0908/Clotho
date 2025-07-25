@@ -17,27 +17,17 @@ import { PairCreatorUI } from './ui';
 // PairCoordinator orchestrates the workflow between UI and Service layers.
 // It follows the single responsibility principle and uses dependency injection.
 export class PairCoordinator implements vscode.Disposable {
-  private newPairCommand: vscode.Disposable;
-
   // Constructor with dependency injection - receives pre-configured instances
   constructor(
     private readonly service: PairCreatorService,
     private readonly ui: PairCreatorUI,
   ) {
-    // Register commands
-    this.newPairCommand = vscode.commands.registerCommand(
-      COMMANDS.NEW_SOURCE_PAIR,
-      ErrorHandler.wrapAsync(() => this.create(), {
-        operation: 'create source/header pair',
-        module: 'PairCoordinator',
-        showToUser: true,
-      }),
-    );
+    // Commands are now registered centrally in bootstrap.ts
   }
 
   // Dispose method for cleanup when extension is deactivated
   dispose() {
-    this.newPairCommand.dispose();
+    // No resources to dispose since commands are managed centrally
   }
 
   // Main workflow orchestration - refactored into smaller methods

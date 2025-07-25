@@ -24,7 +24,6 @@ export class SwitchCoordinator implements vscode.Disposable {
   private readonly service: SwitchService;
   private readonly ui: SwitchUI;
   private readonly configService: SwitchConfigService;
-  private readonly switchCommand: vscode.Disposable;
 
   constructor(
     service?: SwitchService,
@@ -38,15 +37,7 @@ export class SwitchCoordinator implements vscode.Disposable {
     this.service = service ?? new SwitchService(this.configService);
     this.ui = ui ?? new SwitchUI();
 
-    // Register the switch command
-    this.switchCommand = vscode.commands.registerCommand(
-      COMMANDS.SWITCH_HEADER_SOURCE,
-      ErrorHandler.wrapAsync(() => this.switchHeaderSource(), {
-        operation: 'switchHeaderSource command',
-        module: 'SwitchCoordinator',
-        showToUser: true,
-      }),
-    );
+    // Commands are now registered centrally in bootstrap.ts
   }
 
   /**
@@ -134,7 +125,6 @@ export class SwitchCoordinator implements vscode.Disposable {
    * Disposes of resources
    */
   public dispose(): void {
-    // Clean up command registration
-    this.switchCommand.dispose();
+    // No resources to dispose since commands are managed centrally
   }
 }
