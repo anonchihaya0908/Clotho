@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { EditorOpenSource, ManagerContext } from '../../common/types';
+import { logger } from '../../common/logger';
 import { EventBus } from './messaging/event-bus';
 import { EditorStateManager } from './state/editor-state-manager';
 import { ErrorRecoveryManager } from './error/error-recovery-manager';
@@ -143,7 +144,10 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       if (handler) {
         await handler();
       } else {
-        console.error('[Coordinator] 防抖集成未找到');
+        logger.error('Debounce integration not found', undefined, {
+          module: 'ClangFormatEditorCoordinator',
+          operation: 'handleConfigurationChanged',
+        });
       }
     });
 
@@ -167,7 +171,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       'config-change-requested',
       async (payload: { key: string; value: any }) => {
         if (process.env.CLOTHO_DEBUG === 'true') {
-          console.log('🔧 [DEBUG] 收到配置变化请求:', payload);
+          logger.debug('Configuration change request received', { payload });
         }
         await this.configChangeService.handleConfigChange(payload);
       },
@@ -198,7 +202,10 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
         if (previewManager) {
           previewManager.updatePreviewWithConfig(newConfig);
         } else {
-          console.warn('[Coordinator] 预览管理器未找到');
+          logger.warn('Preview manager not found', {
+            module: 'ClangFormatEditorCoordinator',
+            operation: 'handleMicroPreview',
+          });
         }
       },
     );
@@ -229,7 +236,10 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
             }
           });
         } catch (error) {
-          console.error('[Coordinator] 微观预览处理失败:', error);
+          logger.error('Micro preview processing failed', error instanceof Error ? error : new Error(String(error)), {
+            module: 'ClangFormatEditorCoordinator',
+            operation: 'handleMicroPreview',
+          });
           // 发送错误结果
           this.eventBus.emit('post-message-to-webview', {
             type: WebviewMessageType.UPDATE_MICRO_PREVIEW,

@@ -113,7 +113,9 @@ export class VisualEditorDebugHelper {
     static enableConfigChangeDebugging(): vscode.Disposable {
         return vscode.workspace.onDidChangeConfiguration((event) => {
             if (event.affectsConfiguration('clotho')) {
-                console.log('🔧 [DEBUG] Clotho 配置发生变化:', event);
+                // 使用输出通道而非console.log进行调试
+                const outputChannel = vscode.window.createOutputChannel('Clotho Debug');
+                outputChannel.appendLine(`🔧 [DEBUG] Clotho 配置发生变化: ${JSON.stringify(event)}`);
             }
         });
     }

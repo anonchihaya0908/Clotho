@@ -263,7 +263,10 @@ export class PlaceholderWebviewManager implements BaseManager {
 
     // 【新增】监听预览因可见性隐藏的事件
     this.context.eventBus.on('preview-hidden-by-visibility', () => {
-      console.log('[PlaceholderManager] 预览因可见性隐藏，不创建占位符');
+      logger.debug('Preview is hidden due to visibility settings, not creating placeholder', {
+        module: this.name,
+        operation: 'createPlaceholder',
+      });
       // 如果有占位符，也要销毁它
       if (this.panel) {
         this.disposePanel();

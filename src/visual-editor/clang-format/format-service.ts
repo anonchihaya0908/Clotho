@@ -11,6 +11,7 @@ import * as os from 'os';
 import { spawn } from 'child_process';
 import { ProcessRunner, CommandResult } from '../../common/process-runner';
 import { ErrorHandler, ErrorContext, errorHandler } from '../../common/error-handler';
+import { logger } from '../../common/logger';
 import { getLineEnding } from '../../common/platform-utils';
 import {
   MACRO_PREVIEW_CODE,
@@ -500,9 +501,10 @@ export class ClangFormatService {
             value = [];
           }
         } catch (error) {
-          console.warn(
-            `Clotho: Failed to parse array value for ${key}: ${valueStr}`,
-          );
+            logger.warn(`Failed to parse array value for ${key}: ${valueStr}`, {
+              module: 'ClangFormatService', 
+              operation: 'parseConfigurationLine',
+            });
           value = valueStr; // 保持原始字符串
         }
       }
@@ -512,7 +514,11 @@ export class ClangFormatService {
     }
 
     // 调试输出，帮助排查数据不准确的问题
-    console.log('📄 Clotho: Parsed configuration:', config);
+    logger.debug('Parsed configuration', { 
+      config,
+      module: 'ClangFormatService',
+      operation: 'parseConfigurationLine',
+    });
 
     return config;
   }
