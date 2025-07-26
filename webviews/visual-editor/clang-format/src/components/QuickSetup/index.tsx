@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useMemo, useCallback } from 'react';
 import { ClangFormatOption, QuickSetupProps } from '../../types';
 import './style.css';
 
@@ -144,14 +144,14 @@ const MicroPreview: React.FC<{ code: string }> = ({ code }) => {
     );
 };
 
-export const QuickSetup: React.FC<QuickSetupProps> = ({ options, config, onChange, onOpenClangFormatFile }) => {
-    // 折叠状态管理
-    const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+const QuickSetupComponent: React.FC<QuickSetupProps> = ({ options, config, onChange, onOpenClangFormatFile }) => {
+    // 折叠状态管理 - 使用 useMemo 优化初始状态
+    const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() =>
         new Set(['基础样式', '缩进设置', '大括号样式', '空格设置']) // 默认展开常用分类
     );
 
-    // 切换分类展开状态
-    const toggleCategory = (category: string) => {
+    // 切换分类展开状态 - 使用 useCallback 优化
+    const toggleCategory = useCallback((category: string) => {
         setExpandedCategories(prev => {
             const newSet = new Set(prev);
             if (newSet.has(category)) {
@@ -161,144 +161,147 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ options, config, onChang
             }
             return newSet;
         });
-    };
-    // 生成默认预览代码 - 仅支持 C/C++，考虑继承逻辑
-    const generateDefaultPreview = (option: ClangFormatOption) => {
-        try {
-            const generateCppExample = (key: string) => {
-                // 获取实际使用的值（考虑继承）
-                const getEffectiveValue = (configKey: string) => {
-                    const userValue = config[configKey];
-                    if (userValue !== undefined && userValue !== null) {
-                        return userValue;
-                    }
+    }, []);
+    // 生成默认预览代码 - 仅支持 C/C++，考虑继承逻辑 - 使用 useMemo 缓存
+    const generateDefaultPreview = useMemo(() => {
+        return (option: ClangFormatOption) => {
+            try {
+                const generateCppExample = (key: string) => {
+                    // 获取实际使用的值（考虑继承）
+                    const getEffectiveValue = (configKey: string) => {
+                        const userValue = config[configKey];
+                        if (userValue !== undefined && userValue !== null) {
+                            return userValue;
+                        }
 
-                    const inheritedValue = getInheritedValue(configKey, config);
-                    if (inheritedValue !== undefined) {
-                        return inheritedValue;
-                    }
+                        const inheritedValue = getInheritedValue(configKey, config);
+                        if (inheritedValue !== undefined) {
+                            return inheritedValue;
+                        }
 
-                    const configOption = options.find(opt => opt.key === configKey);
-                    return configOption?.defaultValue;
+                        const configOption = options.find(opt => opt.key === configKey);
+                        return configOption?.defaultValue;
+                    };
+
+                    switch (key) {
+                        case 'BasedOnStyle':
+                            const styleValue = getEffectiveValue(option.key);
+                            return `// Based on ${styleValue} style\nclass Example {\npublic:\n    void method();\n};`;
+                        case 'IndentWidth':
+                            const indentValue = getEffectiveValue(option.key) || 2;
+                            const cppIndent = ' '.repeat(Math.max(1, Math.min(8, indentValue))); // 限制范围 1-8
+                            return `if (condition) {\n${cppIndent}doSomething();\n}`;
+                        case 'UseTab':
+                            const cppUseTab = getEffectiveValue(option.key);
+                            const cppTabIndent = cppUseTab === 'Never' ? '    ' : '\t';
+                            return `class MyClass {\npublic:\n${cppTabIndent}void method();\n};`;
+                        case 'TabWidth':
+                            const tabWidth = getEffectiveValue(option.key) || 4;
+                            return `function() {\n\treturn value; // Tab width: ${tabWidth}\n}`;
+                        case 'ColumnLimit':
+                            const limit = Math.max(20, Math.min(200, getEffectiveValue(option.key) || 80)); // 限制范围
+                            const longLine = 'void longFunctionNameWithManyParameters(int param1, int param2, int param3);';
+                            return longLine.length > limit ? longLine.substring(0, limit - 3) + '...' : longLine;
+                        case 'BreakBeforeBraces':
+                            const braceStyle = getEffectiveValue(option.key);
+                            return braceStyle === 'Attach'
+                                ? `if (condition) {\n    statement;\n}`
+                                : `if (condition)\n{\n    statement;\n}`;
+                        case 'SpaceBeforeParens':
+                            const spaceStyle = getEffectiveValue(option.key);
+                            return spaceStyle === 'Never'
+                                ? `if(condition)\nfor(int i = 0; i < 10; ++i)`
+                                : `if (condition)\nfor (int i = 0; i < 10; ++i)`;
+                        case 'PointerAlignment':
+                            const ptrAlign = getEffectiveValue(option.key);
+                            return ptrAlign === 'Left'
+                                ? `int* ptr;\nchar* name;`
+                                : ptrAlign === 'Right'
+                                    ? `int *ptr;\nchar *name;`
+                                    : `int * ptr;\nchar * name;`;
+                        case 'AllowShortFunctionsOnASingleLine':
+                            const shortFunc = getEffectiveValue(option.key);
+                            return shortFunc === 'true' || shortFunc === 'All'
+                                ? `void shortFunc() { return; }`
+                                : `void shortFunc() {\n    return;\n}`;
+                        case 'AllowShortIfStatementsOnASingleLine':
+                            const shortIf = getEffectiveValue(option.key);
+                            return shortIf === 'true' || shortIf === 'WithoutElse'
+                                ? `if (condition) doSomething();`
+                                : `if (condition)\n    doSomething();`;
+                        case 'AlignTrailingComments':
+                            const alignComments = getEffectiveValue(option.key);
+                            return alignComments === 'true'
+                                ? `int a = 1;     // Comment 1\nint bb = 2;    // Comment 2`
+                                : `int a = 1; // Comment 1\nint bb = 2; // Comment 2`;
+                        case 'BreakConstructorInitializers':
+                            const ctorStyle = getEffectiveValue(option.key);
+                            return ctorStyle === 'BeforeColon'
+                                ? `Constructor()\n    : member1(value1)\n    , member2(value2) {}`
+                                : `Constructor() :\n    member1(value1),\n    member2(value2) {}`;
+                        case 'SortIncludes':
+                            const sortInc = getEffectiveValue(option.key);
+                            return sortInc === 'true'
+                                ? `#include <algorithm>\n#include <iostream>\n#include <vector>`
+                                : `#include <vector>\n#include <iostream>\n#include <algorithm>`;
+                        case 'BinPackArguments':
+                            const binPack = getEffectiveValue(option.key);
+                            return binPack === 'false'
+                                ? `function(\n    arg1,\n    arg2,\n    arg3\n);`
+                                : `function(arg1, arg2, arg3);`;
+                        case 'SpacesInParentheses':
+                            const spacesInParens = getEffectiveValue(option.key);
+                            return spacesInParens === 'true'
+                                ? `if ( condition )\nfunc( param );`
+                                : `if (condition)\nfunc(param);`;
+                        case 'SpaceAfterTemplateKeyword':
+                            const spaceAfterTemplate = getEffectiveValue(option.key);
+                            return spaceAfterTemplate === 'true'
+                                ? `template <typename T>\nclass Example {};`
+                                : `template<typename T>\nclass Example {};`;
+                        case 'FixNamespaceComments':
+                            const fixNs = getEffectiveValue(option.key);
+                            return fixNs === 'true'
+                                ? `namespace Example {\n    void func();\n} // namespace Example`
+                                : `namespace Example {\n    void func();\n}`;
+                        case 'ReflowComments':
+                            const reflow = getEffectiveValue(option.key);
+                            return reflow === 'true'
+                                ? `// This is a very long comment that will be\n// reflowed to fit within the column limit.`
+                                : `// This is a very long comment that will not be reflowed to fit within the column limit.`;
+                        case 'AllowShortBlocksOnASingleLine':
+                            const shortBlocks = getEffectiveValue(option.key);
+                            return shortBlocks === 'true' || shortBlocks === 'Always'
+                                ? `if (condition) { doSomething(); }`
+                                : `if (condition) {\n    doSomething();\n}`;
+                        case 'Cpp11BracedListStyle':
+                            const cpp11Braces = getEffectiveValue(option.key);
+                            return cpp11Braces === 'true'
+                                ? `vector<int> v{1, 2, 3, 4};`
+                                : `vector<int> v{ 1, 2, 3, 4 };`;
+                        case 'BreakStringLiterals':
+                            const breakStrings = getEffectiveValue(option.key);
+                            return breakStrings === 'true'
+                                ? `const char* longString = "This is a very "\n                        "long string";`
+                                : `const char* longString = "This is a very long string";`;
+                        case 'ContinuationIndentWidth':
+                            const contIndent = getEffectiveValue(option.key) || 4;
+                            const contIndentStr = ' '.repeat(Math.max(1, Math.min(8, contIndent)));
+                            return `int result = someVeryLongFunctionName(\n${contIndentStr}parameter1,\n${contIndentStr}parameter2);`;
+                        default:
+                            return `// ${option.key} example\nclass Example {\npublic:\n    void method();\n};`;
+                    }
                 };
 
-                switch (key) {
-                    case 'BasedOnStyle':
-                        const styleValue = getEffectiveValue(option.key);
-                        return `// Based on ${styleValue} style\nclass Example {\npublic:\n    void method();\n};`;
-                    case 'IndentWidth':
-                        const indentValue = getEffectiveValue(option.key) || 2;
-                        const cppIndent = ' '.repeat(Math.max(1, Math.min(8, indentValue))); // 限制范围 1-8
-                        return `if (condition) {\n${cppIndent}doSomething();\n}`;
-                    case 'UseTab':
-                        const cppUseTab = getEffectiveValue(option.key);
-                        const cppTabIndent = cppUseTab === 'Never' ? '    ' : '\t';
-                        return `class MyClass {\npublic:\n${cppTabIndent}void method();\n};`;
-                    case 'TabWidth':
-                        const tabWidth = getEffectiveValue(option.key) || 4;
-                        return `function() {\n\treturn value; // Tab width: ${tabWidth}\n}`;
-                    case 'ColumnLimit':
-                        const limit = Math.max(20, Math.min(200, getEffectiveValue(option.key) || 80)); // 限制范围
-                        const longLine = 'void longFunctionNameWithManyParameters(int param1, int param2, int param3);';
-                        return longLine.length > limit ? longLine.substring(0, limit - 3) + '...' : longLine;
-                    case 'BreakBeforeBraces':
-                        const braceStyle = getEffectiveValue(option.key);
-                        return braceStyle === 'Attach'
-                            ? `if (condition) {\n    statement;\n}`
-                            : `if (condition)\n{\n    statement;\n}`;
-                    case 'SpaceBeforeParens':
-                        const spaceStyle = getEffectiveValue(option.key);
-                        return spaceStyle === 'Never'
-                            ? `if(condition)\nfor(int i = 0; i < 10; ++i)`
-                            : `if (condition)\nfor (int i = 0; i < 10; ++i)`;
-                    case 'PointerAlignment':
-                        const ptrAlign = getEffectiveValue(option.key);
-                        return ptrAlign === 'Left'
-                            ? `int* ptr;\nchar* name;`
-                            : ptrAlign === 'Right'
-                                ? `int *ptr;\nchar *name;`
-                                : `int * ptr;\nchar * name;`;
-                    case 'AllowShortFunctionsOnASingleLine':
-                        const shortFunc = getEffectiveValue(option.key);
-                        return shortFunc === 'true' || shortFunc === 'All'
-                            ? `void shortFunc() { return; }`
-                            : `void shortFunc() {\n    return;\n}`;
-                    case 'AllowShortIfStatementsOnASingleLine':
-                        const shortIf = getEffectiveValue(option.key);
-                        return shortIf === 'true' || shortIf === 'WithoutElse'
-                            ? `if (condition) doSomething();`
-                            : `if (condition)\n    doSomething();`;
-                    case 'AlignTrailingComments':
-                        const alignComments = getEffectiveValue(option.key);
-                        return alignComments === 'true'
-                            ? `int a = 1;     // Comment 1\nint bb = 2;    // Comment 2`
-                            : `int a = 1; // Comment 1\nint bb = 2; // Comment 2`;
-                    case 'BreakConstructorInitializers':
-                        const ctorStyle = getEffectiveValue(option.key);
-                        return ctorStyle === 'BeforeColon'
-                            ? `Constructor()\n    : member1(value1)\n    , member2(value2) {}`
-                            : `Constructor() :\n    member1(value1),\n    member2(value2) {}`;
-                    case 'SortIncludes':
-                        const sortInc = getEffectiveValue(option.key);
-                        return sortInc === 'true'
-                            ? `#include <algorithm>\n#include <iostream>\n#include <vector>`
-                            : `#include <vector>\n#include <iostream>\n#include <algorithm>`;
-                    case 'BinPackArguments':
-                        const binPack = getEffectiveValue(option.key);
-                        return binPack === 'false'
-                            ? `function(\n    arg1,\n    arg2,\n    arg3\n);`
-                            : `function(arg1, arg2, arg3);`;
-                    case 'SpacesInParentheses':
-                        const spacesInParens = getEffectiveValue(option.key);
-                        return spacesInParens === 'true'
-                            ? `if ( condition )\nfunc( param );`
-                            : `if (condition)\nfunc(param);`;
-                    case 'SpaceAfterTemplateKeyword':
-                        const spaceAfterTemplate = getEffectiveValue(option.key);
-                        return spaceAfterTemplate === 'true'
-                            ? `template <typename T>\nclass Example {};`
-                            : `template<typename T>\nclass Example {};`;
-                    case 'FixNamespaceComments':
-                        const fixNs = getEffectiveValue(option.key);
-                        return fixNs === 'true'
-                            ? `namespace Example {\n    void func();\n} // namespace Example`
-                            : `namespace Example {\n    void func();\n}`;
-                    case 'ReflowComments':
-                        const reflow = getEffectiveValue(option.key);
-                        return reflow === 'true'
-                            ? `// This is a very long comment that will be\n// reflowed to fit within the column limit.`
-                            : `// This is a very long comment that will not be reflowed to fit within the column limit.`;
-                    case 'AllowShortBlocksOnASingleLine':
-                        const shortBlocks = getEffectiveValue(option.key);
-                        return shortBlocks === 'true' || shortBlocks === 'Always'
-                            ? `if (condition) { doSomething(); }`
-                            : `if (condition) {\n    doSomething();\n}`;
-                    case 'Cpp11BracedListStyle':
-                        const cpp11Braces = getEffectiveValue(option.key);
-                        return cpp11Braces === 'true'
-                            ? `vector<int> v{1, 2, 3, 4};`
-                            : `vector<int> v{ 1, 2, 3, 4 };`;
-                    case 'BreakStringLiterals':
-                        const breakStrings = getEffectiveValue(option.key);
-                        return breakStrings === 'true'
-                            ? `const char* longString = "This is a very "\n                        "long string";`
-                            : `const char* longString = "This is a very long string";`;
-                    case 'ContinuationIndentWidth':
-                        const contIndent = getEffectiveValue(option.key) || 4;
-                        const contIndentStr = ' '.repeat(Math.max(1, Math.min(8, contIndent)));
-                        return `int result = someVeryLongFunctionName(\n${contIndentStr}parameter1,\n${contIndentStr}parameter2);`;
-                    default:
-                        return `// ${option.key} example\nclass Example {\npublic:\n    void method();\n};`;
-                }
-            };
-
-            return generateCppExample(option.key);
-        } catch (error) {
-            console.error('Error generating preview for', option.key, error);
-            return `// ${option.key} preview\nclass Example {\npublic:\n    void method();\n};`;
-        }
-    };
-    const renderConfigItem = (option: ClangFormatOption) => {
+                return generateCppExample(option.key);
+            } catch (error) {
+                console.error('Error generating preview for', option.key, error);
+                return `// ${option.key} preview\nclass Example {\npublic:\n    void method();\n};`;
+            }
+        };
+    }, [config, options]); // 添加依赖
+    // 渲染配置项 - 使用 useCallback 优化
+    const renderConfigItem = useCallback((option: ClangFormatOption) => {
         const value = config[option.key];
         const shouldInherit = shouldInheritFromStyle(option.key, config);
         const inheritedValue = getInheritedValue(option.key, config);
@@ -460,7 +463,7 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ options, config, onChang
             default:
                 return null;
         }
-    };
+    }, [config, onChange, generateDefaultPreview]); // 添加依赖
 
     return (
         <div className="quick-setup">
@@ -512,3 +515,6 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ options, config, onChang
         </div>
     );
 };
+
+// 使用 memo 包装组件，优化渲染性能
+export const QuickSetup = memo(QuickSetupComponent);

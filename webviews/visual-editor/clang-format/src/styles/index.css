@@ -840,4 +840,33 @@ textarea:disabled {
     margin: 8px 0;
 }
 
+/* 错误边界样式 */
+.toolbar-error,
+.config-panel-error,
+.status-bar-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background-color: var(--vscode-inputValidation-errorBackground);
+    color: var(--vscode-inputValidation-errorForeground);
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    border-radius: 4px;
+    font-size: 14px;
+    margin: 8px;
+}
+
+.toolbar-error::before,
+.config-panel-error::before,
+.status-bar-error::before {
+    content: "⚠️ ";
+    margin-right: 8px;
+}
+
+/* 性能优化相关样式 */
+.optimized-component {
+    will-change: transform;
+    contain: layout style paint;
+}
+
 /* 文件结束 */

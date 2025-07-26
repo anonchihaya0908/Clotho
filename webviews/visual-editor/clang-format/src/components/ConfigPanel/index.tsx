@@ -2,7 +2,7 @@
  * Config Panel Component - 配置面板主组件
  */
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { ConfigModeSelector, ConfigMode } from '../ConfigModeSelector';
 import { QuickSetup } from '../QuickSetup';
 import { SearchConfig } from '../SearchConfig';
@@ -12,7 +12,7 @@ import './style.css';
 
 // 使用共享的ConfigPanelProps类型
 
-export const ConfigPanel: React.FC<ConfigPanelProps> = ({
+const ConfigPanelComponent: React.FC<ConfigPanelProps> = ({
     options,
     categories,
     microPreviews,
@@ -232,3 +232,45 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
         </div>
     );
 };
+
+// 自定义比较函数，优化渲染性能
+const arePropsEqual = (prevProps: ConfigPanelProps, nextProps: ConfigPanelProps): boolean => {
+    // 比较基本属性
+    if (
+        prevProps.categories.length !== nextProps.categories.length ||
+        prevProps.options.length !== nextProps.options.length ||
+        prevProps.isConfigReset !== nextProps.isConfigReset
+    ) {
+        return false;
+    }
+
+    // 比较配置对象
+    const prevConfigKeys = Object.keys(prevProps.currentConfig);
+    const nextConfigKeys = Object.keys(nextProps.currentConfig);
+
+    if (prevConfigKeys.length !== nextConfigKeys.length) {
+        return false;
+    }
+
+    for (const key of prevConfigKeys) {
+        if (prevProps.currentConfig[key] !== nextProps.currentConfig[key]) {
+            return false;
+        }
+    }
+
+    // 比较设置对象
+    if (prevProps.settings.showGuideButton !== nextProps.settings.showGuideButton) {
+        return false;
+    }
+
+    // 比较动态预览结果
+    if (prevProps.dynamicPreviewResult?.optionName !== nextProps.dynamicPreviewResult?.optionName ||
+        prevProps.dynamicPreviewResult?.success !== nextProps.dynamicPreviewResult?.success) {
+        return false;
+    }
+
+    return true;
+};
+
+// 使用 memo 包装组件
+export const ConfigPanel = memo(ConfigPanelComponent, arePropsEqual);

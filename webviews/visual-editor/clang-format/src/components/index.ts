@@ -22,3 +22,6 @@ export { MainConfigInterface } from './MainConfigInterface';
 
 // 预览相关组件
 export { default as DynamicMicroPreview } from './DynamicMicroPreview';
+
+// 错误处理组件
+export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';

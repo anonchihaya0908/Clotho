@@ -2,8 +2,10 @@
  * Main App Component for Clang-Format Editor
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ConfigPanel } from './components/ConfigPanel';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { useDebounce, useMultiKeyDebounce, useIsMounted } from './hooks/useDebounce';
 import { initializeWebviewLogger, webviewLog } from './utils/webview-logger';
 import {
     ClangFormatOption,
@@ -22,12 +24,16 @@ export interface AppProps {
 // 使用从types.ts导入的WebviewAppState
 
 export const App: React.FC<AppProps> = ({ vscode }) => {
-    // 初始化 webview logger
-    React.useEffect(() => {
+    // 组件挂载状态检查
+    const isMountedRef = useIsMounted();
+
+    // 初始化 webview logger - 使用 useMemo 避免重复初始化
+    const loggerInitialized = useMemo(() => {
         initializeWebviewLogger(vscode, {
             enableConsoleOutput: true,
             logLevel: 'debug'
         });
+        return true;
     }, [vscode]);
 
     const [state, setState] = useState<WebviewAppState>({
@@ -43,28 +49,50 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         isConfigReset: false
     });
 
-    // 发送消息到 VS Code
+    // 发送消息到 VS Code - 优化依赖
     const sendMessage = useCallback((type: WebviewMessageType, payload?: any) => {
         webviewLog.debug('Sending message to VS Code', { type, payload });
         vscode.postMessage({ type, payload });
     }, [vscode]);
 
-    // 处理配置变更
-    const handleConfigChange = useCallback((key: string, value: any) => {
+    // 立即更新配置状态（UI 响应）
+    const updateConfigState = useCallback((key: string, value: any) => {
+        if (!isMountedRef.current) return;
+
         setState((prev: WebviewAppState) => ({
             ...prev,
             currentConfig: { ...prev.currentConfig, [key]: value }
         }));
+    }, [isMountedRef]);
 
+    // 发送配置变更到后端（防抖）
+    const sendConfigChange = useCallback((key: string, value: any) => {
         sendMessage(WebviewMessageType.CONFIG_CHANGED, { key, value });
     }, [sendMessage]);
 
+    // 使用防抖 Hook 处理配置变更
+    const debouncedSendConfigChange = useDebounce(sendConfigChange, 300);
+
+    // 处理配置变更 - 立即更新 UI，防抖发送到后端
+    const handleConfigChange = useCallback((key: string, value: any) => {
+        updateConfigState(key, value);
+        debouncedSendConfigChange(key, value);
+    }, [updateConfigState, debouncedSendConfigChange]);
+
     // 设置处理已移除，预览始终显示
 
-    // 处理动态预览请求
-    const handlePreviewRequest = useCallback((optionName: string, config: Record<string, any>, previewSnippet: string) => {
-        sendMessage(WebviewMessageType.GET_MICRO_PREVIEW, { optionName, config, previewSnippet });
+    // 发送预览请求到后端 - 修正函数签名以匹配 useMultiKeyDebounce
+    const sendPreviewRequest = useCallback((key: string, config: Record<string, any>, previewSnippet: string) => {
+        sendMessage(WebviewMessageType.GET_MICRO_PREVIEW, { optionName: key, config, previewSnippet });
     }, [sendMessage]);
+
+    // 使用多键防抖 Hook 处理预览请求
+    const debouncedSendPreviewRequest = useMultiKeyDebounce(sendPreviewRequest, 200);
+
+    // 处理动态预览请求 - 使用防抖优化
+    const handlePreviewRequest = useCallback((optionName: string, config: Record<string, any>, previewSnippet: string) => {
+        debouncedSendPreviewRequest(optionName, config, previewSnippet);
+    }, [debouncedSendPreviewRequest]);
 
     // 处理配置项hover事件
     const handleConfigOptionHover = useCallback((optionName: string) => {
@@ -81,166 +109,184 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         sendMessage(WebviewMessageType.CLEAR_HIGHLIGHTS);
     }, [sendMessage]);
 
-    // 处理工具栏操作
+    // 处理工具栏操作 - 添加日志和错误处理
     const handleToolbarAction = useCallback((action: string) => {
-        switch (action) {
-            case 'load':
-                sendMessage(WebviewMessageType.LOAD_WORKSPACE_CONFIG);
-                break;
-            case 'save':
-                sendMessage(WebviewMessageType.SAVE_CONFIG);
-                break;
-            case 'export':
-                sendMessage(WebviewMessageType.EXPORT_CONFIG);
-                break;
-            case 'import':
-                sendMessage(WebviewMessageType.IMPORT_CONFIG);
-                break;
-            case 'reset':
-                // 设置重置标志
-                setState(prev => ({ ...prev, isConfigReset: true }));
-                sendMessage(WebviewMessageType.RESET_CONFIG);
-                // 3秒后清除重置标志
-                setTimeout(() => {
-                    setState(prev => ({ ...prev, isConfigReset: false }));
-                }, 3000);
-                break;
-            case 'openClangFormatFile':
-                sendMessage(WebviewMessageType.OPEN_CLANG_FORMAT_FILE);
-                break;
+        webviewLog.debug('Toolbar action triggered', { action });
+
+        try {
+            switch (action) {
+                case 'load':
+                    sendMessage(WebviewMessageType.LOAD_WORKSPACE_CONFIG);
+                    break;
+                case 'save':
+                    sendMessage(WebviewMessageType.SAVE_CONFIG);
+                    break;
+                case 'export':
+                    sendMessage(WebviewMessageType.EXPORT_CONFIG);
+                    break;
+                case 'import':
+                    sendMessage(WebviewMessageType.IMPORT_CONFIG);
+                    break;
+                case 'reset':
+                    // 设置重置标志
+                    setState(prev => ({ ...prev, isConfigReset: true }));
+                    sendMessage(WebviewMessageType.RESET_CONFIG);
+                    // 3秒后清除重置标志
+                    setTimeout(() => {
+                        setState(prev => ({ ...prev, isConfigReset: false }));
+                    }, 3000);
+                    break;
+                case 'openClangFormatFile':
+                    sendMessage(WebviewMessageType.OPEN_CLANG_FORMAT_FILE);
+                    break;
+                default:
+                    webviewLog.warn('Unknown toolbar action', { action });
+            }
+        } catch (error) {
+            webviewLog.error('Error handling toolbar action', { action, error });
         }
     }, [sendMessage]);
 
-    // 监听来自 VS Code 的消息
+    // 监听来自 VS Code 的消息 - 添加内存泄漏防护
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
+            // 检查组件是否仍然挂载
+            if (!isMountedRef.current) {
+                webviewLog.debug('Message received after component unmount, ignoring');
+                return;
+            }
+
             const message = event.data;
             webviewLog.debug('Received message from VS Code', {
                 messageType: message.type,
                 message
             });
 
-            switch (message.type) {
-                case WebviewMessageType.INITIALIZE:
-                    setState((prev: WebviewAppState) => ({
-                        ...prev,
-                        options: message.payload.options,
-                        categories: message.payload.categories,
-                        currentConfig: message.payload.currentConfig,
-                        settings: message.payload.settings || prev.settings,
-                        isLoading: false
-                    }));
-                    // 初始化完成后，不再使用 setTimeout，改由 useEffect 触发
-                    break;
+            try {
+                switch (message.type) {
+                    case WebviewMessageType.INITIALIZE:
+                        setState((prev: WebviewAppState) => ({
+                            ...prev,
+                            options: message.payload.options,
+                            categories: message.payload.categories,
+                            currentConfig: message.payload.currentConfig,
+                            settings: message.payload.settings || prev.settings,
+                            isLoading: false
+                        }));
+                        // 初始化完成后，不再使用 setTimeout，改由 useEffect 触发
+                        break;
 
-                case WebviewMessageType.CONFIG_LOADED:
-                    setState((prev: WebviewAppState) => ({
-                        ...prev,
-                        currentConfig: message.payload.config
-                    }));
-                    break;
+                    case WebviewMessageType.CONFIG_LOADED:
+                        setState((prev: WebviewAppState) => ({
+                            ...prev,
+                            currentConfig: message.payload.config
+                        }));
+                        break;
 
-                case WebviewMessageType.MICRO_PREVIEW_UPDATE:
-                    setState((prev: WebviewAppState) => ({
-                        ...prev,
-                        microPreviews: {
-                            ...prev.microPreviews,
-                            [message.payload.key]: message.payload.formattedCode
-                        }
-                    }));
-                    break;
+                    case WebviewMessageType.MICRO_PREVIEW_UPDATE:
+                        setState((prev: WebviewAppState) => ({
+                            ...prev,
+                            microPreviews: {
+                                ...prev.microPreviews,
+                                [message.payload.key]: message.payload.formattedCode
+                            }
+                        }));
+                        break;
 
-                case WebviewMessageType.VALIDATION_RESULT:
-                    setState((prev: WebviewAppState) => ({
-                        ...prev,
-                        validationState: message.payload
-                    }));
-                    break;
+                    case WebviewMessageType.VALIDATION_RESULT:
+                        setState((prev: WebviewAppState) => ({
+                            ...prev,
+                            validationState: message.payload
+                        }));
+                        break;
 
-                case WebviewMessageType.VALIDATION_ERROR:
-                    setState((prev: WebviewAppState) => ({
-                        ...prev,
-                        validationState: {
-                            isValid: false,
-                            errors: [message.payload.error]
-                        }
-                    }));
-                    break;
+                    case WebviewMessageType.VALIDATION_ERROR:
+                        setState((prev: WebviewAppState) => ({
+                            ...prev,
+                            validationState: {
+                                isValid: false,
+                                errors: [message.payload.error]
+                            }
+                        }));
+                        break;
 
-                case WebviewMessageType.SETTINGS_UPDATED:
-                    setState((prev: WebviewAppState) => ({
-                        ...prev,
-                        settings: {
-                            ...prev.settings,
-                            ...message.payload
-                        }
-                    }));
-                    break;
+                    case WebviewMessageType.SETTINGS_UPDATED:
+                        setState((prev: WebviewAppState) => ({
+                            ...prev,
+                            settings: {
+                                ...prev.settings,
+                                ...message.payload
+                            }
+                        }));
+                        break;
 
-                case WebviewMessageType.UPDATE_MICRO_PREVIEW:
-                    setState((prev: WebviewAppState) => ({
-                        ...prev,
-                        dynamicPreviewResult: {
-                            optionName: message.payload.optionName,
-                            formattedCode: message.payload.formattedCode,
-                            success: message.payload.success,
-                            error: message.payload.error
-                        }
-                    }));
-                    break;
+                    case WebviewMessageType.UPDATE_MICRO_PREVIEW:
+                        setState((prev: WebviewAppState) => ({
+                            ...prev,
+                            dynamicPreviewResult: {
+                                optionName: message.payload.optionName,
+                                formattedCode: message.payload.formattedCode,
+                                success: message.payload.success,
+                                error: message.payload.error
+                            }
+                        }));
+                        break;
 
-                case WebviewMessageType.PREVIEW_OPENED:
-                    webviewLog.debug('Received previewOpened message');
-                    setState((prev: WebviewAppState) => ({
-                        ...prev,
-                        previewState: {
-                            isOpen: true,
-                            showPlaceholder: false,
-                            isReopening: false
-                        }
-                    }));
-                    break;
+                    case WebviewMessageType.PREVIEW_OPENED:
+                        webviewLog.debug('Received previewOpened message');
+                        setState((prev: WebviewAppState) => ({
+                            ...prev,
+                            previewState: {
+                                isOpen: true,
+                                showPlaceholder: false,
+                                isReopening: false
+                            }
+                        }));
+                        break;
 
-                case WebviewMessageType.PREVIEW_CLOSED:
-                    webviewLog.debug('Received previewClosed message');
-                    setState((prev: WebviewAppState) => ({
-                        ...prev,
-                        previewState: {
-                            isOpen: false,
-                            showPlaceholder: true,
-                            isReopening: false
-                        }
-                    }));
-                    break;
+                    case WebviewMessageType.PREVIEW_CLOSED:
+                        webviewLog.debug('Received previewClosed message');
+                        setState((prev: WebviewAppState) => ({
+                            ...prev,
+                            previewState: {
+                                isOpen: false,
+                                showPlaceholder: true,
+                                isReopening: false
+                            }
+                        }));
+                        break;
 
-                case WebviewMessageType.PREVIEW_REOPENED:
-                    setState((prev: WebviewAppState) => ({
-                        ...prev,
-                        previewState: {
-                            isOpen: true,
-                            showPlaceholder: false,
-                            isReopening: false
-                        }
-                    }));
-                    break;
+                    case WebviewMessageType.PREVIEW_REOPENED:
+                        setState((prev: WebviewAppState) => ({
+                            ...prev,
+                            previewState: {
+                                isOpen: true,
+                                showPlaceholder: false,
+                                isReopening: false
+                            }
+                        }));
+                        break;
 
-                case WebviewMessageType.PREVIEW_REOPEN_FAILED:
-                    // 重新打开失败时，保持占位符显示
-                    setState((prev: WebviewAppState) => ({
-                        ...prev,
-                        previewState: {
-                            isOpen: false,
-                            showPlaceholder: true,
-                            isReopening: false
-                        }
-                    }));
-                    break;
+                    case WebviewMessageType.PREVIEW_REOPEN_FAILED:
+                        // 重新打开失败时，保持占位符显示
+                        setState((prev: WebviewAppState) => ({
+                            ...prev,
+                            previewState: {
+                                isOpen: false,
+                                showPlaceholder: true,
+                                isReopening: false
+                            }
+                        }));
+                        break;
 
-                default:
-                    webviewLog.warn('Unknown message type received', {
-                        messageType: message.type,
-                        message
-                    });
+                    default:
+                        webviewLog.warn('Unknown message type received', {
+                            messageType: message.type,
+                            message
+                        });
+                }
+            } catch (error) {
+                webviewLog.error('Error handling message', { message, error });
             }
         };
 
@@ -248,6 +294,8 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
         // 监听webview即将卸载，这时显示占位符
         const handleBeforeUnload = () => {
+            if (!isMountedRef.current) return;
+
             webviewLog.debug('Webview is about to unload, showing placeholder');
             setState(prev => ({
                 ...prev,
@@ -296,32 +344,44 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
     }
 
     return (
-        <div className={`app ${state.previewState.showPlaceholder ? '' : ''}`}>
-            <Toolbar onAction={handleToolbarAction} />
+        <ErrorBoundary
+            onError={(error, errorInfo) => {
+                webviewLog.error('React Error Boundary caught error', { error, errorInfo });
+            }}
+        >
+            <div className={`app ${state.previewState.showPlaceholder ? '' : ''}`}>
+                <ErrorBoundary fallback={<div className="toolbar-error">工具栏加载失败</div>}>
+                    <Toolbar onAction={handleToolbarAction} />
+                </ErrorBoundary>
 
-            <div className="app-content">
-                <ConfigPanel
-                    options={state.options}
-                    categories={state.categories}
-                    microPreviews={state.microPreviews}
-                    settings={state.settings}
-                    onConfigChange={handleConfigChange}
-                    onSettingsChange={() => { }} // 空函数，设置已移除
-                    onPreviewRequest={handlePreviewRequest}
-                    onOpenClangFormatFile={() => handleToolbarAction('openClangFormatFile')}
-                    dynamicPreviewResult={state.dynamicPreviewResult}
-                    currentConfig={state.currentConfig}
-                    onConfigOptionHover={handleConfigOptionHover}
-                    onConfigOptionFocus={handleConfigOptionFocus}
-                    onClearHighlights={handleClearHighlights}
-                    isConfigReset={state.isConfigReset}
-                />
+                <div className="app-content">
+                    <ErrorBoundary fallback={<div className="config-panel-error">配置面板加载失败</div>}>
+                        <ConfigPanel
+                            options={state.options}
+                            categories={state.categories}
+                            microPreviews={state.microPreviews}
+                            settings={state.settings}
+                            onConfigChange={handleConfigChange}
+                            onSettingsChange={() => { }} // 空函数，设置已移除
+                            onPreviewRequest={handlePreviewRequest}
+                            onOpenClangFormatFile={() => handleToolbarAction('openClangFormatFile')}
+                            dynamicPreviewResult={state.dynamicPreviewResult}
+                            currentConfig={state.currentConfig}
+                            onConfigOptionHover={handleConfigOptionHover}
+                            onConfigOptionFocus={handleConfigOptionFocus}
+                            onClearHighlights={handleClearHighlights}
+                            isConfigReset={state.isConfigReset}
+                        />
+                    </ErrorBoundary>
+                </div>
+
+                <ErrorBoundary fallback={<div className="status-bar-error">状态栏加载失败</div>}>
+                    <StatusBar
+                        validationState={state.validationState}
+                        configCount={Object.keys(state.currentConfig).length}
+                    />
+                </ErrorBoundary>
             </div>
-
-            <StatusBar
-                validationState={state.validationState}
-                configCount={Object.keys(state.currentConfig).length}
-            />
-        </div>
+        </ErrorBoundary>
     );
 };

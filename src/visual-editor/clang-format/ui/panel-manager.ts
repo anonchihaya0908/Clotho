@@ -384,7 +384,7 @@ export class ClangFormatPanelManager
       oldestPanel,
     };
   }
-
+  
   /**
    * 销毁管理器
    */
