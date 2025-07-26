@@ -60,10 +60,10 @@
 ## 🔄 Data Flow
 
 1. **Monitor Startup** → ProcessService.findMainProcessByName('clangd')
-2. **ProcessService** → ProcessRunner.getProcessInfo('clangd') 
+2. **ProcessService** → ProcessRunner.getProcessInfo('clangd')
 3. **ProcessRunner** → Execute system commands (WMIC/ps)
 4. **System Response** → Parse process list with PID/PPID/Memory
-5. **DNA Testing** → Filter legitimate children vs stale processes  
+5. **DNA Testing** → Filter legitimate children vs stale processes
 6. **Selection** → Choose main process (highest memory among children)
 7. **Monitor Update** → Use selected PID for pidusage monitoring
 8. **Status Bar** → Display real-time memory/CPU usage
@@ -71,22 +71,26 @@
 ## 🚀 Key Benefits
 
 ### 1. **Separation of Concerns**
+
 - **MemoryMonitor**: Only cares about memory monitoring
-- **CpuMonitor**: Only cares about CPU monitoring  
+- **CpuMonitor**: Only cares about CPU monitoring
 - **ProcessService**: Only cares about process detection
 - **ProcessRunner**: Only cares about system commands
 
 ### 2. **Code Reusability**
+
 - Both monitors use the same ProcessService
 - ProcessService can be used by any future monitor
 - ProcessRunner provides consistent command execution
 
 ### 3. **Maintainability**
+
 - Bug fixes in process detection benefit all monitors
 - Easy to add new monitors (disk I/O, network, etc.)
 - Clear responsibility boundaries
 
 ### 4. **Testability**
+
 - Each component can be tested independently
 - ProcessService can be mocked for unit tests
 - Clear interfaces and dependencies
@@ -96,7 +100,7 @@
 The ProcessService uses our "parent-child DNA testing" approach:
 
 1. **Get Extension Host PID** - Our "identity card"
-2. **Find All clangd Processes** - The "suspects" 
+2. **Find All clangd Processes** - The "suspects"
 3. **Filter Direct Children** - Processes with PPID = our PID
 4. **Select Main Process** - Highest memory among legitimate children
 5. **Avoid Stale Processes** - Ignore orphans from old sessions
@@ -114,6 +118,7 @@ The ProcessService uses our "parent-child DNA testing" approach:
 ```
 
 Both monitors:
+
 - Use the same ProcessService for detection
 - Show real-time usage data
 - Support color-coded warnings/errors

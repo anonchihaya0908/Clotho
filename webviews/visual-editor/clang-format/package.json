@@ -1,12 +1,16 @@
 {
     "name": "visual-editor-clang-format-webview",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "private": true,
     "description": "Webview frontend for Clotho clang-format visual editor",
     "scripts": {
         "build": "webpack --mode production",
         "dev": "webpack --mode development --watch",
-        "clean": "rimraf dist"
+        "clean": "rimraf dist",
+        "lint": "eslint src --ext .ts,.tsx",
+        "lint:fix": "eslint src --ext .ts,.tsx --fix",
+        "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,json}\"",
+        "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,json}\""
     },
     "dependencies": {
         "react": "^18.2.0",

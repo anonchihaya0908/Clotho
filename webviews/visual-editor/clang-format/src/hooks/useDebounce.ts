@@ -2,7 +2,7 @@
  * Custom hooks for performance optimization
  */
 
-import React, { useCallback, useRef, useEffect, useState } from 'react';
+import { useCallback, useRef, useEffect, useState } from 'react';
 
 /**
  * 防抖 Hook
@@ -11,35 +11,35 @@ import React, { useCallback, useRef, useEffect, useState } from 'react';
  * @returns 防抖后的函数
  */
 export function useDebounce<T extends (...args: any[]) => any>(
-    callback: T,
-    delay: number
+  callback: T,
+  delay: number
 ): (...args: Parameters<T>) => void {
-    const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
-    const callbackRef = useRef(callback);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const callbackRef = useRef(callback);
 
-    // 保持回调函数的最新引用
-    useEffect(() => {
-        callbackRef.current = callback;
-    }, [callback]);
+  // 保持回调函数的最新引用
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
-    // 清理定时器
-    useEffect(() => {
-        return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-        };
-    }, []);
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
-    return useCallback((...args: Parameters<T>) => {
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-        }
+  return useCallback((...args: Parameters<T>) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
 
-        timeoutRef.current = setTimeout(() => {
-            callbackRef.current(...args);
-        }, delay);
-    }, [delay]);
+    timeoutRef.current = setTimeout(() => {
+      callbackRef.current(...args);
+    }, delay);
+  }, [delay]);
 }
 
 /**
@@ -49,42 +49,42 @@ export function useDebounce<T extends (...args: any[]) => any>(
  * @returns 防抖后的函数
  */
 export function useMultiKeyDebounce<T extends (key: string, ...args: any[]) => any>(
-    callback: T,
-    delay: number
+  callback: T,
+  delay: number
 ): (key: string, ...args: Parameters<T> extends [string, ...infer U] ? U : never) => void {
-    const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-    const callbackRef = useRef(callback);
+  const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const callbackRef = useRef(callback);
 
-    // 保持回调函数的最新引用
-    useEffect(() => {
-        callbackRef.current = callback;
-    }, [callback]);
+  // 保持回调函数的最新引用
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
-    // 清理所有定时器
-    useEffect(() => {
-        return () => {
-            timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
-            timeoutsRef.current.clear();
-        };
-    }, []);
+  // 清理所有定时器
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      timeoutsRef.current.clear();
+    };
+  }, []);
 
-    return useCallback((key: string, ...args: any[]) => {
-        const timeouts = timeoutsRef.current;
+  return useCallback((key: string, ...args: any[]) => {
+    const timeouts = timeoutsRef.current;
 
-        // 清除该键的现有定时器
-        const existingTimeout = timeouts.get(key);
-        if (existingTimeout) {
-            clearTimeout(existingTimeout);
-        }
+    // 清除该键的现有定时器
+    const existingTimeout = timeouts.get(key);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
 
-        // 设置新的定时器
-        const timeoutId = setTimeout(() => {
-            callbackRef.current(key, ...args);
-            timeouts.delete(key);
-        }, delay);
+    // 设置新的定时器
+    const timeoutId = setTimeout(() => {
+      callbackRef.current(key, ...args);
+      timeouts.delete(key);
+    }, delay);
 
-        timeouts.set(key, timeoutId);
-    }, [delay]);
+    timeouts.set(key, timeoutId);
+  }, [delay]);
 }
 
 /**
@@ -94,25 +94,25 @@ export function useMultiKeyDebounce<T extends (key: string, ...args: any[]) => a
  * @returns 节流后的函数
  */
 export function useThrottle<T extends (...args: any[]) => any>(
-    callback: T,
-    delay: number
+  callback: T,
+  delay: number
 ): (...args: Parameters<T>) => void {
-    const lastCallRef = useRef<number>(0);
-    const callbackRef = useRef(callback);
+  const lastCallRef = useRef<number>(0);
+  const callbackRef = useRef(callback);
 
-    // 保持回调函数的最新引用
-    useEffect(() => {
-        callbackRef.current = callback;
-    }, [callback]);
+  // 保持回调函数的最新引用
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
-    return useCallback((...args: Parameters<T>) => {
-        const now = Date.now();
+  return useCallback((...args: Parameters<T>) => {
+    const now = Date.now();
 
-        if (now - lastCallRef.current >= delay) {
-            lastCallRef.current = now;
-            callbackRef.current(...args);
-        }
-    }, [delay]);
+    if (now - lastCallRef.current >= delay) {
+      lastCallRef.current = now;
+      callbackRef.current(...args);
+    }
+  }, [delay]);
 }
 
 /**
@@ -120,15 +120,15 @@ export function useThrottle<T extends (...args: any[]) => any>(
  * @returns 返回一个 ref，用于检查组件是否已卸载
  */
 export function useIsMounted() {
-    const isMountedRef = useRef(true);
+  const isMountedRef = useRef(true);
 
-    useEffect(() => {
-        return () => {
-            isMountedRef.current = false;
-        };
-    }, []);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-    return isMountedRef;
+  return isMountedRef;
 }
 
 /**
@@ -137,14 +137,14 @@ export function useIsMounted() {
  * @returns [state, safeSetState] 安全的状态更新函数
  */
 export function useSafeState<T>(initialState: T | (() => T)) {
-    const [state, setState] = useState(initialState);
-    const isMountedRef = useIsMounted();
+  const [state, setState] = useState(initialState);
+  const isMountedRef = useIsMounted();
 
-    const safeSetState = useCallback((newState: T | ((prevState: T) => T)) => {
-        if (isMountedRef.current) {
-            setState(newState);
-        }
-    }, [isMountedRef]);
+  const safeSetState = useCallback((newState: T | ((prevState: T) => T)) => {
+    if (isMountedRef.current) {
+      setState(newState);
+    }
+  }, [isMountedRef]);
 
-    return [state, safeSetState] as const;
+  return [state, safeSetState] as const;
 }

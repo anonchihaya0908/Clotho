@@ -95,29 +95,94 @@ import gbcWhatAreYouDoing from '../assets/images/Girls-Band-Cry/what-are-you-doi
 import gbcWiggling from '../assets/images/Girls-Band-Cry/wiggling.webp';
 
 export const ALL_CHARACTER_IMAGES = [
-    // MyGO
-    mygoAngry, mygoBlock, mygoCreating, mygoCryingLoudly, mygoHuh,
-    mygoInterestingWoman, mygoJustWokeUp, mygoLetMeSee, mygoLove,
-    mygoMatchaParfait, mygoMelancholy, mygoNoFighting, mygoNoWay,
-    mygoPeeking, mygoPleaseOrder, mygoRunningAway, mygoSendingMessage,
-    mygoShy, mygoWhatAboutMe, mygoWhy,
-    // Ave Mujica
-    aveAngry, aveBuyAllAtOnce, aveCouldItBe, aveDelicious, aveEh,
-    aveHappy, aveHmph, aveNoWay, avePleasant, avePrettyGood,
-    aveRememberToSmile, aveScared, aveScissors, aveShocked,
-    aveSleeping, aveSuddenly, aveSulking, aveWaitAMoment,
-    aveWhatAboutMe, aveWillReportYou,
-    // Girls Band Cry
-    gbcAh, gbcAngry, gbcAppear, gbcBeingPulled, gbcBoxHead,
-    gbcByeBye, gbcCatchingBox, gbcConfident, gbcCrying, gbcDeepSleep,
-    gbcDepressed, gbcDriving, gbcDrivingRupa, gbcEating, gbcEww,
-    gbcGrittingTeeth, gbcHeartGesture, gbcHuh, gbcJoy, gbcLaughing,
-    gbcLove, gbcMischievousSmile, gbcMocking, gbcMockingSubaru,
-    gbcNoWay, gbcOfferingFlowers, gbcPeeking, gbcPinchingCheek,
-    gbcPlease, gbcPointing, gbcPullingPerson, gbcRockAndRoll,
-    gbcScratchingHead, gbcShowingTeeth, gbcShy, gbcSigh, gbcSilent,
-    gbcStubborn, gbcStunned, gbcSurprised, gbcSweating, gbcTearyEyes,
-    gbcTongueOut, gbcWhatAreYouDoing, gbcWiggling
+  // MyGO
+  mygoAngry,
+  mygoBlock,
+  mygoCreating,
+  mygoCryingLoudly,
+  mygoHuh,
+  mygoInterestingWoman,
+  mygoJustWokeUp,
+  mygoLetMeSee,
+  mygoLove,
+  mygoMatchaParfait,
+  mygoMelancholy,
+  mygoNoFighting,
+  mygoNoWay,
+  mygoPeeking,
+  mygoPleaseOrder,
+  mygoRunningAway,
+  mygoSendingMessage,
+  mygoShy,
+  mygoWhatAboutMe,
+  mygoWhy,
+  // Ave Mujica
+  aveAngry,
+  aveBuyAllAtOnce,
+  aveCouldItBe,
+  aveDelicious,
+  aveEh,
+  aveHappy,
+  aveHmph,
+  aveNoWay,
+  avePleasant,
+  avePrettyGood,
+  aveRememberToSmile,
+  aveScared,
+  aveScissors,
+  aveShocked,
+  aveSleeping,
+  aveSuddenly,
+  aveSulking,
+  aveWaitAMoment,
+  aveWhatAboutMe,
+  aveWillReportYou,
+  // Girls Band Cry
+  gbcAh,
+  gbcAngry,
+  gbcAppear,
+  gbcBeingPulled,
+  gbcBoxHead,
+  gbcByeBye,
+  gbcCatchingBox,
+  gbcConfident,
+  gbcCrying,
+  gbcDeepSleep,
+  gbcDepressed,
+  gbcDriving,
+  gbcDrivingRupa,
+  gbcEating,
+  gbcEww,
+  gbcGrittingTeeth,
+  gbcHeartGesture,
+  gbcHuh,
+  gbcJoy,
+  gbcLaughing,
+  gbcLove,
+  gbcMischievousSmile,
+  gbcMocking,
+  gbcMockingSubaru,
+  gbcNoWay,
+  gbcOfferingFlowers,
+  gbcPeeking,
+  gbcPinchingCheek,
+  gbcPlease,
+  gbcPointing,
+  gbcPullingPerson,
+  gbcRockAndRoll,
+  gbcScratchingHead,
+  gbcShowingTeeth,
+  gbcShy,
+  gbcSigh,
+  gbcSilent,
+  gbcStubborn,
+  gbcStunned,
+  gbcSurprised,
+  gbcSweating,
+  gbcTearyEyes,
+  gbcTongueOut,
+  gbcWhatAreYouDoing,
+  gbcWiggling,
 ];
 
 /**
@@ -125,18 +190,18 @@ export const ALL_CHARACTER_IMAGES = [
  * @returns 图片的URL
  */
 export function getRandomCharacterImage(): string {
-    const randomIndex = Math.floor(Math.random() * ALL_CHARACTER_IMAGES.length);
-    return ALL_CHARACTER_IMAGES[randomIndex];
+  const randomIndex = Math.floor(Math.random() * ALL_CHARACTER_IMAGES.length);
+  return ALL_CHARACTER_IMAGES[randomIndex];
 }
 
 /**
  * 获取所有图片的统计信息
  */
 export function getImageStats() {
-    return {
-        total: ALL_CHARACTER_IMAGES.length,
-        mygo: 20,
-        aveMujica: 20,
-        girlsBandCry: 45
-    };
+  return {
+    total: ALL_CHARACTER_IMAGES.length,
+    mygo: 20,
+    aveMujica: 20,
+    girlsBandCry: 45,
+  };
 }
