@@ -28,6 +28,7 @@ import {
   PairCreatorService,
   PairCreatorUI,
 } from '../create-source-header-pair';
+import { HeaderGuardCoordinator } from '../create-source-header-pair/header-guard-coordinator';
 import {
   PairingRuleCoordinator,
   PairingRuleService,
@@ -64,6 +65,7 @@ export interface ServiceMap {
   pairCreatorService: PairCreatorService;
   pairCreatorUI: PairCreatorUI;
   pairCoordinator: PairCoordinator;
+  headerGuardCoordinator: HeaderGuardCoordinator;
 
   // Switch Header/Source
   switchConfigService: SwitchConfigService;

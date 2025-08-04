@@ -15,7 +15,7 @@ export type { SwitchConfig, TemplateContext };
 // ===============================
 
 export const EXTENSION_NAME = 'Clotho';
-export const EXTENSION_ID = 'your-publisher-name.clotho';
+export const EXTENSION_ID = 'Togawa-Sakiko.clotho';
 
 // ===============================
 // File Extensions
@@ -48,6 +48,7 @@ export const COMMANDS = {
   NEW_SOURCE_PAIR: 'clotho.newSourcePair',
   SWITCH_HEADER_SOURCE: 'clotho.switchHeaderSource',
   CONFIGURE_RULES: 'clotho.configureRules',
+  CONFIGURE_HEADER_GUARD: 'clotho.configureHeaderGuard',
   SHOW_CLANGD_DETAILS: 'clotho.showClangdDetails',
   OPEN_CLANG_FORMAT_EDITOR: 'clotho.openClangFormatEditor',
 } as const;

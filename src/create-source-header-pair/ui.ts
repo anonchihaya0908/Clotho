@@ -361,6 +361,36 @@ export class PairCreatorUI {
     return result?.value;
   }
 
+  /**
+   * Prompts user to configure header guard style for existing configuration
+   * This is for standalone configuration commands, not part of file creation flow
+   */
+  public async promptForHeaderGuardConfiguration(): Promise<HeaderGuardStyle | undefined> {
+    const choices = [
+      {
+        label: '$(shield) #pragma once',
+        description: 'Modern C++ style, widely supported',
+        detail: 'Simpler, no naming conflicts, supported by all major compilers',
+        value: 'pragma_once' as HeaderGuardStyle,
+      },
+      {
+        label: '$(code) #ifndef/#define/#endif',
+        description: 'Traditional style, maximum compatibility',
+        detail: 'Explicit macro definition, works with older compilers',
+        value: 'ifndef_define' as HeaderGuardStyle,
+      },
+    ];
+
+    const result = await vscode.window.showQuickPick(choices, {
+      placeHolder: 'Choose header guard style for your header files',
+      title: 'Configure Header Guard Style',
+      matchOnDescription: true,
+      matchOnDetail: true,
+    });
+
+    return result?.value;
+  }
+
   // - Returns 'cancelled' if the user presses ESC to cancel, and the operation
   // should be terminated
   // - Returns 'use_default' if the user selects "Use Default Templates", and

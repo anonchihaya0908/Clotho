@@ -18,6 +18,7 @@ import {
   PairCreatorService,
   PairCreatorUI,
 } from './create-source-header-pair';
+import { HeaderGuardCoordinator } from './create-source-header-pair/header-guard-coordinator';
 import {
   PairingRuleCoordinator,
   PairingRuleService,
@@ -139,6 +140,15 @@ function registerServices(context: vscode.ExtensionContext): void {
       new PairCoordinator(
         container.get('pairCreatorService'),
         container.get('pairCreatorUI'),
+        container.get('pairingRuleService'),
+      ),
+  );
+  serviceContainer.register(
+    'headerGuardCoordinator',
+    (container) =>
+      new HeaderGuardCoordinator(
+        container.get('pairCreatorUI'),
+        container.get('pairCreatorService'),
         container.get('pairingRuleService'),
       ),
   );
@@ -289,6 +299,12 @@ function registerCommands(context: vscode.ExtensionContext): void {
     return coordinator.create();
   });
 
+  // Header Guard Configuration Commands
+  const configureHeaderGuardCommand = register(COMMANDS.CONFIGURE_HEADER_GUARD, () => {
+    const coordinator = serviceContainer.get('headerGuardCoordinator');
+    return coordinator.configureHeaderGuard();
+  });
+
   // Switch Header/Source Commands
   const switchHeaderSourceCommand = register(
     COMMANDS.SWITCH_HEADER_SOURCE,
@@ -325,6 +341,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     configureRulesCommand,
     newSourcePairCommand,
+    configureHeaderGuardCommand,
     switchHeaderSourceCommand,
     showClangdDetailsCommand,
     restartClangdCommand,
