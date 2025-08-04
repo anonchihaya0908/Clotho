@@ -70,16 +70,6 @@
                 "title": "Open Clang-Format Visual Editor",
                 "category": "Clotho",
                 "icon": "$(edit)"
-            },
-            {
-                "command": "clotho.diagnoseVisualEditor",
-                "title": "Diagnose Visual Editor",
-                "category": "Clotho Debug"
-            },
-            {
-                "command": "clotho.restartVisualEditor",
-                "title": "Restart Visual Editor",
-                "category": "Clotho Debug"
             }
         ],
         "menus": {

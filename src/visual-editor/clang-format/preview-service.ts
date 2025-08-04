@@ -4,7 +4,7 @@
  * 将预览逻辑与配置元数据解耦
  */
 
-import { ConfigCategories } from '../../common/types/config';
+import { ConfigCategories } from '../../common/types/clang-format-shared';
 import { CLANG_FORMAT_OPTIONS } from './data/clang-format-options-database';
 
 /**

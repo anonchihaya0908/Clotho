@@ -1,6 +1,6 @@
 /**
- * 动漫角色图片索引
- * 包含所有85张WebP图片的路径信息
+ * Anime character image index
+ * Contains path information for all 85 WebP images
  */
 
 // MyGO
@@ -59,8 +59,8 @@ import gbcConfident from '../assets/images/Girls-Band-Cry/confident.webp';
 import gbcCrying from '../assets/images/Girls-Band-Cry/crying.webp';
 import gbcDeepSleep from '../assets/images/Girls-Band-Cry/deep-sleep.webp';
 import gbcDepressed from '../assets/images/Girls-Band-Cry/depressed.webp';
-import gbcDriving from '../assets/images/Girls-Band-Cry/driving.webp';
 import gbcDrivingRupa from '../assets/images/Girls-Band-Cry/driving-rupa.webp';
+import gbcDriving from '../assets/images/Girls-Band-Cry/driving.webp';
 import gbcEating from '../assets/images/Girls-Band-Cry/eating.webp';
 import gbcEww from '../assets/images/Girls-Band-Cry/eww.webp';
 import gbcGrittingTeeth from '../assets/images/Girls-Band-Cry/gritting-teeth.webp';
@@ -70,8 +70,8 @@ import gbcJoy from '../assets/images/Girls-Band-Cry/joy.webp';
 import gbcLaughing from '../assets/images/Girls-Band-Cry/laughing.webp';
 import gbcLove from '../assets/images/Girls-Band-Cry/love.webp';
 import gbcMischievousSmile from '../assets/images/Girls-Band-Cry/mischievous-smile.webp';
-import gbcMocking from '../assets/images/Girls-Band-Cry/mocking.webp';
 import gbcMockingSubaru from '../assets/images/Girls-Band-Cry/mocking-subaru.webp';
+import gbcMocking from '../assets/images/Girls-Band-Cry/mocking.webp';
 import gbcNoWay from '../assets/images/Girls-Band-Cry/no-way.webp';
 import gbcOfferingFlowers from '../assets/images/Girls-Band-Cry/offering-flowers.webp';
 import gbcPeeking from '../assets/images/Girls-Band-Cry/peeking.webp';
@@ -186,8 +186,8 @@ export const ALL_CHARACTER_IMAGES = [
 ];
 
 /**
- * 随机选择一张角色图片
- * @returns 图片的URL
+ * Randomly select a character image
+ * @returns Image URL
  */
 export function getRandomCharacterImage(): string {
   const randomIndex = Math.floor(Math.random() * ALL_CHARACTER_IMAGES.length);
@@ -195,7 +195,7 @@ export function getRandomCharacterImage(): string {
 }
 
 /**
- * 获取所有图片的统计信息
+ * Get statistics for all images
  */
 export function getImageStats() {
   return {

@@ -1,4 +1,4 @@
-// 静态导入highlight.js以避免CSP问题
+// Static import of highlight.js to avoid CSP issues
 import hljs from 'highlight.js/lib/core';
 import cpp from 'highlight.js/lib/languages/cpp';
 import { webviewLog } from './webview-logger';
@@ -19,12 +19,12 @@ export const loadHighlightJS = async (): Promise<typeof hljs> => {
     return hljs;
 };
 
-// 便捷的高亮函数
+// Convenient highlight function
 export const highlightCode = async (code: string, language: string = 'cpp'): Promise<string> => {
     try {
         const hljsInstance = await loadHighlightJS();
 
-        // 验证语言是否已注册
+        // Verify if language is registered
         if (!hljsInstance.getLanguage(language)) {
             webviewLog.warn('Language not registered, falling back to auto detection', {
                 language,
@@ -42,7 +42,7 @@ export const highlightCode = async (code: string, language: string = 'cpp'): Pro
             component: 'HighlightLoader',
             error: error instanceof Error ? error.message : String(error)
         });
-        // 降级返回HTML转义的代码
+        // Fallback to HTML-escaped code
         return code
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -52,7 +52,7 @@ export const highlightCode = async (code: string, language: string = 'cpp'): Pro
     }
 };
 
-// 检查是否已加载
+// Check if already loaded
 export const isHighlightJSLoaded = (): boolean => {
     return isInitialized;
 };

@@ -1,15 +1,16 @@
 /**
- * 管理器注册表
- * 提供自动管理器注册、初始化和清理的基础设施
+ * Manager Registry (Simplified)
+ * Provides automatic manager registration, initialization and cleanup infrastructure
+ * Simplified without complex priority system
  */
 
 import * as vscode from 'vscode';
-import { ManagerContext } from '../../../common/types';
-import { logger } from '../../../common/logger';
 import { errorHandler } from '../../../common/error-handler';
+import { logger } from '../../../common/logger';
+import { ManagerContext } from '../../../common/types';
 
 /**
- * 可管理的组件接口
+ * Manageable component interface
  */
 export interface ManagedComponent {
     readonly name: string;
@@ -18,18 +19,17 @@ export interface ManagedComponent {
 }
 
 /**
- * 管理器注册信息
+ * Manager registration info (simplified)
  */
 export interface ManagerRegistration {
     name: string;
     instance: ManagedComponent;
-    priority: number;
     initialized: boolean;
     initializationTime?: number;
 }
 
 /**
- * 初始化结果
+ * Initialization result
  */
 export interface InitializationResult {
     success: boolean;
@@ -39,14 +39,14 @@ export interface InitializationResult {
 }
 
 /**
- * 管理器注册表
+ * Manager Registry (Simplified)
  * 
- * 职责：
- * - 自动管理组件的生命周期
- * - 按优先级有序初始化
- * - 提供统一的错误处理
- * - 支持动态添加和移除管理器
- * - 防止重复初始化
+ * Responsibilities:
+ * - Manage component lifecycle automatically
+ * - Provide unified error handling
+ * - Support dynamic adding and removing managers
+ * - Prevent duplicate initialization
+ * (Removed complex priority system)
  */
 export class ManagerRegistry implements vscode.Disposable {
     private registrations = new Map<string, ManagerRegistration>();
@@ -54,13 +54,9 @@ export class ManagerRegistry implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
 
     /**
-     * 注册管理器
+     * Register manager (simplified)
      */
-    register(
-        name: string,
-        instance: ManagedComponent,
-        priority: number = 50,
-    ): void {
+    register(name: string, instance: ManagedComponent): void {
         if (this.registrations.has(name)) {
             logger.warn(`Manager ${name} is already registered, replacing...`, {
                 module: 'ManagerRegistry',
@@ -71,7 +67,6 @@ export class ManagerRegistry implements vscode.Disposable {
         this.registrations.set(name, {
             name,
             instance,
-            priority,
             initialized: false,
         });
     }
@@ -135,9 +130,8 @@ export class ManagerRegistry implements vscode.Disposable {
         const initialized: string[] = [];
         const failed: Array<{ name: string; error: Error }> = [];
 
-        // 按优先级排序（降序）
-        const sortedRegistrations = Array.from(this.registrations.values())
-            .sort((a, b) => b.priority - a.priority);
+        // Simple order (no complex priority system)
+        const sortedRegistrations = Array.from(this.registrations.values());
 
         for (const registration of sortedRegistrations) {
             try {
@@ -203,17 +197,15 @@ export class ManagerRegistry implements vscode.Disposable {
     }
 
     /**
-     * 获取初始化统计信息
+     * Get initialization statistics (simplified)
      */
     getInitializationStats(): Array<{
         name: string;
-        priority: number;
         initialized: boolean;
         initializationTime?: number;
     }> {
         return Array.from(this.registrations.values()).map(reg => ({
             name: reg.name,
-            priority: reg.priority,
             initialized: reg.initialized,
             initializationTime: reg.initializationTime,
         }));
@@ -223,10 +215,9 @@ export class ManagerRegistry implements vscode.Disposable {
      * 清理所有管理器
      */
     dispose(): void {
-        // 按相反的优先级顺序清理（先清理低优先级的）
+        // Simple cleanup order (no complex priority system)
         const sortedRegistrations = Array.from(this.registrations.values())
-            .filter(reg => reg.initialized)
-            .sort((a, b) => a.priority - b.priority);
+            .filter(reg => reg.initialized);
 
         const disposedManagers: string[] = [];
         const disposalErrors: Array<{ name: string; error: Error }> = [];

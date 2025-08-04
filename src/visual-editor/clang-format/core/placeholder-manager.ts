@@ -1,15 +1,15 @@
-import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-  BaseManager,
-  ManagerContext,
-} from '../../../common/types';
-import { WebviewMessage, WebviewMessageType } from '../../../common/types/webview';
-import { getNonce } from '../../../common/utils';
-import { isDarkTheme } from '../../../common/platform-utils';
-import { logger } from '../../../common/logger';
+import * as vscode from 'vscode';
 import { errorHandler } from '../../../common/error-handler';
+import { logger } from '../../../common/logger';
+import { isDarkTheme } from '../../../common/platform-utils';
+import {
+    BaseManager,
+    ManagerContext,
+} from '../../../common/types';
+import { WebviewMessage, WebviewMessageType } from '../../../common/types/clang-format-shared';
+import { getNonce } from '../../../common/utils';
 
 /**
  * 占位符 Webview 管理器

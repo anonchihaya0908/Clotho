@@ -1,13 +1,13 @@
 /**
  * Platform and Environment Utilities
- * 平台和环境相关的工具函数
+ * Platform and environment related utility functions
  */
 
 import * as vscode from 'vscode';
 
 /**
- * 获取适当的行尾序列
- * 基于 VS Code 设置和平台检测
+ * Get appropriate line ending sequence
+ * Based on VS Code settings and platform detection
  */
 export function getLineEnding(): string {
   const eolSetting = vscode.workspace
@@ -22,35 +22,35 @@ export function getLineEnding(): string {
 }
 
 /**
- * 检查当前是否为 Windows 平台
+ * Check if current platform is Windows
  */
 export function isWindows(): boolean {
   return process.platform === 'win32';
 }
 
 /**
- * 检查当前是否为 macOS 平台
+ * Check if current platform is macOS
  */
 export function isMacOS(): boolean {
   return process.platform === 'darwin';
 }
 
 /**
- * 检查当前是否为 Linux 平台
+ * Check if current platform is Linux
  */
 export function isLinux(): boolean {
   return process.platform === 'linux';
 }
 
 /**
- * 获取平台特定的路径分隔符
+ * Get platform-specific path separator
  */
 export function getPathSeparator(): string {
   return process.platform === 'win32' ? '\\' : '/';
 }
 
 /**
- * 获取平台名称（用于显示）
+ * Get platform name (for display)
  */
 export function getPlatformName(): string {
   switch (process.platform) {

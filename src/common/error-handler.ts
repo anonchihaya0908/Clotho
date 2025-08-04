@@ -445,13 +445,7 @@ export function handleErrors(context: Partial<ErrorContext> = {}) {
   };
 }
 
-/**
- * Enhanced decorator specifically for async methods with better type safety
- * @deprecated Use handleErrors instead, which now supports both sync and async
- */
-export function handleAsyncErrors(context: Partial<ErrorContext> = {}) {
-  return handleErrors({ ...context, rethrow: false });
-}
+
 
 /**
  * Enhanced decorator for methods that should always rethrow errors

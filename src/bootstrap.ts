@@ -14,23 +14,23 @@ import { errorHandler } from './common/error-handler';
 import { logger } from './common/logger';
 import { ServiceContainer } from './common/service-container';
 import {
-  PairCoordinator,
-  PairCreatorService,
-  PairCreatorUI,
+    PairCoordinator,
+    PairCreatorService,
+    PairCreatorUI,
 } from './create-source-header-pair';
 import {
-  PairingRuleCoordinator,
-  PairingRuleService,
-  PairingRuleUI,
+    PairingRuleCoordinator,
+    PairingRuleService,
+    PairingRuleUI,
 } from './pairing-rule-manager';
 import {
-  SwitchCoordinator,
-  SwitchService,
-  SwitchUI,
+    SwitchCoordinator,
+    SwitchService,
+    SwitchUI,
 } from './switch-header-source';
 import { SwitchConfigService } from './switch-header-source/config-manager';
 import { ClangFormatEditorCoordinator } from './visual-editor/clang-format/coordinator';
-import { VisualEditorDebugHelper } from './visual-editor/clang-format/debug/visual-editor-debug-helper';
+
 import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
 import { ClangFormatPreviewProvider } from './visual-editor/clang-format/preview-provider';
 
@@ -320,21 +320,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
     },
   );
 
-  // Debug Commands for Visual Editor
-  const diagnoseVisualEditorCommand = register(
-    'clotho.diagnoseVisualEditor',
-    () => {
-      return VisualEditorDebugHelper.diagnosePreviewState();
-    },
-  );
-
-  const restartVisualEditorCommand = register(
-    'clotho.restartVisualEditor',
-    () => {
-      return VisualEditorDebugHelper.forceRestartPreview();
-    },
-  );
-
   // Register all commands with the extension context for proper cleanup
   context.subscriptions.push(
     configureRulesCommand,
@@ -343,7 +328,5 @@ function registerCommands(context: vscode.ExtensionContext): void {
     showClangdDetailsCommand,
     restartClangdCommand,
     openClangFormatEditorCommand,
-    diagnoseVisualEditorCommand,
-    restartVisualEditorCommand,
   );
 }

@@ -1,7 +1,7 @@
 /**
  * Webview Logger Adapter
- * 为 webview 环境提供统一的日志接口
- * 将日志消息发送到 VS Code 扩展主进程
+ * Provides unified logging interface for webview environment
+ * Sends log messages to VS Code extension main process
  */
 
 export interface WebviewLoggerConfig {
@@ -22,9 +22,9 @@ export class WebviewLogger {
         };
     }
 
-    /**
-     * 发送日志到 VS Code 扩展
-     */
+      /**
+   * Send log to VS Code extension
+   */
     private sendToExtension(level: string, message: string, meta?: any) {
         try {
             this.vscode.postMessage({
@@ -40,14 +40,14 @@ export class WebviewLogger {
                 }
             });
         } catch (error) {
-            // 如果发送失败，至少在控制台输出
+            // If sending fails, at least output to console
             console.error('Failed to send log to extension:', error);
         }
     }
 
-    /**
-     * 输出到控制台（可选）
-     */
+      /**
+   * Output to console (optional)
+   */
     private outputToConsole(level: string, message: string, meta?: any) {
         if (!this.config.enableConsoleOutput) return;
 
@@ -72,9 +72,9 @@ export class WebviewLogger {
         }
     }
 
-    /**
-     * 检查日志级别
-     */
+      /**
+   * Check log level
+   */
     private shouldLog(level: string): boolean {
         const levels = ['debug', 'info', 'warn', 'error'];
         const currentLevelIndex = levels.indexOf(this.config.logLevel || 'info');
@@ -82,18 +82,18 @@ export class WebviewLogger {
         return messageLevelIndex >= currentLevelIndex;
     }
 
-    /**
-     * 记录调试信息
-     */
+      /**
+   * Log debug information
+   */
     debug(message: string, meta?: any) {
         if (!this.shouldLog('debug')) return;
         this.sendToExtension('debug', message, meta);
         this.outputToConsole('debug', message, meta);
     }
 
-    /**
-     * 记录信息
-     */
+      /**
+   * Log information
+   */
     info(message: string, meta?: any) {
         if (!this.shouldLog('info')) return;
         this.sendToExtension('info', message, meta);
@@ -109,9 +109,9 @@ export class WebviewLogger {
         this.outputToConsole('warn', message, meta);
     }
 
-    /**
-     * 记录错误
-     */
+      /**
+   * Log error
+   */
     error(message: string, error?: Error | any, meta?: any) {
         if (!this.shouldLog('error')) return;
         
@@ -128,9 +128,9 @@ export class WebviewLogger {
         this.outputToConsole('error', message, errorMeta);
     }
 
-    /**
-     * 记录用户操作
-     */
+      /**
+   * Log user action
+   */
     logUserAction(action: string, component?: string, meta?: any) {
         this.info(`User action: ${action}`, {
             component,
@@ -154,26 +154,26 @@ export class WebviewLogger {
 }
 
 /**
- * 创建 webview logger 实例
+ * Create webview logger instance
  */
 export function createWebviewLogger(vscode: any, config?: WebviewLoggerConfig): WebviewLogger {
     return new WebviewLogger(vscode, config);
 }
 
 /**
- * 默认的 webview logger（需要在使用前初始化）
+ * Default webview logger (needs to be initialized before use)
  */
 let defaultLogger: WebviewLogger | null = null;
 
 /**
- * 初始化默认 logger
+ * Initialize default logger
  */
 export function initializeWebviewLogger(vscode: any, config?: WebviewLoggerConfig) {
     defaultLogger = new WebviewLogger(vscode, config);
 }
 
 /**
- * 获取默认 logger
+ * Get default logger
  */
 export function getWebviewLogger(): WebviewLogger {
     if (!defaultLogger) {
@@ -183,7 +183,7 @@ export function getWebviewLogger(): WebviewLogger {
 }
 
 /**
- * 便捷的日志函数（使用默认 logger）
+ * Convenient logging functions (using default logger)
  */
 export const webviewLog = {
     debug: (message: string, meta?: any) => getWebviewLogger().debug(message, meta),

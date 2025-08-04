@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
-import {
-  BaseManager,
-  ManagerContext,
-  EditorOpenSource,
-} from '../../../common/types';
-import { WebviewMessage, WebviewMessageType } from '../../../common/types/webview';
-import { getNonce } from '../../../common/utils';
-import { isDarkTheme } from '../../../common/platform-utils';
-import { logger } from '../../../common/logger';
 import { errorHandler } from '../../../common/error-handler';
+import { logger } from '../../../common/logger';
+import { isDarkTheme } from '../../../common/platform-utils';
+import {
+    BaseManager,
+    EditorOpenSource,
+    ManagerContext,
+} from '../../../common/types';
+import { WebviewMessage, WebviewMessageType } from '../../../common/types/clang-format-shared';
+import { getNonce } from '../../../common/utils';
 
 /**
  * 编辑器管理器
@@ -84,7 +84,7 @@ export class ClangFormatEditorManager implements BaseManager {
       // 导入必要的配置数据 - 这些应该从原coordinator中迁移过来
       const { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG } =
         await import('../data/clang-format-options-database');
-      const { ConfigCategories } = await import('../../../common/types/config');
+      const { ConfigCategories } = await import('../../../common/types/clang-format-shared');
 
       const currentState = this.context.stateManager.getState();
 

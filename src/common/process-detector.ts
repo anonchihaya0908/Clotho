@@ -68,35 +68,10 @@ interface ProcessClassification {
  * The "Ace Detective" of our extension - specializes in process identification and analysis.
  */
 export class ProcessDetector {
-  // 调试模式控制 - 只在开发环境显示详细日志
+  // Debug mode control - only show detailed logs in development environment
   private static readonly DEBUG = process.env.CLOTHO_DEBUG === 'true';
 
-  /**
-   * 分级日志输出
-   */
-  private static log(level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any): void {
-    if (level === 'debug' && !this.DEBUG) {return;}
 
-    const moduleInfo = {
-      module: 'ProcessDetector',
-      operation: 'general',
-    };
-
-    switch (level) {
-    case 'debug':
-      logger.debug(message, { ...moduleInfo, ...data });
-      break;
-    case 'info':
-      logger.info(message, { ...moduleInfo, ...data });
-      break;
-    case 'warn':
-      logger.warn(message, { ...moduleInfo, ...data });
-      break;
-    case 'error':
-      logger.error(message, data instanceof Error ? data : undefined, { ...moduleInfo, context: data });
-      break;
-    }
-  }
   /**
    * 🧬 Finds the main process for a given application name using "DNA testing".
    * This method identifies legitimate child processes and selects the main one based on memory usage.
@@ -108,26 +83,32 @@ export class ProcessDetector {
     processName: string,
   ): Promise<ProcessInfo | undefined> {
     try {
-      this.log('debug', `Starting investigation for "${processName}" processes`);
+      if (this.DEBUG) {
+        logger.debug(`Starting investigation for "${processName}" processes`, { module: 'ProcessDetector', operation: 'findMainProcessByName' });
+      }
 
       // Step 1: Get our "identity card" (VS Code extension host PID)
       const ourPid = process.pid;
-      this.log('debug', `Our Identity Card: Extension Host PID ${ourPid}`);
+      if (this.DEBUG) {
+        logger.debug(`Our Identity Card: Extension Host PID ${ourPid}`, { module: 'ProcessDetector', operation: 'findMainProcessByName' });
+      }
 
       // Step 2: Gather all target processes in the system
       const allTargetProcesses = await ProcessRunner.getProcessInfo(processName);
 
       if (allTargetProcesses.length === 0) {
-        this.log('info', `No ${processName} processes found in the system`);
+        logger.info(`No ${processName} processes found in the system`, { module: 'ProcessDetector', operation: 'findMainProcessByName' });
         return undefined;
       }
 
-      this.log('debug', `Found ${allTargetProcesses.length} ${processName} process(es) in the system`);
+      if (this.DEBUG) {
+        logger.debug(`Found ${allTargetProcesses.length} ${processName} process(es) in the system`, { module: 'ProcessDetector', operation: 'findMainProcessByName' });
+      }
 
       if (this.DEBUG) {
         allTargetProcesses.forEach((p) => {
           const memMB = Math.round(p.memory / 1024);
-          this.log('debug', `Process PID ${p.pid}: Parent=${p.ppid}, Memory=${memMB}MB`);
+          logger.debug(`Process PID ${p.pid}: Parent=${p.ppid}, Memory=${memMB}MB`, { module: 'ProcessDetector', operation: 'findMainProcessByName' });
         });
       }
 
@@ -136,9 +117,9 @@ export class ProcessDetector {
       const result = this.selectMainProcess(classification);
 
       if (result) {
-        this.log('info', `Successfully identified main ${processName} process PID ${result.pid}`);
+        logger.info(`Successfully identified main ${processName} process PID ${result.pid}`, { module: 'ProcessDetector', operation: 'findMainProcessByName' });
       } else {
-        this.log('warn', `Failed to identify main ${processName} process`);
+        logger.warn(`Failed to identify main ${processName} process`, { module: 'ProcessDetector', operation: 'findMainProcessByName' });
       }
 
       return result;
@@ -154,7 +135,7 @@ export class ProcessDetector {
   }
 
   /**
-   * 分类进程关系的通用方法
+   * Generic method for classifying process relationships
    */
   private static classifyProcesses(
     ourPid: number,
@@ -174,7 +155,9 @@ export class ProcessDetector {
     const grandchildren = all.filter(p => p.relationship === 'grandchild');
     const orphans = all.filter(p => p.relationship === 'orphan');
 
-    this.log('debug', `DNA Analysis: ${directChildren.length} direct children, ${grandchildren.length} grandchildren, ${orphans.length} orphans`);
+    if (this.DEBUG) {
+      logger.debug(`DNA Analysis: ${directChildren.length} direct children, ${grandchildren.length} grandchildren, ${orphans.length} orphans`, { module: 'ProcessDetector', operation: 'classifyProcesses' });
+    }
 
     return {
       directChildren,
@@ -208,17 +191,17 @@ export class ProcessDetector {
 
     // 如果没有直接子进程，考虑孤立进程（可靠性较低）
     if (candidates.length === 0) {
-      this.log('warn', 'No direct children found, considering orphan processes...');
+      logger.warn('No direct children found, considering orphan processes...', { module: 'ProcessDetector', operation: 'selectMainProcess' });
       candidates = orphans;
       selectedRelationship = 'orphan';
     }
 
     if (candidates.length === 0) {
-      this.log('error', 'No valid candidates after DNA test');
+      logger.error('No valid candidates after DNA test', undefined, { module: 'ProcessDetector', operation: 'selectMainProcess' });
       return undefined;
     }
 
-    // 在候选进程中，选择内存使用最高的（主服务器）
+    // Among candidate processes, select the one with highest memory usage (main server)
     candidates.sort((a, b) => b.memory - a.memory);
     const selectedProcess = candidates[0];
 
@@ -228,7 +211,9 @@ export class ProcessDetector {
       isMainProcess: true,
     };
 
-    this.log('debug', `Selected PID ${selectedProcess.pid}: ${Math.round(selectedProcess.memory / 1024)}MB (${selectedRelationship})`);
+    if (this.DEBUG) {
+      logger.debug(`Selected PID ${selectedProcess.pid}: ${Math.round(selectedProcess.memory / 1024)}MB (${selectedRelationship})`, { module: 'ProcessDetector', operation: 'selectMainProcess' });
+    }
 
     return result;
   }
@@ -250,11 +235,13 @@ export class ProcessDetector {
 
       // Strategy 1: Try API detection first (if provided)
       if (apiDetector) {
-        this.log('debug', `Strategy 1: Attempting API detection for ${processName}`);
+        if (this.DEBUG) {
+          logger.debug(`Strategy 1: Attempting API detection for ${processName}`, { module: 'ProcessDetector', operation: 'getDiagnosticInfo' });
+        }
         const apiPid = await apiDetector();
 
         if (apiPid) {
-          this.log('info', `API detection successful: PID ${apiPid}`);
+          logger.info(`API detection successful: PID ${apiPid}`, { module: 'ProcessDetector', operation: 'getDiagnosticInfo' });
           return {
             success: true,
             processInfo: {
@@ -271,11 +258,13 @@ export class ProcessDetector {
           };
         }
 
-        this.log('warn', 'API detection failed, falling back to DNA testing');
+        logger.warn('API detection failed, falling back to DNA testing', { module: 'ProcessDetector', operation: 'getDiagnosticInfo' });
       }
 
       // Strategy 2: DNA testing (process scanning)
-      this.log('debug', `Strategy 2: DNA testing for ${processName}`);
+      if (this.DEBUG) {
+        logger.debug(`Strategy 2: DNA testing for ${processName}`, { module: 'ProcessDetector', operation: 'getDiagnosticInfo' });
+      }
       const allProcesses = await ProcessRunner.getProcessInfo(processName);
       candidateCount = allProcesses.length;
 
@@ -328,7 +317,9 @@ export class ProcessDetector {
       const startTime = Date.now();
       const ourPid = process.pid;
 
-      this.log('debug', `Getting diagnostic info for ${processName}`);
+      if (this.DEBUG) {
+        logger.debug(`Getting diagnostic info for ${processName}`, { module: 'ProcessDetector', operation: 'getDiagnosticInfo' });
+      }
 
       const allProcesses = await ProcessRunner.getProcessInfo(processName);
       const classification = this.classifyProcesses(ourPid, allProcesses, processName);

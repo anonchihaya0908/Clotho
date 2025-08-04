@@ -48,32 +48,7 @@ export class ProcessRunner {
   // 异步执行器，避免重复 promisify
   private static readonly execAsync = promisify(exec);
 
-  /**
-   * 统一的分级日志输出（消除日志记录不一致问题）
-   */
-  private static log(level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any): void {
-    if (level === 'debug' && !this.DEBUG) {return;}
 
-    const moduleInfo = {
-      module: 'ProcessRunner',
-      operation: 'general',
-    };
-
-    switch (level) {
-    case 'debug':
-      logger.debug(message, { ...moduleInfo, ...data });
-      break;
-    case 'info':
-      logger.info(message, { ...moduleInfo, ...data });
-      break;
-    case 'warn':
-      logger.warn(message, { ...moduleInfo, ...data });
-      break;
-    case 'error':
-      logger.error(message, data instanceof Error ? data : undefined, { ...moduleInfo, context: data });
-      break;
-    }
-  }
 
   /**
    * 通用的命令执行核心方法（消除代码重复）
@@ -84,7 +59,9 @@ export class ProcessRunner {
   ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     const mergedOptions = { ...this.DEFAULT_OPTIONS, ...options };
 
-    this.log('debug', `Executing command: ${command}`);
+    if (this.DEBUG) {
+      logger.debug(`Executing command: ${command}`, { module: 'ProcessRunner', operation: 'executeCommand' });
+    }
 
     // 使用明确类型而非 any
     const execOptions: ExecOptions = {
@@ -99,8 +76,8 @@ export class ProcessRunner {
     try {
       const { stdout, stderr } = await this.execAsync(command, execOptions);
 
-      if (stderr) {
-        this.log('debug', `Command stderr: ${stderr}`);
+      if (stderr && this.DEBUG) {
+        logger.debug(`Command stderr: ${stderr}`, { module: 'ProcessRunner', operation: 'executeCommand' });
       }
 
       return { stdout, stderr, exitCode: 0 };
@@ -158,7 +135,9 @@ export class ProcessRunner {
     command: string,
     options: CommandOptions = {},
   ): Promise<CommandResult> {
-    this.log('debug', `Executing command with details: ${command}`);
+          if (this.DEBUG) {
+        logger.debug(`Executing command with details: ${command}`, { module: 'ProcessRunner', operation: 'executeWithDetails' });
+      }
 
     // 使用通用执行方法，消除代码重复
     const result = await this.executeCommand(command, options);
@@ -249,7 +228,9 @@ export class ProcessRunner {
 
       return processes;
     } catch (wmicError) {
-      this.log('debug', 'WMIC failed, trying PowerShell fallback', wmicError);
+              if (this.DEBUG) {
+          logger.debug('WMIC failed, trying PowerShell fallback', { module: 'ProcessRunner', operation: 'getProcessInfo', error: wmicError });
+        }
 
       // PowerShell fallback
       const psCommand = `powershell "Get-WmiObject -Class Win32_Process -Filter \\"name='${processName}.exe'\\" | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json"`;

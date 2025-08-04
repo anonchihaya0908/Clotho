@@ -4,7 +4,7 @@
  * 包含所有178个有效配置选项（排除13个已弃用选项）
  */
 
-import { ClangFormatOption, ConfigCategories } from '../../../common/types/config';
+import { ClangFormatOption, ConfigCategories } from '../../../common/types/clang-format-shared';
 
 export const CLANG_FORMAT_OPTIONS: ClangFormatOption[] = [
   // ===============================

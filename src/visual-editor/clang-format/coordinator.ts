@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { logger } from '../../common/logger';
 import { EditorOpenSource, ManagerContext } from '../../common/types';
-import { WebviewMessageType } from '../../common/types/webview';
+import { WebviewMessageType } from '../../common/types/clang-format-shared';
 import { ConfigActionManager } from './core/config-action-manager';
 import { ConfigChangeService } from './core/config-change-service';
 import { DebounceIntegration } from './core/debounce-integration';
@@ -61,19 +61,19 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     const configActionManager = new ConfigActionManager();
     const placeholderManager = new PlaceholderWebviewManager();
 
-    // 按优先级注册管理器（debounceIntegration 需要在其依赖的管理器之后创建）
-    this.managerRegistry.register('messageHandler', messageHandler, 100);
-    this.managerRegistry.register('editorManager', editorManager, 90);
-    this.managerRegistry.register('previewManager', previewManager, 80);
-    this.managerRegistry.register('configActionManager', configActionManager, 70);
-    this.managerRegistry.register('placeholderManager', placeholderManager, 60);
+    // Register managers (simplified - no complex priority system)
+    this.managerRegistry.register('messageHandler', messageHandler);
+    this.managerRegistry.register('editorManager', editorManager);
+    this.managerRegistry.register('previewManager', previewManager);
+    this.managerRegistry.register('configActionManager', configActionManager);
+    this.managerRegistry.register('placeholderManager', placeholderManager);
 
-    // DebounceIntegration 最后创建，因为它依赖于 previewManager 和 placeholderManager
+    // DebounceIntegration created last since it depends on previewManager and placeholderManager
     const debounceIntegration = new DebounceIntegration(
       previewManager,
       placeholderManager,
     );
-    this.managerRegistry.register('debounceIntegration', debounceIntegration, 50);
+    this.managerRegistry.register('debounceIntegration', debounceIntegration);
   }
 
   /**

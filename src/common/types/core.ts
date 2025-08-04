@@ -29,7 +29,7 @@ export interface BaseConfig {
 }
 
 // ===============================
-// Validation Interface
+// Validation Interfaces
 // ===============================
 
 export interface ValidationResult {
@@ -40,6 +40,16 @@ export interface ValidationResult {
 
 export interface FileValidationResult extends ValidationResult {
     existingFilePath?: string;
+}
+
+export interface ConfigValidationResult extends ValidationResult {
+    // Configuration-specific validation properties can be added here
+}
+
+export interface FormatResult {
+    success: boolean;
+    formattedCode: string;
+    error?: string;
 }
 
 // ===============================
@@ -184,6 +194,37 @@ export function isValidSearchMethod(value: string): value is SearchMethod {
 
 export function isValidConfigScope(value: string): value is ConfigScope {
   return value === 'workspace' || value === 'user';
+}
+
+// ===============================
+// Instance State Interface
+// ===============================
+
+export interface InstanceState {
+    id: string;
+    editorState: EditorState;
+    panelState: {
+        isVisible: boolean;
+        viewColumn: number;
+    };
+}
+
+// ===============================
+// Extension Context Interface
+// ===============================
+
+export interface ExtensionContext {
+    workspaceFolder?: WorkspaceFolder;
+    extensionContext: vscode.ExtensionContext;
+}
+
+// ===============================
+// Custom Rule Selection Interface
+// ===============================
+
+export interface CustomRuleSelection {
+    extensions: { headerExt: string; sourceExt: string };
+    shouldCreateNew: boolean;
 }
 
 // ===============================

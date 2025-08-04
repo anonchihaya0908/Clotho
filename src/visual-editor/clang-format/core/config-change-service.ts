@@ -1,34 +1,20 @@
 /**
- * 配置变化服务
- * 负责处理配置变化时的所有相关操作，实现关注点分离
+ * Configuration Change Service (Simplified)
+ * Handles configuration changes with direct method calls instead of complex handler pattern
  */
 
+import { ErrorRecoveryManager } from '../error/error-recovery-manager';
 import { EventBus } from '../messaging/event-bus';
 import { EditorStateManager } from '../state/editor-state-manager';
-import { ErrorRecoveryManager } from '../error/error-recovery-manager';
-import { WebviewMessageType } from '../../../common/types/webview';
-import { logger } from '../../../common/logger';
 
 /**
- * 配置变化处理器接口
- */
-export interface ConfigChangeHandler {
-    readonly name: string;
-    readonly priority: number;
-    readonly isCritical: boolean;
-    handle(context: ConfigChangeContext): Promise<void>;
-}
-
-/**
- * 配置变化上下文
+ * Configuration change context (simplified)
  */
 export interface ConfigChangeContext {
     key: string;
     value: any;
     oldConfig: Record<string, any>;
     newConfig: Record<string, any>;
-    stateManager: EditorStateManager;
-    eventBus: EventBus;
 }
 
 /**
@@ -41,187 +27,80 @@ export interface ConfigChangeResult {
     executionTimeMs: number;
 }
 
-/**
- * 状态更新处理器
- */
-class StateUpdateHandler implements ConfigChangeHandler {
-    readonly name = 'StateUpdate';
-    readonly priority = 100; // 最高优先级
-    readonly isCritical = true;
-
-    async handle(context: ConfigChangeContext): Promise<void> {
-        await context.stateManager.updateState(
-            {
-                currentConfig: context.newConfig,
-                configDirty: true,
-            },
-            'config-changed',
-        );
-    }
-}
+// Removed complex handler classes - using direct method calls instead
 
 /**
- * Webview 通信处理器
- */
-class WebviewNotificationHandler implements ConfigChangeHandler {
-    readonly name = 'WebviewNotification';
-    readonly priority = 90;
-    readonly isCritical = false;
-
-    async handle(context: ConfigChangeContext): Promise<void> {
-        context.eventBus.emit('post-message-to-webview', {
-            type: WebviewMessageType.CONFIG_LOADED,
-            payload: { config: context.newConfig },
-        });
-    }
-}
-
-/**
- * 预览更新处理器
- */
-class PreviewUpdateHandler implements ConfigChangeHandler {
-    readonly name = 'PreviewUpdate';
-    readonly priority = 80;
-    readonly isCritical = false;
-
-    async handle(context: ConfigChangeContext): Promise<void> {
-        context.eventBus.emit('config-updated-for-preview', {
-            newConfig: context.newConfig
-        });
-    }
-}
-
-/**
- * 配置持久化处理器（可选扩展）
- */
-class ConfigPersistenceHandler implements ConfigChangeHandler {
-    readonly name = 'ConfigPersistence';
-    readonly priority = 70;
-    readonly isCritical = false;
-
-    async handle(_context: ConfigChangeContext): Promise<void> {
-        // 在这里可以添加配置持久化逻辑
-        // 例如：保存到工作区设置、用户设置或云端
-        // 目前为空实现，但展示了扩展性
-    }
-}
-
-/**
- * 配置变化服务
+ * Configuration Change Service (Simplified)
  * 
- * 职责：
- * - 解耦配置变化时的多个操作
- * - 提供可扩展的处理器架构
- * - 确保处理器按优先级有序执行
- * - 提供错误恢复和详细的执行信息
+ * Responsibilities:
+ * - Handle configuration changes with direct method calls
+ * - Update state and notify components
+ * - Provide error recovery
  */
 export class ConfigChangeService {
-    private handlers: ConfigChangeHandler[] = [];
-    private isInitialized = false;
-
     constructor(
         private stateManager: EditorStateManager,
         private eventBus: EventBus,
         private errorRecovery: ErrorRecoveryManager,
     ) {
-        this.initializeDefaultHandlers();
+        // No complex initialization needed
     }
 
     /**
-     * 初始化默认处理器
-     */
-    private initializeDefaultHandlers(): void {
-        this.addHandler(new StateUpdateHandler());
-        this.addHandler(new WebviewNotificationHandler());
-        this.addHandler(new PreviewUpdateHandler());
-        this.addHandler(new ConfigPersistenceHandler());
-        this.isInitialized = true;
-    }
-
-    /**
-     * 添加自定义配置变化处理器
-     */
-    addHandler(handler: ConfigChangeHandler): void {
-        this.handlers.push(handler);
-        // 按优先级排序（降序）
-        this.handlers.sort((a, b) => b.priority - a.priority);
-    }
-
-    /**
-     * 移除处理器
-     */
-    removeHandler(handlerName: string): boolean {
-        const index = this.handlers.findIndex(h => h.name === handlerName);
-        if (index !== -1) {
-            this.handlers.splice(index, 1);
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * 处理配置变化
+     * Handle configuration changes (Simplified)
      */
     async handleConfigChange(payload: {
         key: string;
         value: any;
     }): Promise<ConfigChangeResult> {
         const startTime = Date.now();
-        const affectedHandlers: string[] = [];
 
         try {
             const { key, value } = payload;
 
-            // 获取当前配置
+            // Get current configuration
             const currentState = this.stateManager.getState();
             const oldConfig = { ...currentState.currentConfig };
             const newConfig = { ...oldConfig };
 
-            // 更新配置
+            // Update configuration
             if (value === 'inherit' || value === undefined || value === null) {
                 delete newConfig[key];
             } else {
                 newConfig[key] = value;
             }
 
-            // 创建处理上下文
-            const context: ConfigChangeContext = {
+            // Direct operations instead of complex handler pattern:
+
+            // 1. Update state
+            await this.stateManager.updateState(
+                { 
+                    currentConfig: newConfig,
+                    configDirty: true 
+                },
+                'config-changed'
+            );
+
+            // 2. Emit events for components to react
+            this.eventBus.emit('config-changed', {
                 key,
                 value,
                 oldConfig,
                 newConfig,
-                stateManager: this.stateManager,
-                eventBus: this.eventBus,
-            };
+                timestamp: Date.now(),
+            });
 
-            // 按优先级顺序执行所有处理器
-            for (const handler of this.handlers) {
-                try {
-                    await handler.handle(context);
-                    affectedHandlers.push(handler.name);
-                } catch (error: any) {
-                    // 处理器错误不应该阻止其他处理器执行
-                    logger.warn(`ConfigChangeHandler ${handler.name} failed`, {
-                        module: 'ConfigChangeService',
-                        operation: 'processConfigChange',
-                        handlerName: handler.name,
-                        error: error.message
-                    });
-
-                    // 但是对于关键处理器（如状态更新），我们需要记录错误
-                    if (handler.isCritical) {
-                        await this.errorRecovery.handleError(
-                            `config-change-handler-${handler.name.toLowerCase()}-failed`,
-                            error,
-                            { payload, handlerName: handler.name }
-                        );
-                    }
-                }
+            // 3. Trigger preview update if needed
+            if (this.shouldUpdatePreview(key)) {
+                this.eventBus.emit('preview-update-requested', {
+                    reason: 'config-change',
+                    key,
+                });
             }
 
             return {
                 success: true,
-                affectedHandlers,
+                affectedHandlers: ['state', 'events', 'preview'],
                 executionTimeMs: Date.now() - startTime,
             };
 
@@ -229,11 +108,11 @@ export class ConfigChangeService {
             const result: ConfigChangeResult = {
                 success: false,
                 error,
-                affectedHandlers,
+                affectedHandlers: [],
                 executionTimeMs: Date.now() - startTime,
             };
 
-            await this.errorRecovery.handleError('config-change-service-failed', error, {
+            await this.errorRecovery.handleError('config-change-failed', error, {
                 payload,
                 result,
             });
@@ -243,19 +122,17 @@ export class ConfigChangeService {
     }
 
     /**
-     * 获取已注册的处理器信息
+     * Simple check if key should trigger preview update
      */
-    getHandlerInfo(): Array<{ name: string; priority: number }> {
-        return this.handlers.map(h => ({
-            name: h.name,
-            priority: h.priority,
-        }));
+    private shouldUpdatePreview(key: string): boolean {
+        // Only update preview for keys that affect formatting
+        return !key.startsWith('__internal') && key !== 'BasedOnStyle';
     }
 
     /**
-     * 检查服务是否已初始化
+     * Check if service is ready (always true in simplified version)
      */
     isServiceInitialized(): boolean {
-        return this.isInitialized;
+        return true;
     }
 }
