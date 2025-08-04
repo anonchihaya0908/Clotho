@@ -2,8 +2,8 @@
     "name": "clotho",
     "displayName": "Clotho - C/C++ clangd enhancer",
     "description": "A powerful VS Code extension for enhancing C/C++ development with clangd.",
-    "version": "1.0.3",
-    "publisher": "your-publisher-name",
+    "version": "1.0.4",
+    "publisher": "Togawa Sakiko",
     "private": true,
     "workspaces": [
         "webviews/visual-editor/clang-format"
