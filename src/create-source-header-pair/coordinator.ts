@@ -42,6 +42,10 @@ export class PairCoordinator implements vscode.Disposable {
     }
 
     // 2. Get user preferences for what to create
+    const { language } = await this.service.detectLanguageFromEditor();
+    const existingRule = this.getExistingConfigRule(language);
+    const isUsingExistingConfig = !!existingRule;
+
     const rule = await this.getUserPreferences();
     if (!rule) {
       return; // User cancelled
@@ -53,15 +57,29 @@ export class PairCoordinator implements vscode.Disposable {
     }
 
     // 3. Validate and create files
-    await this.createFilePair(targetDirectory, fileName, rule);
+    await this.createFilePair(targetDirectory, fileName, rule, isUsingExistingConfig);
   }
 
   /**
    * Get user preferences for pairing rule with header guard style
+   * Automatically uses existing configuration if available, otherwise prompts user
    */
   private async getUserPreferences() {
     const { language, uncertain } = await this.service.detectLanguageFromEditor();
 
+    // Try to get existing configuration first
+    const existingRule = this.getExistingConfigRule(language);
+    if (existingRule) {
+      // Show a brief notification that we're using existing config
+      const guardText = existingRule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
+      vscode.window.showInformationMessage(
+        `📋 Using workspace configuration: ${existingRule.headerExt}/${existingRule.sourceExt} with ${guardText}`,
+        { modal: false }
+      );
+      return existingRule;
+    }
+
+    // No existing config found, proceed with manual selection
     // Step 1 & 2: Get pairing rule (template + extensions)
     const rule = await this.ui.promptForPairingRule(language, uncertain);
     if (!rule) {
@@ -87,7 +105,8 @@ export class PairCoordinator implements vscode.Disposable {
   private async createFilePair(
     targetDirectory: vscode.Uri,
     fileName: string,
-    rule: PairingRule
+    rule: PairingRule,
+    isUsingExistingConfig: boolean = false
   ): Promise<void> {
     // Prepare file paths and check for conflicts
     const { headerPath, sourcePath } = this.service.createFilePaths(
@@ -114,12 +133,80 @@ export class PairCoordinator implements vscode.Disposable {
       sourcePath,
     );
 
-    // Show success with configuration save prompt (Step 4)
-    const shouldSaveConfig = await this.ui.showSuccessWithConfigPrompt(rule, headerPath, sourcePath);
+    if (isUsingExistingConfig) {
+      // If using existing config, just show success message without save prompt
+      await this.ui.showSuccessAndOpenFile(headerPath, sourcePath);
+    } else {
+      // If manually configured, show success with configuration save prompt (Step 4)
+      const shouldSaveConfig = await this.ui.showSuccessWithConfigPrompt(rule, headerPath, sourcePath);
 
-    if (shouldSaveConfig) {
-      await this.saveRuleToWorkspace(rule);
+      if (shouldSaveConfig) {
+        await this.saveRuleToWorkspace(rule);
+      }
     }
+  }
+
+  /**
+   * Get existing configuration rule that matches the detected language
+   * @param language Detected programming language
+   * @returns Existing rule or undefined if no suitable config found
+   */
+  private getExistingConfigRule(language: 'c' | 'cpp'): PairingRule | undefined {
+    // Check workspace rules first (higher priority)
+    const workspaceRules = this.pairingRuleService.getRules('workspace') || [];
+    const matchingWorkspaceRules = workspaceRules.filter(rule => rule.language === language);
+
+    if (matchingWorkspaceRules.length > 0) {
+      return this.selectBestRule(matchingWorkspaceRules);
+    }
+
+    // Check global rules if no workspace rules found
+    const globalRules = this.pairingRuleService.getRules('user') || [];
+    const matchingGlobalRules = globalRules.filter(rule => rule.language === language);
+
+    if (matchingGlobalRules.length > 0) {
+      return this.selectBestRule(matchingGlobalRules);
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Select the best rule from multiple matching rules
+   * Priority: general rules > class rules > struct rules
+   */
+  private selectBestRule(rules: PairingRule[]): PairingRule {
+    // Sort by priority: general rules first, then class, then struct
+    const sortedRules = [...rules].sort((a, b) => {
+      // General rules (no isClass, no isStruct) have highest priority
+      const aIsGeneral = !a.isClass && !a.isStruct;
+      const bIsGeneral = !b.isClass && !b.isStruct;
+
+      if (aIsGeneral && !bIsGeneral) {
+        return -1;
+      }
+      if (!aIsGeneral && bIsGeneral) {
+        return 1;
+      }
+
+      // Among specific rules, prefer class over struct
+      if (a.isClass && b.isStruct) {
+        return -1;
+      }
+      if (a.isStruct && b.isClass) {
+        return 1;
+      }
+
+      return 0;
+    });
+
+    const selectedRule = sortedRules[0];
+
+    // Ensure backward compatibility by setting default headerGuardStyle
+    return {
+      ...selectedRule,
+      headerGuardStyle: selectedRule.headerGuardStyle || 'ifndef_define'
+    };
   }
 
   /**
