@@ -144,7 +144,10 @@ export class DebounceIntegration implements BaseManager {
               return this.context.stateManager.getState().previewEditor!;
             });
           } catch (error) {
-            console.error('[DebounceIntegration] 转换管理器失败，使用降级处理:', error);
+            logger.error('转换管理器失败，使用降级处理', error as Error, {
+              module: 'DebounceIntegration',
+              operation: 'debouncedPreviewReopen'
+            });
             errorHandler.handle(error, {
               operation: 'debouncedPreviewReopen',
               module: 'DebounceIntegration',

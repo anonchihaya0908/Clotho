@@ -199,23 +199,23 @@ export class LoggerService {
     };
 
     switch (level.toLowerCase()) {
-    case 'debug':
-      this.logger.debug(message, enrichedMeta);
-      break;
-    case 'info':
-      this.logger.info(message, enrichedMeta);
-      break;
-    case 'warn':
-      this.logger.warn(message, enrichedMeta);
-      break;
-    case 'error':
-      this.logger.error(message, enrichedMeta);
-      break;
-    case 'fatal':
-      this.logger.fatal(message, enrichedMeta);
-      break;
-    default:
-      this.logger.info(message, enrichedMeta);
+      case 'debug':
+        this.logger.debug(message, enrichedMeta);
+        break;
+      case 'info':
+        this.logger.info(message, enrichedMeta);
+        break;
+      case 'warn':
+        this.logger.warn(message, enrichedMeta);
+        break;
+      case 'error':
+        this.logger.error(message, enrichedMeta);
+        break;
+      case 'fatal':
+        this.logger.fatal(message, enrichedMeta);
+        break;
+      default:
+        this.logger.info(message, enrichedMeta);
     }
   }
 

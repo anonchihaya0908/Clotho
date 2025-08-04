@@ -15,138 +15,138 @@ let activationPromise: Promise<void> | null = null;
  * Extension activation function
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    // Prevent multiple activations
-    if (isActivated) {
-        logger.warn('Extension already activated, skipping duplicate activation', {
-            module: 'Extension',
-            operation: 'activate'
-        });
-        return;
-    }
+  // Prevent multiple activations
+  if (isActivated) {
+    logger.warn('Extension already activated, skipping duplicate activation', {
+      module: 'Extension',
+      operation: 'activate'
+    });
+    return;
+  }
 
-    // If activation is in progress, wait for it
-    if (activationPromise) {
-        logger.info('Extension activation already in progress, waiting...', {
-            module: 'Extension',
-            operation: 'activate'
-        });
-        return activationPromise;
-    }
+  // If activation is in progress, wait for it
+  if (activationPromise) {
+    logger.info('Extension activation already in progress, waiting...', {
+      module: 'Extension',
+      operation: 'activate'
+    });
+    return activationPromise;
+  }
 
-    // Start activation process
-    activationPromise = performActivation(context);
+  // Start activation process
+  activationPromise = performActivation(context);
 
-    try {
-        await activationPromise;
-        isActivated = true;
-    } catch (error) {
-        activationPromise = null; // Reset on failure
-        throw error;
-    } finally {
-        activationPromise = null;
-    }
+  try {
+    await activationPromise;
+    isActivated = true;
+  } catch (error) {
+    activationPromise = null; // Reset on failure
+    throw error;
+  } finally {
+    activationPromise = null;
+  }
 }
 
 /**
  * Perform the actual activation logic
  */
 async function performActivation(context: vscode.ExtensionContext): Promise<void> {
-    const startTime = Date.now();
+  const startTime = Date.now();
 
-    try {
-        // Initialize logger first
-        logger.initializeOutputChannel();
+  try {
+    // Initialize logger first
+    logger.initializeOutputChannel();
 
-        logger.info('Clotho extension is activating...', {
-            module: 'Extension',
-            operation: 'activate',
-            version: context.extension.packageJSON.version,
-            vscodeVersion: vscode.version,
-            extensionPath: context.extensionPath
-        });
+    logger.info('Clotho extension is activating...', {
+      module: 'Extension',
+      operation: 'activate',
+      version: context.extension.packageJSON.version,
+      vscodeVersion: vscode.version,
+      extensionPath: context.extensionPath
+    });
 
-        // Initialize the extension
-        await bootstrap(context);
+    // Initialize the extension
+    await bootstrap(context);
 
-        const activationTime = Date.now() - startTime;
-        logger.info('Clotho extension activated successfully', {
-            module: 'Extension',
-            operation: 'activate',
-            activationTime: `${activationTime}ms`
-        });
+    const activationTime = Date.now() - startTime;
+    logger.info('Clotho extension activated successfully', {
+      module: 'Extension',
+      operation: 'activate',
+      activationTime: `${activationTime}ms`
+    });
 
-        // Log performance metrics
-        logger.logPerformance('Extension Activation', activationTime, 'Extension');
+    // Log performance metrics
+    logger.logPerformance('Extension Activation', activationTime, 'Extension');
 
-    } catch (error) {
-        const activationTime = Date.now() - startTime;
+  } catch (error) {
+    const activationTime = Date.now() - startTime;
 
-        logger.error('Failed to activate Clotho extension',
-            error instanceof Error ? error : new Error(String(error)),
-            {
-                module: 'Extension',
-                operation: 'activate',
-                activationTime: `${activationTime}ms`
-            }
-        );
+    logger.error('Failed to activate Clotho extension',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        module: 'Extension',
+        operation: 'activate',
+        activationTime: `${activationTime}ms`
+      }
+    );
 
-        // Show user-friendly error message
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const userMessage = `Clotho extension failed to activate: ${errorMessage}`;
+    // Show user-friendly error message
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const userMessage = `Clotho extension failed to activate: ${errorMessage}`;
 
-        vscode.window.showErrorMessage(userMessage, 'Show Logs', 'Report Issue')
-            .then(selection => {
-                if (selection === 'Show Logs') {
-                    logger.showOutputChannel();
-                } else if (selection === 'Report Issue') {
-                    vscode.env.openExternal(vscode.Uri.parse(
-                        'https://github.com/anonchihaya0908/Clotho/issues/new'
-                    ));
-                }
-            });
+    vscode.window.showErrorMessage(userMessage, 'Show Logs', 'Report Issue')
+      .then(selection => {
+        if (selection === 'Show Logs') {
+          logger.showOutputChannel();
+        } else if (selection === 'Report Issue') {
+          vscode.env.openExternal(vscode.Uri.parse(
+            'https://github.com/anonchihaya0908/Clotho/issues/new'
+          ));
+        }
+      });
 
-        throw error;
-    }
+    throw error;
+  }
 }
 
 /**
  * Extension deactivation function
  */
 export async function deactivate(): Promise<void> {
-    if (!isActivated) {
-        return;
-    }
+  if (!isActivated) {
+    return;
+  }
 
-    const startTime = Date.now();
+  const startTime = Date.now();
 
-    try {
-        logger.info('Clotho extension is deactivating...', {
-            module: 'Extension',
-            operation: 'deactivate'
-        });
+  try {
+    logger.info('Clotho extension is deactivating...', {
+      module: 'Extension',
+      operation: 'deactivate'
+    });
 
-        // Note: Service cleanup is handled by bootstrap/coordinators
-        // No explicit service container cleanup needed here
+    // Note: Service cleanup is handled by bootstrap/coordinators
+    // No explicit service container cleanup needed here
 
-        const deactivationTime = Date.now() - startTime;
-        logger.info('Clotho extension deactivated successfully', {
-            module: 'Extension',
-            operation: 'deactivate',
-            deactivationTime: `${deactivationTime}ms`
-        });
+    const deactivationTime = Date.now() - startTime;
+    logger.info('Clotho extension deactivated successfully', {
+      module: 'Extension',
+      operation: 'deactivate',
+      deactivationTime: `${deactivationTime}ms`
+    });
 
-        isActivated = false;
+    isActivated = false;
 
-    } catch (error) {
-        logger.error('Error during extension deactivation',
-            error instanceof Error ? error : new Error(String(error)),
-            {
-                module: 'Extension',
-                operation: 'deactivate'
-            }
-        );
+  } catch (error) {
+    logger.error('Error during extension deactivation',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        module: 'Extension',
+        operation: 'deactivate'
+      }
+    );
 
-        // Don't throw during deactivation to avoid VS Code issues
-        isActivated = false;
-    }
+    // Don't throw during deactivation to avoid VS Code issues
+    isActivated = false;
+  }
 }

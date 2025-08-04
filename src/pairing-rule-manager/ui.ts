@@ -212,7 +212,7 @@ export class PairingRuleUI {
    */
   async promptForFileExtensions(): Promise<
     { headerExt: string; sourceExt: string } | undefined
-  > {
+    > {
     const selected = await vscode.window.showQuickPick(
       PairingRuleUI.EXTENSION_OPTIONS.map((option) => ({
         label: option.label,

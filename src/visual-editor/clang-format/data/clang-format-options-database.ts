@@ -245,7 +245,7 @@ noexcept(condition);`
     enumValues: ['Never', 'Empty', 'Always'],
     defaultValue: 'Never',
     version: '3.5',
-    previewTemplate: `if (condition) { statement; }`
+    previewTemplate: 'if (condition) { statement; }'
   },
 
   {
@@ -284,7 +284,7 @@ case 2: break;
     type: 'boolean',
     defaultValue: true,
     version: '18',
-    previewTemplate: `requires { { expr } -> std::same_as<int>; }`
+    previewTemplate: 'requires { { expr } -> std::same_as<int>; }'
   },
 
   {
@@ -295,7 +295,7 @@ case 2: break;
     type: 'boolean',
     defaultValue: true,
     version: '11',
-    previewTemplate: `enum Color { Red, Green, Blue };`
+    previewTemplate: 'enum Color { Red, Green, Blue };'
   },
 
   {
@@ -307,7 +307,7 @@ case 2: break;
     enumValues: ['None', 'InlineOnly', 'Empty', 'Inline', 'All'],
     defaultValue: 'All',
     version: '3.5',
-    previewTemplate: `int getX() { return x; }`
+    previewTemplate: 'int getX() { return x; }'
   },
 
   {
@@ -319,7 +319,7 @@ case 2: break;
     enumValues: ['Never', 'WithoutElse', 'OnlyFirstIf', 'AllIfsAndElse'],
     defaultValue: 'Never',
     version: '3.3',
-    previewTemplate: `if (condition) return;`
+    previewTemplate: 'if (condition) return;'
   },
 
   {
@@ -331,7 +331,7 @@ case 2: break;
     enumValues: ['None', 'Empty', 'Inline', 'All'],
     defaultValue: 'All',
     version: '9',
-    previewTemplate: `auto lambda = [](int x) { return x * 2; };`
+    previewTemplate: 'auto lambda = [](int x) { return x * 2; };'
   },
 
   {
@@ -342,7 +342,7 @@ case 2: break;
     type: 'boolean',
     defaultValue: false,
     version: '3.7',
-    previewTemplate: `while (condition) continue;`
+    previewTemplate: 'while (condition) continue;'
   },
 
   {
@@ -353,7 +353,7 @@ case 2: break;
     type: 'boolean',
     defaultValue: false,
     version: '20',
-    previewTemplate: `namespace utils { void helper(); }`
+    previewTemplate: 'namespace utils { void helper(); }'
   },
 
   {
@@ -632,7 +632,7 @@ void function(T param);`
     type: 'boolean',
     defaultValue: false,
     version: '3.5',
-    previewTemplate: `int value = (int) floatValue;`
+    previewTemplate: 'int value = (int) floatValue;'
   },
 
   {
@@ -643,7 +643,7 @@ void function(T param);`
     type: 'boolean',
     defaultValue: false,
     version: '9',
-    previewTemplate: `if (! condition) {}`
+    previewTemplate: 'if (! condition) {}'
   },
 
   {
@@ -667,7 +667,7 @@ void function();`
     enumValues: ['Default', 'Before', 'After', 'Both'],
     defaultValue: 'Default',
     version: '12',
-    previewTemplate: `const int * const ptr;`
+    previewTemplate: 'const int * const ptr;'
   },
 
   {
@@ -704,7 +704,7 @@ case 2: break;
     type: 'boolean',
     defaultValue: false,
     version: '7',
-    previewTemplate: `std::vector<int> v {1, 2, 3};`
+    previewTemplate: 'std::vector<int> v {1, 2, 3};'
   },
 
   {
@@ -715,7 +715,7 @@ case 2: break;
     type: 'boolean',
     defaultValue: true,
     version: '7',
-    previewTemplate: `Constructor() : member(value) {}`
+    previewTemplate: 'Constructor() : member(value) {}'
   },
 
   {
@@ -726,7 +726,7 @@ case 2: break;
     type: 'boolean',
     defaultValue: true,
     version: '7',
-    previewTemplate: `class Derived : public Base {}`
+    previewTemplate: 'class Derived : public Base {}'
   },
 
   {
@@ -737,7 +737,7 @@ case 2: break;
     type: 'boolean',
     defaultValue: false,
     version: '17',
-    previewTemplate: `{"key" : "value"}`
+    previewTemplate: '{"key" : "value"}'
   },
 
   {
@@ -773,7 +773,7 @@ for (;;) {}`
     type: 'boolean',
     defaultValue: true,
     version: '7',
-    previewTemplate: `for (auto item : container) {}`
+    previewTemplate: 'for (auto item : container) {}'
   },
 
   {
@@ -784,7 +784,7 @@ for (;;) {}`
     type: 'boolean',
     defaultValue: false,
     version: '10',
-    previewTemplate: `array [index] = value;`
+    previewTemplate: 'array [index] = value;'
   },
 
   {
@@ -795,7 +795,7 @@ for (;;) {}`
     type: 'boolean',
     defaultValue: false,
     version: '10',
-    previewTemplate: `if (condition) { }`
+    previewTemplate: 'if (condition) { }'
   },
 
   {
@@ -806,7 +806,7 @@ for (;;) {}`
     type: 'boolean',
     defaultValue: false,
     version: '3.7',
-    previewTemplate: `function( );`
+    previewTemplate: 'function( );'
   },
 
   {
@@ -819,7 +819,7 @@ for (;;) {}`
     max: 10,
     defaultValue: 1,
     version: '3.7',
-    previewTemplate: `int a = 1;  // comment`
+    previewTemplate: 'int a = 1;  // comment'
   },
 
   {
@@ -831,7 +831,7 @@ for (;;) {}`
     enumValues: ['Never', 'Always', 'Leave'],
     defaultValue: 'Never',
     version: '4',
-    previewTemplate: `template< typename T >`
+    previewTemplate: 'template< typename T >'
   },
 
   {
@@ -842,7 +842,7 @@ for (;;) {}`
     type: 'boolean',
     defaultValue: true,
     version: '3.7',
-    previewTemplate: `std::vector<int>{ 1, 2, 3 };`
+    previewTemplate: 'std::vector<int>{ 1, 2, 3 };'
   },
 
   {
@@ -853,7 +853,7 @@ for (;;) {}`
     type: 'boolean',
     defaultValue: false,
     version: '3.7',
-    previewTemplate: `int value = ( int )floatValue;`
+    previewTemplate: 'int value = ( int )floatValue;'
   },
 
   {
@@ -876,7 +876,7 @@ for (;;) {}`
     type: 'boolean',
     defaultValue: false,
     version: '3.7',
-    previewTemplate: `function( argument );`
+    previewTemplate: 'function( argument );'
   },
 
   {
@@ -887,7 +887,7 @@ for (;;) {}`
     type: 'boolean',
     defaultValue: false,
     version: '3.7',
-    previewTemplate: `array[ index ] = value;`
+    previewTemplate: 'array[ index ] = value;'
   },
 
   // ===============================
@@ -1154,7 +1154,7 @@ void function();
     type: 'boolean',
     defaultValue: true,
     version: '3.8',
-    previewTemplate: `std::vector<int> v{1, 2, 3};`
+    previewTemplate: 'std::vector<int> v{1, 2, 3};'
   },
 
   {
@@ -1262,7 +1262,7 @@ void function();
     type: 'string',
     defaultValue: '[]',
     version: '13',
-    previewTemplate: `IF_DEBUG(statement);`
+    previewTemplate: 'IF_DEBUG(statement);'
   },
 
   {
@@ -1410,7 +1410,7 @@ import com.example.*;`
     enumValues: ['Leave', 'Single', 'Double'],
     defaultValue: 'Leave',
     version: '3.9',
-    previewTemplate: `const str = "hello world";`
+    previewTemplate: 'const str = "hello world";'
   },
 
   {
@@ -1602,7 +1602,7 @@ NAMESPACE_END(MyNamespace)`
     type: 'boolean',
     defaultValue: false,
     version: '3.7',
-    previewTemplate: `@property (nonatomic, strong) NSString *name;`
+    previewTemplate: '@property (nonatomic, strong) NSString *name;'
   },
 
   {
@@ -1626,7 +1626,7 @@ NAMESPACE_END(MyNamespace)`
     enumValues: ['Never', 'BinPack', 'CurrentLine', 'NextLine', 'NextLineOnly'],
     defaultValue: 'BinPack',
     version: '14',
-    previewTemplate: `Constructor() : member1(value1), member2(value2) {}`
+    previewTemplate: 'Constructor() : member1(value1), member2(value2) {}'
   },
 
   {
@@ -1765,7 +1765,7 @@ void function();`
     max: 1000,
     defaultValue: 1000000,
     version: '3.7',
-    previewTemplate: `// 超出行宽限制的代码会被惩罚`
+    previewTemplate: '// 超出行宽限制的代码会被惩罚'
   },
 
   {
@@ -1832,7 +1832,7 @@ int const value;`
     type: 'string',
     defaultValue: '[]',
     version: '14',
-    previewTemplate: `static const volatile int value;`
+    previewTemplate: 'static const volatile int value;'
   },
 
   {
@@ -1985,7 +1985,7 @@ void function2() {}`
     max: 100,
     defaultValue: 1,
     version: '13',
-    previewTemplate: `namespace short { void func(); }`
+    previewTemplate: 'namespace short { void func(); }'
   },
 
   {
@@ -2051,7 +2051,7 @@ using std::vector;`
     type: 'string',
     defaultValue: '[]',
     version: '12',
-    previewTemplate: `STATEMENT_ATTR void function();`
+    previewTemplate: 'STATEMENT_ATTR void function();'
   },
 
   {
@@ -2062,7 +2062,7 @@ using std::vector;`
     type: 'string',
     defaultValue: '[]',
     version: '8',
-    previewTemplate: `STATEMENT_MACRO(argument);`
+    previewTemplate: 'STATEMENT_MACRO(argument);'
   },
 
   {
@@ -2073,7 +2073,7 @@ using std::vector;`
     type: 'string',
     defaultValue: '[]',
     version: '9',
-    previewTemplate: `TYPENAME_MACRO MyType;`
+    previewTemplate: 'TYPENAME_MACRO MyType;'
   },
 
   {
@@ -2084,7 +2084,7 @@ using std::vector;`
     type: 'string',
     defaultValue: '[]',
     version: '17',
-    previewTemplate: `MyCustomType variable;`
+    previewTemplate: 'MyCustomType variable;'
   },
 
   {
@@ -2095,7 +2095,7 @@ using std::vector;`
     type: 'string',
     defaultValue: '[]',
     version: '11',
-    previewTemplate: `WHITESPACE_SENSITIVE_MACRO( arg1 , arg2 );`
+    previewTemplate: 'WHITESPACE_SENSITIVE_MACRO( arg1 , arg2 );'
   },
 
   // ===============================

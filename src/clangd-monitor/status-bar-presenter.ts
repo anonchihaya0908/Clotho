@@ -245,12 +245,12 @@ export class StatusBarPresenter {
     const statusLevel = this.getStatusLevel();
 
     switch (statusLevel) {
-    case 'error':
-      return '#ff4444'; // Red for critical issues
-    case 'warning':
-      return '#ffaa00'; // Yellow for warnings
-    default:
-      return ''; // White (default) for normal operation
+      case 'error':
+        return '#ff4444'; // Red for critical issues
+      case 'warning':
+        return '#ffaa00'; // Yellow for warnings
+      default:
+        return ''; // White (default) for normal operation
     }
   }
 

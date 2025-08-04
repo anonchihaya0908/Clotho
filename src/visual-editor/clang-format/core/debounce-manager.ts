@@ -313,6 +313,9 @@ export class DebounceManager {
     this.releaseAllLocks();
     this.pendingOperations.clear();
 
-    console.log('DebounceManager: All resources disposed');
+    logger.info('All resources disposed', {
+      module: 'DebounceManager',
+      operation: 'dispose'
+    });
   }
 }

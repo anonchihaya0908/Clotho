@@ -76,7 +76,7 @@ export interface InstanceManagerConfig {
  * 通用实例管理器实现
  */
 export class BaseInstanceManager<T extends Disposable>
-  implements InstanceManager<T>, vscode.Disposable {
+implements InstanceManager<T>, vscode.Disposable {
   private instances = new Map<string, T>();
   private config: InstanceManagerConfig;
   private cleanupTimer?: NodeJS.Timeout;

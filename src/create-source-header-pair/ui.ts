@@ -89,7 +89,7 @@ export class PairCreatorUI {
   private createUseDefaultOption(): vscode.QuickPickItem & {
     key: string;
     isSpecial: boolean;
-  } {
+    } {
     return {
       key: 'use_default',
       label: '$(list-unordered) Use Default Templates',

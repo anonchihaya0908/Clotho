@@ -47,7 +47,7 @@ import { logger } from './logger';
 /**
  * Service Map - The single source of truth for all services
  * ==========================================================
- * 
+ *
  * This is the ONLY place where service types need to be defined.
  * When adding a new service:
  * 1. Add the service type mapping here

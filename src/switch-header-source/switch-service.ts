@@ -8,17 +8,17 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
-    HEADER_EXTENSIONS,
-    PERFORMANCE,
-    SOURCE_EXTENSIONS,
-    TEST_PATTERNS,
+  HEADER_EXTENSIONS,
+  PERFORMANCE,
+  SOURCE_EXTENSIONS,
+  TEST_PATTERNS,
 } from '../common/constants';
 import { errorHandler } from '../common/error-handler';
 import { logger } from '../common/logger';
 import { SearchResult } from '../common/types/core';
 import {
-    LRUCache,
-    isHeaderFile,
+  LRUCache,
+  isHeaderFile,
 } from '../common/utils';
 import { SwitchConfigService } from './config-manager';
 

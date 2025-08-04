@@ -101,20 +101,20 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
     const errorCode = error.message;
 
     switch (errorCode) {
-    case 'preview-open-failed':
-      return this.recoverPreviewOpen();
+      case 'preview-open-failed':
+        return this.recoverPreviewOpen();
 
-    case 'config-load-failed':
-      return this.recoverConfigLoad();
+      case 'config-load-failed':
+        return this.recoverConfigLoad();
 
-    case 'validation-failed':
-      return this.recoverValidation();
+      case 'validation-failed':
+        return this.recoverValidation();
 
-    case 'webview-communication-failed':
-      return this.recoverWebviewCommunication();
+      case 'webview-communication-failed':
+        return this.recoverWebviewCommunication();
 
-    default:
-      return this.defaultRecovery();
+      default:
+        return this.defaultRecovery();
     }
   }
 
@@ -186,11 +186,11 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
 
   private getRecoveryMethod(errorCode: string): string {
     switch (errorCode) {
-    case 'preview-open-failed': return 'preview-reset';
-    case 'config-load-failed': return 'config-reset';
-    case 'validation-failed': return 'validation-skip';
-    case 'webview-communication-failed': return 'communication-restart';
-    default: return 'state-reset';
+      case 'preview-open-failed': return 'preview-reset';
+      case 'config-load-failed': return 'config-reset';
+      case 'validation-failed': return 'validation-skip';
+      case 'webview-communication-failed': return 'communication-restart';
+      default: return 'state-reset';
     }
   }
 

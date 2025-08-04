@@ -457,7 +457,7 @@ export class MonitorCoordinator implements vscode.Disposable {
             </div>
             
             ${hasData
-        ? `
+      ? `
                 <div class="section">
                     <h2>📊 Memory Usage</h2>
                     <div class="info-grid">
@@ -494,13 +494,13 @@ export class MonitorCoordinator implements vscode.Disposable {
                             <span>${status.version || '未检测到版本信息'}</span>
                         </div>
                         ${status.pid
-          ? `
+        ? `
                         <div class="info-item">
                             <span class="info-label">Server Process ID:</span>
                             <span>${status.pid}</span>
                         </div>
                         `
-          : ''
+        : ''
         }
                     </div>
                 </div>
@@ -523,7 +523,7 @@ export class MonitorCoordinator implements vscode.Disposable {
                     </div>
                 </div>
             `
-        : `
+      : `
                 <div class="section no-data">
                     <h2>❌ No Data Available</h2>
                     <p>Clangd process monitoring data is not available.</p>

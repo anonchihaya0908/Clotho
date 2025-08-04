@@ -4,6 +4,7 @@ import {
   ManagerContext,
   ManagerStatus,
 } from '../../../common/types';
+import { logger } from '../../../common/logger';
 import { WebviewMessageType } from '../../../common/types/clang-format-shared';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';
 import { ClangFormatService } from '../format-service';
@@ -21,13 +22,19 @@ export class ConfigActionManager implements BaseManager {
   constructor() {
     // 由于 ClangFormatService 的构造函数是私有的，这里应通过其提供的静态方法获取实例
     this.formatService = ClangFormatService.getInstance();
-    console.log('ConfigActionManager constructed.');
+    logger.debug('ConfigActionManager constructed', {
+      module: 'ConfigActionManager',
+      operation: 'constructor'
+    });
   }
 
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
     this.setupEventListeners();
-    console.log('ConfigActionManager initialized.');
+    logger.info('ConfigActionManager initialized', {
+      module: 'ConfigActionManager',
+      operation: 'initialize'
+    });
   }
 
   dispose(): void {
@@ -82,13 +89,18 @@ export class ConfigActionManager implements BaseManager {
 
     try {
       await vscode.workspace.fs.stat(fileUri);
-      console.log('Found .clang-format file in workspace, auto-loading...');
+      logger.info('Found .clang-format file in workspace, auto-loading', {
+        module: 'ConfigActionManager',
+        operation: 'autoLoadWorkspaceConfig',
+        fileUri: fileUri.toString()
+      });
       await this.loadConfigFromFile(fileUri);
     } catch (error) {
       // 文件不存在，静默处理
-      console.log(
-        '.clang-format file not found in workspace. Using default settings.',
-      );
+      logger.debug('.clang-format file not found in workspace. Using default settings', {
+        module: 'ConfigActionManager',
+        operation: 'autoLoadWorkspaceConfig'
+      });
     }
   }
 

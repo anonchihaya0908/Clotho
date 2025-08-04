@@ -78,10 +78,10 @@ export class MessageHandler implements BaseManager {
   private createConfigActionHandler(eventName: string) {
     return async (payload: any, context: ManagerContext) => {
       this.logger.info(`Processing ${eventName}...`);
-      
+
       // 先发送事件以确保 ConfigActionManager 被初始化
       context.eventBus.emit('ensure-config-manager-ready');
-      
+
       // 添加很小的延迟确保初始化完成，然后发送实际的操作事件
       setTimeout(() => {
         context.eventBus.emit(eventName, payload);

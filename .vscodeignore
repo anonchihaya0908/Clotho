@@ -11,19 +11,24 @@ tsconfig.json
 **/*.ts
 !out/**/*.js
 
-# Node modules and build artifacts
+# Node modules and build artifacts (CRITICAL - exclude all node_modules)
 node_modules/**
 **/node_modules/**
+webviews/**/node_modules/**
 package-lock.json
 **/package-lock.json
 
-# Webview source files (exclude source, include built dist)
+# Webview source files (exclude source, include only built dist)
 webviews/**/src/**
+webviews/**/package.json
 webviews/**/package-lock.json
 webviews/**/*.ts
 webviews/**/*.tsx
 webviews/**/tsconfig.json
 webviews/**/webpack.config.js
+webviews/**/.eslintrc.*
+webviews/**/.editorconfig
+webviews/**/.prettierrc.*
 
 # But keep the built webview assets - IMPORTANT!
 !webviews/**/dist/**
@@ -32,7 +37,7 @@ webviews/**/webpack.config.js
 !webviews/**/dist/**/*.webp
 !webviews/**/dist/**/*.png
 
-# Keep image assets even if in src directory (for unused assets)
+# Keep image assets for runtime access
 !webviews/**/src/assets/**/*.webp
 !webviews/**/src/assets/**/*.png
 !webviews/**/src/assets/**/*.jpg
@@ -53,4 +58,63 @@ test/**
 # Build configurations
 esbuild.config.mjs
 webpack.config.js
+
+# Development documentation (exclude from package)
+ARCHITECTURE.md
+changelog.md
+FS-QUICK-START.md
+README-DEV.md
+workflow3.md
+*.md
+!README.md
+!LICENSE.md
+
+# Development configuration files
+.gitignore
+.vsmanifest
+.env
+.env.*
+.eslintrc.*
+.prettierrc.*
+.editorconfig
+
+# License files (keep only LICENSE.txt)
+!LICENSE
+!LICENSE.txt
+
+# VS Code development settings (exclude all development configs)
+.vscode/
+
+# Git related
+.git/
+.gitattributes
+
+# Yarn and other package managers
+yarn.lock
+pnpm-lock.yaml
+
+# Temporary and cache files
+.nyc_output/
+coverage/
+.coverage/
+*.log
+*.tmp
+*.temp
+
+# OS specific files
+Thumbs.db
+.DS_Store
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# IDE files
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup
 

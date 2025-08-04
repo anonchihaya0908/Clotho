@@ -297,10 +297,10 @@ export class ErrorHandler {
       maxDelay?: number;
     } = {},
   ): (...args: T) => Promise<R | undefined> {
-    const { 
-      maxAttempts = ERROR_HANDLING.MAX_RETRY_ATTEMPTS, 
-      baseDelay = ERROR_HANDLING.BASE_RETRY_DELAY, 
-      maxDelay = ERROR_HANDLING.MAX_RETRY_DELAY 
+    const {
+      maxAttempts = ERROR_HANDLING.MAX_RETRY_ATTEMPTS,
+      baseDelay = ERROR_HANDLING.BASE_RETRY_DELAY,
+      maxDelay = ERROR_HANDLING.MAX_RETRY_DELAY
     } = options;
 
     return async (...args: T): Promise<R | undefined> => {
@@ -449,7 +449,6 @@ export function handleErrors(context: Partial<ErrorContext> = {}) {
     return descriptor;
   };
 }
-
 
 
 /**

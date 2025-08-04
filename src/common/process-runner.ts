@@ -50,7 +50,6 @@ export class ProcessRunner {
   private static readonly execAsync = promisify(exec);
 
 
-
   /**
    * 通用的命令执行核心方法（消除代码重复）
    */
@@ -136,9 +135,9 @@ export class ProcessRunner {
     command: string,
     options: CommandOptions = {},
   ): Promise<CommandResult> {
-          if (this.DEBUG) {
-        logger.debug(`Executing command with details: ${command}`, { module: 'ProcessRunner', operation: 'executeWithDetails' });
-      }
+    if (this.DEBUG) {
+      logger.debug(`Executing command with details: ${command}`, { module: 'ProcessRunner', operation: 'executeWithDetails' });
+    }
 
     // 使用通用执行方法，消除代码重复
     const result = await this.executeCommand(command, options);
@@ -229,9 +228,9 @@ export class ProcessRunner {
 
       return processes;
     } catch (wmicError) {
-              if (this.DEBUG) {
-          logger.debug('WMIC failed, trying PowerShell fallback', { module: 'ProcessRunner', operation: 'getProcessInfo', error: wmicError });
-        }
+      if (this.DEBUG) {
+        logger.debug('WMIC failed, trying PowerShell fallback', { module: 'ProcessRunner', operation: 'getProcessInfo', error: wmicError });
+      }
 
       // PowerShell fallback
       const psCommand = `powershell "Get-WmiObject -Class Win32_Process -Filter \\"name='${processName}.exe'\\" | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json"`;

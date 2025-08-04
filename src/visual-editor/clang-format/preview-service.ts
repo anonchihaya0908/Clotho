@@ -225,37 +225,37 @@ private:
      */
   private static getCategoryPreview(category: ConfigCategories): string {
     switch (category) {
-    case ConfigCategories.ALIGNMENT:
-      return this.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_ASSIGNMENTS;
+      case ConfigCategories.ALIGNMENT:
+        return this.PREVIEW_TEMPLATES.ALIGNMENT.CONSECUTIVE_ASSIGNMENTS;
 
-    case ConfigCategories.BRACES:
-      return this.PREVIEW_TEMPLATES.BRACES.BRACE_WRAPPING;
+      case ConfigCategories.BRACES:
+        return this.PREVIEW_TEMPLATES.BRACES.BRACE_WRAPPING;
 
-    case ConfigCategories.SPACING:
-      return this.PREVIEW_TEMPLATES.SPACING.SPACES_AROUND_OPERATORS;
+      case ConfigCategories.SPACING:
+        return this.PREVIEW_TEMPLATES.SPACING.SPACES_AROUND_OPERATORS;
 
-    case ConfigCategories.INDENTATION:
-      return this.PREVIEW_TEMPLATES.INDENTATION.INDENT_WIDTH;
+      case ConfigCategories.INDENTATION:
+        return this.PREVIEW_TEMPLATES.INDENTATION.INDENT_WIDTH;
 
-    case ConfigCategories.WRAPPING:
-      return this.PREVIEW_TEMPLATES.WRAPPING.COLUMN_LIMIT;
+      case ConfigCategories.WRAPPING:
+        return this.PREVIEW_TEMPLATES.WRAPPING.COLUMN_LIMIT;
 
-    case ConfigCategories.COMMENTS:
-      return this.PREVIEW_TEMPLATES.COMMENTS.REFLOW_COMMENTS;
+      case ConfigCategories.COMMENTS:
+        return this.PREVIEW_TEMPLATES.COMMENTS.REFLOW_COMMENTS;
 
-    case ConfigCategories.CPP_FEATURES:
-      return this.PREVIEW_TEMPLATES.GENERAL.CLASS_DEFINITION;
+      case ConfigCategories.CPP_FEATURES:
+        return this.PREVIEW_TEMPLATES.GENERAL.CLASS_DEFINITION;
 
-    case ConfigCategories.POINTERS_REFS:
-      return 'int* ptr;\nconst char* str;';
+      case ConfigCategories.POINTERS_REFS:
+        return 'int* ptr;\nconst char* str;';
 
-    case ConfigCategories.EMPTY_LINES:
-      return 'statement1;\n\nstatement2;';
+      case ConfigCategories.EMPTY_LINES:
+        return 'statement1;\n\nstatement2;';
 
-    case ConfigCategories.MISC:
-    case ConfigCategories.BASIC:
-    default:
-      return this.PREVIEW_TEMPLATES.GENERAL.DEFAULT;
+      case ConfigCategories.MISC:
+      case ConfigCategories.BASIC:
+      default:
+        return this.PREVIEW_TEMPLATES.GENERAL.DEFAULT;
     }
   }
 

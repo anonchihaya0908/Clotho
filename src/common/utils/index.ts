@@ -1,7 +1,7 @@
 /**
  * Utilities Index
  * Unified export for all utility modules
- * 
+ *
  * This replaces the monolithic utils.ts file with a modular approach
  * Each category of utilities is now in its own focused module
  */
