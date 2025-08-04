@@ -344,6 +344,7 @@
     "dependencies": {
         "pidusage": "^4.0.1",
         "tslog": "^4.9.3",
+        "vsce": "^2.15.0",
         "vscode-languageclient": "^9.0.1"
     }
 }

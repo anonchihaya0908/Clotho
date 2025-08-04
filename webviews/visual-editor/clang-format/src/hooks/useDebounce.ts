@@ -10,12 +10,12 @@ import { useCallback, useRef, useEffect, useState } from 'react';
  * @param delay 防抖延迟时间（毫秒）
  * @returns 防抖后的函数
  */
-export function useDebounce<T extends (...args: any[]) => any>(
+export function useDebounce<T extends(...args: any[]) => any>(
   callback: T,
   delay: number
 ): (...args: Parameters<T>) => void {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const callbackRef = useRef(callback);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const callbackRef = useRef<T>(callback);
 
   // 保持回调函数的最新引用
   useEffect(() => {
@@ -48,7 +48,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
  * @param delay 防抖延迟时间（毫秒）
  * @returns 防抖后的函数
  */
-export function useMultiKeyDebounce<T extends (key: string, ...args: any[]) => any>(
+export function useMultiKeyDebounce<T extends(key: string, ...args: any[]) => any>(
   callback: T,
   delay: number
 ): (key: string, ...args: Parameters<T> extends [string, ...infer U] ? U : never) => void {
@@ -93,7 +93,7 @@ export function useMultiKeyDebounce<T extends (key: string, ...args: any[]) => a
  * @param delay 节流延迟时间（毫秒）
  * @returns 节流后的函数
  */
-export function useThrottle<T extends (...args: any[]) => any>(
+export function useThrottle<T extends(...args: any[]) => any>(
   callback: T,
   delay: number
 ): (...args: Parameters<T>) => void {
