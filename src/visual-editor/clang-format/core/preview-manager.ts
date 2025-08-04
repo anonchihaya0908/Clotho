@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { UI_TIMING } from '../../../common/constants';
+import { delay } from '../../../common/utils/performance';
 import { logger } from '../../../common/logger';
 import { BaseManager, ManagerContext } from '../../../common/types';
 import { MACRO_PREVIEW_CODE } from '../data/clang-format-options-database';
@@ -47,7 +48,8 @@ export class PreviewEditorManager implements BaseManager {
       });
       // 等待当前创建完成，然后返回结果
       while (this.isCreatingPreview) {
-        await new Promise(resolve => setTimeout(resolve, UI_TIMING.PREVIEW_DEBOUNCE));
+        // 🚀 使用统一的延迟函数，确保稳定状态
+        await delay(UI_TIMING.PREVIEW_DEBOUNCE);
       }
       const state = this.context.stateManager.getState();
       if (state.previewEditor && !state.previewEditor.document.isClosed) {

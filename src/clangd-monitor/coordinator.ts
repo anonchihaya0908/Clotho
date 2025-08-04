@@ -12,6 +12,7 @@ import { StatusMonitor } from './monitors/status-monitor';
 import { StatusBarPresenter } from './status-bar-presenter';
 import { errorHandler } from '../common/error-handler';
 import { LoggerService } from '../common/logger';
+import { delay } from '../common/utils/performance';
 
 /**
  * Central coordinator class that manages all monitoring components
@@ -87,7 +88,8 @@ export class MonitorCoordinator implements vscode.Disposable {
       await vscode.commands.executeCommand('clangd.restart');
 
       // Wait for clangd to start up
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+              // 🚀 使用统一的延迟函数  
+        await delay(2000);
 
       // Force all monitors to reset and re-detect PID (should now pick the main process)
       const memoryMonitor = this.getMonitor<MemoryMonitor>('memory');
@@ -334,7 +336,8 @@ export class MonitorCoordinator implements vscode.Disposable {
               await this.restartClangd();
               // After restart, poll for updates to show progress
               for (let i = 0; i < 5; i++) {
-                await new Promise((resolve) => setTimeout(resolve, 1000));
+                // 🚀 使用统一的延迟函数
+        await delay(1000);
                 await updatePanelContent();
               }
               return;

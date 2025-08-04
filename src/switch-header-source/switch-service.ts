@@ -41,6 +41,7 @@ export class SwitchService {
   private regexCache = new LRUCache<string, RegExp>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
   private fileExistsCache = new LRUCache<string, boolean>(PERFORMANCE.LRU_CACHE_MAX_SIZE * 2);
   private searchResultsCache = new LRUCache<string, SearchResult>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+  private pathNormalizeCache = new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
   private configService: SwitchConfigService;
 
   // 缓存配置常量
@@ -95,12 +96,47 @@ export class SwitchService {
   }
 
   /**
+   * 🚀 优化的路径规范化，使用缓存避免重复计算
+   */
+  private getNormalizedPath(filePath: string): string {
+    const cached = this.pathNormalizeCache.get(filePath);
+    if (cached !== undefined) {
+      return cached;
+    }
+    
+    const normalized = path.normalize(filePath).replace(/\\/g, '/');
+    this.pathNormalizeCache.set(filePath, normalized);
+    return normalized;
+  }
+
+  /**
+   * 🚀 批量文件存在性检查，优化多文件并发检查
+   */
+  private async checkMultipleFilesExist(uris: vscode.Uri[]): Promise<vscode.Uri[]> {
+    const promises = uris.map(async (uri) => {
+      const exists = await this.checkFileExistsCached(uri);
+      return exists ? uri : null;
+    });
+    
+    const results = await Promise.all(promises);
+    return results.filter((uri): uri is vscode.Uri => uri !== null);
+  }
+
+  /**
+   * 🚀 生成候选文件路径，避免重复的路径构建
+   */
+  private generateCandidatePaths(directory: string, baseName: string, extensions: string[]): vscode.Uri[] {
+    return extensions.map(ext => vscode.Uri.file(path.join(directory, `${baseName}${ext}`)));
+  }
+
+  /**
    * 清除所有缓存 - 用于强制刷新
    */
   public clearCache(): void {
     this.regexCache.clear();
     this.fileExistsCache.clear();
     this.searchResultsCache.clear();
+    this.pathNormalizeCache.clear();
   }
 
   // ===============================
@@ -318,39 +354,26 @@ export class SwitchService {
     const baseNames =
       baseName === cleanedBaseName ? [baseName] : [baseName, cleanedBaseName];
 
-    // Strategy 1: Search in the same directory (covers 80% of simple projects)
+    // 🚀 优化策略：并行执行搜索，返回第一个成功的结果
     for (const name of baseNames) {
-      const sameDirectoryResult = await this.searchSameDirectory(
-        directory,
-        name,
-        targetExtensions,
-      );
-      if (sameDirectoryResult.files.length > 0) {
-        return sameDirectoryResult;
-      }
-    }
+      // 并行启动快速搜索策略，避免序列化延迟
+      const searchPromises = [
+        // Strategy 1: 同目录搜索 (最快，优先级最高)
+        this.searchSameDirectoryOptimized(directory, name, targetExtensions),
+        
+        // Strategy 2: src/include结构搜索
+        this.searchSrcIncludeStructureOptimized(currentPath, name, targetExtensions),
+        
+        // Strategy 3: 并行测试结构搜索
+        this.searchParallelTestsStructureOptimized(currentPath, name, targetExtensions),
+      ];
 
-    // Strategy 2: Search in classic src/include structures
-    for (const name of baseNames) {
-      const srcIncludeResult = await this.searchSrcIncludeStructure(
-        currentPath,
-        name,
-        targetExtensions,
-      );
-      if (srcIncludeResult.files.length > 0) {
-        return srcIncludeResult;
-      }
-    }
-
-    // Strategy 3: Search in parallel src/tests structures
-    for (const name of baseNames) {
-      const parallelTestsResult = await this.searchParallelTestsStructure(
-        currentPath,
-        name,
-        targetExtensions,
-      );
-      if (parallelTestsResult.files.length > 0) {
-        return parallelTestsResult;
+      // 等待任意一个搜索成功
+      for (const searchPromise of searchPromises) {
+        const result = await searchPromise;
+        if (result.files.length > 0) {
+          return result;
+        }
       }
     }
 
@@ -392,6 +415,23 @@ export class SwitchService {
       }
     }
     return { files, method: 'same-directory' };
+  }
+
+  /**
+   * 🚀 优化版本：同目录搜索，使用批量文件检查和路径生成优化
+   */
+  private async searchSameDirectoryOptimized(
+    directory: string,
+    baseName: string,
+    targetExtensions: string[],
+  ): Promise<SearchResult> {
+    // 批量生成候选路径
+    const candidateUris = this.generateCandidatePaths(directory, baseName, targetExtensions);
+    
+    // 并行检查所有文件存在性
+    const existingFiles = await this.checkMultipleFilesExist(candidateUris);
+    
+    return { files: existingFiles, method: 'same-directory' };
   }
 
   /**
@@ -454,6 +494,66 @@ export class SwitchService {
   }
 
   /**
+   * 🚀 优化版本：src/include结构搜索，使用缓存的路径规范化
+   */
+  private async searchSrcIncludeStructureOptimized(
+    currentPath: string,
+    baseName: string,
+    targetExtensions: string[],
+  ): Promise<SearchResult> {
+    const files: vscode.Uri[] = [];
+    // 🚀 使用缓存的路径规范化
+    const normalizedPath = this.getNormalizedPath(currentPath);
+
+    const config = this.configService.getConfig();
+    const { sourceDirs, headerDirs } = config;
+
+    const patterns: Array<{
+      rootPath: string;
+      subPath: string;
+      targetDirs: string[];
+    }> = [];
+
+    // Check if current path contains any source directory
+    const sourceDirPattern = `(${sourceDirs.join('|')})`;
+    const srcRegex = this.getCachedRegex(
+      `^(.+?)\\/${sourceDirPattern}\\/(.*)$`,
+    );
+    const srcMatch = normalizedPath.match(srcRegex);
+    if (srcMatch) {
+      patterns.push({
+        rootPath: srcMatch[1],
+        subPath: path.dirname(srcMatch[3]),
+        targetDirs: headerDirs,
+      });
+    }
+
+    // Check if current path contains any header directory
+    const headerDirPattern = `(${headerDirs.join('|')})`;
+    const headerRegex = this.getCachedRegex(
+      `^(.+?)\\/${headerDirPattern}\\/(.*)$`,
+    );
+    const includeMatch = normalizedPath.match(headerRegex);
+    if (includeMatch) {
+      patterns.push({
+        rootPath: includeMatch[1],
+        subPath: path.dirname(includeMatch[3]),
+        targetDirs: sourceDirs,
+      });
+    }
+
+    // Use the extracted common search logic
+    const foundFiles = await this.findFilesAcrossDirs(
+      patterns,
+      baseName,
+      targetExtensions,
+    );
+    files.push(...foundFiles);
+
+    return { files, method: 'src-include' };
+  }
+
+  /**
    * Strategy 3: Search in parallel src/tests structures.
    */
   private async searchParallelTestsStructure(
@@ -463,6 +563,51 @@ export class SwitchService {
   ): Promise<SearchResult> {
     const files: vscode.Uri[] = [];
     const normalizedPath = path.normalize(currentPath).replace(/\\/g, '/');
+
+    const config = this.configService.getConfig();
+    const { sourceDirs, headerDirs, testDirs } = config;
+
+    const patterns: Array<{
+      rootPath: string;
+      subPath: string;
+      targetDirs: string[];
+    }> = [];
+
+    // Check if current path is in a test directory
+    const testDirPattern = `(${testDirs.join('|')})`;
+    const testRegex = this.getCachedRegex(`^(.+?)\\/${testDirPattern}\\/(.*)$`);
+    const testsMatch = normalizedPath.match(testRegex);
+
+    if (testsMatch) {
+      patterns.push({
+        rootPath: testsMatch[1],
+        subPath: path.dirname(testsMatch[3]),
+        targetDirs: [...sourceDirs, ...headerDirs],
+      });
+
+      // Use the extracted common search logic
+      const foundFiles = await this.findFilesAcrossDirs(
+        patterns,
+        baseName,
+        targetExtensions,
+      );
+      files.push(...foundFiles);
+    }
+
+    return { files, method: 'parallel-tests' };
+  }
+
+  /**
+   * 🚀 优化版本：并行测试结构搜索，使用缓存的路径规范化
+   */
+  private async searchParallelTestsStructureOptimized(
+    currentPath: string,
+    baseName: string,
+    targetExtensions: string[],
+  ): Promise<SearchResult> {
+    const files: vscode.Uri[] = [];
+    // 🚀 使用缓存的路径规范化
+    const normalizedPath = this.getNormalizedPath(currentPath);
 
     const config = this.configService.getConfig();
     const { sourceDirs, headerDirs, testDirs } = config;

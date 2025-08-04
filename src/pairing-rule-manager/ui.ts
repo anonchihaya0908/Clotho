@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import { errorHandler } from '../common/error-handler';
 import { PairingRule } from '../common/types';
+import { delay } from '../common/utils/performance';
 import { PairingRuleService } from './service';
 
 // Type aliases for QuickPick items
@@ -253,7 +254,8 @@ export class PairingRuleUI {
 
       if (choice === 'Clear and Reconfigure') {
         await this.service.resetRules('workspace');
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        // 🚀 使用统一的延迟函数
+        await delay(100);
         await this.showConfigurationWizard();
       }
       return;
@@ -269,7 +271,8 @@ export class PairingRuleUI {
 
       if (choice === 'Clear and Reconfigure') {
         await this.service.resetRules('user');
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        // 🚀 使用统一的延迟函数
+        await delay(100);
         await this.showConfigurationWizard();
       }
       return;

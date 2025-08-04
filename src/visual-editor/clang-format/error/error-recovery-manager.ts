@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { logger } from '../../../common/logger';
 import { EditorError } from '../../../common/types';
+import { delay } from '../../../common/utils/performance';
 import { EventBus } from '../messaging/event-bus';
 import { EditorStateManager } from '../state/editor-state-manager';
 
@@ -195,7 +196,8 @@ export class ErrorRecoveryManager implements vscode.Disposable {
           module: 'ErrorRecoveryManager',
           operation: 'recover.editor-creation-failed',
         });
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        // 🚀 使用统一的延迟函数代替直接setTimeout
+        await delay(1500);
         eventBus.emit('retry-editor-creation-requested'); // 通知协调器重试
       },
     });

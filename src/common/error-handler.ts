@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode';
 import { ERROR_HANDLING } from './constants';
+import { delay as asyncDelay } from './utils/performance';
 import { ErrorStrategy, ErrorStrategyResult } from './error-strategies/base-strategy';
 import { logger, LoggerService } from './logger';
 
@@ -333,7 +334,8 @@ export class ErrorHandler {
           });
 
           // 等待后重试
-          await new Promise(resolve => setTimeout(resolve, delay));
+          // 🚀 使用统一的延迟函数
+          await asyncDelay(delay);
         }
       }
 
