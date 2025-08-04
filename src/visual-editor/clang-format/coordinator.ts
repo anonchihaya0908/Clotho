@@ -51,29 +51,30 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
   }
 
   /**
-   * 注册所有管理器到注册表
+   * 注册所有管理器工厂到注册表（懒加载优化）
    */
   private registerManagers(): void {
-    // 创建管理器实例
-    const messageHandler = new MessageHandler();
-    const editorManager = new ClangFormatEditorManager();
-    const previewManager = new PreviewEditorManager();
-    const configActionManager = new ConfigActionManager();
-    const placeholderManager = new PlaceholderWebviewManager();
+    // 注册管理器工厂而非实例，实现懒加载
+    this.managerRegistry.registerFactory('messageHandler', () => new MessageHandler());
+    this.managerRegistry.registerFactory('editorManager', () => new ClangFormatEditorManager());
+    this.managerRegistry.registerFactory('previewManager', () => new PreviewEditorManager());
+    this.managerRegistry.registerFactory('configActionManager', () => new ConfigActionManager());
+    this.managerRegistry.registerFactory('placeholderManager', () => new PlaceholderWebviewManager());
 
-    // Register managers (simplified - no complex priority system)
-    this.managerRegistry.register('messageHandler', messageHandler);
-    this.managerRegistry.register('editorManager', editorManager);
-    this.managerRegistry.register('previewManager', previewManager);
-    this.managerRegistry.register('configActionManager', configActionManager);
-    this.managerRegistry.register('placeholderManager', placeholderManager);
+    // DebounceIntegration 延迟依赖注入，避免循环依赖
+    this.managerRegistry.registerFactory('debounceIntegration', () => {
+      // 创建一个延迟依赖解析的DebounceIntegration
+      return new DebounceIntegration(
+        () => this.managerRegistry.getInstance<PreviewEditorManager>('previewManager')!,
+        () => this.managerRegistry.getInstance<PlaceholderWebviewManager>('placeholderManager')!
+      );
+    });
 
-    // DebounceIntegration created last since it depends on previewManager and placeholderManager
-    const debounceIntegration = new DebounceIntegration(
-      previewManager,
-      placeholderManager,
-    );
-    this.managerRegistry.register('debounceIntegration', debounceIntegration);
+    logger.info('All manager factories registered for lazy loading', {
+      module: 'ClangFormatEditorCoordinator',
+      operation: 'registerManagers',
+      count: 6,
+    });
   }
 
   /**
@@ -88,8 +89,13 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
         await this.initializeOnce();
       }
 
-      // 触发事件来创建编辑器
-      this.eventBus.emit('create-editor-requested', source);
+      // 【修复】确保EditorManager被创建并初始化，然后直接调用其方法
+      const editorManager = await this.managerRegistry.getOrCreateInstance<ClangFormatEditorManager>('editorManager');
+      if (editorManager) {
+        await editorManager.createOrShowEditor(source);
+      } else {
+        throw new Error('Failed to create EditorManager');
+      }
     } catch (error: any) {
       await this.errorRecovery.handleError('coordinator-startup-failed', error);
     }
@@ -132,36 +138,57 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
   }
 
   /**
-   * 设置管理器之间的事件监听和响应
+   * 设置管理器之间的事件监听和响应（支持懒加载）
    */
   private setupEventListeners(): void {
     // 监听重新打开预览的请求
     this.eventBus.on('open-preview-requested', async () => {
-      const debounceIntegration = this.managerRegistry.getInstance<DebounceIntegration>('debounceIntegration');
-      const handler = debounceIntegration?.createDebouncedPreviewReopenHandler();
-      if (handler) {
-        await handler();
-      } else {
-        logger.error('Debounce integration not found', undefined, {
+      try {
+        const debounceIntegration = await this.managerRegistry.getOrCreateInstance<DebounceIntegration>('debounceIntegration');
+        const handler = debounceIntegration?.createDebouncedPreviewReopenHandler();
+        if (handler) {
+          await handler();
+        } else {
+          logger.error('Debounce integration handler not available', undefined, {
+            module: 'ClangFormatEditorCoordinator',
+            operation: 'open-preview-requested',
+          });
+        }
+      } catch (error) {
+        logger.error('Failed to get DebounceIntegration for preview reopen', error as Error, {
           module: 'ClangFormatEditorCoordinator',
-          operation: 'handleConfigurationChanged',
+          operation: 'open-preview-requested',
         });
       }
     });
 
     // 监听预览关闭事件
-    this.eventBus.on('preview-closed', () => {
-      const debounceIntegration = this.managerRegistry.getInstance<DebounceIntegration>('debounceIntegration');
-      const handler = debounceIntegration?.createDebouncedPreviewCloseHandler();
-      if (handler) {
-        handler();
+    this.eventBus.on('preview-closed', async () => {
+      try {
+        const debounceIntegration = await this.managerRegistry.getOrCreateInstance<DebounceIntegration>('debounceIntegration');
+        const handler = debounceIntegration?.createDebouncedPreviewCloseHandler();
+        if (handler) {
+          handler();
+        }
+      } catch (error) {
+        logger.error('Failed to get DebounceIntegration for preview close', error as Error, {
+          module: 'ClangFormatEditorCoordinator',
+          operation: 'preview-closed',
+        });
       }
     });
 
     // Webview消息路由
-    this.eventBus.on('webview-message-received', (message) => {
-      const messageHandler = this.managerRegistry.getInstance<MessageHandler>('messageHandler');
-      messageHandler?.handleMessage(message);
+    this.eventBus.on('webview-message-received', async (message) => {
+      try {
+        const messageHandler = await this.managerRegistry.getOrCreateInstance<MessageHandler>('messageHandler');
+        messageHandler?.handleMessage(message);
+      } catch (error) {
+        logger.error('Failed to get MessageHandler for webview message', error as Error, {
+          module: 'ClangFormatEditorCoordinator',
+          operation: 'webview-message-received',
+        });
+      }
     });
 
     // 监听配置变化请求 - 使用新的配置变化服务
@@ -187,6 +214,22 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       this.eventBus.emit('open-preview-requested');
     });
 
+    // 【新增】监听错误恢复的编辑器重试请求
+    this.eventBus.on('retry-editor-creation-requested', async () => {
+      try {
+        logger.info('Retrying editor creation due to error recovery', {
+          module: 'ClangFormatEditorCoordinator',
+          operation: 'retry-editor-creation-requested',
+        });
+        await this.showEditor(EditorOpenSource.ERROR_RECOVERY);
+      } catch (error) {
+        logger.error('Failed to retry editor creation', error as Error, {
+          module: 'ClangFormatEditorCoordinator',
+          operation: 'retry-editor-creation-requested',
+        });
+      }
+    });
+
     // 【移除】检测用户手动关闭预览标签页的逻辑
     // 这个逻辑已经在 PreviewManager 中更完善地处理了，包括区分程序隐藏和用户手动关闭
     // 移除这个重复的监听器，避免在程序隐藏时错误地触发 preview-closed 事件
@@ -195,16 +238,22 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.eventBus.on(
       'config-updated-for-preview',
       ({ newConfig }: { newConfig: Record<string, any> }) => {
-        // 通过注册表获取 previewManager 实例
-        const previewManager = this.managerRegistry.getInstance<PreviewEditorManager>('previewManager');
-        if (previewManager) {
-          previewManager.updatePreviewWithConfig(newConfig);
-        } else {
-          logger.warn('Preview manager not found', {
+        // 通过注册表获取 previewManager 实例（懒加载）
+        this.managerRegistry.getOrCreateInstance<PreviewEditorManager>('previewManager').then(previewManager => {
+          if (previewManager) {
+            previewManager.updatePreviewWithConfig(newConfig);
+          } else {
+            logger.warn('Preview manager not found', {
+              module: 'ClangFormatEditorCoordinator',
+              operation: 'config-updated-for-preview',
+            });
+          }
+        }).catch(error => {
+          logger.error('Failed to get PreviewManager for config update', error as Error, {
             module: 'ClangFormatEditorCoordinator',
-            operation: 'handleMicroPreview',
+            operation: 'config-updated-for-preview',
           });
-        }
+        });
       },
     );
 

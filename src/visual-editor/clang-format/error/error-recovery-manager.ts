@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { EditorError } from '../../../common/types';
-import { EditorStateManager } from '../state/editor-state-manager';
-import { EventBus } from '../messaging/event-bus';
 import { logger } from '../../../common/logger';
+import { EditorError } from '../../../common/types';
+import { EventBus } from '../messaging/event-bus';
+import { EditorStateManager } from '../state/editor-state-manager';
 
 /**
  * 恢复策略接口
@@ -196,7 +196,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
           operation: 'recover.editor-creation-failed',
         });
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        eventBus.emit('create-editor-requested'); // 通知协调器重试
+        eventBus.emit('retry-editor-creation-requested'); // 通知协调器重试
       },
     });
 

@@ -92,7 +92,8 @@ export class ConfigChangeService {
 
             // 3. Trigger preview update if needed
             if (this.shouldUpdatePreview(key)) {
-                this.eventBus.emit('preview-update-requested', {
+                this.eventBus.emit('config-updated-for-preview', {
+                    newConfig,
                     reason: 'config-change',
                     key,
                 });
@@ -125,8 +126,11 @@ export class ConfigChangeService {
      * Simple check if key should trigger preview update
      */
     private shouldUpdatePreview(key: string): boolean {
-        // Only update preview for keys that affect formatting
-        return !key.startsWith('__internal') && key !== 'BasedOnStyle';
+        // Only skip internal keys and metadata
+        // 修复：BasedOnStyle是重要的配置项，应该触发预览更新
+        return !key.startsWith('__internal') && 
+               !key.startsWith('__metadata') &&
+               key !== '__comment';
     }
 
     /**

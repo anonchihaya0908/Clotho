@@ -4,9 +4,9 @@
  */
 
 import * as vscode from 'vscode';
-import { DebounceManager } from './debounce-manager';
 import { errorHandler } from '../../../common/error-handler';
 import { LoggerService } from '../../../common/logger';
+import { DebounceManager } from './debounce-manager';
 
 /**
  * 过渡状态枚举
@@ -30,6 +30,10 @@ export interface TransitionOptions {
  */
 export class TransitionManager {
   private currentState: TransitionState = TransitionState.IDLE;
+  
+  public getCurrentState(): TransitionState {
+    return this.currentState;
+  }
   private debounceManager: DebounceManager;
   private transitionStartTime: number = 0;
   private readonly logger = LoggerService.getInstance().createChildLogger('TransitionManager');
@@ -51,7 +55,7 @@ export class TransitionManager {
   async switchToEasterEgg(
     onContentReady: () => Promise<vscode.WebviewPanel>,
   ): Promise<vscode.WebviewPanel> {
-    return await this.debounceManager.withLock('webview-transition', () => {
+    return await this.debounceManager.withLock('webview-easter-egg-transition', () => {
       return this.performEasterEggTransition(onContentReady);
     });
   }
@@ -62,7 +66,7 @@ export class TransitionManager {
   async switchToPreview(
     onPreviewReady: () => Promise<vscode.TextEditor>,
   ): Promise<vscode.TextEditor> {
-    return await this.debounceManager.withLock('webview-transition', () => {
+    return await this.debounceManager.withLock('webview-preview-transition', () => {
       return this.performPreviewTransition(onPreviewReady);
     });
   }
@@ -146,12 +150,7 @@ export class TransitionManager {
     }
   }
 
-  /**
-   * 获取当前状态
-   */
-  getCurrentState(): TransitionState {
-    return this.currentState;
-  }
+
 
   /**
    * 检查是否正在过渡

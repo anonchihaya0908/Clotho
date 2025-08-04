@@ -3,13 +3,13 @@
  * 将防抖机制集成到现有的ClangFormat coordinator中
  */
 
-import { DebounceManager } from './debounce-manager';
-import { TransitionManager } from './transition-manager';
 import { errorHandler } from '../../../common/error-handler';
 import { logger } from '../../../common/logger';
 import { BaseManager, ManagerContext, ManagerStatus } from '../../../common/types';
-import { PreviewEditorManager } from './preview-manager';
+import { DebounceManager } from './debounce-manager';
 import { PlaceholderWebviewManager } from './placeholder-manager';
+import { PreviewEditorManager } from './preview-manager';
+import { TransitionManager, TransitionState } from './transition-manager';
 
 /**
  * 防抖集成器
@@ -27,14 +27,33 @@ export class DebounceIntegration implements BaseManager {
   private _previewReopenHandler?: () => Promise<void>;
 
   constructor(
-    private previewManager: PreviewEditorManager,
-    private placeholderManager: PlaceholderWebviewManager,
+    private previewManagerGetter: (() => PreviewEditorManager) | PreviewEditorManager,
+    private placeholderManagerGetter: (() => PlaceholderWebviewManager) | PlaceholderWebviewManager,
   ) {
     this.debounceManager = new DebounceManager();
     this.transitionManager = new TransitionManager();
   }
+
+  // Lazy getters for dependencies
+  private get previewManager(): PreviewEditorManager {
+    return typeof this.previewManagerGetter === 'function' 
+      ? this.previewManagerGetter()
+      : this.previewManagerGetter;
+  }
+
+  private get placeholderManager(): PlaceholderWebviewManager {
+    return typeof this.placeholderManagerGetter === 'function'
+      ? this.placeholderManagerGetter()
+      : this.placeholderManagerGetter;
+  }
+
   getStatus(): ManagerStatus {
-    throw new Error('Method not implemented.');
+    return {
+      isInitialized: !!this.context,
+      isHealthy: true,
+      lastActivity: new Date(),
+      errorCount: 0,
+    };
   }
 
   async initialize(context: ManagerContext): Promise<void> {
@@ -103,6 +122,16 @@ export class DebounceIntegration implements BaseManager {
               module: 'DebounceIntegration',
               operation: 'createDebouncedPreviewReopenHandler',
               previewMode: state.previewMode,
+            });
+            return;
+          }
+
+          // 【新增】额外的并发检查
+          if (this.transitionManager.getCurrentState() !== TransitionState.IDLE) {
+            logger.debug('Transition already in progress, skipping operation', {
+              module: 'DebounceIntegration',
+              operation: 'createDebouncedPreviewReopenHandler',
+              currentState: this.transitionManager.getCurrentState(),
             });
             return;
           }

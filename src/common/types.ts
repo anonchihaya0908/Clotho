@@ -124,6 +124,7 @@ export enum EditorOpenSource {
   DIRECT = 'direct',
   COMMAND = 'command',
   CODE_LENS = 'code_lens',
+  ERROR_RECOVERY = 'error_recovery',
 }
 
 // Visual Editor types are now in src/visual-editor/types.ts
