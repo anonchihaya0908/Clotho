@@ -32,7 +32,7 @@ export class PairCoordinator implements vscode.Disposable {
     // No resources to dispose since commands are managed centrally
   }
 
-  // Main workflow orchestration - refactored into smaller methods
+  // Main workflow orchestration - clean coordinator layer
   public async create(): Promise<void> {
     // 1. Determine where to create files
     const targetDirectory = await this.getTargetDirectory();
@@ -41,74 +41,75 @@ export class PairCoordinator implements vscode.Disposable {
       return;
     }
 
-    // 2. Get user preferences for what to create
-    const { language } = await this.service.detectLanguageFromEditor();
-    const existingRule = this.getExistingConfigRule(language);
-    const isUsingExistingConfig = !!existingRule;
-
-    const rule = await this.getUserPreferences();
-    if (!rule) {
+    // 2. Get user preferences (delegates to service for config detection)
+    const userPreferences = await this.getUserPreferences();
+    if (!userPreferences) {
       return; // User cancelled
     }
 
-    const fileName = await this.ui.promptForFileName(rule);
+    const fileName = await this.ui.promptForFileName(userPreferences.rule);
     if (!fileName) {
       return; // User cancelled
     }
 
     // 3. Validate and create files
-    await this.createFilePair(targetDirectory, fileName, rule, isUsingExistingConfig);
+    await this.createFilePair(targetDirectory, fileName, userPreferences.rule);
+
+    // 4. Handle post-creation config save if needed
+    if (userPreferences.needsSaving) {
+      await this.offerToSaveCompleteConfig(userPreferences.rule);
+    }
   }
 
   /**
-   * Get user preferences for pairing rule with header guard style
-   * Automatically uses existing configuration if available, otherwise prompts user
+   * Get user preferences - delegates to service for config detection, UI for prompts
    */
-  private async getUserPreferences() {
+  private async getUserPreferences(): Promise<{ rule: PairingRule; needsSaving: boolean } | undefined> {
     const { language, uncertain } = await this.service.detectLanguageFromEditor();
 
-    // Try to get existing configuration first
-    const existingRule = this.getExistingConfigRule(language);
+    // Delegate config detection to service layer
+    const existingRule = this.service.getExistingConfigRule(language);
     if (existingRule) {
-      // Show a brief notification that we're using existing config
-      const guardText = existingRule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
-      vscode.window.showInformationMessage(
-        `📋 Using workspace configuration: ${existingRule.headerExt}/${existingRule.sourceExt} with ${guardText}`,
-        { modal: false }
-      );
-      return existingRule;
+      // Check if the existing rule has all required fields
+      if (!existingRule.headerGuardStyle) {
+        // Configuration is incomplete - need to ask for missing headerGuardStyle
+        const headerGuardStyle = await this.ui.promptForHeaderGuardStyle();
+        if (!headerGuardStyle) {
+          return undefined; // User cancelled
+        }
+
+        // Return enhanced rule with flag to save after file creation
+        const completeRule = {
+          ...existingRule,
+          headerGuardStyle
+        };
+
+        return { rule: completeRule, needsSaving: true };
+      }
+
+      // Configuration is complete - use as-is
+      this.ui.showConfigUsageNotification(existingRule);
+      return { rule: existingRule, needsSaving: false };
     }
 
-    // No existing config found, proceed with manual selection
-    // Step 1 & 2: Get pairing rule (template + extensions)
-    const rule = await this.ui.promptForPairingRule(language, uncertain);
+    // No existing config - delegate user interaction to UI layer
+    const rule = await this.ui.promptForCompleteRule(language, uncertain);
     if (!rule) {
-      return undefined; // User cancelled
+      return undefined;
     }
 
-    // Step 3: Get header guard style preference
-    const headerGuardStyle = await this.ui.promptForHeaderGuardStyle();
-    if (!headerGuardStyle) {
-      return undefined; // User cancelled
-    }
-
-    // Combine the rule with the selected header guard style
-    return {
-      ...rule,
-      headerGuardStyle,
-    };
+    return { rule, needsSaving: false }; // UI layer handles its own saving
   }
 
   /**
-   * Create the file pair after validation
+   * Create the file pair after validation - delegates to service and UI
    */
   private async createFilePair(
     targetDirectory: vscode.Uri,
     fileName: string,
-    rule: PairingRule,
-    isUsingExistingConfig: boolean = false
+    rule: PairingRule
   ): Promise<void> {
-    // Prepare file paths and check for conflicts
+    // Delegate file path creation and conflict check to service
     const { headerPath, sourcePath } = this.service.createFilePaths(
       targetDirectory,
       fileName,
@@ -125,7 +126,7 @@ export class PairCoordinator implements vscode.Disposable {
       return;
     }
 
-    // Create the files
+    // Delegate file creation to service
     await this.service.generateAndWriteFiles(
       fileName,
       rule,
@@ -133,80 +134,55 @@ export class PairCoordinator implements vscode.Disposable {
       sourcePath,
     );
 
-    if (isUsingExistingConfig) {
-      // If using existing config, just show success message without save prompt
-      await this.ui.showSuccessAndOpenFile(headerPath, sourcePath);
-    } else {
-      // If manually configured, show success with configuration save prompt (Step 4)
-      const shouldSaveConfig = await this.ui.showSuccessWithConfigPrompt(rule, headerPath, sourcePath);
-
-      if (shouldSaveConfig) {
-        await this.saveRuleToWorkspace(rule);
-      }
-    }
+    // Delegate post-creation handling to UI layer
+    await this.ui.handlePostCreationFlow(rule, headerPath, sourcePath, this.pairingRuleService);
   }
 
   /**
-   * Get existing configuration rule that matches the detected language
-   * @param language Detected programming language
-   * @returns Existing rule or undefined if no suitable config found
+   * Offer to save complete configuration when user fills in missing fields
    */
-  private getExistingConfigRule(language: 'c' | 'cpp'): PairingRule | undefined {
-    // Check workspace rules first (higher priority)
-    const workspaceRules = this.pairingRuleService.getRules('workspace') || [];
-    const matchingWorkspaceRules = workspaceRules.filter(rule => rule.language === language);
+  private async offerToSaveCompleteConfig(rule: PairingRule): Promise<void> {
+    const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
 
-    if (matchingWorkspaceRules.length > 0) {
-      return this.selectBestRule(matchingWorkspaceRules);
+    const choice = await vscode.window.showInformationMessage(
+      `💾 Files created successfully!\n\n💡 Save complete configuration?\nYour settings: ${rule.headerExt}/${rule.sourceExt} with ${guardText}`,
+      { modal: false },
+      'Save Configuration',
+      'Use Once Only'
+    );
+
+    if (choice === 'Save Configuration') {
+      try {
+        // Get existing rules and preserve other language rules
+        const existingRules = this.pairingRuleService.getRules('workspace') || [];
+        const otherLanguageRules = existingRules.filter(r => r.language !== rule.language);
+
+        // Create clean rule for saving with complete configuration
+        const workspaceRule: PairingRule = {
+          key: `workspace_default_${Date.now()}`,
+          label: `${rule.language.toUpperCase()} Pair (${rule.headerExt}/${rule.sourceExt})`,
+          description: `Creates a ${rule.headerExt}/${rule.sourceExt} file pair with ${guardText}.`,
+          language: rule.language,
+          headerExt: rule.headerExt,
+          sourceExt: rule.sourceExt,
+          isClass: rule.isClass,
+          isStruct: rule.isStruct,
+          headerGuardStyle: rule.headerGuardStyle, // Ensure this is included
+        };
+
+        // Combine with other language rules and save
+        const allRules = [...otherLanguageRules, workspaceRule];
+        await this.pairingRuleService.writeRules(allRules, 'workspace');
+
+        vscode.window.showInformationMessage(
+          `✅ Complete configuration saved to workspace! Future file pairs will use ${rule.headerExt}/${rule.sourceExt} with ${guardText}.`
+        );
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      }
     }
-
-    // Check global rules if no workspace rules found
-    const globalRules = this.pairingRuleService.getRules('user') || [];
-    const matchingGlobalRules = globalRules.filter(rule => rule.language === language);
-
-    if (matchingGlobalRules.length > 0) {
-      return this.selectBestRule(matchingGlobalRules);
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Select the best rule from multiple matching rules
-   * Priority: general rules > class rules > struct rules
-   */
-  private selectBestRule(rules: PairingRule[]): PairingRule {
-    // Sort by priority: general rules first, then class, then struct
-    const sortedRules = [...rules].sort((a, b) => {
-      // General rules (no isClass, no isStruct) have highest priority
-      const aIsGeneral = !a.isClass && !a.isStruct;
-      const bIsGeneral = !b.isClass && !b.isStruct;
-
-      if (aIsGeneral && !bIsGeneral) {
-        return -1;
-      }
-      if (!aIsGeneral && bIsGeneral) {
-        return 1;
-      }
-
-      // Among specific rules, prefer class over struct
-      if (a.isClass && b.isStruct) {
-        return -1;
-      }
-      if (a.isStruct && b.isClass) {
-        return 1;
-      }
-
-      return 0;
-    });
-
-    const selectedRule = sortedRules[0];
-
-    // Ensure backward compatibility by setting default headerGuardStyle
-    return {
-      ...selectedRule,
-      headerGuardStyle: selectedRule.headerGuardStyle || 'ifndef_define'
-    };
   }
 
   /**
@@ -219,37 +195,5 @@ export class PairCoordinator implements vscode.Disposable {
         vscode.workspace.workspaceFolders,
       )) ?? (await this.ui.showWorkspaceFolderPicker())
     );
-  }
-
-  /**
-   * Save pairing rule to workspace settings
-   */
-  private async saveRuleToWorkspace(rule: PairingRule): Promise<void> {
-    try {
-      // Create a clean rule for saving
-      const workspaceRule: PairingRule = {
-        key: `workspace_default_${Date.now()}`,
-        label: `${rule.language.toUpperCase()} Pair (${rule.headerExt}/${rule.sourceExt})`,
-        description: `Creates a ${rule.headerExt}/${rule.sourceExt} file pair with ${rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards'}.`,
-        language: rule.language,
-        headerExt: rule.headerExt,
-        sourceExt: rule.sourceExt,
-        isClass: rule.isClass,
-        isStruct: rule.isStruct,
-        headerGuardStyle: rule.headerGuardStyle,
-      };
-
-      // Save to workspace settings
-      await this.pairingRuleService.writeRules([workspaceRule], 'workspace');
-
-      const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
-      vscode.window.showInformationMessage(
-        `✅ Configuration saved to workspace! Future file pairs will use ${rule.headerExt}/${rule.sourceExt} with ${guardText}.`
-      );
-    } catch (error) {
-      vscode.window.showErrorMessage(
-        `Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
   }
 }

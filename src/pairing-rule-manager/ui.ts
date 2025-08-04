@@ -164,13 +164,10 @@ export class PairingRuleUI {
     }
 
     const scope = selection.scope as 'workspace' | 'user';
-    const existingRules = this.service.getRules(scope) || [];
-    const otherLanguageRules = existingRules.filter(
-      (r) => r.language !== rule.language,
-    );
-    const newRules = [...otherLanguageRules, rule];
 
-    await this.service.writeRules(newRules, scope);
+    // Use precise update: only update file extensions, preserve other settings
+    await this.service.updateRuleExtensions(rule, scope);
+
     vscode.window.showInformationMessage(
       `Successfully set '${rule.label}' as the default extension for the ${selection.scope}.`,
     );

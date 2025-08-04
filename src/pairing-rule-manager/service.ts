@@ -97,6 +97,53 @@ export class PairingRuleService {
   }
 
   /**
+   * Update only file extensions for a specific language, preserving all other settings
+   * This is the clean solution: only touch what the command is supposed to configure
+   */
+  async updateRuleExtensions(
+    newRule: PairingRule,
+    scope: 'workspace' | 'user'
+  ): Promise<void> {
+    const updateExtensions = errorHandler.wrapAsync(
+      async () => {
+        const existingRules = this.getRules(scope) || [];
+        const otherLanguageRules = existingRules.filter(r => r.language !== newRule.language);
+        const existingRuleForLanguage = existingRules.find(r => r.language === newRule.language);
+
+        let updatedRule: PairingRule;
+
+        if (existingRuleForLanguage) {
+          // Preserve all existing settings, only update extensions
+          updatedRule = {
+            ...existingRuleForLanguage,
+            headerExt: newRule.headerExt,
+            sourceExt: newRule.sourceExt,
+            label: newRule.label, // Update label to reflect new extensions
+            // Keep headerGuardStyle and all other fields unchanged
+          };
+        } else {
+          // No existing rule, use the new rule but ensure backward compatibility
+          updatedRule = {
+            ...newRule,
+            // Ensure headerGuardStyle has a default value for backward compatibility
+            headerGuardStyle: newRule.headerGuardStyle || 'ifndef_define'
+          };
+        }
+
+        const allRules = [...otherLanguageRules, updatedRule];
+        await this.writeRules(allRules, scope);
+      },
+      {
+        operation: 'updateRuleExtensions',
+        module: 'PairingRuleService',
+        showToUser: true,
+      },
+    );
+
+    await updateExtensions();
+  }
+
+  /**
    * Reset pairing rules for the specified scope (remove custom rules)
    */
   async resetRules(scope: 'workspace' | 'user'): Promise<void> {

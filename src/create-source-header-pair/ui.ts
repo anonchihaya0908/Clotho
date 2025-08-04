@@ -781,6 +781,97 @@ export class PairCreatorUI {
   }
 
   /**
+   * Shows notification that existing configuration is being used
+   */
+  public showConfigUsageNotification(rule: PairingRule): void {
+    const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
+    vscode.window.showInformationMessage(
+      `📋 Using workspace configuration: ${rule.headerExt}/${rule.sourceExt} with ${guardText}`,
+      { modal: false }
+    );
+  }
+
+  /**
+   * Complete rule selection flow including header guard style
+   */
+  public async promptForCompleteRule(language: 'c' | 'cpp', uncertain: boolean): Promise<PairingRule | undefined> {
+    // Step 1 & 2: Get pairing rule (template + extensions)
+    const rule = await this.promptForPairingRule(language, uncertain);
+    if (!rule) {
+      return undefined; // User cancelled
+    }
+
+    // Step 3: Get header guard style preference
+    const headerGuardStyle = await this.promptForHeaderGuardStyle();
+    if (!headerGuardStyle) {
+      return undefined; // User cancelled
+    }
+
+    // Combine the rule with the selected header guard style
+    return {
+      ...rule,
+      headerGuardStyle,
+    };
+  }
+
+  /**
+   * Handle post-creation flow including config save prompt
+   */
+  public async handlePostCreationFlow(
+    rule: PairingRule,
+    headerPath: vscode.Uri,
+    sourcePath: vscode.Uri,
+    pairingRuleService: PairingRuleService
+  ): Promise<void> {
+    // Check if this rule came from existing config (has existing key format)
+    const isExistingConfig = rule.key.includes('workspace_default') || rule.key.includes('custom_');
+
+    if (isExistingConfig) {
+      // If using existing config, just show success message without save prompt
+      await this.showSuccessAndOpenFile(headerPath, sourcePath);
+    } else {
+      // If manually configured, show success with configuration save prompt
+      const shouldSaveConfig = await this.showSuccessWithConfigPrompt(rule, headerPath, sourcePath);
+
+      if (shouldSaveConfig) {
+        await this.saveRuleToWorkspace(rule, pairingRuleService);
+      }
+    }
+  }
+
+  /**
+   * Save complete pairing rule to workspace settings (for first-time configuration)
+   */
+  private async saveRuleToWorkspace(rule: PairingRule, pairingRuleService: PairingRuleService): Promise<void> {
+    try {
+      // Create a clean rule for saving
+      const workspaceRule: PairingRule = {
+        key: `workspace_default_${Date.now()}`,
+        label: `${rule.language.toUpperCase()} Pair (${rule.headerExt}/${rule.sourceExt})`,
+        description: `Creates a ${rule.headerExt}/${rule.sourceExt} file pair with ${rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards'}.`,
+        language: rule.language,
+        headerExt: rule.headerExt,
+        sourceExt: rule.sourceExt,
+        isClass: rule.isClass,
+        isStruct: rule.isStruct,
+        headerGuardStyle: rule.headerGuardStyle,
+      };
+
+      // Use precise update to preserve other language settings
+      await pairingRuleService.updateRuleExtensions(workspaceRule, 'workspace');
+
+      const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
+      vscode.window.showInformationMessage(
+        `✅ Configuration saved to workspace! Future file pairs will use ${rule.headerExt}/${rule.sourceExt} with ${guardText}.`
+      );
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
    * Shows an error message to the user
    * Uses consistent error handling pattern across the extension
    */

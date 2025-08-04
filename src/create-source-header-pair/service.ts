@@ -237,7 +237,7 @@ export class PairCreatorService {
 
     const templates = FILE_TEMPLATES[templateKey];
 
-    // Use headerGuardStyle from rule, default to ifndef_define for backward compatibility
+    // Use headerGuardStyle from rule, with fallback for safety
     const headerGuardStyle = rule.headerGuardStyle || 'ifndef_define';
 
     const context = {
@@ -515,6 +515,66 @@ export class PairCreatorService {
     );
 
     await saveRule();
+  }
+
+  /**
+   * Get existing configuration rule that matches the detected language
+   * @param language Detected programming language
+   * @returns Existing rule or undefined if no suitable config found
+   */
+  public getExistingConfigRule(language: 'c' | 'cpp'): PairingRule | undefined {
+    // Check workspace rules first (higher priority)
+    const workspaceRules = this.pairingRuleService.getRules('workspace') || [];
+    const matchingWorkspaceRules = workspaceRules.filter(rule => rule.language === language);
+
+    if (matchingWorkspaceRules.length > 0) {
+      return this.selectBestRule(matchingWorkspaceRules);
+    }
+
+    // Check global rules if no workspace rules found
+    const globalRules = this.pairingRuleService.getRules('user') || [];
+    const matchingGlobalRules = globalRules.filter(rule => rule.language === language);
+
+    if (matchingGlobalRules.length > 0) {
+      return this.selectBestRule(matchingGlobalRules);
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Select the best rule from multiple matching rules
+   * Priority: general rules > class rules > struct rules
+   */
+  private selectBestRule(rules: PairingRule[]): PairingRule {
+    // Sort by priority: general rules first, then class, then struct
+    const sortedRules = [...rules].sort((a, b) => {
+      // General rules (no isClass, no isStruct) have highest priority
+      const aIsGeneral = !a.isClass && !a.isStruct;
+      const bIsGeneral = !b.isClass && !b.isStruct;
+
+      if (aIsGeneral && !bIsGeneral) {
+        return -1;
+      }
+      if (!aIsGeneral && bIsGeneral) {
+        return 1;
+      }
+
+      // Among specific rules, prefer class over struct
+      if (a.isClass && b.isStruct) {
+        return -1;
+      }
+      if (a.isStruct && b.isClass) {
+        return 1;
+      }
+
+      return 0;
+    });
+
+    const selectedRule = sortedRules[0];
+
+    // Don't set default headerGuardStyle here - let UI layer handle missing values
+    return selectedRule;
   }
 
   // Generates file content and writes both header and source files
