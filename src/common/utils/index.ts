@@ -36,5 +36,5 @@ export * from './performance';
 // Security utilities (replaces manual implementations)
 export * from './security';
 
-// Re-export for backward compatibility
+// Re-export alias
 export { SimpleCache as LRUCache } from './security';

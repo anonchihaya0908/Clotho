@@ -196,5 +196,5 @@ export function generateHeaderGuardMacro(fileName: string, headerExt: string): s
   return `${baseName}_${extName}_`;
 }
 
-// Re-export Language type for backward compatibility
+// Re-export Language type
 export { Language };

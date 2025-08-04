@@ -36,5 +36,5 @@ export interface ConfigTemplate {
     config: Omit<SwitchConfig, 'excludePatterns' | 'version' | 'lastModified'>;
 }
 
-// Re-export core SearchResult for backward compatibility
+// Re-export core SearchResult
 export type SearchResult = CoreSearchResult;

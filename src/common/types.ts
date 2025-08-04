@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode';
 
-// Re-export core types
+// Re-export core types for module accessibility
 export {
   BaseConfig, BaseManager, ConfigScope, Disposable, EditorError, EditorState, ErrorContext, FileType, FileValidationResult, isValidConfigScope, isValidFileType, isValidLanguage, isValidSearchMethod, Language, LanguageDetectionResult, ManagerContext,
   ManagerStatus, SearchMethod, SearchResult, StateChangeEvent, TemplateChoice, TemplateContext, TextDocument, TextEditor, Uri, ValidationResult, WorkspaceFolder
@@ -89,7 +89,7 @@ export interface QuickPickFile extends vscode.QuickPickItem {
   uri: vscode.Uri;
 }
 
-// TemplateChoice is now re-exported from core types
+// TemplateChoice is defined in core types
 
 // ===============================
 // Extension Context Interface
@@ -101,13 +101,9 @@ export interface ExtensionContext {
 }
 
 // ===============================
-// Module-specific types (for backward compatibility)
+// Module-specific types
 // ===============================
-
-// These are now handled by module-specific type files
-// Import them from respective modules when needed
-
-// SearchPattern and TemplateContext are now in module-specific files
+// SearchPattern and other module-specific types are in their respective modules
 
 // ===============================
 // Custom Rule Selection Interface
@@ -118,7 +114,7 @@ export interface CustomRuleSelection {
   shouldCreateNew: boolean;
 }
 
-// Type Guards and Utility Types are now re-exported from core types
+// Type Guards and Utility Types are in core types
 
 // ===============================
 // Visual Editor specific Types
@@ -134,7 +130,4 @@ export enum EditorOpenSource {
   ERROR_RECOVERY = 'error_recovery',
 }
 
-// Visual Editor types are now in src/visual-editor/types.ts
-
-// Note: WebviewMessage and WebviewMessageType are in clang-format-shared.ts
-// Import from clang-format-shared.ts when needed
+// WebviewMessage and WebviewMessageType are in clang-format-shared.ts

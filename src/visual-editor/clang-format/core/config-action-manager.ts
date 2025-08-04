@@ -94,7 +94,7 @@ export class ConfigActionManager implements BaseManager {
         operation: 'autoLoadWorkspaceConfig',
         fileUri: fileUri.toString()
       });
-      await this.loadConfigFromFile(fileUri);
+      await this.loadConfigFromFile(fileUri, true); // 传递 silent=true 表示自动加载
     } catch (error) {
       // 文件不存在，静默处理
       logger.debug('.clang-format file not found in workspace. Using default settings', {
@@ -115,24 +115,46 @@ export class ConfigActionManager implements BaseManager {
     return vscode.Uri.joinPath(workspaceFolders[0].uri, '.clang-format');
   }
 
-  private async loadConfigFromFile(fileUri: vscode.Uri): Promise<void> {
+  private async loadConfigFromFile(fileUri: vscode.Uri, silent: boolean = false): Promise<void> {
     try {
       const fileContentBytes = await vscode.workspace.fs.readFile(fileUri);
       const fileContent = Buffer.from(fileContentBytes).toString('utf-8');
       const newConfig = this.formatService.parse(fileContent);
       await this.updateConfigState(newConfig, 'config-loaded-from-file');
-      vscode.window.showInformationMessage(
-        `Configuration loaded from ${vscode.workspace.asRelativePath(fileUri)}.`,
-      );
+      
+      if (!silent) {
+        // 手动加载时显示信息弹窗
+        vscode.window.showInformationMessage(
+          `Configuration loaded from ${vscode.workspace.asRelativePath(fileUri)}.`,
+        );
+      } else {
+        // 自动加载时仅在状态栏显示轻量提示
+        const fileName = vscode.workspace.asRelativePath(fileUri);
+        vscode.window.setStatusBarMessage(
+          `🔧 Auto-loaded ${fileName}`,
+          3000 // 3秒后消失
+        );
+      }
     } catch (error: any) {
       await this.context.errorRecovery.handleError(
         'config-load-failed',
         error,
         { file: fileUri.toString() },
       );
-      vscode.window.showErrorMessage(
-        `Failed to read or parse configuration file: ${error.message}`,
-      );
+      
+      if (!silent) {
+        // 只有非静默模式下才显示错误弹窗
+        vscode.window.showErrorMessage(
+          `Failed to read or parse configuration file: ${error.message}`,
+        );
+      } else {
+        // 自动加载失败时仅记录日志，不打扰用户
+        logger.warn('Auto-load failed, using default configuration', {
+          module: 'ConfigActionManager',
+          operation: 'loadConfigFromFile',
+          error: error.message
+        });
+      }
     }
   }
 
