@@ -30,7 +30,7 @@ export interface TransitionOptions {
  */
 export class TransitionManager {
   private currentState: TransitionState = TransitionState.IDLE;
-  
+
   public getCurrentState(): TransitionState {
     return this.currentState;
   }
@@ -151,7 +151,6 @@ export class TransitionManager {
   }
 
 
-
   /**
    * 检查是否正在过渡
    */
@@ -178,7 +177,7 @@ export class TransitionManager {
     isTransitioning: boolean;
     elapsedTime: number;
     debounceStatus: any;
-  } {
+    } {
     return {
       currentState: this.currentState,
       isTransitioning: this.isTransitioning(),

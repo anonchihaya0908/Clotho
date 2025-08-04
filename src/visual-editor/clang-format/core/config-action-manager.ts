@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import {
-    BaseManager,
-    ManagerContext,
-    ManagerStatus,
+  BaseManager,
+  ManagerContext,
+  ManagerStatus,
 } from '../../../common/types';
 import { WebviewMessageType } from '../../../common/types/clang-format-shared';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';

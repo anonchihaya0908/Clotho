@@ -16,18 +16,35 @@
         "semi": "off",
         "indent": [
             "warn",
-            2
+            2,
+            {
+                "SwitchCase": 1,
+                "ignoredNodes": [
+                    "TemplateLiteral"
+                ]
+            }
         ],
         "quotes": [
             "warn",
             "single"
         ],
         "prefer-const": "warn",
-        "no-var": "error"
+        "no-var": "error",
+        "no-multiple-empty-lines": [
+            "warn",
+            {
+                "max": 2,
+                "maxEOF": 1
+            }
+        ],
+        "no-trailing-spaces": "warn",
+        "eol-last": "warn"
     },
     "ignorePatterns": [
         "out",
         "dist",
-        "**/*.d.ts"
+        "**/*.d.ts",
+        "webviews/**/*.js",
+        "scripts/**/*.js"
     ]
 }

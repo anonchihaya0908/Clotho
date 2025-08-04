@@ -36,7 +36,7 @@ export class DebounceIntegration implements BaseManager {
 
   // Lazy getters for dependencies
   private get previewManager(): PreviewEditorManager {
-    return typeof this.previewManagerGetter === 'function' 
+    return typeof this.previewManagerGetter === 'function'
       ? this.previewManagerGetter()
       : this.previewManagerGetter;
   }

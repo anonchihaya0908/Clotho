@@ -46,7 +46,7 @@ export interface InitializationResult {
 
 /**
  * Manager Registry (Simplified)
- * 
+ *
  * Responsibilities:
  * - Manage component lifecycle automatically
  * - Provide unified error handling
@@ -163,7 +163,7 @@ export class ManagerRegistry implements vscode.Disposable {
 
       const instance = registration.factory();
       registration.instance = instance;
-            
+
       // If we have context cached, initialize immediately
       if (this.context && !registration.initialized) {
         this.initializeManager(registration, this.context).catch(error => {

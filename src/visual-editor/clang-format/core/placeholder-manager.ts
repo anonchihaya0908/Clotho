@@ -5,8 +5,8 @@ import { errorHandler } from '../../../common/error-handler';
 import { logger } from '../../../common/logger';
 import { isDarkTheme } from '../../../common/platform-utils';
 import {
-    BaseManager,
-    ManagerContext,
+  BaseManager,
+  ManagerContext,
 } from '../../../common/types';
 import { WebviewMessage, WebviewMessageType } from '../../../common/types/clang-format-shared';
 import { getNonce } from '../../../common/utils';
@@ -34,7 +34,7 @@ export class PlaceholderWebviewManager implements BaseManager {
       对于本次事件对员工、合作伙伴以及公众所造成的困扰，我们深表歉意。集团将以此为沉痛教训，重整旗鼓，持续以严谨、透明、稳健的管理理念前行。    ——丰川集团管理委员会 敬启`,
     '沿着银白色的丝线，将思念，缓缓拉至身旁。',
     '就这样纠缠不清地舞动下去吧，轻纱缠裹着你我，一圈圈地旋转。',
-  ]
+  ];
 
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;

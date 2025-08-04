@@ -3,11 +3,14 @@ import { errorHandler } from '../../../common/error-handler';
 import { logger } from '../../../common/logger';
 import { isDarkTheme } from '../../../common/platform-utils';
 import {
-    BaseManager,
-    EditorOpenSource,
-    ManagerContext,
+  BaseManager,
+  EditorOpenSource,
+  ManagerContext,
 } from '../../../common/types';
-import { WebviewMessage, WebviewMessageType } from '../../../common/types/clang-format-shared';
+import {
+  WebviewMessage,
+  WebviewMessageType,
+} from '../../../common/types/clang-format-shared';
 import { getNonce } from '../../../common/utils';
 
 /**
@@ -38,7 +41,7 @@ export class ClangFormatEditorManager implements BaseManager {
       this.panel.reveal(vscode.ViewColumn.One);
       await this.context.stateManager.updateState(
         { isVisible: true },
-        'editor-revealed',
+        'editor-revealed'
       );
       return;
     }
@@ -51,7 +54,7 @@ export class ClangFormatEditorManager implements BaseManager {
           viewColumn: vscode.ViewColumn.One,
           preserveFocus: false,
         },
-        this.getWebviewOptions(),
+        this.getWebviewOptions()
       );
 
       this.panel.webview.html = await this.generateWebviewContent();
@@ -62,7 +65,7 @@ export class ClangFormatEditorManager implements BaseManager {
           isVisible: true,
           isInitialized: true,
         },
-        'editor-created',
+        'editor-created'
       );
 
       // 【关键】发送初始化消息到webview
@@ -71,7 +74,7 @@ export class ClangFormatEditorManager implements BaseManager {
       await this.context.errorRecovery.handleError(
         'editor-creation-failed',
         error,
-        { source },
+        { source }
       );
     }
   }
@@ -84,7 +87,9 @@ export class ClangFormatEditorManager implements BaseManager {
       // 导入必要的配置数据 - 这些应该从原coordinator中迁移过来
       const { CLANG_FORMAT_OPTIONS, DEFAULT_CLANG_FORMAT_CONFIG } =
         await import('../data/clang-format-options-database');
-      const { ConfigCategories } = await import('../../../common/types/clang-format-shared');
+      const { ConfigCategories } = await import(
+        '../../../common/types/clang-format-shared'
+      );
 
       const currentState = this.context.stateManager.getState();
 
@@ -142,25 +147,27 @@ export class ClangFormatEditorManager implements BaseManager {
       'create-editor-requested',
       (source: EditorOpenSource) => {
         this.createOrShowEditor(source);
-      },
+      }
     );
 
     this.context.eventBus.on(
       'post-message-to-webview',
       (message: WebviewMessage) => {
         this.postMessage(message);
-      },
+      }
     );
   }
 
   private setupPanelEventListeners() {
-    if (!this.panel) { return; }
+    if (!this.panel) {
+      return;
+    }
 
     this.panel.onDidDispose(() => {
       this.panel = undefined;
       this.context.stateManager.updateState(
         { isVisible: false },
-        'editor-closed',
+        'editor-closed'
       );
       this.context.eventBus.emit('editor-closed'); // 通知其他管理器
     });
@@ -201,10 +208,10 @@ export class ClangFormatEditorManager implements BaseManager {
         const isVisible = e.webviewPanel.visible;
         await this.context.stateManager.updateState(
           { isVisible },
-          'editor-visibility-changed',
+          'editor-visibility-changed'
         );
         this.context.eventBus.emit('editor-visibility-changed', { isVisible });
-      },
+      }
     );
 
     // 监听主题变化
@@ -218,7 +225,7 @@ export class ClangFormatEditorManager implements BaseManager {
             kind: vscode.ColorThemeKind[theme.kind],
           },
         });
-      },
+      }
     );
 
     this.disposables.push(themeChangeListener);
@@ -254,7 +261,7 @@ export class ClangFormatEditorManager implements BaseManager {
       'visual-editor',
       'clang-format',
       'dist',
-      'index.js',
+      'index.js'
     );
     const stylePath = vscode.Uri.joinPath(
       extensionUri,
@@ -262,7 +269,7 @@ export class ClangFormatEditorManager implements BaseManager {
       'visual-editor',
       'clang-format',
       'dist',
-      'index.css',
+      'index.css'
     );
 
     const scriptUri = webview.asWebviewUri(scriptPath);
