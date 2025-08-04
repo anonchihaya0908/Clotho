@@ -3,6 +3,7 @@
  * 处理快速操作和并发控制，确保界面稳定性
  */
 
+import { ERROR_HANDLING } from '../../../common/constants';
 import { errorHandler } from '../../../common/error-handler';
 import { logger } from '../../../common/logger';
 
@@ -124,7 +125,7 @@ export class DebounceManager {
         }
 
         // 等待锁释放
-        await this.waitForLock(key, options.timeout || 5000);
+        await this.waitForLock(key, options.timeout || ERROR_HANDLING.DEBOUNCE_LOCK_TIMEOUT);
       }
 
       // 获取锁
@@ -187,7 +188,7 @@ export class DebounceManager {
           return;
         }
 
-        setTimeout(checkLock, 10);
+        setTimeout(checkLock, ERROR_HANDLING.DEBOUNCE_CHECK_INTERVAL);
       };
 
       checkLock();

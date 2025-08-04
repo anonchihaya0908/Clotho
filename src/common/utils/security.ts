@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode';
+import { PERFORMANCE } from '../constants';
 
 /**
  * Generates a random nonce for Content Security Policy
@@ -37,7 +38,7 @@ export class SimpleCache<K, V> {
     private cache = new Map<K, V>();
     private readonly maxSize: number;
 
-    constructor(maxSize: number = 100) {
+    constructor(maxSize: number = PERFORMANCE.SIMPLE_CACHE_MAX_SIZE) {
         this.maxSize = maxSize;
     }
 

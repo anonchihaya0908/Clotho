@@ -3,12 +3,13 @@
  * Monitors clangd process CPU usage and displays it in the status bar
  */
 
-import * as vscode from 'vscode';
 import * as os from 'os';
-import { IMonitor, CpuUsage, CpuMonitorConfig } from '../types';
+import * as vscode from 'vscode';
+import { UI_TIMING } from '../../common/constants';
 import { errorHandler } from '../../common/error-handler';
-import { ProcessDetector } from '../../common/process-detector';
 import { LoggerService } from '../../common/logger';
+import { ProcessDetector } from '../../common/process-detector';
+import { CpuMonitorConfig, CpuUsage, IMonitor } from '../types';
 
 // Import pidusage with proper typing
 import pidusage from 'pidusage';
@@ -18,7 +19,7 @@ import pidusage from 'pidusage';
  */
 export class CpuMonitor implements IMonitor {
   private static readonly DEFAULT_CONFIG: Required<CpuMonitorConfig> = {
-    updateInterval: 3000, // 3 seconds for responsive CPU monitoring
+    updateInterval: UI_TIMING.CLANGD_CPU_MONITOR_INTERVAL,
     warningThreshold: 50, // 50% CPU usage (yellow)
     errorThreshold: 80, // 80% CPU usage (red)
     normalizeCpu: true, // Show normalized CPU (system-wide perspective) by default

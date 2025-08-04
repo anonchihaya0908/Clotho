@@ -8,16 +8,17 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
-  HEADER_EXTENSIONS,
-  SOURCE_EXTENSIONS,
-  TEST_PATTERNS,
+    HEADER_EXTENSIONS,
+    PERFORMANCE,
+    SOURCE_EXTENSIONS,
+    TEST_PATTERNS,
 } from '../common/constants';
 import { errorHandler } from '../common/error-handler';
 import { logger } from '../common/logger';
 import { SearchResult } from '../common/types/core';
 import {
-  LRUCache,
-  isHeaderFile,
+    LRUCache,
+    isHeaderFile,
 } from '../common/utils';
 import { SwitchConfigService } from './config-manager';
 
@@ -37,7 +38,7 @@ export class SwitchService {
   // RegEx Cache for Performance Optimization
   // ===============================
 
-  private regexCache = new LRUCache<string, RegExp>(50); // Limit cache size
+  private regexCache = new LRUCache<string, RegExp>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
   private configService: SwitchConfigService;
 
   constructor(configService?: SwitchConfigService) {
@@ -191,7 +192,7 @@ export class SwitchService {
       // Step 5: Send the switch request with timeout
       const textDocument = { uri: currentFile.toString() };
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('clangd request timeout')), 3000),
+        setTimeout(() => reject(new Error('clangd request timeout')), PERFORMANCE.CLANGD_REQUEST_TIMEOUT),
       );
 
       const result = await Promise.race([

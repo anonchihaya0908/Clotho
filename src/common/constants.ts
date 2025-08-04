@@ -196,6 +196,53 @@ export const TEMPLATE_HELPERS = {
 
 export const PERFORMANCE = {
   REGEX_CACHE_MAX_SIZE: 100,
+  LRU_CACHE_MAX_SIZE: 50,
+  SIMPLE_CACHE_MAX_SIZE: 100,
   FILE_SEARCH_TIMEOUT: 5000,
   CLANGD_REQUEST_TIMEOUT: 3000,
+  PROCESS_TIMEOUT: 10000, // 10 seconds
+  COMMAND_EXECUTION_TIMEOUT: 10000,
+} as const;
+
+// ===============================
+// UI and Animation Timing
+// ===============================
+
+export const UI_TIMING = {
+  HEARTBEAT_INTERVAL: 1000, // 1 second
+  PREVIEW_DEBOUNCE: 50,
+  TRANSITION_MAX_TIME: 2000, // 2 seconds
+  ERROR_RECOVERY_DELAY: 1500, // 1.5 seconds
+  STATUS_UPDATE_INTERVAL: 2000, // 2 seconds
+  CLANGD_CPU_MONITOR_INTERVAL: 3000, // 3 seconds
+  CLANGD_MEMORY_MONITOR_INTERVAL: 5000, // 5 seconds
+  CLANGD_STATUS_CHECK_DELAY: 3000, // 3 seconds
+  UI_REFRESH_DELAY: 100, // For UI operations
+} as const;
+
+// ===============================
+// Error Handling Constants
+// ===============================
+
+export const ERROR_HANDLING = {
+  MAX_RETRY_ATTEMPTS: 3,
+  BASE_RETRY_DELAY: 1000, // 1 second
+  MAX_RETRY_DELAY: 10000, // 10 seconds
+  ERROR_RATE_WINDOW: 60000, // 1 minute
+  ERROR_RECOVERY_WINDOW: 300000, // 5 minutes
+  CLEANUP_INTERVAL: 60000, // 1 minute
+  DEBOUNCE_LOCK_TIMEOUT: 5000, // 5 seconds
+  DEBOUNCE_CHECK_INTERVAL: 10, // 10ms
+} as const;
+
+// ===============================
+// Cache and Storage Constants
+// ===============================
+
+export const CACHE_CONFIG = {
+  TEMPLATE_CACHE_TTL: 5000, // 5 seconds
+  MEMORY_THRESHOLD_WARNING: 1000, // MB
+  MEMORY_THRESHOLD_ERROR: 2000, // MB
+  CLANG_FORMAT_MAX_VALUE: 1000, // For clang-format numeric options
+  CLANG_FORMAT_DEFAULT_LARGE: 1000000, // For large default values
 } as const;

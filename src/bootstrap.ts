@@ -14,19 +14,19 @@ import { errorHandler } from './common/error-handler';
 import { logger } from './common/logger';
 import { ServiceContainer } from './common/service-container';
 import {
-    PairCoordinator,
-    PairCreatorService,
-    PairCreatorUI,
+  PairCoordinator,
+  PairCreatorService,
+  PairCreatorUI,
 } from './create-source-header-pair';
 import {
-    PairingRuleCoordinator,
-    PairingRuleService,
-    PairingRuleUI,
+  PairingRuleCoordinator,
+  PairingRuleService,
+  PairingRuleUI,
 } from './pairing-rule-manager';
 import {
-    SwitchCoordinator,
-    SwitchService,
-    SwitchUI,
+  SwitchCoordinator,
+  SwitchService,
+  SwitchUI,
 } from './switch-header-source';
 import { SwitchConfigService } from './switch-header-source/config-manager';
 import { ClangFormatEditorCoordinator } from './visual-editor/clang-format/coordinator';

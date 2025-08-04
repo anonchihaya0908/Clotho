@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode';
+import { ERROR_HANDLING } from './constants';
 import { ErrorStrategy, ErrorStrategyResult } from './error-strategies/base-strategy';
 import { logger, LoggerService } from './logger';
 
@@ -158,7 +159,7 @@ export class ErrorHandler {
 
     // 清理超过1分钟的错误记录
     ErrorHandler.errorTimestamps = ErrorHandler.errorTimestamps.filter(
-      timestamp => now - timestamp < 60000
+      timestamp => now - timestamp < ERROR_HANDLING.ERROR_RATE_WINDOW
     );
   }
 
@@ -296,7 +297,11 @@ export class ErrorHandler {
       maxDelay?: number;
     } = {},
   ): (...args: T) => Promise<R | undefined> {
-    const { maxAttempts = 3, baseDelay = 1000, maxDelay = 10000 } = options;
+    const { 
+      maxAttempts = ERROR_HANDLING.MAX_RETRY_ATTEMPTS, 
+      baseDelay = ERROR_HANDLING.BASE_RETRY_DELAY, 
+      maxDelay = ERROR_HANDLING.MAX_RETRY_DELAY 
+    } = options;
 
     return async (...args: T): Promise<R | undefined> => {
       let lastError: unknown;

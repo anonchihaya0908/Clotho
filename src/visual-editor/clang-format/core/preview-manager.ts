@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
+import { UI_TIMING } from '../../../common/constants';
 import { BaseManager, ManagerContext } from '../../../common/types';
-import { ClangFormatPreviewProvider } from '../preview-provider';
-import { ClangFormatService } from '../format-service';
 import { MACRO_PREVIEW_CODE } from '../data/clang-format-options-database';
+import { ClangFormatService } from '../format-service';
+import { ClangFormatPreviewProvider } from '../preview-provider';
 
 /**
  * 预览编辑器管理器
@@ -42,7 +43,7 @@ export class PreviewEditorManager implements BaseManager {
       console.log('[PreviewManager] 预览正在创建中，等待完成...');
       // 等待当前创建完成，然后返回结果
       while (this.isCreatingPreview) {
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, UI_TIMING.PREVIEW_DEBOUNCE));
       }
       const state = this.context.stateManager.getState();
       if (state.previewEditor && !state.previewEditor.document.isClosed) {

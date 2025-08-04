@@ -4,10 +4,11 @@
  * Combines memory and CPU monitoring into a single, elegant status bar item
  */
 
-import * as vscode from 'vscode';
 import * as os from 'os';
-import { CpuUsage, MemoryUsage } from './types';
+import * as vscode from 'vscode';
 import { HeartbeatAnimation, createInitializingHeartbeat } from '../common';
+import { UI_TIMING } from '../common/constants';
+import { CpuUsage, MemoryUsage } from './types';
 
 export interface StatusBarConfig {
   updateInterval?: number;
@@ -27,7 +28,7 @@ export interface StatusBarConfig {
  */
 export class StatusBarPresenter {
   private static readonly DEFAULT_CONFIG: Required<StatusBarConfig> = {
-    updateInterval: 2000, // 2 seconds
+    updateInterval: UI_TIMING.STATUS_UPDATE_INTERVAL,
     position: vscode.StatusBarAlignment.Right,
     priority: 100, // Higher priority than individual monitors
     showDetailedTooltip: true,

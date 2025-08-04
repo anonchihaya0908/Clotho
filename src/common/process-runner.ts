@@ -6,6 +6,7 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { PERFORMANCE } from './constants';
 import { errorHandler } from './error-handler';
 import { logger } from './logger';
 
@@ -37,7 +38,7 @@ export class ProcessRunner {
   private static readonly DEFAULT_OPTIONS: Required<
     Omit<CommandOptions, 'cwd'>
   > = {
-      timeout: 10000, // 10 seconds default timeout
+      timeout: PERFORMANCE.PROCESS_TIMEOUT,
       encoding: 'utf8',
       logCommand: false,
     };

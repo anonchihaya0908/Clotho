@@ -3,6 +3,8 @@
  * 提供心跳闪烁动画效果的通用工具类
  */
 
+import { UI_TIMING } from './constants';
+
 export interface HeartbeatAnimationConfig {
   /** 动画间隔（毫秒），默认1000ms */
   interval?: number;
@@ -20,7 +22,7 @@ export interface HeartbeatAnimationConfig {
  */
 export class HeartbeatAnimation {
   private static readonly DEFAULT_CONFIG: Required<HeartbeatAnimationConfig> = {
-    interval: 1000,
+    interval: UI_TIMING.HEARTBEAT_INTERVAL,
     baseIcon: '$(pulse)',
     animationIcons: ['$(pulse)', ''],
     enabled: true,
@@ -155,7 +157,7 @@ export function createInitializingHeartbeat(): HeartbeatAnimation {
  */
 export function createActiveDisplay(): HeartbeatAnimation {
   return new HeartbeatAnimation({
-    interval: 1000,
+    interval: UI_TIMING.HEARTBEAT_INTERVAL,
     baseIcon: '$(pulse)',
     animationIcons: [], // 不再使用
     enabled: false, // 禁用动画，只显示静态图标
@@ -168,7 +170,7 @@ export function createActiveDisplay(): HeartbeatAnimation {
  */
 export function createStandardHeartbeat(): HeartbeatAnimation {
   return new HeartbeatAnimation({
-    interval: 1000,
+    interval: UI_TIMING.HEARTBEAT_INTERVAL,
     baseIcon: '$(pulse)',
     animationIcons: ['$(pulse)', ''],
     enabled: true,
@@ -188,14 +190,14 @@ export const HEARTBEAT_PRESETS = {
   },
   /** 活跃状态：静态显示 */
   ACTIVE: {
-    interval: 1000,
+    interval: UI_TIMING.HEARTBEAT_INTERVAL,
     baseIcon: '$(pulse)',
     animationIcons: [], // 不再使用
     enabled: false,
   },
   /** 标准心跳：1秒闪烁 */
   STANDARD: {
-    interval: 1000,
+    interval: UI_TIMING.HEARTBEAT_INTERVAL,
     baseIcon: '$(pulse)',
     animationIcons: [], // 不再使用
     enabled: true,
