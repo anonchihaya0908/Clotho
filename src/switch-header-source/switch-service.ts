@@ -35,11 +35,17 @@ import { SwitchConfigService } from './config-manager';
  */
 export class SwitchService {
   // ===============================
-  // RegEx Cache for Performance Optimization
+  // Performance Optimization Caches
   // ===============================
 
   private regexCache = new LRUCache<string, RegExp>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+  private fileExistsCache = new LRUCache<string, boolean>(PERFORMANCE.LRU_CACHE_MAX_SIZE * 2);
+  private searchResultsCache = new LRUCache<string, SearchResult>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
   private configService: SwitchConfigService;
+
+  // 缓存配置常量
+  private static readonly FILE_CACHE_TTL = 5000; // 5秒文件存在性缓存
+  private static readonly SEARCH_CACHE_TTL = 10000; // 10秒搜索结果缓存
 
   constructor(configService?: SwitchConfigService) {
     // Allow dependency injection for testing
@@ -60,12 +66,50 @@ export class SwitchService {
     return regex;
   }
 
+  /**
+   * 缓存文件存在性检查，避免重复的文件系统调用
+   */
+  private async checkFileExistsCached(uri: vscode.Uri): Promise<boolean> {
+    const key = uri.fsPath;
+    const cached = this.fileExistsCache.get(key);
+    
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    try {
+      await vscode.workspace.fs.stat(uri);
+      this.fileExistsCache.set(key, true);
+      return true;
+    } catch {
+      this.fileExistsCache.set(key, false);
+      return false;
+    }
+  }
+
+  /**
+   * 生成搜索缓存键
+   */
+  private generateSearchCacheKey(currentFile: vscode.Uri, baseName: string, isHeader: boolean): string {
+    return `${currentFile.fsPath}:${baseName}:${isHeader}`;
+  }
+
+  /**
+   * 清除所有缓存 - 用于强制刷新
+   */
+  public clearCache(): void {
+    this.regexCache.clear();
+    this.fileExistsCache.clear();
+    this.searchResultsCache.clear();
+  }
+
   // ===============================
   // Main API Methods
   // ===============================
 
   /**
    * Finds partner files for the given file.
+   * 🚀 性能优化：添加搜索结果缓存，避免重复搜索
    * Returns null if no files found, array of URIs if found.
    */
   public async findPartnerFile(
@@ -75,14 +119,26 @@ export class SwitchService {
     const baseName = path.basename(currentPath, path.extname(currentPath));
     const isHeader = isHeaderFile(currentPath);
 
+    // 检查缓存的搜索结果
+    const cacheKey = this.generateSearchCacheKey(currentFile, baseName, isHeader);
+    const cachedResult = this.searchResultsCache.get(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
+    }
+
     // Step 1: Try clangd LSP first (the "omniscient" mode)
     const clangdResult = await this.tryClangdSwitch(currentFile);
     if (clangdResult.files.length > 0) {
+      this.searchResultsCache.set(cacheKey, clangdResult);
       return clangdResult;
     }
 
     // Step 2: Fallback to explorer mode (heuristic search)
-    return await this.tryExplorerMode(currentFile, baseName, isHeader);
+    const explorerResult = await this.tryExplorerMode(currentFile, baseName, isHeader);
+    if (explorerResult) {
+      this.searchResultsCache.set(cacheKey, explorerResult);
+    }
+    return explorerResult;
   }
 
   /**
@@ -475,6 +531,7 @@ export class SwitchService {
 
   /**
    * Common logic for finding files across multiple directory patterns.
+   * 🚀 性能优化：使用缓存的文件存在性检查，减少重复的文件系统调用
    * Reduces code duplication between different search strategies.
    */
   private async findFilesAcrossDirs(
@@ -498,11 +555,11 @@ export class SwitchService {
             `${baseName}${ext}`,
           );
           const candidateUri = vscode.Uri.file(candidatePath);
-          try {
-            await vscode.workspace.fs.stat(candidateUri);
+          
+          // 🚀 使用缓存的文件存在性检查
+          const exists = await this.checkFileExistsCached(candidateUri);
+          if (exists) {
             files.push(candidateUri);
-          } catch {
-            // File does not exist, continue
           }
         }
       }

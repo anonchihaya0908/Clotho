@@ -12,9 +12,9 @@ import * as vscode from 'vscode';
 
 import { PairingRule, PairingRuleService } from '../pairing-rule-manager';
 import { errorHandler } from '../common/error-handler';
-import { toHeaderGuardCase } from '../common/utils';
+import { toHeaderGuardCase, LRUCache } from '../common/utils';
 import { Language } from '../common/types';
-import { DEFAULT_PLACEHOLDERS } from '../common/constants';
+import { DEFAULT_PLACEHOLDERS, PERFORMANCE } from '../common/constants';
 
 import {
   FILE_TEMPLATES,
@@ -25,8 +25,9 @@ import {
 
 // Service Layer - Core business logic
 export class PairCreatorService {
-  // Cache for expensive file system operations with TTL
-  private static readonly fileStatCache = new Map<string, Promise<boolean>>();
+  // Use LRU cache to optimize file status checks and avoid memory leaks.
+
+  private static readonly fileStatCache = new LRUCache<string, boolean>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
   private static readonly CACHE_TTL = 5000; // 5 seconds
 
   // Definitive file extensions for fast lookup
@@ -59,25 +60,24 @@ export class PairCreatorService {
     };
   }
 
-  // Optimized file existence check with caching to improve performance
+  // Optimized file existence checks, using LRU cache to avoid repeated file system calls.
+
   private static async fileExists(filePath: string): Promise<boolean> {
-    if (this.fileStatCache.has(filePath)) {
-      return this.fileStatCache.get(filePath)!;
+    // 检查LRU缓存
+    const cached = this.fileStatCache.get(filePath);
+    if (cached !== undefined) {
+      return cached;
     }
 
-    const promise = Promise.resolve(
-      vscode.workspace.fs.stat(vscode.Uri.file(filePath)).then(
-        () => true,
-        () => false,
-      ),
-    );
-
-    this.fileStatCache.set(filePath, promise);
-
-    // Auto-clear cache entry after TTL to prevent memory leaks
-    setTimeout(() => this.fileStatCache.delete(filePath), this.CACHE_TTL);
-
-    return promise;
+    try {
+      // 执行文件系统调用
+      await vscode.workspace.fs.stat(vscode.Uri.file(filePath));
+      this.fileStatCache.set(filePath, true);
+      return true;
+    } catch {
+      this.fileStatCache.set(filePath, false);
+      return false;
+    }
   }
 
   // Detects programming language from VS Code editor context

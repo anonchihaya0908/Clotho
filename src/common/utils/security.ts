@@ -31,41 +31,68 @@ export function getNonce(): string {
 }
 
 /**
- * Simple cache implementation using Map
- * For more advanced caching needs, consider using external libraries
+ * 高性能LRU缓存实现
+ * 使用双向链表 + HashMap 实现 O(1) 的 get/set 操作
  */
+
+// 双向链表节点
+class LRUNode<K, V> {
+  constructor(
+    public key: K,
+    public value: V,
+    public prev: LRUNode<K, V> | null = null,
+    public next: LRUNode<K, V> | null = null
+  ) {}
+}
+
 export class SimpleCache<K, V> {
-  private cache = new Map<K, V>();
-  private readonly maxSize: number;
+  private readonly capacity: number;
+  private readonly cache = new Map<K, LRUNode<K, V>>();
+  private head: LRUNode<K, V>;
+  private tail: LRUNode<K, V>;
 
   constructor(maxSize: number = PERFORMANCE.SIMPLE_CACHE_MAX_SIZE) {
-    this.maxSize = maxSize;
+    this.capacity = maxSize;
+    // 创建哨兵节点简化边界处理
+    this.head = new LRUNode(null as any, null as any);
+    this.tail = new LRUNode(null as any, null as any);
+    this.head.next = this.tail;
+    this.tail.prev = this.head;
   }
 
   get(key: K): V | undefined {
-    const value = this.cache.get(key);
-    if (value !== undefined) {
-      // Move to end (most recently used)
-      this.cache.delete(key);
-      this.cache.set(key, value);
+    const node = this.cache.get(key);
+    if (!node) {
+      return undefined;
     }
-    return value;
+    
+    // 移动到头部（最近使用）
+    this.moveToHead(node);
+    return node.value;
   }
 
   set(key: K, value: V): void {
-    // If key exists, delete it first
-    if (this.cache.has(key)) {
-      this.cache.delete(key);
-    }
-    // If cache is full, remove least recently used
-    else if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey !== undefined) {
-        this.cache.delete(firstKey);
+    const existingNode = this.cache.get(key);
+    
+    if (existingNode) {
+      // 更新现有节点
+      existingNode.value = value;
+      this.moveToHead(existingNode);
+    } else {
+      // 添加新节点
+      const newNode = new LRUNode(key, value);
+      
+      if (this.cache.size >= this.capacity) {
+        // 移除最少使用的节点
+        const tail = this.removeTail();
+        if (tail) {
+          this.cache.delete(tail.key);
+        }
       }
+      
+      this.cache.set(key, newNode);
+      this.addToHead(newNode);
     }
-
-    this.cache.set(key, value);
   }
 
   has(key: K): boolean {
@@ -73,14 +100,66 @@ export class SimpleCache<K, V> {
   }
 
   delete(key: K): boolean {
-    return this.cache.delete(key);
+    const node = this.cache.get(key);
+    if (!node) {
+      return false;
+    }
+    
+    this.removeNode(node);
+    this.cache.delete(key);
+    return true;
   }
 
   clear(): void {
     this.cache.clear();
+    this.head.next = this.tail;
+    this.tail.prev = this.head;
   }
 
   size(): number {
     return this.cache.size;
+  }
+
+  // 获取缓存统计信息
+  getStats(): { size: number; capacity: number; hitRate?: number } {
+    return {
+      size: this.cache.size,
+      capacity: this.capacity,
+    };
+  }
+
+  // === 私有辅助方法 ===
+
+  private addToHead(node: LRUNode<K, V>): void {
+    node.prev = this.head;
+    node.next = this.head.next;
+    
+    if (this.head.next) {
+      this.head.next.prev = node;
+    }
+    this.head.next = node;
+  }
+
+  private removeNode(node: LRUNode<K, V>): void {
+    if (node.prev) {
+      node.prev.next = node.next;
+    }
+    if (node.next) {
+      node.next.prev = node.prev;
+    }
+  }
+
+  private moveToHead(node: LRUNode<K, V>): void {
+    this.removeNode(node);
+    this.addToHead(node);
+  }
+
+  private removeTail(): LRUNode<K, V> | null {
+    const lastNode = this.tail.prev;
+    if (lastNode && lastNode !== this.head) {
+      this.removeNode(lastNode);
+      return lastNode;
+    }
+    return null;
   }
 }

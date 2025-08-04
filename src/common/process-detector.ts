@@ -2,14 +2,16 @@
  * Process Detector - The "Ace Detective" of Clotho Extension
  *
  * A centralized detector for finding and analyzing system processes.
- * This detector is responsible for all process detection logic, including the revolutionary
+ * This detector is responsible for all process detection logic, including the 
  * "parent-child DNA testing" to identify legitimate processes vs stale ones.
  */
 
 import * as process from 'node:process';
+import { PERFORMANCE } from './constants';
 import { errorHandler } from './error-handler';
 import { logger } from './logger';
 import { ProcessRunner } from './process-runner';
+import { LRUCache } from './utils';
 
 /**
  * Extended process information with metadata
@@ -64,6 +66,22 @@ interface ProcessClassification {
 }
 
 /**
+ * 缓存的进程检测结果
+ */
+interface CachedProcessResult {
+  result: ProcessDetectionResult;
+  timestamp: number;
+}
+
+/**
+ * 缓存的进程信息
+ */
+interface CachedProcessList {
+  processes: ProcessInfo[];
+  timestamp: number;
+}
+
+/**
  * A detector for finding and analyzing system processes.
  * The "Ace Detective" of our extension - specializes in process identification and analysis.
  */
@@ -71,6 +89,100 @@ export class ProcessDetector {
   // Debug mode control - only show detailed logs in development environment
   private static readonly DEBUG = process.env.CLOTHO_DEBUG === 'true';
 
+  // 缓存配置常量
+  private static readonly PROCESS_CACHE_TTL = 3000; // 3秒缓存，平衡性能和准确性
+  private static readonly DETECTION_CACHE_TTL = 5000; // 5秒检测结果缓存
+
+  // 缓存实例 - 使用静态缓存在整个应用生命周期中共享
+  private static readonly processListCache = new LRUCache<string, CachedProcessList>(20);
+  private static readonly detectionResultCache = new LRUCache<string, CachedProcessResult>(10);
+
+  /**
+   * 检查缓存是否有效（未过期）
+   */
+  private static isCacheValid(timestamp: number, ttl: number): boolean {
+    return Date.now() - timestamp < ttl;
+  }
+
+  /**
+   * 获取缓存的进程列表（如果有效）
+   */
+  private static getCachedProcessList(processName: string): ProcessInfo[] | null {
+    const cached = this.processListCache.get(processName);
+    if (cached && this.isCacheValid(cached.timestamp, this.PROCESS_CACHE_TTL)) {
+      if (this.DEBUG) {
+        logger.debug(`Using cached process list for ${processName}`, { 
+          module: 'ProcessDetector', 
+          operation: 'getCachedProcessList',
+          cacheAge: Date.now() - cached.timestamp 
+        });
+      }
+      return cached.processes;
+    }
+    return null;
+  }
+
+  /**
+   * 缓存进程列表
+   */
+  private static setCachedProcessList(processName: string, processes: ProcessInfo[]): void {
+    this.processListCache.set(processName, {
+      processes,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * 获取缓存的检测结果（如果有效）
+   */
+  private static getCachedDetectionResult(cacheKey: string): ProcessDetectionResult | null {
+    const cached = this.detectionResultCache.get(cacheKey);
+    if (cached && this.isCacheValid(cached.timestamp, this.DETECTION_CACHE_TTL)) {
+      if (this.DEBUG) {
+        logger.debug(`Using cached detection result for ${cacheKey}`, { 
+          module: 'ProcessDetector', 
+          operation: 'getCachedDetectionResult',
+          cacheAge: Date.now() - cached.timestamp 
+        });
+      }
+      return cached.result;
+    }
+    return null;
+  }
+
+  /**
+   * 缓存检测结果
+   */
+  private static setCachedDetectionResult(cacheKey: string, result: ProcessDetectionResult): void {
+    this.detectionResultCache.set(cacheKey, {
+      result,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * 清除所有缓存 - 用于强制刷新或故障排除
+   */
+  public static clearCache(): void {
+    this.processListCache.clear();
+    this.detectionResultCache.clear();
+    if (this.DEBUG) {
+      logger.debug('ProcessDetector cache cleared', { 
+        module: 'ProcessDetector', 
+        operation: 'clearCache' 
+      });
+    }
+  }
+
+  /**
+   * 获取缓存统计信息 - 用于调试和监控
+   */
+  public static getCacheStats(): { processListCacheSize: number; detectionResultCacheSize: number } {
+    return {
+      processListCacheSize: this.processListCache.size(),
+      detectionResultCacheSize: this.detectionResultCache.size()
+    };
+  }
 
   /**
    * 🧬 Finds the main process for a given application name using "DNA testing".
@@ -231,6 +343,15 @@ export class ProcessDetector {
     apiDetector?: () => Promise<number | undefined>,
   ): Promise<ProcessDetectionResult> {
     try {
+      // 生成缓存键，考虑API检测器的存在
+      const cacheKey = `${processName}_${apiDetector ? 'with_api' : 'no_api'}`;
+      
+      // 首先检查是否有缓存的检测结果
+      const cachedResult = this.getCachedDetectionResult(cacheKey);
+      if (cachedResult) {
+        return { ...cachedResult, debugInfo: `${cachedResult.debugInfo} (cached)` };
+      }
+
       let candidateCount = 0;
 
       // Strategy 1: Try API detection first (if provided)
@@ -242,7 +363,7 @@ export class ProcessDetector {
 
         if (apiPid) {
           logger.info(`API detection successful: PID ${apiPid}`, { module: 'ProcessDetector', operation: 'getDiagnosticInfo' });
-          return {
+          const result = {
             success: true,
             processInfo: {
               pid: apiPid,
@@ -255,39 +376,69 @@ export class ProcessDetector {
             method: 'api',
             candidateCount: 1,
             debugInfo: `API detected PID ${apiPid}`,
-          };
+          } as ProcessDetectionResult;
+          
+          // 缓存API检测成功的结果
+          this.setCachedDetectionResult(cacheKey, result);
+          return result;
         }
 
         logger.warn('API detection failed, falling back to DNA testing', { module: 'ProcessDetector', operation: 'getDiagnosticInfo' });
       }
 
-      // Strategy 2: DNA testing (process scanning)
+      // Strategy 2: DNA testing (process scanning) - 使用缓存优化
       if (this.DEBUG) {
         logger.debug(`Strategy 2: DNA testing for ${processName}`, { module: 'ProcessDetector', operation: 'getDiagnosticInfo' });
       }
-      const allProcesses = await ProcessRunner.getProcessInfo(processName);
+      
+      // 🚀 性能优化：首先尝试从缓存获取进程列表
+      let allProcesses = this.getCachedProcessList(processName);
+      if (!allProcesses) {
+        // 缓存未命中，执行昂贵的系统调用
+        if (this.DEBUG) {
+          logger.debug(`Cache miss for ${processName}, fetching from system`, { 
+            module: 'ProcessDetector', 
+            operation: 'detectProcessWithStrategy' 
+          });
+        }
+        const rawProcesses = await ProcessRunner.getProcessInfo(processName);
+        // 转换为ProcessInfo格式（添加name字段）
+        allProcesses = rawProcesses.map(p => ({
+          ...p,
+          name: processName
+        }));
+        // 缓存新获取的进程列表
+        this.setCachedProcessList(processName, allProcesses);
+      }
       candidateCount = allProcesses.length;
 
       const classification = this.classifyProcesses(process.pid, allProcesses, processName);
       const mainProcess = this.selectMainProcess(classification);
 
       if (mainProcess) {
-        return {
+        const result = {
           success: true,
           processInfo: mainProcess,
           method: 'dna-test',
           candidateCount,
           debugInfo: `DNA test selected PID ${mainProcess.pid} from ${candidateCount} candidates`,
-        };
+        } as ProcessDetectionResult;
+        
+        // 缓存DNA检测成功的结果
+        this.setCachedDetectionResult(cacheKey, result);
+        return result;
       }
 
-      // Both strategies failed
-      return {
+      // Both strategies failed - 也缓存失败的结果以避免重复尝试
+      const failedResult = {
         success: false,
         method: 'failed',
         candidateCount,
         debugInfo: `All strategies failed. Found ${candidateCount} candidates but none were legitimate children.`,
-      };
+      } as ProcessDetectionResult;
+      
+      this.setCachedDetectionResult(cacheKey, failedResult);
+      return failedResult;
     } catch (error) {
       errorHandler.handle(error, {
         operation: 'detectProcessWithStrategy',
