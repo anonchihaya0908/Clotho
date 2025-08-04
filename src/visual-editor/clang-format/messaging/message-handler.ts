@@ -1,9 +1,9 @@
+import { LoggerService } from '../../../common/logger';
 import { BaseManager, ManagerContext } from '../../../common/types';
 import {
   WebviewMessage,
   WebviewMessageType,
 } from '../../../common/types/clang-format-shared';
-import { LoggerService } from '../../../common/logger';
 
 type MessageHandlerFunction = (
   payload: any,
@@ -73,6 +73,23 @@ export class MessageHandler implements BaseManager {
   }
 
   /**
+   * 创建配置操作处理函数（带按需初始化）
+   */
+  private createConfigActionHandler(eventName: string) {
+    return async (payload: any, context: ManagerContext) => {
+      this.logger.info(`Processing ${eventName}...`);
+      
+      // 先发送事件以确保 ConfigActionManager 被初始化
+      context.eventBus.emit('ensure-config-manager-ready');
+      
+      // 添加很小的延迟确保初始化完成，然后发送实际的操作事件
+      setTimeout(() => {
+        context.eventBus.emit(eventName, payload);
+      }, 10);
+    };
+  }
+
+  /**
    * 注册不同消息类型的处理函数
    */
   private setupMessageHandlers(): void {
@@ -95,55 +112,37 @@ export class MessageHandler implements BaseManager {
     // 工具栏按钮：Load（快速设置/加载工作区配置）
     this.messageHandlers.set(
       WebviewMessageType.LOAD_WORKSPACE_CONFIG,
-      async (payload, context) => {
-        this.logger.info('Loading workspace config...');
-        context.eventBus.emit('load-workspace-config-requested', payload);
-      },
+      this.createConfigActionHandler('load-workspace-config-requested'),
     );
 
     // 工具栏按钮：Save
     this.messageHandlers.set(
       WebviewMessageType.SAVE_CONFIG,
-      async (payload, context) => {
-        this.logger.info('Saving config...');
-        context.eventBus.emit('save-config-requested', payload);
-      },
+      this.createConfigActionHandler('save-config-requested'),
     );
 
     // 工具栏按钮：Import
     this.messageHandlers.set(
       WebviewMessageType.IMPORT_CONFIG,
-      async (payload, context) => {
-        this.logger.info('Importing config...');
-        context.eventBus.emit('import-config-requested', payload);
-      },
+      this.createConfigActionHandler('import-config-requested'),
     );
 
     // 工具栏按钮：Export
     this.messageHandlers.set(
       WebviewMessageType.EXPORT_CONFIG,
-      async (payload, context) => {
-        this.logger.info('Exporting config...');
-        context.eventBus.emit('export-config-requested', payload);
-      },
+      this.createConfigActionHandler('export-config-requested'),
     );
 
     // 工具栏按钮：Reset
     this.messageHandlers.set(
       WebviewMessageType.RESET_CONFIG,
-      async (payload, context) => {
-        this.logger.info('Resetting config...');
-        context.eventBus.emit('reset-config-requested', payload);
-      },
+      this.createConfigActionHandler('reset-config-requested'),
     );
 
     // Edit as Text按钮
     this.messageHandlers.set(
       WebviewMessageType.OPEN_CLANG_FORMAT_FILE,
-      async (payload, context) => {
-        this.logger.info('Opening clang-format file for text editing...');
-        context.eventBus.emit('open-clang-format-file-requested', payload);
-      },
+      this.createConfigActionHandler('open-clang-format-file-requested'),
     );
 
     // 重新打开预览

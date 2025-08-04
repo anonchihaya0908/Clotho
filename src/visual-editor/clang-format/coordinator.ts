@@ -230,6 +230,22 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       }
     });
 
+    // 【按需初始化】监听配置管理器初始化请求（保持懒加载）
+    this.eventBus.on('ensure-config-manager-ready', async () => {
+      try {
+        await this.managerRegistry.getOrCreateInstance('configActionManager');
+        logger.debug('ConfigActionManager initialized on demand', {
+          module: 'ClangFormatEditorCoordinator',
+          operation: 'ensure-config-manager-ready',
+        });
+      } catch (error) {
+        logger.error('Failed to initialize ConfigActionManager on demand', error as Error, {
+          module: 'ClangFormatEditorCoordinator',
+          operation: 'ensure-config-manager-ready',
+        });
+      }
+    });
+
     // 【移除】检测用户手动关闭预览标签页的逻辑
     // 这个逻辑已经在 PreviewManager 中更完善地处理了，包括区分程序隐藏和用户手动关闭
     // 移除这个重复的监听器，避免在程序隐藏时错误地触发 preview-closed 事件
