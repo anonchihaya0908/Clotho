@@ -8,7 +8,7 @@
 import * as vscode from 'vscode';
 
 export class ClangFormatPreviewProvider
-  implements vscode.TextDocumentContentProvider {
+implements vscode.TextDocumentContentProvider {
   private static readonly SCHEME = 'clotho-preview';
   private static instance: ClangFormatPreviewProvider | undefined;
 
