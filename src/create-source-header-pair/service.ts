@@ -592,4 +592,30 @@ export class PairCreatorService {
     );
     await this.writeFiles(headerPath, sourcePath, headerContent, sourceContent);
   }
+
+  /**
+   * Save a complete configuration rule to workspace settings
+   * Utilizes existing PairingRuleService methods instead of reimplementing
+   */
+  public async saveCompleteConfigToWorkspace(rule: PairingRule, pairingRuleService: PairingRuleService): Promise<void> {
+    // Create a clean rule for saving with complete configuration
+    const workspaceRule: PairingRule = {
+      key: `workspace_default_${Date.now()}`,
+      label: `${rule.language.toUpperCase()} Pair (${rule.headerExt}/${rule.sourceExt})`,
+      description: `Creates a ${rule.headerExt}/${rule.sourceExt} file pair with ${rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards'}.`,
+      language: rule.language,
+      headerExt: rule.headerExt,
+      sourceExt: rule.sourceExt,
+      isClass: rule.isClass,
+      isStruct: rule.isStruct,
+      headerGuardStyle: rule.headerGuardStyle,
+    };
+
+    // Use existing PairingRuleService methods - don't reinvent the wheel
+    const existingRules = pairingRuleService.getRules('workspace') || [];
+    const otherLanguageRules = existingRules.filter(r => r.language !== rule.language);
+    const allRules = [...otherLanguageRules, workspaceRule];
+
+    await pairingRuleService.writeRules(allRules, 'workspace');
+  }
 }

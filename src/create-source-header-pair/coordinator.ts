@@ -57,7 +57,7 @@ export class PairCoordinator implements vscode.Disposable {
 
     // 4. Handle post-creation config save if needed
     if (userPreferences.needsSaving) {
-      await this.offerToSaveCompleteConfig(userPreferences.rule);
+      await this.ui.offerToSaveCompleteConfig(userPreferences.rule, this.service, this.pairingRuleService);
     }
   }
 
@@ -136,53 +136,6 @@ export class PairCoordinator implements vscode.Disposable {
 
     // Delegate post-creation handling to UI layer
     await this.ui.handlePostCreationFlow(rule, headerPath, sourcePath, this.pairingRuleService);
-  }
-
-  /**
-   * Offer to save complete configuration when user fills in missing fields
-   */
-  private async offerToSaveCompleteConfig(rule: PairingRule): Promise<void> {
-    const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
-
-    const choice = await vscode.window.showInformationMessage(
-      `💾 Files created successfully!\n\n💡 Save complete configuration?\nYour settings: ${rule.headerExt}/${rule.sourceExt} with ${guardText}`,
-      { modal: false },
-      'Save Configuration',
-      'Use Once Only'
-    );
-
-    if (choice === 'Save Configuration') {
-      try {
-        // Get existing rules and preserve other language rules
-        const existingRules = this.pairingRuleService.getRules('workspace') || [];
-        const otherLanguageRules = existingRules.filter(r => r.language !== rule.language);
-
-        // Create clean rule for saving with complete configuration
-        const workspaceRule: PairingRule = {
-          key: `workspace_default_${Date.now()}`,
-          label: `${rule.language.toUpperCase()} Pair (${rule.headerExt}/${rule.sourceExt})`,
-          description: `Creates a ${rule.headerExt}/${rule.sourceExt} file pair with ${guardText}.`,
-          language: rule.language,
-          headerExt: rule.headerExt,
-          sourceExt: rule.sourceExt,
-          isClass: rule.isClass,
-          isStruct: rule.isStruct,
-          headerGuardStyle: rule.headerGuardStyle, // Ensure this is included
-        };
-
-        // Combine with other language rules and save
-        const allRules = [...otherLanguageRules, workspaceRule];
-        await this.pairingRuleService.writeRules(allRules, 'workspace');
-
-        vscode.window.showInformationMessage(
-          `✅ Complete configuration saved to workspace! Future file pairs will use ${rule.headerExt}/${rule.sourceExt} with ${guardText}.`
-        );
-      } catch (error) {
-        vscode.window.showErrorMessage(
-          `Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
-        );
-      }
-    }
   }
 
   /**

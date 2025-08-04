@@ -17,7 +17,6 @@ import {
 } from '../pairing-rule-manager';
 import { errorHandler } from '../common/error-handler';
 import { toPascalCase } from '../common/utils';
-
 import { PairCreatorService } from './service';
 import { Language, TEMPLATE_RULES, VALIDATION_PATTERNS } from './templates';
 import { HeaderGuardStyle } from '../common/types';
@@ -772,7 +771,7 @@ export class PairCreatorUI {
     const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : '#ifndef/#define';
 
     const choice = await vscode.window.showInformationMessage(
-      `✅ Files created successfully!\n💾 Save current settings as workspace default?\n(${extensionText} + ${guardText})`,
+      `Files created successfully!\nSave current settings as workspace default?\n(${extensionText} + ${guardText})`,
       'Save to Workspace',
       'Not Now'
     );
@@ -786,7 +785,7 @@ export class PairCreatorUI {
   public showConfigUsageNotification(rule: PairingRule): void {
     const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
     vscode.window.showInformationMessage(
-      `📋 Using workspace configuration: ${rule.headerExt}/${rule.sourceExt} with ${guardText}`,
+      `Using workspace configuration: ${rule.headerExt}/${rule.sourceExt} with ${guardText}`,
       { modal: false }
     );
   }
@@ -862,12 +861,41 @@ export class PairCreatorUI {
 
       const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
       vscode.window.showInformationMessage(
-        `✅ Configuration saved to workspace! Future file pairs will use ${rule.headerExt}/${rule.sourceExt} with ${guardText}.`
+        `Configuration saved to workspace! Future file pairs will use ${rule.headerExt}/${rule.sourceExt} with ${guardText}.`
       );
     } catch (error) {
       vscode.window.showErrorMessage(
         `Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
+    }
+  }
+
+  /**
+   * Offer to save complete configuration when user fills in missing fields
+   */
+  public async offerToSaveCompleteConfig(rule: PairingRule, service: PairCreatorService, pairingRuleService: PairingRuleService): Promise<void> {
+    const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
+
+    const choice = await vscode.window.showInformationMessage(
+      `Files created successfully!\n\nSave complete configuration?\nYour settings: ${rule.headerExt}/${rule.sourceExt} with ${guardText}`,
+      { modal: false },
+      'Save Configuration',
+      'Use Once Only'
+    );
+
+    if (choice === 'Save Configuration') {
+      try {
+        // Delegate to service layer - no business logic in UI
+        await service.saveCompleteConfigToWorkspace(rule, pairingRuleService);
+
+        vscode.window.showInformationMessage(
+          `Complete configuration saved to workspace! Future file pairs will use ${rule.headerExt}/${rule.sourceExt} with ${guardText}.`
+        );
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      }
     }
   }
 
