@@ -89,7 +89,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
         await this.initializeOnce();
       }
 
-      // 【修复】确保EditorManager被创建并初始化，然后直接调用其方法
+      // Ensure EditorManager is created and initialized
       const editorManager = await this.managerRegistry.getOrCreateInstance<ClangFormatEditorManager>('editorManager');
       if (editorManager) {
         await editorManager.createOrShowEditor(source);
@@ -214,7 +214,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       this.eventBus.emit('open-preview-requested');
     });
 
-    // 【新增】监听错误恢复的编辑器重试请求
+    // Listen for editor creation retry requests from error recovery
     this.eventBus.on('retry-editor-creation-requested', async () => {
       try {
         logger.info('Retrying editor creation due to error recovery', {
@@ -246,11 +246,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       }
     });
 
-    // 【移除】检测用户手动关闭预览标签页的逻辑
-    // 这个逻辑已经在 PreviewManager 中更完善地处理了，包括区分程序隐藏和用户手动关闭
-    // 移除这个重复的监听器，避免在程序隐藏时错误地触发 preview-closed 事件
-
-    // 【修复】重新添加对配置更新的监听，以刷新预览
+    // Listen for configuration updates to refresh preview
     this.eventBus.on(
       'config-updated-for-preview',
       ({ newConfig }: { newConfig: Record<string, any> }) => {
@@ -273,7 +269,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       },
     );
 
-    // 【新增】微观预览请求处理
+    // Handle micro preview requests
     this.eventBus.on(
       'micro-preview-requested',
       async ({ optionName, config, previewSnippet }: {

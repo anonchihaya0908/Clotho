@@ -189,7 +189,7 @@ function registerServices(context: vscode.ExtensionContext): void {
     });
   });
 
-  // Clang-Format Visual Editor - 使用重构后的协调器
+      // Clang-Format Visual Editor
   serviceContainer.register(
     'clangFormatEditorCoordinator',
     () => new ClangFormatEditorCoordinator(context.extensionUri),

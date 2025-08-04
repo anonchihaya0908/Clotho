@@ -19,5 +19,4 @@
 export * from './clang-format';
 
 // 为将来的扩展预留导出位置
-// export * from './clangd';
-// export * from './clang-tidy';
+// Future expansion: clangd, clang-tidy editors

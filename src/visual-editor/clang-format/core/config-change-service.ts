@@ -127,7 +127,7 @@ export class ConfigChangeService {
      */
   private shouldUpdatePreview(key: string): boolean {
     // Only skip internal keys and metadata
-    // 修复：BasedOnStyle是重要的配置项，应该触发预览更新
+    // BasedOnStyle is an important config option that should trigger preview updates
     return !key.startsWith('__internal') &&
                !key.startsWith('__metadata') &&
                key !== '__comment';

@@ -12,7 +12,7 @@ import { errorHandler } from '../../common/error-handler';
 import { logger } from '../../common/logger';
 import { getLineEnding } from '../../common/platform-utils';
 import { ProcessRunner } from '../../common/process-runner';
-import { ConfigValidationResult, FormatResult } from '../../common/types/index';
+import { ConfigValidationResult, FormatResult } from '../../common/types/core';
 import {
   MACRO_PREVIEW_CODE,
 } from './data/clang-format-options-database';
@@ -363,7 +363,7 @@ export class ClangFormatService {
       // 解析值
       let value: any = valueStr;
 
-      // 移除可能的引号
+      // Remove possible quotes
       if (
         (valueStr.startsWith('"') && valueStr.endsWith('"')) ||
         (valueStr.startsWith('\'') && valueStr.endsWith('\''))
@@ -390,7 +390,7 @@ export class ClangFormatService {
           if (arrayContent) {
             value = arrayContent.split(',').map((item) => {
               const trimmed = item.trim();
-              // 移除引号
+              // Remove quotes
               if (
                 (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
                 (trimmed.startsWith('\'') && trimmed.endsWith('\''))

@@ -39,7 +39,7 @@ export class PlaceholderWebviewManager implements BaseManager {
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
     this.loadCharacterImagePaths();
-    this.setupEventListeners(); // 【修复】重新添加事件监听器设置
+    this.setupEventListeners(); // Setup event listeners
   }
 
   /**
@@ -180,7 +180,7 @@ export class PlaceholderWebviewManager implements BaseManager {
   }
 
   private setupEventListeners(): void {
-    // 【移除】不再直接监听 preview-closed，改由 DebounceIntegration 统一处理
+    // Preview closing is now handled by DebounceIntegration
     // this.context.eventBus.on('preview-closed', async () => { ... });
 
     // 监听预览打开事件，清理占位符
@@ -192,7 +192,7 @@ export class PlaceholderWebviewManager implements BaseManager {
       this.disposePanel();
     });
 
-    // 【新增】监听主编辑器关闭事件 - 联动销毁占位符
+    // Listen for main editor close events - destroy placeholder accordingly
     this.context.eventBus.on('editor-closed', () => {
       this.disposePanel();
     });
@@ -211,7 +211,7 @@ export class PlaceholderWebviewManager implements BaseManager {
       }
     });
 
-    // 【新增】监听预览因可见性隐藏的事件
+    // Listen for preview hidden due to visibility settings
     this.context.eventBus.on('preview-hidden-by-visibility', () => {
       logger.debug('Preview is hidden due to visibility settings, not creating placeholder', {
         module: this.name,
@@ -547,7 +547,7 @@ export class PlaceholderWebviewManager implements BaseManager {
                     }
                 });
 
-                // 【新增】通知扩展，webview内容已完全加载和渲染完毕
+                // Notify extension that webview content is fully loaded and rendered
                 window.addEventListener('load', () => {
                   vscode.postMessage({ type: 'content-ready' });
                 });

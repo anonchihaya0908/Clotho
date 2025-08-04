@@ -17,11 +17,11 @@ export class PreviewEditorManager implements BaseManager {
   private previewProvider: ClangFormatPreviewProvider;
   private formatService: ClangFormatService;
 
-  // 【新增】生命周期状态管理
+  // Lifecycle state management
   private isHidden: boolean = false;
   private hiddenViewColumn: vscode.ViewColumn | undefined;
 
-  // 【新增】防止并发创建的锁
+  // Prevent concurrent creation lock
   private isCreatingPreview: boolean = false;
 
   constructor() {
@@ -31,7 +31,7 @@ export class PreviewEditorManager implements BaseManager {
 
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
-    this.setupEventListeners(); // 【修复】重新添加事件监听器设置
+    this.setupEventListeners(); // Setup event listeners
   }
 
   /**
@@ -39,7 +39,7 @@ export class PreviewEditorManager implements BaseManager {
    * 【新增】支持复用现有预览，避免重复创建
    */
   async openPreview(): Promise<vscode.TextEditor> {
-    // 【新增】防止并发创建
+    // Prevent concurrent creation
     if (this.isCreatingPreview) {
       logger.debug('预览正在创建中，等待完成', {
         module: 'PreviewManager',
@@ -74,7 +74,7 @@ export class PreviewEditorManager implements BaseManager {
       }
     }
 
-    // 【新增】设置创建锁
+          // Set creation lock
     this.isCreatingPreview = true;
 
     try {
@@ -113,13 +113,13 @@ export class PreviewEditorManager implements BaseManager {
 
       return editor;
     } catch (error) {
-      logger.error('创建预览编辑器失败', error as Error, {
+      logger.error('Failed to create preview editor', error as Error, {
         module: 'PreviewManager',
         operation: 'openPreview'
       });
       throw error;
     } finally {
-      // 【新增】释放创建锁
+      // Release creation lock
       this.isCreatingPreview = false;
     }
   }
@@ -167,7 +167,7 @@ export class PreviewEditorManager implements BaseManager {
       }
     }
 
-    // 【新增】重置隐藏状态
+    // Reset hidden state
     this.isHidden = false;
     this.hiddenViewColumn = undefined;
   }
@@ -190,7 +190,7 @@ export class PreviewEditorManager implements BaseManager {
         for (const tab of tabGroup.tabs) {
           const tabInput = tab.input as { uri?: vscode.Uri };
           if (tabInput?.uri?.toString() === previewUri.toString()) {
-            // 【关键修复】在关闭标签页之前设置隐藏状态
+            // Set hidden state before closing tab
             // 这样 tabGroups.onDidChangeTabs 事件处理器就能正确识别这是程序隐藏
             this.isHidden = true;
 
@@ -203,7 +203,7 @@ export class PreviewEditorManager implements BaseManager {
         }
       }
     } catch (error) {
-      logger.error('隐藏预览失败', error as Error, {
+      logger.error('Failed to hide preview', error as Error, {
         module: 'PreviewManager',
         operation: 'hidePreview'
       });
@@ -226,7 +226,7 @@ export class PreviewEditorManager implements BaseManager {
         viewColumn: this.hiddenViewColumn
       });
 
-      // 【修复】检查预览内容是否仍然存在
+      // Check if preview content still exists
       const hasContent = this.previewProvider.hasContent(previewUri);
       if (!hasContent) {
         logger.debug('预览内容已丢失，重新创建', {
@@ -254,17 +254,17 @@ export class PreviewEditorManager implements BaseManager {
       this.isHidden = false;
       this.hiddenViewColumn = undefined;
 
-      logger.debug('预览恢复成功', {
+      logger.debug('Preview restored successfully', {
         module: 'PreviewManager',
         operation: 'showPreview'
       });
     } catch (error) {
-      logger.error('恢复预览失败，尝试重新创建', error as Error, {
+      logger.error('Failed to restore preview, trying to recreate', error as Error, {
         module: 'PreviewManager',
         operation: 'showPreview'
       });
 
-      // 【修复】如果恢复失败，尝试重新创建预览
+      // If restore fails, try to recreate preview
       try {
         this.isHidden = false;
         this.hiddenViewColumn = undefined;
@@ -286,7 +286,7 @@ export class PreviewEditorManager implements BaseManager {
         });
         await this.openPreview();
       } catch (recreateError) {
-        logger.error('重新创建预览也失败', recreateError as Error, {
+        logger.error('Failed to recreate preview as well', recreateError as Error, {
           module: 'PreviewManager',
           operation: 'showPreview'
         });
@@ -340,7 +340,7 @@ export class PreviewEditorManager implements BaseManager {
         this.previewProvider.updateContent(previewUri, updatedContent);
       }
     } catch (error) {
-      logger.error('更新预览时出错', error as Error, {
+      logger.error('Error updating preview', error as Error, {
         module: 'PreviewManager',
         operation: 'updatePreviewContent'
       });
@@ -388,7 +388,7 @@ ${configEntries || '//   (using base style defaults)'}
       },
     );
 
-    // 【新增】监听主编辑器关闭事件 - 联动关闭预览
+    // Listen for main editor close events - close preview accordingly
     this.context.eventBus.on('editor-closed', async () => {
       await this.closePreview();
 
@@ -433,7 +433,7 @@ ${configEntries || '//   (using base style defaults)'}
       }
     });
 
-    // 【修复】监听编辑器标签关闭事件 - 区分手动关闭和程序隐藏
+    // Listen for editor tab close events - distinguish manual vs programmatic close
     vscode.window.tabGroups.onDidChangeTabs(async (event) => {
       const state = this.context.stateManager.getState();
       if (!state.previewUri) {
@@ -449,7 +449,7 @@ ${configEntries || '//   (using base style defaults)'}
             operation: 'onTabClosed'
           });
 
-          // 【关键修复】如果是程序隐藏导致的关闭，不要清理状态
+          // If close is due to programmatic hiding, don't clear state
           if (this.isHidden) {
             logger.debug('这是程序隐藏导致的关闭，保持状态', {
               module: 'PreviewManager',

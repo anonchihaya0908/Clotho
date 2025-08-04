@@ -22,7 +22,7 @@ export class DebounceIntegration implements BaseManager {
   private isEnabled: boolean = true;
   private context!: ManagerContext;
 
-  // 【新增】缓存防抖处理器，避免重复创建
+  // Cache debounce handlers to avoid recreation
   private _previewCloseHandler?: () => Promise<void>;
   private _previewReopenHandler?: () => Promise<void>;
 
@@ -70,7 +70,7 @@ export class DebounceIntegration implements BaseManager {
         async () => {
           await this.previewManager.closePreview();
 
-          // 【新增】只有在编辑器可见且初始化完成时才创建占位符
+          // Only create placeholder when editor is visible and initialized
           const state = this.context?.stateManager.getState();
           if (!state?.isVisible || !state?.isInitialized) {
             logger.debug('Editor is not visible or not initialized, skipping placeholder creation', {
@@ -115,7 +115,7 @@ export class DebounceIntegration implements BaseManager {
       this._previewReopenHandler = this.debounceManager.debounce(
         'preview-reopen-handler',
         async () => {
-          // 【新增】检查预览是否已经存在，避免重复创建
+          // Check if preview already exists to avoid duplication
           const state = this.context?.stateManager.getState();
           if (state?.previewMode === 'open' && state?.previewEditor && !state.previewEditor.document.isClosed) {
             logger.debug('Preview already exists and is open, skipping creation', {
@@ -126,7 +126,7 @@ export class DebounceIntegration implements BaseManager {
             return;
           }
 
-          // 【新增】额外的并发检查
+          // Additional concurrency check
           if (this.transitionManager.getCurrentState() !== TransitionState.IDLE) {
             logger.debug('Transition already in progress, skipping operation', {
               module: 'DebounceIntegration',
@@ -144,7 +144,7 @@ export class DebounceIntegration implements BaseManager {
               return this.context.stateManager.getState().previewEditor!;
             });
           } catch (error) {
-            logger.error('转换管理器失败，使用降级处理', error as Error, {
+            logger.error('Transition manager failed, using fallback', error as Error, {
               module: 'DebounceIntegration',
               operation: 'debouncedPreviewReopen'
             });

@@ -11,7 +11,7 @@ export { ClangFormatService } from './format-service';
 export { ClangFormatPreviewProvider } from './preview-provider';
 export { ClangFormatGuideService } from './guide-service';
 
-// 导出新的、重构后的视觉编辑器协调器
+// Export the visual editor coordinator
 export { ClangFormatEditorCoordinator } from './coordinator';
 
 /**
