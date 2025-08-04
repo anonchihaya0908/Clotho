@@ -16,7 +16,12 @@ import { toHeaderGuardCase } from '../common/utils';
 import { Language } from '../common/types';
 import { DEFAULT_PLACEHOLDERS } from '../common/constants';
 
-import { FILE_TEMPLATES, TemplateKey } from './templates';
+import {
+  FILE_TEMPLATES,
+  TemplateKey,
+  generateHeaderGuardOpen,
+  generateHeaderGuardClose
+} from './templates';
 
 // Service Layer - Core business logic
 export class PairCreatorService {
@@ -214,7 +219,7 @@ export class PairCreatorService {
     const extPart = headerExt.replace(/^\./, '').toUpperCase();
     return `${baseName}_${extPart}_`;
   }
-  // Generates file content with improved template selection
+  // Generates file content with improved template selection and header guard support
   public generateFileContent(
     fileName: string,
     eol: string,
@@ -231,10 +236,16 @@ export class PairCreatorService {
           : 'CPP_EMPTY';
 
     const templates = FILE_TEMPLATES[templateKey];
+
+    // Use headerGuardStyle from rule, default to ifndef_define for backward compatibility
+    const headerGuardStyle = rule.headerGuardStyle || 'ifndef_define';
+
     const context = {
       fileName,
       headerGuard: this.generateHeaderGuard(fileName, rule.headerExt),
       includeLine: `#include "${fileName}${rule.headerExt}"`,
+      headerGuardOpen: generateHeaderGuardOpen(fileName, rule.headerExt, headerGuardStyle),
+      headerGuardClose: generateHeaderGuardClose(fileName, rule.headerExt, headerGuardStyle),
     };
 
     const headerContent = this.applyTemplate(templates.header, context);

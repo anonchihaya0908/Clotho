@@ -10,6 +10,7 @@ import * as vscode from 'vscode';
 
 import { ERROR_MESSAGES } from '../common/constants';
 import { PairingRule } from '../common/types';
+import { PairingRuleService } from '../pairing-rule-manager';
 
 import { PairCreatorService } from './service';
 import { PairCreatorUI } from './ui';
@@ -21,6 +22,7 @@ export class PairCoordinator implements vscode.Disposable {
   constructor(
     private readonly service: PairCreatorService,
     private readonly ui: PairCreatorUI,
+    private readonly pairingRuleService: PairingRuleService,
   ) {
     // Commands are now registered centrally in bootstrap.ts
   }
@@ -55,11 +57,28 @@ export class PairCoordinator implements vscode.Disposable {
   }
 
   /**
-   * Get user preferences for pairing rule
+   * Get user preferences for pairing rule with header guard style
    */
   private async getUserPreferences() {
     const { language, uncertain } = await this.service.detectLanguageFromEditor();
-    return await this.ui.promptForPairingRule(language, uncertain);
+
+    // Step 1 & 2: Get pairing rule (template + extensions)
+    const rule = await this.ui.promptForPairingRule(language, uncertain);
+    if (!rule) {
+      return undefined; // User cancelled
+    }
+
+    // Step 3: Get header guard style preference
+    const headerGuardStyle = await this.ui.promptForHeaderGuardStyle();
+    if (!headerGuardStyle) {
+      return undefined; // User cancelled
+    }
+
+    // Combine the rule with the selected header guard style
+    return {
+      ...rule,
+      headerGuardStyle,
+    };
   }
 
   /**
@@ -95,9 +114,12 @@ export class PairCoordinator implements vscode.Disposable {
       sourcePath,
     );
 
-    // Show success and handle post-creation tasks
-    await this.ui.showSuccessAndOpenFile(headerPath, sourcePath);
-    await this.service.handleOfferToSaveAsDefault(rule, await this.service.detectLanguageFromEditor().then(r => r.language));
+    // Show success with configuration save prompt (Step 4)
+    const shouldSaveConfig = await this.ui.showSuccessWithConfigPrompt(rule, headerPath, sourcePath);
+
+    if (shouldSaveConfig) {
+      await this.saveRuleToWorkspace(rule);
+    }
   }
 
   /**
@@ -110,5 +132,37 @@ export class PairCoordinator implements vscode.Disposable {
         vscode.workspace.workspaceFolders,
       )) ?? (await this.ui.showWorkspaceFolderPicker())
     );
+  }
+
+  /**
+   * Save pairing rule to workspace settings
+   */
+  private async saveRuleToWorkspace(rule: PairingRule): Promise<void> {
+    try {
+      // Create a clean rule for saving
+      const workspaceRule: PairingRule = {
+        key: `workspace_default_${Date.now()}`,
+        label: `${rule.language.toUpperCase()} Pair (${rule.headerExt}/${rule.sourceExt})`,
+        description: `Creates a ${rule.headerExt}/${rule.sourceExt} file pair with ${rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards'}.`,
+        language: rule.language,
+        headerExt: rule.headerExt,
+        sourceExt: rule.sourceExt,
+        isClass: rule.isClass,
+        isStruct: rule.isStruct,
+        headerGuardStyle: rule.headerGuardStyle,
+      };
+
+      // Save to workspace settings
+      await this.pairingRuleService.writeRules([workspaceRule], 'workspace');
+
+      const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
+      vscode.window.showInformationMessage(
+        `✅ Configuration saved to workspace! Future file pairs will use ${rule.headerExt}/${rule.sourceExt} with ${guardText}.`
+      );
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   }
 }

@@ -139,6 +139,7 @@ function registerServices(context: vscode.ExtensionContext): void {
       new PairCoordinator(
         container.get('pairCreatorService'),
         container.get('pairCreatorUI'),
+        container.get('pairingRuleService'),
       ),
   );
 

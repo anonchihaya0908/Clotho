@@ -26,6 +26,12 @@ export type TemplateKey =
   | 'CPP_EMPTY';
 
 // ===============================
+// Header Guard Style Types
+// ===============================
+
+export type HeaderGuardStyle = 'ifndef_define' | 'pragma_once';
+
+// ===============================
 // Configuration Interfaces
 // ===============================
 
@@ -38,6 +44,7 @@ export interface PairingRule {
   sourceExt: string;
   isClass?: boolean;
   isStruct?: boolean;
+  headerGuardStyle?: HeaderGuardStyle;
 }
 
 // Module-specific configurations now in their respective modules

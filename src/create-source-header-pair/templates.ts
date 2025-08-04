@@ -9,7 +9,7 @@
 // - Validation patterns
 //
 
-import { PairingRule, Language } from '../common/types';
+import { PairingRule, Language, HeaderGuardStyle } from '../common/types';
 
 // Types for better type safety
 export type TemplateKey =
@@ -73,11 +73,10 @@ export const TEMPLATE_RULES: PairingRule[] = [
   },
 ];
 
-// File templates with immutable structure
+// File templates with dynamic header guard support
 export const FILE_TEMPLATES = {
   CPP_CLASS: {
-    header: `#ifndef {{headerGuard}}
-#define {{headerGuard}}
+    header: `{{headerGuardOpen}}
 
 class {{fileName}} {
 public:
@@ -88,7 +87,7 @@ private:
   // Add private members here
 };
 
-#endif  // {{headerGuard}}
+{{headerGuardClose}}
 `,
     source: `{{includeLine}}
 
@@ -102,36 +101,33 @@ private:
 `,
   },
   CPP_STRUCT: {
-    header: `#ifndef {{headerGuard}}
-#define {{headerGuard}}
+    header: `{{headerGuardOpen}}
 
 struct {{fileName}} {
   // Struct members
 };
 
-#endif  // {{headerGuard}}
+{{headerGuardClose}}
 `,
     source: '{{includeLine}}',
   },
   C_STRUCT: {
-    header: `#ifndef {{headerGuard}}
-#define {{headerGuard}}
+    header: `{{headerGuardOpen}}
 
 typedef struct {
   // Struct members
 } {{fileName}};
 
-#endif  // {{headerGuard}}
+{{headerGuardClose}}
 `,
     source: '{{includeLine}}',
   },
   C_EMPTY: {
-    header: `#ifndef {{headerGuard}}
-#define {{headerGuard}}
+    header: `{{headerGuardOpen}}
 
 // Declarations for {{fileName}}.c
 
-#endif  // {{headerGuard}}
+{{headerGuardClose}}
 `,
     source: `{{includeLine}}
 
@@ -139,16 +135,66 @@ typedef struct {
 `,
   },
   CPP_EMPTY: {
-    header: `#ifndef {{headerGuard}}
-#define {{headerGuard}}
+    header: `{{headerGuardOpen}}
 
 // Declarations for {{fileName}}.cpp
 
-#endif  // {{headerGuard}}
+{{headerGuardClose}}
 `,
     source: '{{includeLine}}',
   },
 };
+
+// ===============================
+// Header Guard Generation Utilities
+// ===============================
+
+/**
+ * Generates header guard opening based on style
+ */
+export function generateHeaderGuardOpen(
+  fileName: string,
+  headerExt: string,
+  style: HeaderGuardStyle = 'ifndef_define'
+): string {
+  switch (style) {
+    case 'pragma_once':
+      return '#pragma once';
+    case 'ifndef_define':
+    default:
+      const headerGuard = generateHeaderGuardMacro(fileName, headerExt);
+      return `#ifndef ${headerGuard}\n#define ${headerGuard}`;
+  }
+}
+
+/**
+ * Generates header guard closing based on style
+ */
+export function generateHeaderGuardClose(
+  fileName: string,
+  headerExt: string,
+  style: HeaderGuardStyle = 'ifndef_define'
+): string {
+  switch (style) {
+    case 'pragma_once':
+      return '';
+    case 'ifndef_define':
+    default:
+      const headerGuard = generateHeaderGuardMacro(fileName, headerExt);
+      return `#endif  // ${headerGuard}`;
+  }
+}
+
+/**
+ * Generates header guard macro name in UPPERCASE format
+ */
+export function generateHeaderGuardMacro(fileName: string, headerExt: string): string {
+  // Convert filename to uppercase and replace non-alphanumeric with underscore
+  const baseName = fileName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+  // Get extension without dot and convert to uppercase
+  const extName = headerExt.substring(1).toUpperCase();
+  return `${baseName}_${extName}_`;
+}
 
 // Re-export Language type for backward compatibility
 export { Language };

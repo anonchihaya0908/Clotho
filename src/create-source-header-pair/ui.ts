@@ -20,6 +20,7 @@ import { toPascalCase } from '../common/utils';
 
 import { PairCreatorService } from './service';
 import { Language, TEMPLATE_RULES, VALIDATION_PATTERNS } from './templates';
+import { HeaderGuardStyle } from '../common/types';
 
 // Type to clearly express user intent when selecting custom rules
 type CustomRuleSelection =
@@ -330,6 +331,36 @@ export class PairCreatorUI {
   // ===============================
   // UI CONTROLLERS - User Interaction Logic
   // ===============================
+
+  /**
+   * Prompts user to select header guard style (step 3 of file creation)
+   * @returns Selected header guard style or undefined if cancelled
+   */
+  public async promptForHeaderGuardStyle(): Promise<HeaderGuardStyle | undefined> {
+    const choices = [
+      {
+        label: '$(shield) #pragma once',
+        description: 'Modern C++ style, widely supported',
+        detail: 'Simpler, no naming conflicts, supported by all major compilers',
+        value: 'pragma_once' as HeaderGuardStyle,
+      },
+      {
+        label: '$(code) #ifndef/#define/#endif',
+        description: 'Traditional style, maximum compatibility',
+        detail: 'Explicit macro definition, works with older compilers',
+        value: 'ifndef_define' as HeaderGuardStyle,
+      },
+    ];
+
+    const result = await vscode.window.showQuickPick(choices, {
+      placeHolder: 'Choose header guard style for your header files',
+      title: 'Step 3: Select Header Guard Style',
+      matchOnDescription: true,
+      matchOnDetail: true,
+    });
+
+    return result?.value;
+  }
 
   // - Returns 'cancelled' if the user presses ESC to cancel, and the operation
   // should be terminated
@@ -720,6 +751,33 @@ export class PairCreatorUI {
         `Successfully created ${path.basename(headerPath.fsPath)} and ${path.basename(sourcePath.fsPath)}.`,
       );
     }, 50);
+  }
+
+  /**
+   * Shows success message with configuration save prompt
+   * @param rule The pairing rule used for file creation
+   * @param headerPath Path of created header file
+   * @param sourcePath Path of created source file
+   */
+  public async showSuccessWithConfigPrompt(
+    rule: PairingRule,
+    headerPath: vscode.Uri,
+    sourcePath: vscode.Uri,
+  ): Promise<boolean> {
+    // First show the success message and open files (existing behavior)
+    await this.showSuccessAndOpenFile(headerPath, sourcePath);
+
+    // Then show the configuration save prompt
+    const extensionText = `${rule.headerExt}/${rule.sourceExt}`;
+    const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : '#ifndef/#define';
+
+    const choice = await vscode.window.showInformationMessage(
+      `✅ Files created successfully!\n💾 Save current settings as workspace default?\n(${extensionText} + ${guardText})`,
+      'Save to Workspace',
+      'Not Now'
+    );
+
+    return choice === 'Save to Workspace';
   }
 
   /**
