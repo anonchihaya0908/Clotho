@@ -54,14 +54,14 @@ export function getPathSeparator(): string {
  */
 export function getPlatformName(): string {
   switch (process.platform) {
-    case 'win32':
-      return 'Windows';
-    case 'darwin':
-      return 'macOS';
-    case 'linux':
-      return 'Linux';
-    default:
-      return 'Unknown';
+  case 'win32':
+    return 'Windows';
+  case 'darwin':
+    return 'macOS';
+  case 'linux':
+    return 'Linux';
+  default:
+    return 'Unknown';
   }
 }
 

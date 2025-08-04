@@ -6,10 +6,10 @@
  * "parent-child DNA testing" to identify legitimate processes vs stale ones.
  */
 
-import { ProcessRunner } from './process-runner';
-import { errorHandler } from './error-handler';
 import * as process from 'node:process';
+import { errorHandler } from './error-handler';
 import { logger } from './logger';
+import { ProcessRunner } from './process-runner';
 
 /**
  * Extended process information with metadata
@@ -75,7 +75,7 @@ export class ProcessDetector {
    * 分级日志输出
    */
   private static log(level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any): void {
-    if (level === 'debug' && !this.DEBUG) return;
+    if (level === 'debug' && !this.DEBUG) {return;}
 
     const moduleInfo = {
       module: 'ProcessDetector',
@@ -83,18 +83,18 @@ export class ProcessDetector {
     };
 
     switch (level) {
-      case 'debug':
-        logger.debug(message, { ...moduleInfo, ...data });
-        break;
-      case 'info':
-        logger.info(message, { ...moduleInfo, ...data });
-        break;
-      case 'warn':
-        logger.warn(message, { ...moduleInfo, ...data });
-        break;
-      case 'error':
-        logger.error(message, data instanceof Error ? data : undefined, { ...moduleInfo, context: data });
-        break;
+    case 'debug':
+      logger.debug(message, { ...moduleInfo, ...data });
+      break;
+    case 'info':
+      logger.info(message, { ...moduleInfo, ...data });
+      break;
+    case 'warn':
+      logger.warn(message, { ...moduleInfo, ...data });
+      break;
+    case 'error':
+      logger.error(message, data instanceof Error ? data : undefined, { ...moduleInfo, context: data });
+      break;
     }
   }
   /**
@@ -191,7 +191,7 @@ export class ProcessDetector {
     ourPid: number,
     processPpid: number
   ): 'direct-child' | 'grandchild' | 'orphan' {
-    if (processPpid === ourPid) return 'direct-child';
+    if (processPpid === ourPid) {return 'direct-child';}
     // 可以添加更复杂的逻辑来检测 grandchild
     return 'orphan';
   }

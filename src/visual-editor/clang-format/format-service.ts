@@ -4,18 +4,18 @@
  * 使用 stdin/stdout 流方案，完全避免临时文件和权限问题
  */
 
-import * as vscode from 'vscode';
+import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { spawn } from 'child_process';
-import { ProcessRunner } from '../../common/process-runner';
+import * as vscode from 'vscode';
 import { errorHandler } from '../../common/error-handler';
 import { logger } from '../../common/logger';
 import { getLineEnding } from '../../common/platform-utils';
+import { ProcessRunner } from '../../common/process-runner';
+import { ConfigValidationResult, FormatResult } from '../../common/types/index';
 import {
   MACRO_PREVIEW_CODE,
 } from './data/clang-format-options-database';
-import { FormatResult, ConfigValidationResult } from '../../common/types/index';
 
 export class ClangFormatService {
   private static instance: ClangFormatService | undefined;

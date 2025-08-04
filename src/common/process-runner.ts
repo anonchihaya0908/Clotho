@@ -4,9 +4,9 @@
  * Provides consistent error handling, logging, and timeout management
  */
 
-import { errorHandler } from './error-handler';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { errorHandler } from './error-handler';
 import { logger } from './logger';
 
 // 执行选项的明确类型定义
@@ -52,7 +52,7 @@ export class ProcessRunner {
    * 统一的分级日志输出（消除日志记录不一致问题）
    */
   private static log(level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any): void {
-    if (level === 'debug' && !this.DEBUG) return;
+    if (level === 'debug' && !this.DEBUG) {return;}
 
     const moduleInfo = {
       module: 'ProcessRunner',
@@ -60,18 +60,18 @@ export class ProcessRunner {
     };
 
     switch (level) {
-      case 'debug':
-        logger.debug(message, { ...moduleInfo, ...data });
-        break;
-      case 'info':
-        logger.info(message, { ...moduleInfo, ...data });
-        break;
-      case 'warn':
-        logger.warn(message, { ...moduleInfo, ...data });
-        break;
-      case 'error':
-        logger.error(message, data instanceof Error ? data : undefined, { ...moduleInfo, context: data });
-        break;
+    case 'debug':
+      logger.debug(message, { ...moduleInfo, ...data });
+      break;
+    case 'info':
+      logger.info(message, { ...moduleInfo, ...data });
+      break;
+    case 'warn':
+      logger.warn(message, { ...moduleInfo, ...data });
+      break;
+    case 'error':
+      logger.error(message, data instanceof Error ? data : undefined, { ...moduleInfo, context: data });
+      break;
     }
   }
 

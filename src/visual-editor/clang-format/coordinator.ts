@@ -1,19 +1,19 @@
 import * as vscode from 'vscode';
-import { EditorOpenSource, ManagerContext } from '../../common/types';
 import { logger } from '../../common/logger';
-import { EventBus } from './messaging/event-bus';
-import { EditorStateManager } from './state/editor-state-manager';
-import { ErrorRecoveryManager } from './error/error-recovery-manager';
-import { MessageHandler } from './messaging/message-handler';
-import { ClangFormatEditorManager } from './core/editor-manager';
-import { PreviewEditorManager } from './core/preview-manager';
-import { ConfigActionManager } from './core/config-action-manager';
-import { PlaceholderWebviewManager } from './core/placeholder-manager';
+import { EditorOpenSource, ManagerContext } from '../../common/types';
 import { WebviewMessageType } from '../../common/types/webview';
-import { DebounceIntegration } from './core/debounce-integration';
+import { ConfigActionManager } from './core/config-action-manager';
 import { ConfigChangeService } from './core/config-change-service';
-import { ClangFormatService } from './format-service';
+import { DebounceIntegration } from './core/debounce-integration';
+import { ClangFormatEditorManager } from './core/editor-manager';
 import { ManagerRegistry } from './core/manager-registry';
+import { PlaceholderWebviewManager } from './core/placeholder-manager';
+import { PreviewEditorManager } from './core/preview-manager';
+import { ErrorRecoveryManager } from './error/error-recovery-manager';
+import { ClangFormatService } from './format-service';
+import { EventBus } from './messaging/event-bus';
+import { MessageHandler } from './messaging/message-handler';
+import { EditorStateManager } from './state/editor-state-manager';
 
 /**
  * 主协调器
