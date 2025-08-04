@@ -16,7 +16,7 @@ export * from './utils';
 export * from './heartbeat-animation';
 
 // Error handling
-export * from './error-handler';
+export { ClothoError, errorHandler } from './error-handler';
 
 // Process execution utilities
 export * from './process-runner';

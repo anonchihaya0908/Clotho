@@ -8,30 +8,31 @@
  */
 
 import * as vscode from 'vscode';
-import { ServiceContainer } from './common/service-container';
+import { MonitorCoordinator } from './clangd-monitor';
+import { COMMANDS } from './common/constants';
+import { errorHandler } from './common/error-handler';
 import { logger } from './common/logger';
+import { ServiceContainer } from './common/service-container';
 import {
   PairCoordinator,
   PairCreatorService,
   PairCreatorUI,
 } from './create-source-header-pair';
 import {
+  PairingRuleCoordinator,
   PairingRuleService,
   PairingRuleUI,
-  PairingRuleCoordinator,
 } from './pairing-rule-manager';
 import {
   SwitchCoordinator,
   SwitchService,
   SwitchUI,
 } from './switch-header-source';
-import { MonitorCoordinator } from './clangd-monitor';
+import { SwitchConfigService } from './switch-header-source/config-manager';
 import { ClangFormatEditorCoordinator } from './visual-editor/clang-format/coordinator';
+import { VisualEditorDebugHelper } from './visual-editor/clang-format/debug/visual-editor-debug-helper';
 import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
 import { ClangFormatPreviewProvider } from './visual-editor/clang-format/preview-provider';
-import { VisualEditorDebugHelper } from './visual-editor/clang-format/debug/visual-editor-debug-helper';
-import { COMMANDS } from './common/constants';
-import { errorHandler } from './common/error-handler';
 
 export let serviceContainer: ServiceContainer;
 
@@ -45,9 +46,9 @@ export let serviceContainer: ServiceContainer;
 export async function bootstrap(
   context: vscode.ExtensionContext,
 ): Promise<void> {
-  // 🚀 初始化 Logger 系统（优先级最高）
+  // 🚀 Initialize Logger system (highest priority)
   logger.initializeOutputChannel();
-  logger.info('Clotho 扩展启动中...', {
+  logger.info('Clotho extension starting up...', {
     module: 'Bootstrap',
     operation: 'startup'
   });
@@ -58,23 +59,23 @@ export async function bootstrap(
   // Register all services in the container
   registerServices(context);
 
-  // 激活 Clang-Format 可视化编辑器模块（注册虚拟文档提供者）
+  // Activate Clang-Format visual editor module (register virtual document provider)
   try {
     ClangFormatPreviewProvider.register(context);
-    logger.info('ClangFormatPreviewProvider 注册成功', {
+    logger.info('ClangFormatPreviewProvider registered successfully', {
       module: 'Bootstrap',
       operation: 'registerPreviewProvider'
     });
   } catch (error) {
     logger.error(
-      'ClangFormatPreviewProvider 注册失败',
+      'Failed to register ClangFormatPreviewProvider',
       error as Error,
       {
         module: 'Bootstrap',
         operation: 'registerPreviewProvider'
       }
     );
-    // 不抛出错误，允许扩展继续运行
+    // Don't throw error, allow extension to continue running
   }
 
   // Initialize main coordinators
@@ -88,8 +89,8 @@ export async function bootstrap(
     dispose: () => cleanup(),
   });
 
-  // 🎉 启动完成
-  logger.info('Clotho 扩展启动完成', {
+  // 🎉 Startup completed
+  logger.info('Clotho extension startup completed', {
     module: 'Bootstrap',
     operation: 'startup_complete'
   });
@@ -141,17 +142,22 @@ function registerServices(context: vscode.ExtensionContext): void {
       ),
   );
 
-  // Switch Header/Source
-  serviceContainer.register('switchService', () => new SwitchService());
-  serviceContainer.register('switchUI', () => new SwitchUI());
-  serviceContainer.register(
-    'switchCoordinator',
-    (container) =>
-      new SwitchCoordinator(
-        container.get('switchService'),
-        container.get('switchUI'),
-      ),
-  );
+  // Switch Header/Source - Complete dependency injection
+  serviceContainer.register('switchConfigService',
+    () => new SwitchConfigService());
+
+  serviceContainer.register('switchService',
+    (container) => new SwitchService(container.get('switchConfigService')));
+
+  serviceContainer.register('switchUI',
+    (container) => new SwitchUI());
+
+  serviceContainer.register('switchCoordinator',
+    (container) => new SwitchCoordinator(
+      container.get('switchService'),
+      container.get('switchUI'),
+      container.get('switchConfigService')
+    ));
 
   // Clangd Monitor - pass configuration from VS Code settings
   serviceContainer.register('monitorCoordinator', () => {
@@ -207,13 +213,13 @@ async function initializeCoordinators(): Promise<void> {
   if (isMonitoringEnabled) {
     try {
       await monitorCoordinator.startMonitoring();
-      logger.info('Clangd 监控启动成功', {
+      logger.info('Clangd monitoring started successfully', {
         module: 'Bootstrap',
         operation: 'startMonitoring'
       });
     } catch (error) {
       logger.error(
-        'Clangd 监控启动失败',
+        'Failed to start clangd monitoring',
         error as Error,
         {
           module: 'Bootstrap',
@@ -222,7 +228,7 @@ async function initializeCoordinators(): Promise<void> {
       );
     }
   } else {
-    logger.info('Clangd 监控已被配置禁用', {
+    logger.info('Clangd monitoring disabled by configuration', {
       module: 'Bootstrap',
       operation: 'startMonitoring'
     });
@@ -233,7 +239,7 @@ async function initializeCoordinators(): Promise<void> {
  * Clean up all services when the extension is deactivated.
  */
 export function cleanup(): void {
-  logger.info('Clotho 扩展正在清理资源...', {
+  logger.info('Clotho extension cleaning up resources...', {
     module: 'Bootstrap',
     operation: 'cleanup'
   });
@@ -242,10 +248,10 @@ export function cleanup(): void {
     serviceContainer.dispose();
   }
 
-  // 清理 Logger 资源
+  // Clean up Logger resources
   logger.dispose();
 
-  logger.info('Clotho 扩展清理完成', {
+  logger.info('Clotho extension cleanup completed', {
     module: 'Bootstrap',
     operation: 'cleanup_complete'
   });

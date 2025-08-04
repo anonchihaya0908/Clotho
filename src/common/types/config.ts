@@ -5,36 +5,21 @@
 
 // 重新导出共享类型，保持向后兼容
 export {
-  ConfigCategories,
-  CONFIG_CATEGORIES_ARRAY,
-  ClangFormatOption,
-  ClangFormatConfig,
-  WebviewMessageType,
-  AppState,
-  WebviewMessage,
-  SearchOptionsRequest,
-  SearchOptionsResponse,
-  GetOptionsByCategoryRequest,
+  AppState, ClangFormatConfig, ClangFormatOption, CONFIG_CATEGORIES_ARRAY, ConfigCategories, GetOptionsByCategoryRequest,
   GetOptionsByCategoryResponse,
-  InitializePayload,
-  OptionFilter,
-  OptionComparator,
-  OptionFilters,
-  OptionComparators,
+  InitializePayload, OptionComparator, OptionComparators, OptionFilter, OptionFilters, SearchOptionsRequest,
+  SearchOptionsResponse, WebviewMessage, WebviewMessageType
 } from './clang-format-shared';
 
 // 导入类型用于本地接口定义
-import { ClangFormatConfig } from './clang-format-shared';
 
-// 编辑器状态接口
-export interface EditorState {
-  config: ClangFormatConfig;
-  isPreviewOpen: boolean;
-  previewUri?: string;
-  isDirty: boolean;
-}
+// EditorState is now defined in core.ts - this was a duplicate
+// For visual editor specific state, use VisualEditorState from visual-editor/types.ts
 
-// 实例状态接口
+// Import EditorState from core
+import { EditorState } from './core';
+
+// Instance state interface
 export interface InstanceState {
   id: string;
   editorState: EditorState;

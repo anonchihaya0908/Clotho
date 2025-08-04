@@ -4,7 +4,8 @@
  */
 
 // Constants
-import { SwitchConfig, TemplateContext } from './types';
+import { SwitchConfig } from '../switch-header-source/types';
+import { TemplateContext } from './types';
 
 // Re-export types for convenience
 export type { SwitchConfig, TemplateContext };

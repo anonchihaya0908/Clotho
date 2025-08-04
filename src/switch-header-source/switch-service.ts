@@ -5,37 +5,27 @@
  * It implements the hybrid clangd + heuristic approach for finding partner files.
  */
 
-import * as vscode from 'vscode';
 import * as path from 'path';
-import { SwitchConfigService } from './config-manager';
+import * as vscode from 'vscode';
 import {
   HEADER_EXTENSIONS,
   SOURCE_EXTENSIONS,
   TEST_PATTERNS,
 } from '../common/constants';
+import { errorHandler } from '../common/error-handler';
+import { logger } from '../common/logger';
+import { SearchResult } from '../common/types/core';
 import {
   LRUCache,
   isHeaderFile,
 } from '../common/utils';
-import { logger } from '../common/logger';
-import { errorHandler } from '../common/error-handler';
+import { SwitchConfigService } from './config-manager';
 
 // ===============================
 // Interfaces and Type Definitions
 // ===============================
 
-/**
- * Represents the result of a file search operation.
- */
-export interface SearchResult {
-  files: vscode.Uri[];
-  method:
-  | 'clangd'
-  | 'same-directory'
-  | 'src-include'
-  | 'parallel-tests'
-  | 'global-search';
-}
+// SearchResult and SearchMethod are now imported from core types
 
 /**
  * Core service class for switch header/source functionality.

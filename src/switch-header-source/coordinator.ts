@@ -3,16 +3,16 @@
  * Demonstrates best practices for error handling, type safety, and code organization
  */
 
-import * as vscode from 'vscode';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import {
-  isValidCppFile,
-  getFileType,
   errorHandler,
+  getFileType,
+  isValidCppFile,
 } from '../common';
+import { SwitchConfigService } from './config-manager';
 import { SwitchService } from './switch-service';
 import { SwitchUI } from './switch-ui';
-import { SwitchConfigService } from './config-manager';
 
 /**
  * Main coordinator class that orchestrates the switch functionality.
@@ -24,16 +24,14 @@ export class SwitchCoordinator implements vscode.Disposable {
   private readonly configService: SwitchConfigService;
 
   constructor(
-    service?: SwitchService,
-    ui?: SwitchUI,
+    service: SwitchService,
+    ui: SwitchUI,
     configService?: SwitchConfigService
   ) {
-    // Initialize config service first as it's a dependency for service
+    // Dependencies should be injected by the service container
+    this.service = service;
+    this.ui = ui;
     this.configService = configService ?? new SwitchConfigService();
-
-    // Allow dependency injection for testing
-    this.service = service ?? new SwitchService(this.configService);
-    this.ui = ui ?? new SwitchUI();
 
     // Commands are now registered centrally in bootstrap.ts
   }

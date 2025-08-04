@@ -1,27 +1,27 @@
 /**
- * Clang-Format 共享类型定义
- * 供前后端统一使用，确保类型一致性
+ * Clang-Format shared type definitions
+ * Used by both frontend and backend to ensure type consistency
  */
 
-// 配置分类枚举 - 使用中文分类
+// Configuration category enumeration - using English categories
 export enum ConfigCategories {
-  BASIC = '基础设置',
-  ALIGNMENT = '对齐设置',
-  WRAPPING = '换行设置',
-  BRACES = '大括号设置',
-  SPACING = '空格设置',
-  INDENTATION = '缩进设置',
-  COMMENTS = '注释设置',
-  CPP_FEATURES = 'C++特性',
-  POINTERS_REFS = '指针和引用',
-  EMPTY_LINES = '空行设置',
-  MISC = '其他设置',
+  BASIC = 'Basic Settings',
+  ALIGNMENT = 'Alignment Settings',
+  WRAPPING = 'Line Breaking',
+  BRACES = 'Brace Settings',
+  SPACING = 'Spacing Settings',
+  INDENTATION = 'Indentation Settings',
+  COMMENTS = 'Comment Settings',
+  CPP_FEATURES = 'C++ Features',
+  POINTERS_REFS = 'Pointers and References',
+  EMPTY_LINES = 'Empty Lines',
+  MISC = 'Miscellaneous',
 }
 
-// 配置分类数组 - 用于前端遍历
+// Configuration categories array - for frontend iteration
 export const CONFIG_CATEGORIES_ARRAY = Object.values(ConfigCategories);
 
-// Clang-Format 配置选项接口
+// Clang-Format configuration option interface
 export interface ClangFormatOption {
   key: string;
   name: string;
@@ -32,18 +32,18 @@ export interface ClangFormatOption {
   min?: number;
   max?: number;
   defaultValue: any;
-  version: string; // clang-format版本
+  version: string; // clang-format version
   deprecated?: boolean;
   previewTemplate?: string;
   example?: string;
 }
 
-// Clang-Format 配置接口
+// Clang-Format configuration interface
 export interface ClangFormatConfig {
   [key: string]: any;
 }
 
-// WebView 消息类型
+// WebView message types
 export enum WebviewMessageType {
   INITIALIZE = 'initialize',
   CONFIG_CHANGED = 'configChanged',
@@ -72,13 +72,13 @@ export enum WebviewMessageType {
   WEBVIEW_READY = 'webviewReady',
   WEBVIEW_LOG = 'webview-log',
   REOPEN_PREVIEW = 'reopen-preview',
-  // 新增：数据请求相关
+  // Data request related
   GET_OPTIONS_BY_CATEGORY = 'getOptionsByCategory',
   SEARCH_OPTIONS = 'searchOptions',
   GET_ALL_OPTIONS = 'getAllOptions',
 }
 
-// 应用状态接口
+// Application state interface
 export interface AppState {
   options: ClangFormatOption[];
   categories: string[];
@@ -106,38 +106,38 @@ export interface AppState {
   };
 }
 
-// 消息接口
+// Message interface
 export interface WebviewMessage {
   type: WebviewMessageType;
   payload: any;
 }
 
-// 搜索请求接口
+// Search request interface
 export interface SearchOptionsRequest {
   query: string;
   category?: string;
   type?: ClangFormatOption['type'];
 }
 
-// 搜索响应接口
+// Search response interface
 export interface SearchOptionsResponse {
   options: ClangFormatOption[];
   totalCount: number;
   query: string;
 }
 
-// 按分类获取选项请求接口
+// Get options by category request interface
 export interface GetOptionsByCategoryRequest {
   category: ConfigCategories;
 }
 
-// 按分类获取选项响应接口
+// Get options by category response interface
 export interface GetOptionsByCategoryResponse {
   options: ClangFormatOption[];
   category: ConfigCategories;
 }
 
-// 初始化消息载荷
+// Initialize message payload
 export interface InitializePayload {
   options: ClangFormatOption[];
   categories: string[];
@@ -147,11 +147,11 @@ export interface InitializePayload {
   };
 }
 
-// 工具函数类型
+// Utility function types
 export type OptionFilter = (option: ClangFormatOption) => boolean;
 export type OptionComparator = (a: ClangFormatOption, b: ClangFormatOption) => number;
 
-// 常用的过滤器和比较器
+// Common filters and comparators
 export const OptionFilters = {
   byCategory: (category: ConfigCategories): OptionFilter =>
     (option) => option.category === category,

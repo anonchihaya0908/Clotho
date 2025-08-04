@@ -22,22 +22,23 @@
  * - Better type safety with enhanced TypeScript inference.
  */
 
+import { MonitorCoordinator } from '../clangd-monitor';
 import {
   PairCoordinator,
   PairCreatorService,
   PairCreatorUI,
 } from '../create-source-header-pair';
 import {
+  PairingRuleCoordinator,
   PairingRuleService,
   PairingRuleUI,
-  PairingRuleCoordinator,
 } from '../pairing-rule-manager';
 import {
   SwitchCoordinator,
   SwitchService,
   SwitchUI,
 } from '../switch-header-source';
-import { MonitorCoordinator } from '../clangd-monitor';
+import { SwitchConfigService } from '../switch-header-source/config-manager';
 import { ClangFormatEditorCoordinator } from '../visual-editor';
 import { ClangFormatGuideService } from '../visual-editor/clang-format/guide-service';
 import { errorHandler } from './error-handler';
@@ -65,6 +66,7 @@ export interface ServiceMap {
   pairCoordinator: PairCoordinator;
 
   // Switch Header/Source
+  switchConfigService: SwitchConfigService;
   switchService: SwitchService;
   switchUI: SwitchUI;
   switchCoordinator: SwitchCoordinator;
@@ -164,7 +166,7 @@ export class ServiceContainer {
     isValid: boolean;
     missing: string[];
     registered: ServiceName[];
-  } {
+    } {
     const registered = this.getRegisteredServices();
 
     // Extract all keys from ServiceMap type programmatically

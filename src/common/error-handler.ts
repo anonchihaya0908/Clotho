@@ -4,15 +4,16 @@
  */
 
 import * as vscode from 'vscode';
+import { ErrorStrategy, ErrorStrategyResult } from './error-strategies/base-strategy';
 import { logger, LoggerService } from './logger';
 
 export interface ErrorContext {
   operation: string;
   module: string;
-  instanceId?: string; // 新增：实例标识
+  instanceId?: string; // Instance identifier
   showToUser?: boolean;
   logLevel?: 'debug' | 'info' | 'warn' | 'error';
-  rethrow?: boolean; // 新增：是否重新抛出错误
+  rethrow?: boolean; // Whether to rethrow the error
 }
 
 export class ClothoError extends Error {
@@ -28,37 +29,123 @@ export class ClothoError extends Error {
 
 export class ErrorHandler {
   private static errorCount = 0;
-  private static readonly MAX_ERROR_RATE = 10; // 每分钟最大错误数
+  private static readonly MAX_ERROR_RATE = 10; // Max errors per minute
   private static errorTimestamps: number[] = [];
 
   private logger: LoggerService;
+  private strategies: ErrorStrategy[] = [];
 
   constructor(logger: LoggerService) {
     this.logger = logger;
+    // Initialize with default strategies
+    this.initializeDefaultStrategies();
   }
 
   /**
-   * Handles errors with consistent logging and user notification
+   * Register an error handling strategy
    */
-  public handle(error: unknown, context: ErrorContext): ClothoError {
+  public registerStrategy(strategy: ErrorStrategy): void {
+    logger.info(`Registering error strategy: ${strategy.name}`, {
+      module: 'ErrorHandler',
+      operation: 'registerStrategy',
+    });
+    this.strategies.push(strategy);
+  }
+
+  /**
+   * Remove an error handling strategy
+   */
+  public unregisterStrategy(strategyName: string): void {
+    const index = this.strategies.findIndex(s => s.name === strategyName);
+    if (index !== -1) {
+      const strategy = this.strategies[index];
+      strategy.dispose?.();
+      this.strategies.splice(index, 1);
+      logger.info(`Unregistered error strategy: ${strategyName}`, {
+        module: 'ErrorHandler',
+        operation: 'unregisterStrategy',
+      });
+    }
+  }
+
+  /**
+   * Initialize default error handling strategies
+   */
+  private initializeDefaultStrategies(): void {
+    // Default strategies will be registered here
+    // Visual Editor strategy will be registered by the visual editor module
+  }
+
+  /**
+   * Handles errors with consistent logging and strategy-based recovery
+   */
+  public async handle(error: unknown, context: ErrorContext): Promise<ClothoError> {
     const clothoError = this.normalizeError(error, context);
 
-    // 错误频率检查
+    // Track error frequency
     this.trackErrorRate();
 
     // Log the error
     this.logError(clothoError);
 
-    // Show to user if needed and not rate limited
-    if (context.showToUser && !this.isErrorRateLimited()) {
+    // Try to handle with registered strategies
+    const strategyResult = await this.tryStrategies(clothoError, context);
+
+    // Show to user if needed and not rate limited (unless strategy handled it)
+    if (context.showToUser && !this.isErrorRateLimited() && !strategyResult?.handled) {
       this.showUserError(clothoError);
     }
 
-    if (context.rethrow) {
+    // Handle retry logic
+    if (strategyResult?.shouldRetry && !context.rethrow) {
+      logger.info(`Strategy suggests retry for error: ${clothoError.message}`, {
+        module: 'ErrorHandler',
+        operation: 'handle',
+        strategy: strategyResult.metadata?.strategy,
+      });
+    }
+
+    if (context.rethrow && !strategyResult?.handled) {
       throw clothoError;
     }
 
     return clothoError;
+  }
+
+  /**
+   * Try all registered strategies to handle the error
+   */
+  private async tryStrategies(error: ClothoError, context: ErrorContext): Promise<ErrorStrategyResult | null> {
+    for (const strategy of this.strategies) {
+      try {
+        if (strategy.canHandle(error)) {
+          logger.info(`Attempting error recovery with strategy: ${strategy.name}`, {
+            module: 'ErrorHandler',
+            operation: 'tryStrategies',
+            errorCode: error.message,
+          });
+
+          const result = await strategy.handle(error, context);
+
+          if (result.handled) {
+            logger.info(`Error successfully handled by strategy: ${strategy.name}`, {
+              module: 'ErrorHandler',
+              operation: 'tryStrategies',
+              result: result,
+            });
+            return { ...result, metadata: { ...result.metadata, strategy: strategy.name } };
+          }
+        }
+      } catch (strategyError) {
+        logger.error(`Strategy ${strategy.name} failed to handle error`, strategyError as Error, {
+          module: 'ErrorHandler',
+          operation: 'tryStrategies',
+          originalError: error.message,
+        });
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -89,7 +176,7 @@ export class ErrorHandler {
     totalErrors: number;
     recentErrors: number;
     isRateLimited: boolean;
-  } {
+    } {
     return {
       totalErrors: ErrorHandler.errorCount,
       recentErrors: ErrorHandler.errorTimestamps.length,
@@ -170,7 +257,7 @@ export class ErrorHandler {
       try {
         return await fn(...args);
       } catch (error) {
-        this.handle(error, context);
+        await this.handle(error, context);
         return fallbackValue;
       }
     };
@@ -188,7 +275,10 @@ export class ErrorHandler {
       try {
         return fn(...args);
       } catch (error) {
-        this.handle(error, context);
+        // Note: Sync wrapper cannot use async strategies
+        this.handle(error, context).catch(() => {
+          // Ignore strategy errors in sync context
+        });
         return fallbackValue;
       }
     };
@@ -273,7 +363,7 @@ export class ErrorHandler {
           showToUser: false, // 批量操作不直接显示给用户
         });
         results.push(undefined);
-        errors.push(handledError);
+        errors.push(await handledError);
       }
     }
 

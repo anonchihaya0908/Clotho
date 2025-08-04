@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
-import { EditorState, StateChangeEvent } from '../../../common/types';
-import { EventBus } from '../messaging/event-bus';
-import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';
 import { logger } from '../../../common/logger';
+import { StateChangeEvent } from '../../../common/types';
+import { VisualEditorState } from '../../types';
+import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';
+import { EventBus } from '../messaging/event-bus';
 
 type StateSnapshot = {
-  state: EditorState;
+  state: VisualEditorState;
   timestamp: number;
   source: string;
 };
@@ -15,10 +16,10 @@ type StateSnapshot = {
  * 负责维护、更新和通知编辑器的统一状态
  */
 export class EditorStateManager implements vscode.Disposable {
-  private state: EditorState;
+  private state: VisualEditorState;
   private stateHistory: StateSnapshot[] = [];
   private disposables: vscode.Disposable[] = [];
-  private readonly moduleName = 'EditorStateManager';
+  private readonly moduleName = 'VisualEditorStateManager';
 
   constructor(private eventBus: EventBus) {
     this.state = this.createInitialState();
@@ -27,7 +28,7 @@ export class EditorStateManager implements vscode.Disposable {
   /**
    * 获取当前状态的只读副本
    */
-  getState(): Readonly<EditorState> {
+  getState(): Readonly<VisualEditorState> {
     return Object.freeze({ ...this.state });
   }
 
@@ -37,7 +38,7 @@ export class EditorStateManager implements vscode.Disposable {
    * @param source 状态更新的来源
    */
   async updateState(
-    updates: Partial<EditorState>,
+    updates: Partial<VisualEditorState>,
     source: string,
   ): Promise<void> {
     const oldState = { ...this.state };
@@ -108,7 +109,7 @@ export class EditorStateManager implements vscode.Disposable {
   /**
    * 创建编辑器的初始状态
    */
-  private createInitialState(): EditorState {
+  private createInitialState(): VisualEditorState {
     return {
       isInitialized: false,
       isVisible: false,
@@ -122,7 +123,7 @@ export class EditorStateManager implements vscode.Disposable {
   /**
    * 验证状态转换是否有效
    */
-  private validateStateTransition(from: EditorState, to: EditorState): boolean {
+  private validateStateTransition(from: VisualEditorState, to: VisualEditorState): boolean {
     // 例如：不允许在预览打开时直接切换到另一个预览
     if (
       from.previewMode === 'open' &&
@@ -145,7 +146,7 @@ export class EditorStateManager implements vscode.Disposable {
   /**
    * 保存状态快照，用于历史记录和回滚
    */
-  private saveSnapshot(state: EditorState, source: string): void {
+  private saveSnapshot(state: VisualEditorState, source: string): void {
     if (this.stateHistory.length > 20) {
       // 限制历史记录大小
       this.stateHistory.shift();
@@ -162,8 +163,8 @@ export class EditorStateManager implements vscode.Disposable {
    * 检测状态变化的类型
    */
   private detectChangeType(
-    from: EditorState,
-    to: EditorState,
+    from: VisualEditorState,
+    to: VisualEditorState,
   ): 'preview' | 'config' | 'error' {
     if (from.previewMode !== to.previewMode) { return 'preview'; }
     if (from.configDirty !== to.configDirty) { return 'config'; }
@@ -175,8 +176,8 @@ export class EditorStateManager implements vscode.Disposable {
    * 通知订阅者状态已发生变化
    */
   private async notifyStateChange(
-    from: EditorState,
-    to: EditorState,
+    from: VisualEditorState,
+    to: VisualEditorState,
     source: string,
   ): Promise<void> {
     const event: StateChangeEvent = {
