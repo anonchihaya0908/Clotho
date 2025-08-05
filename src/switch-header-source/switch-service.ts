@@ -37,41 +37,42 @@ import { SwitchConfigService } from './config-manager';
  */
 export class SwitchService {
   // ===============================
-  // Performance Optimization Caches
+  // Performance Optimization Caches (Shared across all instances)
   // ===============================
 
-  private regexCache = new LRUCache<string, RegExp>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
-  private fileExistsCache = new LRUCache<string, boolean>(PERFORMANCE.LRU_CACHE_MAX_SIZE * 2);
-  private searchResultsCache = new LRUCache<string, SearchResult>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
-  private pathNormalizeCache = new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+  private static readonly regexCache = new LRUCache<string, RegExp>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+  private static readonly fileExistsCache = new LRUCache<string, boolean>(PERFORMANCE.LRU_CACHE_MAX_SIZE * 2);
+  private static readonly searchResultsCache = new LRUCache<string, SearchResult>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+  private static readonly pathNormalizeCache = new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+  
   private configService: SwitchConfigService;
 
-  // 缓存配置常量
-  private static readonly FILE_CACHE_TTL = 5000; // 5秒文件存在性缓存
-  private static readonly SEARCH_CACHE_TTL = 10000; // 10秒搜索结果缓存
+  // Cache configuration constants
+  private static readonly FILE_CACHE_TTL = 5000; // 5 seconds file existence cache
+  private static readonly SEARCH_CACHE_TTL = 10000; // 10 seconds search results cache
 
   constructor(configService?: SwitchConfigService) {
     // Allow dependency injection for testing
     this.configService = configService ?? new SwitchConfigService();
     
     // 🧠 注册所有缓存到内存监控
-    memoryMonitor.registerCache('SwitchService-regex', this.regexCache);
-    memoryMonitor.registerCache('SwitchService-fileExists', this.fileExistsCache);
-    memoryMonitor.registerCache('SwitchService-searchResults', this.searchResultsCache);
-    memoryMonitor.registerCache('SwitchService-pathNormalize', this.pathNormalizeCache);
+    memoryMonitor.registerCache('SwitchService-regex', SwitchService.regexCache);
+    memoryMonitor.registerCache('SwitchService-fileExists', SwitchService.fileExistsCache);
+    memoryMonitor.registerCache('SwitchService-searchResults', SwitchService.searchResultsCache);
+    memoryMonitor.registerCache('SwitchService-pathNormalize', SwitchService.pathNormalizeCache);
   }
 
   /**
    * Gets a cached regex or creates and caches a new one.
    */
   private getCachedRegex(pattern: string): RegExp {
-    const cached = this.regexCache.get(pattern);
+    const cached = SwitchService.regexCache.get(pattern);
     if (cached) {
       return cached;
     }
 
     const regex = new RegExp(pattern);
-    this.regexCache.set(pattern, regex);
+    SwitchService.regexCache.set(pattern, regex);
     return regex;
   }
 
@@ -80,7 +81,7 @@ export class SwitchService {
    */
   private async checkFileExistsCached(uri: vscode.Uri): Promise<boolean> {
     const key = uri.fsPath;
-    const cached = this.fileExistsCache.get(key);
+    const cached = SwitchService.fileExistsCache.get(key);
     
     if (cached !== undefined) {
       return cached;
@@ -88,10 +89,10 @@ export class SwitchService {
 
     try {
       await vscode.workspace.fs.stat(uri);
-      this.fileExistsCache.set(key, true);
+      SwitchService.fileExistsCache.set(key, true);
       return true;
     } catch {
-      this.fileExistsCache.set(key, false);
+      SwitchService.fileExistsCache.set(key, false);
       return false;
     }
   }
@@ -107,13 +108,13 @@ export class SwitchService {
    * 🚀 优化的路径规范化，使用缓存避免重复计算
    */
   private getNormalizedPath(filePath: string): string {
-    const cached = this.pathNormalizeCache.get(filePath);
+    const cached = SwitchService.pathNormalizeCache.get(filePath);
     if (cached !== undefined) {
       return cached;
     }
     
     const normalized = path.normalize(filePath).replace(/\\/g, '/');
-    this.pathNormalizeCache.set(filePath, normalized);
+    SwitchService.pathNormalizeCache.set(filePath, normalized);
     return normalized;
   }
 
@@ -141,10 +142,10 @@ export class SwitchService {
    * 清除所有缓存 - 用于强制刷新
    */
   public clearCache(): void {
-    this.regexCache.clear();
-    this.fileExistsCache.clear();
-    this.searchResultsCache.clear();
-    this.pathNormalizeCache.clear();
+    SwitchService.regexCache.clear();
+    SwitchService.fileExistsCache.clear();
+    SwitchService.searchResultsCache.clear();
+    SwitchService.pathNormalizeCache.clear();
   }
 
   // ===============================
@@ -165,7 +166,7 @@ export class SwitchService {
 
     // 检查缓存的搜索结果
     const cacheKey = this.generateSearchCacheKey(currentFile, baseName, isHeader);
-    const cachedResult = this.searchResultsCache.get(cacheKey);
+    const cachedResult = SwitchService.searchResultsCache.get(cacheKey);
     if (cachedResult) {
       return cachedResult;
     }
@@ -173,14 +174,14 @@ export class SwitchService {
     // Step 1: Try clangd LSP first (the "omniscient" mode)
     const clangdResult = await this.tryClangdSwitch(currentFile);
     if (clangdResult.files.length > 0) {
-      this.searchResultsCache.set(cacheKey, clangdResult);
+      SwitchService.searchResultsCache.set(cacheKey, clangdResult);
       return clangdResult;
     }
 
     // Step 2: Fallback to explorer mode (heuristic search)
     const explorerResult = await this.tryExplorerMode(currentFile, baseName, isHeader);
     if (explorerResult) {
-      this.searchResultsCache.set(cacheKey, explorerResult);
+      SwitchService.searchResultsCache.set(cacheKey, explorerResult);
     }
     return explorerResult;
   }
