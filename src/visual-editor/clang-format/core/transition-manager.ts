@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import { errorHandler } from '../../../common/error-handler';
 import { LoggerService } from '../../../common/logger';
+import { UI_CONSTANTS } from '../../../common/constants';
 import { DebounceManager } from './debounce-manager';
 
 /**
@@ -39,7 +40,7 @@ export class TransitionManager {
   private readonly logger = LoggerService.getInstance().createChildLogger('TransitionManager');
 
   private readonly defaultOptions: TransitionOptions = {
-    maxTransitionTime: 2000, // 最大过渡时间2秒
+    maxTransitionTime: UI_CONSTANTS.MAX_TRANSITION_TIME, // ⏱️ Use centralized transition time constant
   };
 
   constructor(
@@ -110,7 +111,7 @@ export class TransitionManager {
       const timeout = setTimeout(() => {
         disposable.dispose();
         reject(new Error('Timeout waiting for webview content to be ready.'));
-      }, this.options.maxTransitionTime || 2000);
+      }, this.options.maxTransitionTime || UI_CONSTANTS.MAX_TRANSITION_TIME);
 
       const disposable = panel.webview.onDidReceiveMessage((message) => {
         if (message.type === 'content-ready') {

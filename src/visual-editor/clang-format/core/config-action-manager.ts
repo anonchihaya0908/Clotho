@@ -5,6 +5,7 @@ import {
   ManagerStatus,
 } from '../../../common/types';
 import { logger } from '../../../common/logger';
+import { UI_CONSTANTS } from '../../../common/constants';
 import { WebviewMessageType } from '../../../common/types/clang-format-shared';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';
 import { ClangFormatService } from '../format-service';
@@ -132,7 +133,7 @@ export class ConfigActionManager implements BaseManager {
         const fileName = vscode.workspace.asRelativePath(fileUri);
         vscode.window.setStatusBarMessage(
           `🔧 Auto-loaded ${fileName}`,
-          3000 // 3秒后消失
+          UI_CONSTANTS.NOTIFICATION_DISPLAY_TIME // ⏱️ Use centralized notification display time
         );
       }
     } catch (error: any) {

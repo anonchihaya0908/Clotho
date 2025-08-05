@@ -4,6 +4,7 @@ import {
   WebviewMessage,
   WebviewMessageType,
 } from '../../../common/types/clang-format-shared';
+import { UI_CONSTANTS } from '../../../common/constants';
 
 type MessageHandlerFunction = (
   payload: any,
@@ -82,10 +83,10 @@ export class MessageHandler implements BaseManager {
       // 先发送事件以确保 ConfigActionManager 被初始化
       context.eventBus.emit('ensure-config-manager-ready');
 
-      // 添加很小的延迟确保初始化完成，然后发送实际的操作事件
+      // ⏱️ Use centralized delay constant for message processing
       setTimeout(() => {
         context.eventBus.emit(eventName, payload);
-      }, 10);
+      }, UI_CONSTANTS.MESSAGE_HANDLER_DELAY);
     };
   }
 

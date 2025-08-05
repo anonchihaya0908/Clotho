@@ -24,6 +24,10 @@ export class CpuMonitor implements IMonitor {
     errorThreshold: 80, // 80% CPU usage (red)
     normalizeCpu: true, // Show normalized CPU (system-wide perspective) by default
     showRawCpuInTooltip: true, // Show raw CPU values for technical users
+    // 🔄 统一配置体系新增属性
+    enabled: true,
+    autoStart: true,
+    maxRetries: 3,
   };
 
   private statusBarItem: vscode.StatusBarItem | undefined;

@@ -44,6 +44,7 @@ import { ClangFormatEditorCoordinator } from '../visual-editor';
 import { ClangFormatGuideService } from '../visual-editor/clang-format/guide-service';
 import { errorHandler } from './error-handler';
 import { logger } from './logger';
+import { Factory } from './type-utilities';
 
 /**
  * Service Map - The single source of truth for all services
@@ -93,9 +94,9 @@ export type ServiceCollection = ServiceMap;
 export type ServiceName = keyof ServiceMap;
 
 /**
- * Type-safe service factory function
+ * 🏭 Type-safe service factory function using generic Factory type
  */
-export type ServiceFactory<T> = (container: ServiceContainer) => T; /**
+export type ServiceFactory<T> = Factory<T, [ServiceContainer]>; /**
  * Enhanced ServiceContainer with improved type safety and maintainability
  */
 export class ServiceContainer {

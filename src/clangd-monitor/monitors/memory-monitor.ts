@@ -20,6 +20,11 @@ export class MemoryMonitor implements IMonitor {
     updateInterval: 5000, // 5 seconds for responsive monitoring
     warningThreshold: 2048, // 2GB (yellow)
     errorThreshold: 3072, // 3GB (red)
+    // 🔄 统一配置体系新增属性
+    unit: 'MB',
+    enabled: true,
+    autoStart: true,
+    maxRetries: 3,
   };
 
   private readonly logger = LoggerService.getInstance().createChildLogger('MemoryMonitor');

@@ -3,7 +3,7 @@ import { logger } from '../../../common/logger';
 import { EditorError } from '../../../common/types';
 import { delay } from '../../../common/utils/performance';
 import { BoundedHistory, memoryMonitor } from '../../../common/utils/memory';
-import { PERFORMANCE } from '../../../common/constants';
+import { PERFORMANCE, UI_CONSTANTS } from '../../../common/constants';
 import { EventBus } from '../messaging/event-bus';
 import { EditorStateManager } from '../state/editor-state-manager';
 
@@ -200,8 +200,8 @@ export class ErrorRecoveryManager implements vscode.Disposable {
           module: 'ErrorRecoveryManager',
           operation: 'recover.editor-creation-failed',
         });
-        // 🚀 使用统一的延迟函数代替直接setTimeout
-        await delay(1500);
+        // ⏱️ Use centralized error recovery delay constant
+        await delay(UI_CONSTANTS.ERROR_RECOVERY_DELAY);
         eventBus.emit('retry-editor-creation-requested'); // 通知协调器重试
       },
     });

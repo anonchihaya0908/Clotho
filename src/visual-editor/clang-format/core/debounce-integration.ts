@@ -6,6 +6,7 @@
 import { errorHandler } from '../../../common/error-handler';
 import { logger } from '../../../common/logger';
 import { BaseManager, ManagerContext, ManagerStatus } from '../../../common/types';
+import { UI_CONSTANTS } from '../../../common/constants';
 import { DebounceManager } from './debounce-manager';
 import { PlaceholderWebviewManager } from './placeholder-manager';
 import { PreviewEditorManager } from './preview-manager';
@@ -98,7 +99,7 @@ export class DebounceIntegration implements BaseManager {
           }
         },
         {
-          delay: 50,
+          delay: UI_CONSTANTS.QUICK_DEBOUNCE_DELAY, // ⏱️ Use centralized quick debounce delay
           leading: true,
           trailing: false,
         },
@@ -159,7 +160,7 @@ export class DebounceIntegration implements BaseManager {
           }
         },
         {
-          delay: 300, // 增加延迟，避免快速重复调用
+          delay: UI_CONSTANTS.DEBOUNCE_DELAY, // ⏱️ Use centralized debounce delay
           leading: true,
           trailing: false,
         },

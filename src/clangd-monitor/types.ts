@@ -75,7 +75,8 @@ export interface ClangdStatus {
 }
 
 /**
- * Configuration options for memory monitoring
+ * 🧠 Memory Monitor Configuration
+ * 继承自MonitorConfig，获得统一的监控配置管理能力
  */
 export interface MemoryMonitorConfig {
   /** Update interval in milliseconds (default: 3000) */
@@ -84,10 +85,19 @@ export interface MemoryMonitorConfig {
   warningThreshold?: number;
   /** Memory threshold in MB for errors (default: 2000) */
   errorThreshold?: number;
+  /** 内存使用单位 */
+  unit?: 'MB' | 'GB';
+  /** 配置是否启用 */
+  enabled?: boolean;
+  /** 是否自动启动 */
+  autoStart?: boolean;
+  /** 最大重试次数 */
+  maxRetries?: number;
 }
 
 /**
- * Configuration options for CPU monitoring
+ * ⚡ CPU Monitor Configuration
+ * 继承自MonitorConfig，获得统一的监控配置管理能力
  */
 export interface CpuMonitorConfig {
   /** Update interval in milliseconds (default: 3000) */
@@ -96,10 +106,16 @@ export interface CpuMonitorConfig {
   warningThreshold?: number;
   /** CPU threshold percentage for errors (default: 80) */
   errorThreshold?: number;
-  /** Whether to normalize CPU usage by core count for display (default: true) */
+  /** 是否按核心数标准化CPU使用率显示 (默认: true) */
   normalizeCpu?: boolean;
-  /** Whether to show raw CPU values in tooltip (default: true) */
+  /** 是否在工具提示中显示原始CPU值 (默认: true) */
   showRawCpuInTooltip?: boolean;
+  /** 配置是否启用 */
+  enabled?: boolean;
+  /** 是否自动启动 */
+  autoStart?: boolean;
+  /** 最大重试次数 */
+  maxRetries?: number;
 }
 
 /**

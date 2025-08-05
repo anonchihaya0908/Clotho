@@ -26,7 +26,7 @@ export const CONFIG_TEMPLATES = {
         './src',
         '../api',
       ],
-      excludePatterns: DEFAULT_SWITCH_CONFIG.excludePatterns,
+      excludePaths: DEFAULT_SWITCH_CONFIG.excludePaths,
     } as SwitchConfig,
   },
 
@@ -38,8 +38,8 @@ export const CONFIG_TEMPLATES = {
       headerDirs: ['include', 'headers'],
       testDirs: ['tests', 'test'],
       searchPaths: ['.', '../include', '../src', './include', './src'],
-      excludePatterns: [
-        ...DEFAULT_SWITCH_CONFIG.excludePatterns,
+      excludePaths: [
+        ...(DEFAULT_SWITCH_CONFIG.excludePaths || []), // 🔄 防止undefined
         '**/CMakeFiles/**',
       ],
     } as SwitchConfig,
@@ -53,7 +53,7 @@ export const CONFIG_TEMPLATES = {
       headerDirs: ['include', 'public'],
       testDirs: ['test', 'tests'],
       searchPaths: ['.', '../include', '../src', './include', './src'],
-      excludePatterns: DEFAULT_SWITCH_CONFIG.excludePatterns,
+      excludePaths: DEFAULT_SWITCH_CONFIG.excludePaths,
     } as SwitchConfig,
   },
 
@@ -72,7 +72,7 @@ export const CONFIG_TEMPLATES = {
         './src',
         '../../common/include',
       ],
-      excludePatterns: DEFAULT_SWITCH_CONFIG.excludePatterns,
+      excludePaths: DEFAULT_SWITCH_CONFIG.excludePaths,
     } as SwitchConfig,
   },
 };
@@ -105,7 +105,7 @@ export class SwitchConfigService {
         'switch.searchPaths',
         DEFAULT_SWITCH_CONFIG.searchPaths,
       ),
-      excludePatterns: DEFAULT_SWITCH_CONFIG.excludePatterns,
+      excludePaths: DEFAULT_SWITCH_CONFIG.excludePaths,
     };
   }
 

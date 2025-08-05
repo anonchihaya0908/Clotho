@@ -6,11 +6,28 @@
 // Type definitions
 export * from './types';
 
+// 🛠️ Generic type utilities (excluding ValidationResult to avoid conflict)
+export {
+  Factory, AsyncFactory, ResetFunction, Selector, Predicate,
+  BaseResult, DataResult, BatchResult,
+  CommonStatus, LifecycleStatus, StateMachine,
+  BaseStats, CountStats, PerformanceStats, MemoryStats,
+  EnhancedManager, ObservableManager,
+  Cache, TTLCache, AsyncOptions, Cancellable, ProgressReporter,
+  DeepReadonly, DeepPartial, RequireFields, OptionalFields,
+  UnionToTuple, Awaited, If, TypeGuard, createTypeGuard,
+  isSuccessfulResult, isFailedResult, isDataResult,
+  safeGet, enumValues, enumKeys
+} from './type-utilities';
+
 // Constants
 export * from './constants';
 
 // Utilities
 export * from './utils';
+
+// 📝 Structured logging and event handling
+export * from './structured-logging';
 
 // Heartbeat animation utilities
 export * from './heartbeat-animation';

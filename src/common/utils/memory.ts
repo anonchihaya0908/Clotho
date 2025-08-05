@@ -5,19 +5,20 @@
 
 import { PERFORMANCE } from '../constants';
 import { LRUCache } from '.';
+import { Factory, ResetFunction } from '../type-utilities';
 
 /**
  * 🏊 通用对象池 - 减少频繁对象创建的内存开销
  */
 export class ObjectPool<T> {
   private pool: T[] = [];
-  private createFn: () => T;
-  private resetFn?: (obj: T) => void;
+  private createFn: Factory<T>;
+  private resetFn?: ResetFunction<T>;
   private maxSize: number;
 
   constructor(
-    createFunction: () => T,
-    resetFunction?: (obj: T) => void,
+    createFunction: Factory<T>,
+    resetFunction?: ResetFunction<T>,
     maxSize: number = PERFORMANCE.OBJECT_POOL_MAX_SIZE
   ) {
     this.createFn = createFunction;

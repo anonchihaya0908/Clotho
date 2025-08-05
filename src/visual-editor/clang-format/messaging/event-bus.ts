@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { UI_CONSTANTS } from '../../../common/constants';
 
 type EventHandler = (...args: any[]) => void;
 
@@ -10,8 +11,8 @@ export class EventBus {
   private emitter = new EventEmitter();
 
   constructor() {
-    // 增加监听器限制，防止因监听过多而发出警告
-    this.emitter.setMaxListeners(50);
+    // 🎛️ increased listener limit using centralized constant
+    this.emitter.setMaxListeners(UI_CONSTANTS.MAX_EVENT_LISTENERS);
   }
 
   /**

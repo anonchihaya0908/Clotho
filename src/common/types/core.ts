@@ -32,11 +32,10 @@ export interface BaseConfig {
 // Validation Interfaces
 // ===============================
 
-export interface ValidationResult {
-    isValid: boolean;
-    error?: string;
-    warnings?: string[];
-}
+import type { ValidationResult as BaseValidationResult } from '../type-utilities';
+
+// 🔄 使用统一的ValidationResult类型
+export interface ValidationResult extends BaseValidationResult {}
 
 export interface FileValidationResult extends ValidationResult {
     existingFilePath?: string;

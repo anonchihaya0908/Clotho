@@ -4,15 +4,22 @@
 
 import { EditorState as CoreEditorState, BaseConfig } from '../common/types/core';
 import { ClangFormatConfig } from '../common/types/clang-format-shared';
+import { UIConfig } from '../common/config-system';
 
 // ===============================
 // Visual Editor Configuration
 // ===============================
 
-export interface VisualEditorConfig extends BaseConfig {
+/**
+ * 🎨 Visual Editor Configuration
+ * 继承自UIConfig，获得统一的UI配置管理能力
+ */
+export interface VisualEditorConfig extends UIConfig {
+    /** 显示指导按钮 */
     showGuideButton: boolean;
-    autoSave: boolean;
+    /** 预览模式 */
     previewMode: 'side' | 'bottom' | 'separate';
+    // autoSave 已通过 UIConfig 继承
 }
 
 // ===============================

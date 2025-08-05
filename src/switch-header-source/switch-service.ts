@@ -21,6 +21,7 @@ import {
   isHeaderFile,
   memoryMonitor,
 } from '../common/utils';
+import { LogOperation, MonitorPerformance } from '../common/structured-logging';
 import { SwitchConfigService } from './config-manager';
 
 // ===============================
@@ -663,7 +664,7 @@ export class SwitchService {
     try {
       const foundFiles = await vscode.workspace.findFiles(
         searchPattern,
-        `{${config.excludePatterns.join(',')}}`,
+        `{${(config.excludePaths || []).join(',')}}`, // 🔄 防止undefined
         20,
       );
       return { files: foundFiles, method: 'global-search' };
