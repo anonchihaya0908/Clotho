@@ -94,7 +94,7 @@ export type ServiceCollection = ServiceMap;
 export type ServiceName = keyof ServiceMap;
 
 /**
- * 🏭 Type-safe service factory function using generic Factory type
+ *  Type-safe service factory function using generic Factory type
  */
 export type ServiceFactory<T> = Factory<T, [ServiceContainer]>; /**
  * Enhanced ServiceContainer with improved type safety and maintainability

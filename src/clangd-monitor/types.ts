@@ -75,7 +75,7 @@ export interface ClangdStatus {
 }
 
 /**
- * 🧠 Memory Monitor Configuration
+ *  Memory Monitor Configuration
  * 继承自MonitorConfig，获得统一的监控配置管理能力
  */
 export interface MemoryMonitorConfig {
@@ -96,7 +96,7 @@ export interface MemoryMonitorConfig {
 }
 
 /**
- * ⚡ CPU Monitor Configuration
+ *  CPU Monitor Configuration
  * 继承自MonitorConfig，获得统一的监控配置管理能力
  */
 export interface CpuMonitorConfig {

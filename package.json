@@ -313,9 +313,9 @@
         "dev:watch": "node scripts/dev-helper.js watch",
         "build:fast": "npm run esbuild && npm run build:webview",
         "prebuild": "npm run lint",
-        "postbuild": "echo \"✅ Build completed successfully!\"",
-        "prepackage": "echo \"📦 Starting package process...\"",
-        "postpackage": "echo \"✅ Package created successfully! Check for .vsix file in the root directory.\""
+        "postbuild": "echo \"Build completed successfully!\"",
+        "prepackage": "echo \"Starting package process...\"",
+        "postpackage": "echo \"Package created successfully! Check for .vsix file in the root directory.\""
     },
     "devDependencies": {
         "@types/mocha": "^10.0.10",

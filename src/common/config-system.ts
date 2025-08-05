@@ -1,5 +1,5 @@
 /**
- * 🛠️ 统一配置管理系统
+ *  统一配置管理系统
  * 提供标准化的配置接口、验证和管理机制
  */
 
@@ -12,7 +12,7 @@ import { ConfigValidationResult } from './types/core';
 // ===============================
 
 /**
- * 🏗️ 增强的基础配置接口
+ *  增强的基础配置接口
  * 所有模块配置的基础，提供通用的配置管理能力
  */
 export interface EnhancedBaseConfig {
@@ -29,7 +29,7 @@ export interface EnhancedBaseConfig {
 }
 
 /**
- * 🎛️ 可配置的模块接口
+ *  可配置的模块接口
  * 为需要定期配置的模块提供标准接口
  */
 export interface ConfigurableModule<TConfig extends EnhancedBaseConfig> {
@@ -44,7 +44,7 @@ export interface ConfigurableModule<TConfig extends EnhancedBaseConfig> {
 }
 
 /**
- * ⏱️ 定时器配置接口
+ * 定时器配置接口
  * 为需要定期更新的模块提供标准配置
  */
 export interface TimerConfig extends EnhancedBaseConfig {
@@ -57,7 +57,7 @@ export interface TimerConfig extends EnhancedBaseConfig {
 }
 
 /**
- * 🎨 UI配置接口
+ *  UI配置接口
  * 为UI相关模块提供标准配置
  */
 export interface UIConfig extends EnhancedBaseConfig {
@@ -72,7 +72,7 @@ export interface UIConfig extends EnhancedBaseConfig {
 }
 
 /**
- * 🛡️ 监控配置接口
+ *  监控配置接口
  * 为监控模块提供标准配置
  */
 export interface MonitorConfig extends TimerConfig {
@@ -85,7 +85,7 @@ export interface MonitorConfig extends TimerConfig {
 }
 
 /**
- * 📁 路径配置接口
+ *  路径配置接口
  * 为需要文件/目录路径的模块提供标准配置
  */
 export interface PathConfig extends EnhancedBaseConfig {
@@ -104,7 +104,7 @@ export interface PathConfig extends EnhancedBaseConfig {
 
 
 /**
- * 🔍 配置验证器
+ *  配置验证器
  * 提供标准的配置验证逻辑
  */
 export class ConfigValidator {
@@ -208,7 +208,7 @@ export class ConfigValidator {
 // ===============================
 
 /**
- * 🎯 统一配置管理器
+ *  统一配置管理器
  * 管理所有模块的配置，提供统一的接口
  */
 export class ConfigurationManager {
@@ -353,7 +353,7 @@ export class ConfigurationManager {
 // ===============================
 
 /**
- * 🏭 配置工厂函数
+ *  配置工厂函数
  * 为不同类型的配置提供便捷的创建方法
  */
 export class ConfigFactory {

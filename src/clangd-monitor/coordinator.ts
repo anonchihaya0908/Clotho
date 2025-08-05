@@ -88,7 +88,7 @@ export class MonitorCoordinator implements vscode.Disposable {
       await vscode.commands.executeCommand('clangd.restart');
 
       // Wait for clangd to start up
-              // 🚀 使用统一的延迟函数  
+              //  使用统一的延迟函数  
         await delay(2000);
 
       // Force all monitors to reset and re-detect PID (should now pick the main process)
@@ -336,7 +336,7 @@ export class MonitorCoordinator implements vscode.Disposable {
               await this.restartClangd();
               // After restart, poll for updates to show progress
               for (let i = 0; i < 5; i++) {
-                // 🚀 使用统一的延迟函数
+                //  使用统一的延迟函数
         await delay(1000);
                 await updatePanelContent();
               }
@@ -452,17 +452,17 @@ export class MonitorCoordinator implements vscode.Disposable {
             </style>
         </head>
         <body>
-            <h1>🔍 Clangd Process Monitor</h1>
+            <h1> Clangd Process Monitor</h1>
             
             <div class="button-container">
-                <button class="button" onclick="refresh()">🔄 Refresh Data</button>
-                <button class="button button-danger" onclick="restartClangd()">💀 Kill All & Restart Clangd</button>
+                <button class="button" onclick="refresh()"> Refresh Data</button>
+                <button class="button button-danger" onclick="restartClangd()"> Kill All & Restart Clangd</button>
             </div>
             
             ${hasData
       ? `
                 <div class="section">
-                    <h2>📊 Memory Usage</h2>
+                    <h2> Memory Usage</h2>
                     <div class="info-grid">
                         <div class="info-item">
                             <span class="info-label">Memory:</span>
@@ -480,12 +480,12 @@ export class MonitorCoordinator implements vscode.Disposable {
                 </div>
 
                 <div class="section">
-                    <h2>⚙️ Server Status</h2>
+                    <h2> Server Status</h2>
                     <div class="info-grid">
                         <div class="info-item">
                             <span class="info-label">Status:</span>
                             <span class="${status.isRunning ? 'status-running' : 'status-stopped'}">
-                                ${status.isRunning ? '✅ Running' : '❌ Not Running'}
+                                ${status.isRunning ? ' Running' : ' Not Running'}
                             </span>
                         </div>
                         <div class="info-item">
@@ -509,7 +509,7 @@ export class MonitorCoordinator implements vscode.Disposable {
                 </div>
 
                 <div class="section">
-                    <h2>🔧 Monitor Configuration</h2>
+                    <h2> Monitor Configuration</h2>
                     <div class="info-grid">
                         <div class="info-item">
                             <span class="info-label">Update Interval:</span>
@@ -528,7 +528,7 @@ export class MonitorCoordinator implements vscode.Disposable {
             `
       : `
                 <div class="section no-data">
-                    <h2>❌ No Data Available</h2>
+                    <h2> No Data Available</h2>
                     <p>Clangd process monitoring data is not available.</p>
                     <p>Please ensure:</p>
                     <ul style="text-align: left; display: inline-block;">

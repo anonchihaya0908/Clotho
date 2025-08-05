@@ -6,7 +6,7 @@
 // Type definitions
 export * from './types';
 
-// 🛠️ Generic type utilities (excluding ValidationResult to avoid conflict)
+//  Generic type utilities (excluding ValidationResult to avoid conflict)
 export {
   Factory, AsyncFactory, ResetFunction, Selector, Predicate,
   BaseResult, DataResult, BatchResult,
@@ -26,7 +26,7 @@ export * from './constants';
 // Utilities
 export * from './utils';
 
-// 📝 Structured logging and event handling
+//  Structured logging and event handling
 export * from './structured-logging';
 
 // Heartbeat animation utilities

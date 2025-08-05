@@ -453,7 +453,7 @@ export class PlaceholderWebviewManager implements BaseManager {
                 <div class="placeholder-icon">
                     <img src="${randomImageUri}" 
                          alt="Picture" 
-                         onerror="this.style.display='none'; this.parentElement.innerHTML='📋';" />
+                         onerror="this.style.display='none'; this.parentElement.innerHTML='';" />
                 </div>
                 
                 <h2 class="placeholder-title">实时代码预览已关闭</h2>

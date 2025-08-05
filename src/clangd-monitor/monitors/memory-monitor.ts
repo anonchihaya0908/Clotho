@@ -20,7 +20,7 @@ export class MemoryMonitor implements IMonitor {
     updateInterval: 5000, // 5 seconds for responsive monitoring
     warningThreshold: 2048, // 2GB (yellow)
     errorThreshold: 3072, // 3GB (red)
-    // 🔄 统一配置体系新增属性
+    //  统一配置体系新增属性
     unit: 'MB',
     enabled: true,
     autoStart: true,
@@ -279,25 +279,25 @@ export class MemoryMonitor implements IMonitor {
     const pidFromApi = await this.findClangdPidViaApi();
     if (pidFromApi) {
       this.logger.info(
-        `✅ PID detected via API: ${pidFromApi}`,
+        ` PID detected via API: ${pidFromApi}`,
       );
       return pidFromApi;
     }
 
     this.logger.info(
-      '🔄 API detection failed, delegating to ProcessDetector...',
+      ' API detection failed, delegating to ProcessDetector...',
     );
 
     // Strategy 2: Delegate to ProcessDetector - our "Ace Detective"
     const mainProcess = await ProcessDetector.findMainProcessByName('clangd');
     if (mainProcess) {
       this.logger.info(
-        `✅ ProcessDetector found PID: ${mainProcess.pid}`,
+        ` ProcessDetector found PID: ${mainProcess.pid}`,
       );
       return mainProcess.pid;
     }
 
-    this.logger.warn('❌ All detection strategies failed');
+    this.logger.warn(' All detection strategies failed');
     return undefined;
   }
 
@@ -330,7 +330,7 @@ export class MemoryMonitor implements IMonitor {
 
         if (!this.currentPid) {
           this.logger.info(
-            '🔄 API detection failed, delegating to ProcessDetector...',
+            ' API detection failed, delegating to ProcessDetector...',
           );
           // Strategy 2: Delegate to ProcessDetector
           const mainProcess =
@@ -344,7 +344,7 @@ export class MemoryMonitor implements IMonitor {
         }
 
         this.logger.info(
-          `✅ Using PID ${this.currentPid} for monitoring`,
+          ` Using PID ${this.currentPid} for monitoring`,
         );
       }
 

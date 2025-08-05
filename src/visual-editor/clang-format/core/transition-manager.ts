@@ -40,7 +40,7 @@ export class TransitionManager {
   private readonly logger = LoggerService.getInstance().createChildLogger('TransitionManager');
 
   private readonly defaultOptions: TransitionOptions = {
-    maxTransitionTime: UI_CONSTANTS.MAX_TRANSITION_TIME, // ⏱️ Use centralized transition time constant
+    maxTransitionTime: UI_CONSTANTS.MAX_TRANSITION_TIME, // Use centralized transition time constant
   };
 
   constructor(

@@ -291,7 +291,7 @@
 }
 
 .full-checkbox-label input[type="checkbox"]:checked+.full-checkbox-custom::after {
-    content: '✓';
+    content: '';
     position: absolute;
     top: 50%;
     left: 50%;

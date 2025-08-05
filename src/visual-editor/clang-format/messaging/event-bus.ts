@@ -11,7 +11,7 @@ export class EventBus {
   private emitter = new EventEmitter();
 
   constructor() {
-    // 🎛️ increased listener limit using centralized constant
+    //  increased listener limit using centralized constant
     this.emitter.setMaxListeners(UI_CONSTANTS.MAX_EVENT_LISTENERS);
   }
 

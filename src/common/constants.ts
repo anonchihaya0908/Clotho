@@ -62,7 +62,7 @@ export const DEFAULT_SWITCH_CONFIG: SwitchConfig = {
   headerDirs: ['include', 'inc', 'headers', 'api'],
   testDirs: ['test', 'tests', 'spec', 'unittest'],
   searchPaths: ['.', '../include', '../src', './include', './src'],
-  excludePaths: [ // 🔄 Updated to match unified PathConfig naming
+  excludePaths: [ //  Updated to match unified PathConfig naming
     '**/node_modules/**',
     '**/build/**',
     '**/dist/**',
@@ -195,7 +195,7 @@ export const PERFORMANCE = {
   PROCESS_TIMEOUT: 10000, // 10 seconds
   COMMAND_EXECUTION_TIMEOUT: 10000,
   
-  // 🧠 Memory management settings
+  //  Memory management settings
   ERROR_HISTORY_MAX_SIZE: 50, // Maximum error records to keep
   STATE_HISTORY_MAX_SIZE: 15, // Reduced from 20 for better memory usage
   OBJECT_POOL_MAX_SIZE: 20, // Maximum objects in pool
@@ -206,10 +206,10 @@ export const PERFORMANCE = {
 // ===============================
 
 export const UI_CONSTANTS = {
-  // 🎛️ Event and listener limits
+  //  Event and listener limits
   MAX_EVENT_LISTENERS: 50,
   
-  // ⏱️ Timing and delays
+  // Timing and delays
   MESSAGE_HANDLER_DELAY: 10, // ms for message handler processing
   ERROR_RECOVERY_DELAY: 1500, // ms for error recovery wait time
   MAX_TRANSITION_TIME: 2000, // ms maximum UI transition time
@@ -218,25 +218,25 @@ export const UI_CONSTANTS = {
   QUICK_DEBOUNCE_DELAY: 50, // ms for fast UI updates
   ANIMATION_DURATION: 2000, // ms for animations
   
-  // 🔢 General UI constants (merged from original UI_CONSTANTS)
+  //  General UI constants (merged from original UI_CONSTANTS)
   MAX_QUICK_PICK_ITEMS: 20,
   MAX_SEARCH_RESULTS: 20,
   FILE_PICKER_TIMEOUT: 30000, // 30 seconds
   WELCOME_MESSAGE_KEY: 'clotho.hasShownWelcome',
   
-  // 🎨 Visual styling constants
+  //  Visual styling constants
   BORDER_RADIUS: 4, // px
   OPACITY_DISABLED: 0.15,
   OPACITY_HOVER: 0.1,
   FONT_WEIGHT_MEDIUM: 500,
   FONT_WEIGHT_SEMIBOLD: 600,
   
-  // 📐 Layout and sizing
+  //  Layout and sizing
   FULL_WIDTH_PERCENT: 100,
   FULL_HEIGHT_PERCENT: 100,
   AVATAR_BORDER_RADIUS: 50, // % for circular avatars
   
-  // 🎨 Color values (as numbers for calculations)
+  //  Color values (as numbers for calculations)
   GRAY_128: 128, // For rgba calculations
   OPACITY_15_PERCENT: 0.15,
   OPACITY_10_PERCENT: 0.1,
@@ -244,13 +244,13 @@ export const UI_CONSTANTS = {
   OPACITY_60_PERCENT: 0.6,
   OPACITY_70_PERCENT: 0.7,
   
-  // 📏 Size constants
+  //  Size constants
   AVATAR_SIZE: 256, // px
   BORDER_RADIUS_SMALL: 4, // px
   BORDER_RADIUS_MEDIUM: 5, // px
   BORDER_RADIUS_LARGE: 16, // px
   
-  // 📐 Spacing constants
+  //  Spacing constants
   PADDING_SMALL: 2, // px
   PADDING_MEDIUM: 5, // px
   PADDING_LARGE: 10, // px
@@ -259,13 +259,13 @@ export const UI_CONSTANTS = {
   MARGIN_MEDIUM: 15, // px
   MARGIN_LARGE: 30, // px
   
-  // 📝 Typography constants
+  //  Typography constants
   FONT_SIZE_SMALL: 12, // px
   FONT_SIZE_MEDIUM: 14, // px
   FONT_SIZE_LARGE: 22, // px
   LINE_HEIGHT_DEFAULT: 1.6,
   
-  // 🎯 Layout constraints
+  //  Layout constraints
   MAX_CONTENT_WIDTH: 420, // px
   MIN_BUTTON_WIDTH: 180, // px
   INDICATOR_SIZE: 7, // px

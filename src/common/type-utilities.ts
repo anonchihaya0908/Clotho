@@ -1,5 +1,5 @@
 /**
- * 🛠️ 通用类型工具集
+ *  通用类型工具集
  * 提供可复用的泛型类型定义，减少重复的类型模式
  */
 
@@ -8,30 +8,30 @@
 // ===============================
 
 /**
- * 🏭 通用工厂函数类型
+ *  通用工厂函数类型
  * 用于创建任意类型的实例
  */
 export type Factory<T, TArgs extends any[] = []> = (...args: TArgs) => T;
 
 /**
- * 🏭 异步工厂函数类型
+ *  异步工厂函数类型
  */
 export type AsyncFactory<T, TArgs extends any[] = []> = (...args: TArgs) => Promise<T>;
 
 /**
- * 🔧 重置函数类型
+ *  重置函数类型
  * 用于重置对象状态，常用于对象池
  */
 export type ResetFunction<T> = (obj: T) => void;
 
 /**
- * 🎯 选择器函数类型
+ *  选择器函数类型
  * 用于从集合中选择元素
  */
 export type Selector<T, R> = (item: T) => R;
 
 /**
- * 🔍 谓词函数类型
+ *  谓词函数类型
  * 用于过滤和条件判断
  */
 export type Predicate<T> = (item: T) => boolean;
@@ -41,7 +41,7 @@ export type Predicate<T> = (item: T) => boolean;
 // ===============================
 
 /**
- * 📊 基础结果类型
+ *  基础结果类型
  * 所有操作结果的基础接口
  */
 export interface BaseResult {
@@ -56,7 +56,7 @@ export interface BaseResult {
 }
 
 /**
- * 📊 带数据的结果类型
+ *  带数据的结果类型
  * 携带具体数据的操作结果
  */
 export interface DataResult<T> extends BaseResult {
@@ -65,7 +65,7 @@ export interface DataResult<T> extends BaseResult {
 }
 
 /**
- * 📊 验证结果类型
+ *  验证结果类型
  * 标准化的验证结果接口，保持向后兼容
  */
 export interface ValidationResult {
@@ -82,7 +82,7 @@ export interface ValidationResult {
 }
 
 /**
- * 📊 批量操作结果
+ *  批量操作结果
  * 用于批量处理的结果统计
  */
 export interface BatchResult<TItem, TResult = any> extends BaseResult {
@@ -105,7 +105,7 @@ export interface BatchResult<TItem, TResult = any> extends BaseResult {
 // ===============================
 
 /**
- * 🔄 通用状态枚举
+ *  通用状态枚举
  * 标准化的状态值
  */
 export type CommonStatus = 
@@ -117,7 +117,7 @@ export type CommonStatus =
   | 'cancelled';
 
 /**
- * 🔄 生命周期状态
+ *  生命周期状态
  * 用于管理组件生命周期
  */
 export type LifecycleStatus = 
@@ -128,7 +128,7 @@ export type LifecycleStatus =
   | 'disposed';
 
 /**
- * 🔄 状态机接口
+ *  状态机接口
  * 提供状态转换的标准接口
  */
 export interface StateMachine<TState extends string> {
@@ -147,7 +147,7 @@ export interface StateMachine<TState extends string> {
 // ===============================
 
 /**
- * 📈 基础统计信息
+ *  基础统计信息
  * 标准化的统计数据接口
  */
 export interface BaseStats {
@@ -158,7 +158,7 @@ export interface BaseStats {
 }
 
 /**
- * 📈 计数统计
+ *  计数统计
  * 用于计数类型的统计
  */
 export interface CountStats extends BaseStats {
@@ -171,7 +171,7 @@ export interface CountStats extends BaseStats {
 }
 
 /**
- * 📈 性能统计
+ *  性能统计
  * 用于性能监控的统计
  */
 export interface PerformanceStats extends BaseStats {
@@ -188,7 +188,7 @@ export interface PerformanceStats extends BaseStats {
 }
 
 /**
- * 📈 内存统计
+ *  内存统计
  * 用于内存使用情况的统计
  */
 export interface MemoryStats extends BaseStats {
@@ -207,7 +207,7 @@ export interface MemoryStats extends BaseStats {
 // ===============================
 
 /**
- * 🎯 增强的管理器接口
+ *  增强的管理器接口
  * 为各种管理器提供统一的接口
  */
 export interface EnhancedManager<TConfig = {}, TStats = BaseStats> {
@@ -230,7 +230,7 @@ export interface EnhancedManager<TConfig = {}, TStats = BaseStats> {
 }
 
 /**
- * 🎯 可观察的管理器接口
+ *  可观察的管理器接口
  * 支持事件监听的管理器
  */
 export interface ObservableManager<TConfig = {}, TStats = BaseStats, TEvent = string> 
@@ -248,7 +248,7 @@ export interface ObservableManager<TConfig = {}, TStats = BaseStats, TEvent = st
 // ===============================
 
 /**
- * 📦 缓存接口
+ *  缓存接口
  * 标准化的缓存操作接口
  */
 export interface Cache<K, V> {
@@ -269,7 +269,7 @@ export interface Cache<K, V> {
 }
 
 /**
- * 📦 带过期时间的缓存接口
+ *  带过期时间的缓存接口
  */
 export interface TTLCache<K, V> extends Cache<K, V> {
   /** 设置带过期时间的缓存值 */
@@ -329,7 +329,7 @@ export interface ProgressReporter<T = any> {
 // ===============================
 
 /**
- * 🔧 深度只读类型
+ *  深度只读类型
  * 递归设置所有属性为只读
  */
 export type DeepReadonly<T> = {
@@ -337,7 +337,7 @@ export type DeepReadonly<T> = {
 };
 
 /**
- * 🔧 深度部分类型
+ *  深度部分类型
  * 递归设置所有属性为可选
  */
 export type DeepPartial<T> = {
@@ -345,31 +345,31 @@ export type DeepPartial<T> = {
 };
 
 /**
- * 🔧 选择性必需类型
+ *  选择性必需类型
  * 从接口中选择指定属性设为必需
  */
 export type RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
 /**
- * 🔧 选择性可选类型
+ *  选择性可选类型
  * 从接口中选择指定属性设为可选
  */
 export type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 /**
- * 🔧 字符串字面量联合转数组
+ *  字符串字面量联合转数组
  * 将字符串字面量联合类型转换为数组类型
  */
 export type UnionToTuple<T extends string> = T extends any ? [T] : never;
 
 /**
- * 🔧 提取Promise类型
+ *  提取Promise类型
  * 从Promise类型中提取包装的类型
  */
 export type Awaited<T> = T extends Promise<infer U> ? U : T;
 
 /**
- * 🔧 条件类型帮助器
+ *  条件类型帮助器
  * 根据条件选择不同的类型
  */
 export type If<C extends boolean, T, F> = C extends true ? T : F;
@@ -379,12 +379,12 @@ export type If<C extends boolean, T, F> = C extends true ? T : F;
 // ===============================
 
 /**
- * 🛡️ 类型守卫函数类型
+ *  类型守卫函数类型
  */
 export type TypeGuard<T, U extends T = T> = (value: T) => value is U;
 
 /**
- * 🛡️ 创建类型守卫的工厂函数
+ *  创建类型守卫的工厂函数
  */
 export function createTypeGuard<T, U extends T = T>(
   predicate: (value: T) => boolean
@@ -393,21 +393,21 @@ export function createTypeGuard<T, U extends T = T>(
 }
 
 /**
- * 🛡️ 检查是否为有效结果
+ *  检查是否为有效结果
  */
 export const isSuccessfulResult = createTypeGuard<BaseResult>(
   (result) => result.success === true
 );
 
 /**
- * 🛡️ 检查是否为错误结果
+ *  检查是否为错误结果
  */
 export const isFailedResult = createTypeGuard<BaseResult>(
   (result) => result.success === false
 );
 
 /**
- * 🛡️ 检查是否为数据结果
+ *  检查是否为数据结果
  */
 export function isDataResult<T>(result: BaseResult): result is DataResult<T> {
   return 'data' in result;
@@ -418,7 +418,7 @@ export function isDataResult<T>(result: BaseResult): result is DataResult<T> {
 // ===============================
 
 /**
- * 🔧 安全的对象路径访问
+ *  安全的对象路径访问
  */
 export function safeGet<T, K extends keyof T>(obj: T, key: K): T[K] | undefined {
   try {
@@ -429,14 +429,14 @@ export function safeGet<T, K extends keyof T>(obj: T, key: K): T[K] | undefined 
 }
 
 /**
- * 🔧 创建枚举值数组
+ *  创建枚举值数组
  */
 export function enumValues<T extends Record<string, string | number>>(enumObject: T): Array<T[keyof T]> {
   return Object.values(enumObject) as Array<T[keyof T]>;
 }
 
 /**
- * 🔧 创建枚举键数组  
+ *  创建枚举键数组  
  */
 export function enumKeys<T extends Record<string, string | number>>(enumObject: T): (keyof T)[] {
   return Object.keys(enumObject);

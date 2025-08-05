@@ -34,7 +34,7 @@ export interface BaseConfig {
 
 import type { ValidationResult as BaseValidationResult } from '../type-utilities';
 
-// 🔄 使用统一的ValidationResult类型
+//  使用统一的ValidationResult类型
 export interface ValidationResult extends BaseValidationResult {}
 
 export interface FileValidationResult extends ValidationResult {

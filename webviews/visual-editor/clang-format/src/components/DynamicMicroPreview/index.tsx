@@ -56,7 +56,7 @@ void function() {
     }
 
     const resultStatus = previewResult?.optionName === option.key ?
-        (previewResult.success ? '✓' : '✗') : '⏳';
+        (previewResult.success ? '' : '') : '⏳';
 
     const statusColor = previewResult?.optionName === option.key ?
         (previewResult.success ? 'green' : 'red') : 'orange';
@@ -106,10 +106,10 @@ void function() {
             </div>
 
             <div className="preview-notice">
-                <p>💡 完整预览在VS Code编辑器中显示</p>
+                <p> 完整预览在VS Code编辑器中显示</p>
                 {hasError && (
                     <div className="error-notice">
-                        ⚠️ {previewResult.error}
+                         {previewResult.error}
                     </div>
                 )}
             </div>

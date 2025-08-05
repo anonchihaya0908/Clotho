@@ -55,7 +55,7 @@ export class SwitchService {
     // Allow dependency injection for testing
     this.configService = configService ?? new SwitchConfigService();
     
-    // 🧠 注册所有缓存到内存监控
+    //  注册所有缓存到内存监控
     memoryMonitor.registerCache('SwitchService-regex', SwitchService.regexCache);
     memoryMonitor.registerCache('SwitchService-fileExists', SwitchService.fileExistsCache);
     memoryMonitor.registerCache('SwitchService-searchResults', SwitchService.searchResultsCache);
@@ -105,7 +105,7 @@ export class SwitchService {
   }
 
   /**
-   * 🚀 优化的路径规范化，使用缓存避免重复计算
+   *  优化的路径规范化，使用缓存避免重复计算
    */
   private getNormalizedPath(filePath: string): string {
     const cached = SwitchService.pathNormalizeCache.get(filePath);
@@ -119,7 +119,7 @@ export class SwitchService {
   }
 
   /**
-   * 🚀 批量文件存在性检查，优化多文件并发检查
+   *  批量文件存在性检查，优化多文件并发检查
    */
   private async checkMultipleFilesExist(uris: vscode.Uri[]): Promise<vscode.Uri[]> {
     const promises = uris.map(async (uri) => {
@@ -132,7 +132,7 @@ export class SwitchService {
   }
 
   /**
-   * 🚀 生成候选文件路径，避免重复的路径构建
+   *  生成候选文件路径，避免重复的路径构建
    */
   private generateCandidatePaths(directory: string, baseName: string, extensions: string[]): vscode.Uri[] {
     return extensions.map(ext => vscode.Uri.file(path.join(directory, `${baseName}${ext}`)));
@@ -154,7 +154,7 @@ export class SwitchService {
 
   /**
    * Finds partner files for the given file.
-   * 🚀 性能优化：添加搜索结果缓存，避免重复搜索
+   *  性能优化：添加搜索结果缓存，避免重复搜索
    * Returns null if no files found, array of URIs if found.
    */
   public async findPartnerFile(
@@ -363,7 +363,7 @@ export class SwitchService {
     const baseNames =
       baseName === cleanedBaseName ? [baseName] : [baseName, cleanedBaseName];
 
-    // 🚀 优化策略：并行执行搜索，返回第一个成功的结果
+    //  优化策略：并行执行搜索，返回第一个成功的结果
     for (const name of baseNames) {
       // 并行启动快速搜索策略，避免序列化延迟
       const searchPromises = [
@@ -427,7 +427,7 @@ export class SwitchService {
   }
 
   /**
-   * 🚀 优化版本：同目录搜索，使用批量文件检查和路径生成优化
+   *  优化版本：同目录搜索，使用批量文件检查和路径生成优化
    */
   private async searchSameDirectoryOptimized(
     directory: string,
@@ -503,7 +503,7 @@ export class SwitchService {
   }
 
   /**
-   * 🚀 优化版本：src/include结构搜索，使用缓存的路径规范化
+   *  优化版本：src/include结构搜索，使用缓存的路径规范化
    */
   private async searchSrcIncludeStructureOptimized(
     currentPath: string,
@@ -511,7 +511,7 @@ export class SwitchService {
     targetExtensions: string[],
   ): Promise<SearchResult> {
     const files: vscode.Uri[] = [];
-    // 🚀 使用缓存的路径规范化
+    //  使用缓存的路径规范化
     const normalizedPath = this.getNormalizedPath(currentPath);
 
     const config = this.configService.getConfig();
@@ -607,7 +607,7 @@ export class SwitchService {
   }
 
   /**
-   * 🚀 优化版本：并行测试结构搜索，使用缓存的路径规范化
+   *  优化版本：并行测试结构搜索，使用缓存的路径规范化
    */
   private async searchParallelTestsStructureOptimized(
     currentPath: string,
@@ -615,7 +615,7 @@ export class SwitchService {
     targetExtensions: string[],
   ): Promise<SearchResult> {
     const files: vscode.Uri[] = [];
-    // 🚀 使用缓存的路径规范化
+    //  使用缓存的路径规范化
     const normalizedPath = this.getNormalizedPath(currentPath);
 
     const config = this.configService.getConfig();
@@ -665,7 +665,7 @@ export class SwitchService {
     try {
       const foundFiles = await vscode.workspace.findFiles(
         searchPattern,
-        `{${(config.excludePaths || []).join(',')}}`, // 🔄 防止undefined
+        `{${(config.excludePaths || []).join(',')}}`, //  防止undefined
         20,
       );
       return { files: foundFiles, method: 'global-search' };
@@ -685,7 +685,7 @@ export class SwitchService {
 
   /**
    * Common logic for finding files across multiple directory patterns.
-   * 🚀 性能优化：使用缓存的文件存在性检查，减少重复的文件系统调用
+   *  性能优化：使用缓存的文件存在性检查，减少重复的文件系统调用
    * Reduces code duplication between different search strategies.
    */
   private async findFilesAcrossDirs(
@@ -710,7 +710,7 @@ export class SwitchService {
           );
           const candidateUri = vscode.Uri.file(candidatePath);
           
-          // 🚀 使用缓存的文件存在性检查
+          //  使用缓存的文件存在性检查
           const exists = await this.checkFileExistsCached(candidateUri);
           if (exists) {
             files.push(candidateUri);

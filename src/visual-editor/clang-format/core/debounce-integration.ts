@@ -99,7 +99,7 @@ export class DebounceIntegration implements BaseManager {
           }
         },
         {
-          delay: UI_CONSTANTS.QUICK_DEBOUNCE_DELAY, // ⏱️ Use centralized quick debounce delay
+          delay: UI_CONSTANTS.QUICK_DEBOUNCE_DELAY, // Use centralized quick debounce delay
           leading: true,
           trailing: false,
         },
@@ -160,7 +160,7 @@ export class DebounceIntegration implements BaseManager {
           }
         },
         {
-          delay: UI_CONSTANTS.DEBOUNCE_DELAY, // ⏱️ Use centralized debounce delay
+          delay: UI_CONSTANTS.DEBOUNCE_DELAY, // Use centralized debounce delay
           leading: true,
           trailing: false,
         },

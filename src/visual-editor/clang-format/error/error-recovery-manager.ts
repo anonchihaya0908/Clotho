@@ -33,7 +33,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
     private eventBus: EventBus,
   ) {
     this.setupRecoveryStrategies();
-    // 🧠 注册错误历史到内存监控
+    //  注册错误历史到内存监控
     memoryMonitor.registerHistory('ErrorRecoveryManager', this.errorHistory);
   }
 
@@ -200,7 +200,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
           module: 'ErrorRecoveryManager',
           operation: 'recover.editor-creation-failed',
         });
-        // ⏱️ Use centralized error recovery delay constant
+        // Use centralized error recovery delay constant
         await delay(UI_CONSTANTS.ERROR_RECOVERY_DELAY);
         eventBus.emit('retry-editor-creation-requested'); // 通知协调器重试
       },

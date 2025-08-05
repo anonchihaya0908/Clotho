@@ -254,7 +254,7 @@ export class PairingRuleUI {
 
       if (choice === 'Clear and Reconfigure') {
         await this.service.resetRules('workspace');
-        // 🚀 使用统一的延迟函数
+        //  使用统一的延迟函数
         await delay(100);
         await this.showConfigurationWizard();
       }
@@ -271,7 +271,7 @@ export class PairingRuleUI {
 
       if (choice === 'Clear and Reconfigure') {
         await this.service.resetRules('user');
-        // 🚀 使用统一的延迟函数
+        //  使用统一的延迟函数
         await delay(100);
         await this.showConfigurationWizard();
       }

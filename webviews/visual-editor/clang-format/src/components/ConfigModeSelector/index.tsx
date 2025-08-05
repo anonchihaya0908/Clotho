@@ -24,7 +24,7 @@ export const ConfigModeSelector: React.FC<ConfigModeSelectorProps> = ({
                     onClick={() => onModeChange('quick')}
                     title="快速设置 - 常用配置选项"
                 >
-                    <span className="tab-icon">⚡</span>
+                    <span className="tab-icon"></span>
                     快速设置
                 </button>
 
@@ -33,7 +33,7 @@ export const ConfigModeSelector: React.FC<ConfigModeSelectorProps> = ({
                     onClick={() => onModeChange('full')}
                     title="完整配置 - 所有配置选项"
                 >
-                    <span className="tab-icon">⚙️</span>
+                    <span className="tab-icon"></span>
                     完整配置
                 </button>
 
@@ -42,7 +42,7 @@ export const ConfigModeSelector: React.FC<ConfigModeSelectorProps> = ({
                     onClick={() => onModeChange('search')}
                     title="搜索配置 - 快速查找特定选项"
                 >
-                    <span className="tab-icon">🔍</span>
+                    <span className="tab-icon"></span>
                     搜索配置
                 </button>
             </div>
@@ -58,7 +58,7 @@ export const ConfigModeSelector: React.FC<ConfigModeSelectorProps> = ({
                         autoFocus
                     />
                     <div className="search-tips">
-                        <span>💡 提示: 可以搜索 "缩进"、"indent"、"大括号"、"brace" 等关键词</span>
+                        <span> 提示: 可以搜索 "缩进"、"indent"、"大括号"、"brace" 等关键词</span>
                     </div>
                 </div>
             )}

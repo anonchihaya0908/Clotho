@@ -1,5 +1,5 @@
 /**
- * 🧠 内存管理工具集
+ *  内存管理工具集
  * 提供对象池、弱引用管理和内存监控功能
  */
 
@@ -8,7 +8,7 @@ import { LRUCache } from '.';
 import { Factory, ResetFunction } from '../type-utilities';
 
 /**
- * 🏊 通用对象池 - 减少频繁对象创建的内存开销
+ *  通用对象池 - 减少频繁对象创建的内存开销
  */
 export class ObjectPool<T> {
   private pool: T[] = [];
@@ -69,7 +69,7 @@ export class ObjectPool<T> {
 }
 
 /**
- * 🗂️ 带大小限制的历史记录管理器
+ *  带大小限制的历史记录管理器
  */
 export class BoundedHistory<T> {
   private history: T[] = [];
@@ -150,7 +150,7 @@ export class BoundedHistory<T> {
 }
 
 /**
- * 🔗 弱引用映射管理器 - 避免内存泄漏
+ *  弱引用映射管理器 - 避免内存泄漏
  */
 export class WeakReferenceManager<K extends object, V> {
   private weakMap = new WeakMap<K, V>();
@@ -215,7 +215,7 @@ export class WeakReferenceManager<K extends object, V> {
 }
 
 /**
- * 🧮 内存使用监控器
+ *  内存使用监控器
  */
 export class MemoryMonitor {
   private static instance: MemoryMonitor;
@@ -346,7 +346,7 @@ export class MemoryMonitor {
 export const memoryMonitor = MemoryMonitor.getInstance();
 
 /**
- * 🏭 预定义的对象池工厂
+ *  预定义的对象池工厂
  */
 export class ObjectPoolFactory {
   private static pools = new Map<string, ObjectPool<any>>();

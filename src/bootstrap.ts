@@ -47,7 +47,7 @@ export let serviceContainer: ServiceContainer;
 export async function bootstrap(
   context: vscode.ExtensionContext,
 ): Promise<void> {
-  // 🚀 Initialize Logger system (highest priority)
+  //  Initialize Logger system (highest priority)
   logger.initializeOutputChannel();
   logger.info('Clotho extension starting up...', {
     module: 'Bootstrap',
@@ -90,7 +90,7 @@ export async function bootstrap(
     dispose: () => cleanup(),
   });
 
-  // 🎉 Startup completed
+  //  Startup completed
   logger.info('Clotho extension startup completed', {
     module: 'Bootstrap',
     operation: 'startup_complete'

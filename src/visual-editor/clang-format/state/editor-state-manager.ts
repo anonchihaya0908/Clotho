@@ -25,7 +25,7 @@ export class EditorStateManager implements vscode.Disposable {
 
   constructor(private eventBus: EventBus) {
     this.state = this.createInitialState();
-    // 🧠 注册状态历史到内存监控
+    //  注册状态历史到内存监控
     memoryMonitor.registerHistory('EditorStateManager', this.stateHistory);
   }
 
@@ -151,7 +151,7 @@ export class EditorStateManager implements vscode.Disposable {
    * 保存状态快照，用于历史记录和回滚
    */
   private saveSnapshot(state: VisualEditorState, source: string): void {
-    // 🧠 BoundedHistory 自动管理大小限制，无需手动检查
+    //  BoundedHistory 自动管理大小限制，无需手动检查
     this.stateHistory.push({
       state: { ...state },
       timestamp: Date.now(),

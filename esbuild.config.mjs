@@ -59,12 +59,12 @@ async function buildExtension() {
         process.exit(0);
       });
     } else {
-      console.log('🔨 Building extension...');
+      console.log('Building extension...');
       await build(baseConfig);
-      console.log('✅ Extension build completed successfully!');
+      console.log('Extension build completed successfully!');
     }
   } catch (error) {
-    console.error('❌ Build failed:', error);
+    console.error('Build failed:', error);
     process.exit(1);
   }
 }

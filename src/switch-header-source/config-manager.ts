@@ -39,7 +39,7 @@ export const CONFIG_TEMPLATES = {
       testDirs: ['tests', 'test'],
       searchPaths: ['.', '../include', '../src', './include', './src'],
       excludePaths: [
-        ...(DEFAULT_SWITCH_CONFIG.excludePaths || []), // 🔄 防止undefined
+        ...(DEFAULT_SWITCH_CONFIG.excludePaths || []), //  防止undefined
         '**/CMakeFiles/**',
       ],
     } as SwitchConfig,

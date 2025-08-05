@@ -822,7 +822,7 @@ textarea:disabled {
     text-align: center;
 }
 
-/* 🎨 终极语法高亮系统 - 完全动态主题版 + 完整样式保留 */
+/*  终极语法高亮系统 - 完全动态主题版 + 完整样式保留 */
 
 /* 简化的代码显示样式 - 删除所有highlight.js相关的代码 */
 
@@ -859,7 +859,7 @@ textarea:disabled {
 .toolbar-error::before,
 .config-panel-error::before,
 .status-bar-error::before {
-    content: "⚠️ ";
+    content: " ";
     margin-right: 8px;
 }
 

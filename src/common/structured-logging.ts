@@ -1,5 +1,5 @@
 /**
- * 📝 结构化日志工具
+ *  结构化日志工具
  * 提供统一的日志记录、操作追踪和事件处理模式
  */
 
@@ -18,7 +18,7 @@ import {
 // ===============================
 
 /**
- * 📊 操作上下文信息
+ *  操作上下文信息
  */
 export interface OperationContext {
   /** 模块名称 */
@@ -38,7 +38,7 @@ export interface OperationContext {
 }
 
 /**
- * 📊 操作结果信息
+ *  操作结果信息
  */
 export interface OperationResult extends DataResult<any> {
   /** 操作开始时间 */
@@ -50,7 +50,7 @@ export interface OperationResult extends DataResult<any> {
 }
 
 /**
- * 📊 操作统计信息
+ *  操作统计信息
  */
 export interface OperationStats extends PerformanceStats {
   /** 操作名称 */
@@ -66,7 +66,7 @@ export interface OperationStats extends PerformanceStats {
 // ===============================
 
 /**
- * 📝 结构化日志记录器
+ *  结构化日志记录器
  * 提供自动化的操作追踪和性能监控
  */
 export class StructuredLogger {
@@ -74,7 +74,7 @@ export class StructuredLogger {
   private static readonly MAX_RECENT_ERRORS = 5;
 
   /**
-   * 🎯 记录并执行操作（同步版本）
+   *  记录并执行操作（同步版本）
    * 自动记录操作开始、结束、耗时和结果
    */
   static operation<T>(
@@ -85,7 +85,7 @@ export class StructuredLogger {
     const operationKey = `${context.module}.${context.operation}`;
 
     // 记录操作开始
-    logger.info(`🚀 Starting operation: ${context.operation}`, {
+    logger.info(` Starting operation: ${context.operation}`, {
       module: context.module,
       operation: context.operation,
       instanceId: context.instanceId,
@@ -101,7 +101,7 @@ export class StructuredLogger {
       const duration = endTime - startTime;
 
       // 记录成功
-      logger.info(`✅ Operation completed: ${context.operation}`, {
+      logger.info(` Operation completed: ${context.operation}`, {
         module: context.module,
         operation: context.operation,
         instanceId: context.instanceId,
@@ -121,7 +121,7 @@ export class StructuredLogger {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       // 记录错误
-      logger.error(`❌ Operation failed: ${context.operation}`, error as Error, {
+      logger.error(` Operation failed: ${context.operation}`, error as Error, {
         module: context.module,
         operation: context.operation,
         instanceId: context.instanceId,
@@ -140,7 +140,7 @@ export class StructuredLogger {
   }
 
   /**
-   * 🎯 记录并执行异步操作
+   *  记录并执行异步操作
    * 自动记录操作开始、结束、耗时和结果
    */
   static async asyncOperation<T>(
@@ -152,7 +152,7 @@ export class StructuredLogger {
     const operationKey = `${context.module}.${context.operation}`;
 
     // 记录操作开始
-    logger.info(`🚀 Starting async operation: ${context.operation}`, {
+    logger.info(` Starting async operation: ${context.operation}`, {
       module: context.module,
       operation: context.operation,
       instanceId: context.instanceId,
@@ -178,7 +178,7 @@ export class StructuredLogger {
       const duration = endTime - startTime;
 
       // 记录成功
-      logger.info(`✅ Async operation completed: ${context.operation}`, {
+      logger.info(` Async operation completed: ${context.operation}`, {
         module: context.module,
         operation: context.operation,
         instanceId: context.instanceId,
@@ -198,7 +198,7 @@ export class StructuredLogger {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       // 记录错误
-      logger.error(`❌ Async operation failed: ${context.operation}`, error as Error, {
+      logger.error(` Async operation failed: ${context.operation}`, error as Error, {
         module: context.module,
         operation: context.operation,
         instanceId: context.instanceId,
@@ -217,7 +217,7 @@ export class StructuredLogger {
   }
 
   /**
-   * 🎯 记录并执行带结果的操作
+   *  记录并执行带结果的操作
    * 返回包含详细信息的操作结果
    */
   static async operationWithResult<T>(
@@ -252,7 +252,7 @@ export class StructuredLogger {
   }
 
   /**
-   * 📊 获取操作统计信息
+   *  获取操作统计信息
    */
   static getOperationStats(operationKey?: string): OperationStats[] {
     if (operationKey) {
@@ -263,7 +263,7 @@ export class StructuredLogger {
   }
 
   /**
-   * 🧹 清理操作统计
+   *  清理操作统计
    */
   static clearStats(operationKey?: string): void {
     if (operationKey) {
@@ -274,7 +274,7 @@ export class StructuredLogger {
   }
 
   /**
-   * 📈 生成操作报告
+   *  生成操作报告
    */
   static generateReport(): {
     totalOperations: number;
@@ -321,7 +321,7 @@ export class StructuredLogger {
   }
 
   /**
-   * 🔄 更新操作统计信息
+   *  更新操作统计信息
    */
   private static updateStats(
     operationKey: string,
@@ -383,7 +383,7 @@ export class StructuredLogger {
 // ===============================
 
 /**
- * 🎨 自动日志记录装饰器
+ *  自动日志记录装饰器
  * 为方法添加自动的日志记录功能
  */
 export function LogOperation(context?: Partial<OperationContext>) {
@@ -418,7 +418,7 @@ export function LogOperation(context?: Partial<OperationContext>) {
 }
 
 /**
- * 🎨 性能监控装饰器
+ *  性能监控装饰器
  * 专门用于性能敏感的操作监控
  */
 export function MonitorPerformance(
@@ -451,14 +451,14 @@ export function MonitorPerformance(
         };
 
         if (error) {
-          logger.error(`🐌 Operation ${propertyKey} failed after ${duration}ms`, error, logContext);
+          logger.error(` Operation ${propertyKey} failed after ${duration}ms`, error, logContext);
         } else if (duration > errorThreshold) {
-          logger.error(`🐌 Operation ${propertyKey} took ${duration}ms (exceeds error threshold)`, 
+          logger.error(` Operation ${propertyKey} took ${duration}ms (exceeds error threshold)`, 
             new Error(`Performance threshold exceeded`), logContext);
         } else if (duration > warningThreshold) {
-          logger.warn(`⚠️ Operation ${propertyKey} took ${duration}ms (exceeds warning threshold)`, logContext);
+          logger.warn(` Operation ${propertyKey} took ${duration}ms (exceeds warning threshold)`, logContext);
         } else {
-          logger.debug(`✅ Operation ${propertyKey} completed in ${duration}ms`, logContext);
+          logger.debug(` Operation ${propertyKey} completed in ${duration}ms`, logContext);
         }
       };
 
@@ -487,7 +487,7 @@ export function MonitorPerformance(
 // ===============================
 
 /**
- * 🎪 标准化事件发射器
+ *  标准化事件发射器
  * 提供类型安全的事件处理
  */
 export class TypedEventEmitter<TEvents extends Record<string, any[]>> {
@@ -533,7 +533,7 @@ export class TypedEventEmitter<TEvents extends Record<string, any[]>> {
    */
   emit<K extends keyof TEvents>(event: K, ...args: TEvents[K]): void {
     // 记录事件发射
-    logger.debug(`🎪 Event emitted: ${String(event)}`, {
+    logger.debug(` Event emitted: ${String(event)}`, {
       module: 'TypedEventEmitter',
       operation: 'emit',
       event: String(event),
@@ -614,7 +614,7 @@ export class TypedEventEmitter<TEvents extends Record<string, any[]>> {
 // ===============================
 
 /**
- * 🎯 快速创建日志上下文
+ *  快速创建日志上下文
  */
 export function createContext(
   module: string,
@@ -630,7 +630,7 @@ export function createContext(
 }
 
 /**
- * 🎯 快速记录操作
+ *  快速记录操作
  */
 export function logOperation<T>(
   module: string,
@@ -642,7 +642,7 @@ export function logOperation<T>(
 }
 
 /**
- * 🎯 快速记录异步操作
+ *  快速记录异步操作
  */
 export function logAsyncOperation<T>(
   module: string,

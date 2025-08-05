@@ -274,7 +274,7 @@ export class ManagerRegistry implements vscode.Disposable {
 
     // 记录初始化结果
     if (result.success) {
-      logger.info(`✅ Managers initialized successfully in ${result.totalTimeMs}ms (${initialized.length} eager, ${factoryOnlyCount} lazy)`, {
+      logger.info(` Managers initialized successfully in ${result.totalTimeMs}ms (${initialized.length} eager, ${factoryOnlyCount} lazy)`, {
         module: 'ManagerRegistry',
         operation: 'initializeAll',
         eagerCount: initialized.length,
@@ -282,7 +282,7 @@ export class ManagerRegistry implements vscode.Disposable {
         detail: `Eager: ${initialized.join(' → ')}`,
       });
     } else {
-      logger.warn(`⚠️ Manager initialization completed with ${failed.length} failures:`, {
+      logger.warn(` Manager initialization completed with ${failed.length} failures:`, {
         module: 'ManagerRegistry',
         operation: 'initializeAll',
         failed: failed.map(f => ({ name: f.name, message: f.error.message })),
@@ -369,13 +369,13 @@ export class ManagerRegistry implements vscode.Disposable {
 
     // 记录清理结果
     if (disposalErrors.length === 0) {
-      logger.info(`✅ All ${disposedManagers.length} managers disposed successfully`, {
+      logger.info(` All ${disposedManagers.length} managers disposed successfully`, {
         module: 'ManagerRegistry',
         operation: 'dispose',
         detail: `Disposal order: ${disposedManagers.join(' → ')}`,
       });
     } else {
-      logger.warn(`⚠️ Manager disposal completed with ${disposalErrors.length} errors:`, {
+      logger.warn(` Manager disposal completed with ${disposalErrors.length} errors:`, {
         module: 'ManagerRegistry',
         operation: 'dispose',
         errors: disposalErrors.map(e => ({ name: e.name, message: e.error.message })),

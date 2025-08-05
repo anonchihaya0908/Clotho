@@ -132,8 +132,8 @@ export class ConfigActionManager implements BaseManager {
         // 自动加载时仅在状态栏显示轻量提示
         const fileName = vscode.workspace.asRelativePath(fileUri);
         vscode.window.setStatusBarMessage(
-          `🔧 Auto-loaded ${fileName}`,
-          UI_CONSTANTS.NOTIFICATION_DISPLAY_TIME // ⏱️ Use centralized notification display time
+          ` Auto-loaded ${fileName}`,
+          UI_CONSTANTS.NOTIFICATION_DISPLAY_TIME // Use centralized notification display time
         );
       }
     } catch (error: any) {

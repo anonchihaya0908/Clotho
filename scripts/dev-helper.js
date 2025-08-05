@@ -30,15 +30,15 @@ function logStep(step, message) {
 }
 
 function logSuccess(message) {
-  log(`${colors.green}✅ ${message}${colors.reset}`);
+  log(`${colors.green} ${message}${colors.reset}`);
 }
 
 function logError(message) {
-  log(`${colors.red}❌ ${message}${colors.reset}`);
+  log(`${colors.red} ${message}${colors.reset}`);
 }
 
 function logWarning(message) {
-  log(`${colors.yellow}⚠️  ${message}${colors.reset}`);
+  log(`${colors.yellow}  ${message}${colors.reset}`);
 }
 
 // Check if we're in the correct directory
@@ -99,7 +99,7 @@ function setupWatch() {
   
   // Handle process termination
   process.on('SIGINT', () => {
-    log('\n🛑 Stopping watchers...');
+    log('\n Stopping watchers...');
     extensionWatcher.kill();
     webviewWatcher.kill();
     process.exit(0);
@@ -122,12 +122,12 @@ function checkDevEnvironment() {
   
   // Check Node.js version
   const nodeVersion = process.version;
-  log(`📦 Node.js: ${nodeVersion}`);
+  log(` Node.js: ${nodeVersion}`);
   
   // Check npm version
   try {
     const npmVersion = execSync('npm --version', { encoding: 'utf8' }).trim();
-    log(`📦 npm: ${npmVersion}`);
+    log(` npm: ${npmVersion}`);
   } catch (error) {
     logWarning('Could not detect npm version');
   }
@@ -135,7 +135,7 @@ function checkDevEnvironment() {
   // Check TypeScript
   try {
     const tscVersion = execSync('npx tsc --version', { encoding: 'utf8' }).trim();
-    log(`📦 ${tscVersion}`);
+    log(` ${tscVersion}`);
   } catch (error) {
     logWarning('TypeScript not found');
   }

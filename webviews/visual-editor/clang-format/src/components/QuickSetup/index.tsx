@@ -84,7 +84,7 @@ const getQuickConfigItem = (options: ClangFormatOption[], key: string): ClangFor
 const QUICK_CONFIG_CATEGORIES = [
     {
         category: '基础样式',
-        icon: '🎨',
+        icon: '',
         keys: ['BasedOnStyle']
     },
     {
@@ -99,7 +99,7 @@ const QUICK_CONFIG_CATEGORIES = [
     },
     {
         category: '行长度与换行',
-        icon: '📏',
+        icon: '',
         keys: ['ColumnLimit', 'BreakStringLiterals', 'AlwaysBreakAfterReturnType', 'AlwaysBreakBeforeMultilineStrings', 'BinPackArguments', 'BinPackParameters']
     },
     {
@@ -114,17 +114,17 @@ const QUICK_CONFIG_CATEGORIES = [
     },
     {
         category: '构造函数和继承',
-        icon: '🏗️',
+        icon: '',
         keys: ['BreakConstructorInitializers', 'ConstructorInitializerAllOnOneLineOrOnePerLine', 'ConstructorInitializerIndentWidth', 'BreakInheritanceList']
     },
     {
         category: '注释与文档',
-        icon: '💬',
+        icon: '',
         keys: ['AlignTrailingComments', 'ReflowComments', 'FixNamespaceComments', 'SpacesBeforeTrailingComments']
     },
     {
         category: '排序与组织',
-        icon: '📑',
+        icon: '',
         keys: ['SortIncludes', 'SortUsingDeclarations', 'IncludeBlocks']
     }
 ];
@@ -135,7 +135,7 @@ const MicroPreview: React.FC<{ code: string }> = ({ code }) => {
     return (
         <div className="quick-micro-preview">
             <div className="preview-label">
-                💡 实时预览在VS Code编辑器中显示
+                 实时预览在VS Code编辑器中显示
             </div>
             <div className="preview-info">
                 样例代码: {code.split('\n')[0]}...
@@ -362,7 +362,7 @@ const QuickSetupComponent: React.FC<QuickSetupProps> = ({ options, config, onCha
                             {option.name}
                             {shouldInherit && (
                                 <span className="inherit-indicator" title={`继承自 ${baseStyle} 风格`}>
-                                    🔗
+                                    
                                 </span>
                             )}
                         </label>
@@ -380,7 +380,7 @@ const QuickSetupComponent: React.FC<QuickSetupProps> = ({ options, config, onCha
                             {option.description}
                             {shouldInherit && (
                                 <div className="inherit-info">
-                                    💡 当前继承自 <strong>{baseStyle}</strong> 风格，输入数值可覆盖此设置
+                                     当前继承自 <strong>{baseStyle}</strong> 风格，输入数值可覆盖此设置
                                 </div>
                             )}
                         </div>
@@ -402,7 +402,7 @@ const QuickSetupComponent: React.FC<QuickSetupProps> = ({ options, config, onCha
                             {option.name}
                             {isInheriting && value === undefined && (
                                 <span className="inherit-indicator" title={`继承自 ${baseStyle} 风格`}>
-                                    🔗
+                                    
                                 </span>
                             )}
                         </label>
@@ -434,7 +434,7 @@ const QuickSetupComponent: React.FC<QuickSetupProps> = ({ options, config, onCha
                             {option.description}
                             {isInheriting && value === undefined && (
                                 <div className="inherit-info">
-                                    💡 当前继承自 <strong>{baseStyle}</strong> 风格: <strong>{inheritedVal}</strong>
+                                     当前继承自 <strong>{baseStyle}</strong> 风格: <strong>{inheritedVal}</strong>
                                 </div>
                             )}
                         </div>
@@ -470,7 +470,7 @@ const QuickSetupComponent: React.FC<QuickSetupProps> = ({ options, config, onCha
             <div className="quick-setup-header">
                 <div className="header-content">
                     <div className="header-text">
-                        <h3>⚒️ 快速设置</h3>
+                        <h3> 快速设置</h3>
                         <p>执此数线，织体自成。</p>
                     </div>
                 </div>

@@ -83,7 +83,7 @@ export class MessageHandler implements BaseManager {
       // 先发送事件以确保 ConfigActionManager 被初始化
       context.eventBus.emit('ensure-config-manager-ready');
 
-      // ⏱️ Use centralized delay constant for message processing
+      // Use centralized delay constant for message processing
       setTimeout(() => {
         context.eventBus.emit(eventName, payload);
       }, UI_CONSTANTS.MESSAGE_HANDLER_DELAY);

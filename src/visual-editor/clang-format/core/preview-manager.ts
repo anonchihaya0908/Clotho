@@ -48,7 +48,7 @@ export class PreviewEditorManager implements BaseManager {
       });
       // 等待当前创建完成，然后返回结果
       while (this.isCreatingPreview) {
-        // 🚀 使用统一的延迟函数，确保稳定状态
+        //  使用统一的延迟函数，确保稳定状态
         await delay(UI_TIMING.PREVIEW_DEBOUNCE);
       }
       const state = this.context.stateManager.getState();

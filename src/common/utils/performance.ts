@@ -1,5 +1,5 @@
 /**
- * 🚀 统一的性能优化工具集
+ *  统一的性能优化工具集
  * 提供防抖、节流和延迟执行的统一实现
  */
 
@@ -26,7 +26,7 @@ export interface DebounceOptions {
 const debouncedFunctionsCache = new LRUCache<string, any>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
 
 /**
- * 🚀 增强版防抖函数 - 支持更多选项和缓存优化
+ *  增强版防抖函数 - 支持更多选项和缓存优化
  */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
@@ -129,7 +129,7 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 /**
- * 🚀 增强版节流函数
+ *  增强版节流函数
  */
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
@@ -146,7 +146,7 @@ export function throttle<T extends (...args: any[]) => any>(
 }
 
 /**
- * 🚀 缓存的防抖函数创建器 - 避免重复创建相同的防抖函数
+ *  缓存的防抖函数创建器 - 避免重复创建相同的防抖函数
  */
 export function createCachedDebounce<T extends (...args: any[]) => any>(
   key: string,
@@ -164,14 +164,14 @@ export function createCachedDebounce<T extends (...args: any[]) => any>(
 }
 
 /**
- * 🚀 简单延迟执行 - 替代直接使用setTimeout
+ *  简单延迟执行 - 替代直接使用setTimeout
  */
 export function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
- * 🚀 带取消功能的延迟执行
+ *  带取消功能的延迟执行
  */
 export function createCancelableDelay(ms: number): { promise: Promise<void>; cancel: () => void } {
   let timeoutId: NodeJS.Timeout;

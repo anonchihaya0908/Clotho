@@ -59,7 +59,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             return (
                 <div className="error-boundary">
                     <div className="error-boundary-content">
-                        <h2>🚨 出现了一个错误</h2>
+                        <h2> 出现了一个错误</h2>
                         <p>很抱歉，应用程序遇到了一个意外错误。</p>
                         
                         <details className="error-details">
@@ -81,13 +81,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                                 className="retry-button"
                                 onClick={this.handleRetry}
                             >
-                                🔄 重试
+                                 重试
                             </button>
                             <button 
                                 className="reload-button"
                                 onClick={() => window.location.reload()}
                             >
-                                🔃 重新加载页面
+                                 重新加载页面
                             </button>
                         </div>
                     </div>

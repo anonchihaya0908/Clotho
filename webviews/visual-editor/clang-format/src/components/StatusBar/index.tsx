@@ -28,13 +28,13 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             <div className="status-right">
                 {validationState.error && (
                     <span className="error-message">
-                        ⚠ {validationState.error}
+                         {validationState.error}
                     </span>
                 )}
 
                 {validationState.warnings && validationState.warnings.length > 0 && (
                     <span className="warning-message">
-                        ⚠ {validationState.warnings.length} warnings
+                         {validationState.warnings.length} warnings
                     </span>
                 )}
             </div>

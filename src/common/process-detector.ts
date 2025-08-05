@@ -185,7 +185,7 @@ export class ProcessDetector {
   }
 
   /**
-   * 🧬 Finds the main process for a given application name using "DNA testing".
+   *  Finds the main process for a given application name using "DNA testing".
    * This method identifies legitimate child processes and selects the main one based on memory usage.
    *
    * @param processName The name of the process to find (e.g., 'clangd')
@@ -391,7 +391,7 @@ export class ProcessDetector {
         logger.debug(`Strategy 2: DNA testing for ${processName}`, { module: 'ProcessDetector', operation: 'getDiagnosticInfo' });
       }
       
-      // 🚀 性能优化：首先尝试从缓存获取进程列表
+      //  性能优化：首先尝试从缓存获取进程列表
       let allProcesses = this.getCachedProcessList(processName);
       if (!allProcesses) {
         // 缓存未命中，执行昂贵的系统调用
@@ -457,7 +457,7 @@ export class ProcessDetector {
   }
 
   /**
-   * 📊 Get detailed diagnostic information about all processes of a given name
+   *  Get detailed diagnostic information about all processes of a given name
    * Useful for debugging and troubleshooting process detection issues
    *
    * @param processName The name of the process to analyze
@@ -508,7 +508,7 @@ export class ProcessDetector {
           grandchildren: [],
           orphans: [],
         },
-        recommendations: ['❌ 无法获取进程信息，请检查系统权限'],
+        recommendations: [' 无法获取进程信息，请检查系统权限'],
         performanceMetrics: {
           detectionTimeMs: 0,
           memoryUsageKB: 0,
@@ -531,33 +531,33 @@ export class ProcessDetector {
     // 分析直接子进程
     if (directChildren.length === 0) {
       if (orphans.length > 0) {
-        recommendations.push('🔄 检测到孤立进程，建议重启 VS Code 清理陈旧进程');
+        recommendations.push(' 检测到孤立进程，建议重启 VS Code 清理陈旧进程');
       } else {
-        recommendations.push('ℹ️ 未发现任何相关进程，服务可能未启动');
+        recommendations.push('ℹ 未发现任何相关进程，服务可能未启动');
       }
     } else if (directChildren.length > 3) {
-      recommendations.push('⚠️ 检测到过多直接子进程，可能存在进程泄漏');
+      recommendations.push(' 检测到过多直接子进程，可能存在进程泄漏');
     } else {
-      recommendations.push('✅ 进程状态正常');
+      recommendations.push(' 进程状态正常');
     }
 
     // 分析内存使用
     const totalMemory = directChildren.reduce((sum, p) => sum + p.memory, 0);
     if (totalMemory > 500 * 1024) { // 500MB
-      recommendations.push('🧠 高内存使用，建议监控进程性能');
+      recommendations.push(' 高内存使用，建议监控进程性能');
     }
 
     // 分析进程健康状态
     if (orphans.length > directChildren.length * 2) {
-      recommendations.push('🧹 孤立进程过多，建议清理系统环境');
+      recommendations.push(' 孤立进程过多，建议清理系统环境');
     }
 
     // 分析祖父进程
     if (grandchildren.length > 0) {
-      recommendations.push('🔍 检测到间接子进程，可能是正常的进程层次结构');
+      recommendations.push(' 检测到间接子进程，可能是正常的进程层次结构');
     }
 
-    return recommendations.length > 0 ? recommendations : ['✅ 系统状态良好'];
+    return recommendations.length > 0 ? recommendations : [' 系统状态良好'];
   }
 
   /**
@@ -568,6 +568,6 @@ export class ProcessDetector {
   }
 }
 
-// 🧠 注册ProcessDetector的静态缓存到内存监控
+//  注册ProcessDetector的静态缓存到内存监控
 memoryMonitor.registerCache('ProcessDetector-processList', ProcessDetector['processListCache']);
 memoryMonitor.registerCache('ProcessDetector-detectionResult', ProcessDetector['detectionResultCache']);

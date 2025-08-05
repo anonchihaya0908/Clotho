@@ -11,7 +11,7 @@ import { UIConfig } from '../common/config-system';
 // ===============================
 
 /**
- * 🎨 Visual Editor Configuration
+ *  Visual Editor Configuration
  * 继承自UIConfig，获得统一的UI配置管理能力
  */
 export interface VisualEditorConfig extends UIConfig {

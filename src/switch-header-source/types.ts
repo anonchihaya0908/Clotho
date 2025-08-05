@@ -10,7 +10,7 @@ import { PathConfig } from '../common/config-system';
 // ===============================
 
 /**
- * 📁 Switch Module Configuration
+ *  Switch Module Configuration
  * 继承自PathConfig，获得统一的路径配置管理能力
  */
 export interface SwitchConfig extends PathConfig {

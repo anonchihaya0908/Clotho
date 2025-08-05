@@ -187,25 +187,25 @@ export const SearchConfig: React.FC<SearchConfigProps> = ({
         if (option.key.includes('Space')) return '␣';
         if (option.key.includes('Break') || option.key.includes('Brace')) return '{}';
         if (option.key.includes('Align')) return '⌐';
-        if (option.key.includes('Comment')) return '💬';
-        if (option.key.includes('Penalty')) return '⚖️';
-        if (option.key.includes('Sort') || option.key.includes('Include')) return '🔤';
+        if (option.key.includes('Comment')) return '';
+        if (option.key.includes('Penalty')) return '';
+        if (option.key.includes('Sort') || option.key.includes('Include')) return '';
         if (option.key.includes('Pointer') || option.key.includes('Reference')) return '*&';
-        if (option.key.includes('Namespace')) return '📦';
-        if (option.key.includes('Template')) return '🔶';
-        return '⚙️';
+        if (option.key.includes('Namespace')) return '';
+        if (option.key.includes('Template')) return '';
+        return '';
     };
 
     return (
         <div className="search-config">
             <div className="search-header">
-                <h3>🔍 搜索配置</h3>
+                <h3> 搜索配置</h3>
                 <p>找到了 <strong>{filteredOptions.length}</strong> 个匹配的配置项</p>
             </div>
 
             {searchQuery.trim() && filteredOptions.length === 0 && (
                 <div className="no-results">
-                    <div className="no-results-icon">🔍</div>
+                    <div className="no-results-icon"></div>
                     <div className="no-results-text">
                         <h4>未找到匹配的配置项</h4>
                         <p>尝试使用其他关键词，比如：</p>
@@ -270,7 +270,7 @@ export const SearchConfig: React.FC<SearchConfigProps> = ({
             {filteredOptions.length > 0 && (
                 <div className="search-footer">
                     <div className="search-tip">
-                        <span className="tip-icon">💡</span>
+                        <span className="tip-icon"></span>
                         <span>点击配置项进行修改，修改后会实时预览效果</span>
                     </div>
                 </div>
