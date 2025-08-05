@@ -37,7 +37,7 @@ export class DebounceManager {
   /**
    * 防抖执行函数
    */
-  debounce<T, A extends any[]>(
+  debounce<T, A extends readonly unknown[]>(
     key: string,
     fn: (...args: A) => Promise<T>,
     options: DebounceOptions = { delay: 100 },
@@ -259,7 +259,7 @@ export class DebounceManager {
    * 取消所有防抖操作
    */
   cancelAll(): void {
-    for (const [_key, timer] of this.timers) {
+    for (const [, timer] of this.timers) {
       clearTimeout(timer);
     }
     this.timers.clear();
@@ -284,7 +284,7 @@ export class DebounceManager {
   releaseAllLocks(): void {
     this.locks.clear();
 
-    for (const [_key, timer] of this.lockTimers) {
+    for (const [, timer] of this.lockTimers) {
       clearTimeout(timer);
     }
     this.lockTimers.clear();

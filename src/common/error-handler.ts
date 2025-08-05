@@ -217,7 +217,7 @@ export class ErrorHandler {
     const message = `${operation} failed`;
 
     this.logger.logForModule(
-      logLevel.toUpperCase() as any, // 确保类型匹配
+      logLevel.toUpperCase() as 'ERROR' | 'WARN' | 'INFO' | 'DEBUG',
       module,
       operation,
       message,
@@ -250,7 +250,7 @@ export class ErrorHandler {
   /**
    * Enhanced async wrapper with better error recovery options
    */
-  public wrapAsync<T extends any[], R>(
+  public wrapAsync<T extends readonly unknown[], R>(
     fn: (...args: T) => Promise<R>,
     context: ErrorContext,
     fallbackValue?: R,
@@ -268,7 +268,7 @@ export class ErrorHandler {
   /**
    * Enhanced sync wrapper with better error recovery options
    */
-  public wrapSync<T extends any[], R>(
+  public wrapSync<T extends readonly unknown[], R>(
     fn: (...args: T) => R,
     context: ErrorContext,
     fallbackValue?: R,
@@ -289,7 +289,7 @@ export class ErrorHandler {
   /**
    * Creates a retry wrapper with exponential backoff
    */
-  public withRetry<T extends any[], R>(
+  public withRetry<T extends readonly unknown[], R>(
     fn: (...args: T) => Promise<R>,
     context: ErrorContext,
     options: {
@@ -305,13 +305,13 @@ export class ErrorHandler {
     } = options;
 
     return async (...args: T): Promise<R | undefined> => {
-      let lastError: unknown;
+      // let lastError: unknown; // 保留供调试使用
 
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
           return await fn(...args);
         } catch (error) {
-          lastError = error;
+          // lastError = error; // 保存错误信息供调试
 
           if (attempt === maxAttempts) {
             // 最后一次尝试失败，处理错误
@@ -397,7 +397,7 @@ export const errorHandler = new ErrorHandler(logger);
  */
 export function handleErrors(context: Partial<ErrorContext> = {}) {
   return function (
-    target: any,
+    target: unknown,
     propertyKey: string,
     descriptor: PropertyDescriptor,
   ): PropertyDescriptor {
@@ -406,10 +406,10 @@ export function handleErrors(context: Partial<ErrorContext> = {}) {
       return descriptor;
     }
 
-    descriptor.value = function (...args: any[]): any {
+    descriptor.value = function (...args: readonly unknown[]): unknown {
       const fullContext: ErrorContext = {
         operation: propertyKey,
-        module: target.constructor.name,
+        module: (target as { constructor: { name: string } }).constructor.name,
         showToUser: false,
         logLevel: 'error',
         rethrow: false, // Do not rethrow errors by default

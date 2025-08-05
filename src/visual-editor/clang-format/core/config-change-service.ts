@@ -11,20 +11,20 @@ import { EditorStateManager } from '../state/editor-state-manager';
  * Configuration change context (simplified)
  */
 export interface ConfigChangeContext {
-    key: string;
-    value: any;
-    oldConfig: Record<string, any>;
-    newConfig: Record<string, any>;
+  key: string;
+  value: unknown;
+  oldConfig: Record<string, unknown>;
+  newConfig: Record<string, unknown>;
 }
 
 /**
  * 配置变化的结果
  */
 export interface ConfigChangeResult {
-    success: boolean;
-    error?: Error;
-    affectedHandlers: string[];
-    executionTimeMs: number;
+  success: boolean;
+  error?: Error;
+  affectedHandlers: string[];
+  executionTimeMs: number;
 }
 
 // Removed complex handler classes - using direct method calls instead
@@ -39,9 +39,9 @@ export interface ConfigChangeResult {
  */
 export class ConfigChangeService {
   constructor(
-        private stateManager: EditorStateManager,
-        private eventBus: EventBus,
-        private errorRecovery: ErrorRecoveryManager,
+    private stateManager: EditorStateManager,
+    private eventBus: EventBus,
+    private errorRecovery: ErrorRecoveryManager,
   ) {
     // No complex initialization needed
   }
@@ -50,9 +50,9 @@ export class ConfigChangeService {
      * Handle configuration changes (Simplified)
      */
   async handleConfigChange(payload: {
-        key: string;
-        value: any;
-    }): Promise<ConfigChangeResult> {
+    key: string;
+    value: unknown;
+  }): Promise<ConfigChangeResult> {
     const startTime = Date.now();
 
     try {
@@ -105,7 +105,7 @@ export class ConfigChangeService {
         executionTimeMs: Date.now() - startTime,
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       const result: ConfigChangeResult = {
         success: false,
         error,
@@ -129,8 +129,8 @@ export class ConfigChangeService {
     // Only skip internal keys and metadata
     // BasedOnStyle is an important config option that should trigger preview updates
     return !key.startsWith('__internal') &&
-               !key.startsWith('__metadata') &&
-               key !== '__comment';
+      !key.startsWith('__metadata') &&
+      key !== '__comment';
   }
 
   /**

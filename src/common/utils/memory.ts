@@ -4,7 +4,7 @@
  */
 
 import { PERFORMANCE } from '../constants';
-import { LRUCache } from '.';
+// import { LRUCache } from '.'; // 保留供未来使用
 import { Factory, ResetFunction } from '../type-utilities';
 
 /**
@@ -84,7 +84,7 @@ export class BoundedHistory<T> {
    */
   push(item: T): void {
     this.history.push(item);
-    
+
     // 保持大小限制，移除最旧的记录
     if (this.history.length > this.maxSize) {
       this.history.splice(0, this.history.length - this.maxSize);
@@ -219,11 +219,11 @@ export class WeakReferenceManager<K extends object, V> {
  */
 export class MemoryMonitor {
   private static instance: MemoryMonitor;
-  private caches = new Map<string, { getStats: () => any }>();
-  private objectPools = new Map<string, ObjectPool<any>>();
-  private histories = new Map<string, BoundedHistory<any>>();
+  private caches = new Map<string, { getStats: () => unknown }>();
+  private objectPools = new Map<string, ObjectPool<unknown>>();
+  private histories = new Map<string, BoundedHistory<unknown>>();
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): MemoryMonitor {
     if (!MemoryMonitor.instance) {
@@ -235,21 +235,21 @@ export class MemoryMonitor {
   /**
    * 注册缓存以供监控
    */
-  registerCache(name: string, cache: { getStats: () => any }): void {
+  registerCache(name: string, cache: { getStats: () => unknown }): void {
     this.caches.set(name, cache);
   }
 
   /**
    * 注册对象池以供监控
    */
-  registerObjectPool(name: string, pool: ObjectPool<any>): void {
+  registerObjectPool(name: string, pool: ObjectPool<unknown>): void {
     this.objectPools.set(name, pool);
   }
 
   /**
    * 注册历史记录以供监控
    */
-  registerHistory(name: string, history: BoundedHistory<any>): void {
+  registerHistory(name: string, history: BoundedHistory<unknown>): void {
     this.histories.set(name, history);
   }
 
@@ -257,9 +257,9 @@ export class MemoryMonitor {
    * 获取内存使用报告
    */
   getMemoryReport(): {
-    caches: Record<string, any>;
-    objectPools: Record<string, any>;
-    histories: Record<string, any>;
+    caches: Record<string, unknown>;
+    objectPools: Record<string, unknown>;
+    histories: Record<string, unknown>;
     summary: {
       totalCaches: number;
       totalPools: number;
@@ -267,15 +267,15 @@ export class MemoryMonitor {
       estimatedMemoryUsage: string;
     };
   } {
-    const caches: Record<string, any> = {};
-    const objectPools: Record<string, any> = {};
-    const histories: Record<string, any> = {};
+    const caches: Record<string, unknown> = {};
+    const objectPools: Record<string, unknown> = {};
+    const histories: Record<string, unknown> = {};
 
     // 收集缓存统计
     for (const [name, cache] of this.caches) {
       try {
         caches[name] = cache.getStats();
-      } catch (error) {
+      } catch {
         caches[name] = { error: 'Failed to get stats' };
       }
     }
@@ -293,11 +293,11 @@ export class MemoryMonitor {
     // 估算总内存使用量
     let estimatedKB = 0;
     for (const cache of Object.values(caches)) {
-      if (cache.size) estimatedKB += cache.size * 0.5; // 估算每个缓存项0.5KB
+      if ((cache as { size?: number }).size) { estimatedKB += (cache as { size: number }).size * 0.5; } // 估算每个缓存项0.5KB
     }
     for (const history of Object.values(histories)) {
-      if (history.memoryUsageEstimate) {
-        const kb = parseInt(history.memoryUsageEstimate.replace(/[^\d]/g, ''));
+      if ((history as { memoryUsageEstimate?: string }).memoryUsageEstimate) {
+        const kb = parseInt((history as { memoryUsageEstimate: string }).memoryUsageEstimate.replace(/[^\d]/g, ''));
         estimatedKB += isNaN(kb) ? 0 : kb;
       }
     }
@@ -323,7 +323,7 @@ export class MemoryMonitor {
     for (const [name, cache] of this.caches) {
       try {
         if ('clear' in cache && typeof cache.clear === 'function') {
-          (cache as any).clear();
+          (cache as { clear: () => void }).clear();
         }
       } catch (error) {
         console.warn(`Failed to clear cache ${name}:`, error);
@@ -349,12 +349,12 @@ export const memoryMonitor = MemoryMonitor.getInstance();
  *  预定义的对象池工厂
  */
 export class ObjectPoolFactory {
-  private static pools = new Map<string, ObjectPool<any>>();
+  private static pools = new Map<string, ObjectPool<unknown>>();
 
   /**
    * SearchResult对象池
    */
-  static getSearchResultPool(): ObjectPool<{ files: any[]; method: string }> {
+  static getSearchResultPool(): ObjectPool<{ files: unknown[]; method: string }> {
     if (!this.pools.has('SearchResult')) {
       const pool = new ObjectPool(
         () => ({ files: [], method: '' }),
@@ -363,10 +363,10 @@ export class ObjectPoolFactory {
           obj.method = '';
         }
       );
-      this.pools.set('SearchResult', pool);
-      memoryMonitor.registerObjectPool('SearchResult', pool);
+      this.pools.set('SearchResult', pool as ObjectPool<unknown>);
+      memoryMonitor.registerObjectPool('SearchResult', pool as ObjectPool<unknown>);
     }
-    return this.pools.get('SearchResult')!;
+    return this.pools.get('SearchResult')! as ObjectPool<{ files: unknown[]; method: string }>;
   }
 
   /**
@@ -383,16 +383,16 @@ export class ObjectPoolFactory {
           obj.name = '';
         }
       );
-      this.pools.set('ProcessInfo', pool);
-      memoryMonitor.registerObjectPool('ProcessInfo', pool);
+      this.pools.set('ProcessInfo', pool as ObjectPool<unknown>);
+      memoryMonitor.registerObjectPool('ProcessInfo', pool as ObjectPool<unknown>);
     }
-    return this.pools.get('ProcessInfo')!;
+    return this.pools.get('ProcessInfo')! as ObjectPool<{ pid: number; ppid: number; memory: number; name: string }>;
   }
 
   /**
    * 配置对象池
    */
-  static getConfigObjectPool(): ObjectPool<Record<string, any>> {
+  static getConfigObjectPool(): ObjectPool<Record<string, unknown>> {
     if (!this.pools.has('ConfigObject')) {
       const pool = new ObjectPool(
         () => ({}),
@@ -400,15 +400,15 @@ export class ObjectPoolFactory {
           // 清空对象属性
           for (const key in obj) {
             if (obj.hasOwnProperty(key)) {
-              delete (obj as any)[key];
+              delete (obj as Record<string, unknown>)[key];
             }
           }
         }
       );
-      this.pools.set('ConfigObject', pool);
-      memoryMonitor.registerObjectPool('ConfigObject', pool);
+      this.pools.set('ConfigObject', pool as ObjectPool<unknown>);
+      memoryMonitor.registerObjectPool('ConfigObject', pool as ObjectPool<unknown>);
     }
-    return this.pools.get('ConfigObject')!;
+    return this.pools.get('ConfigObject')! as ObjectPool<Record<string, unknown>>;
   }
 
   /**

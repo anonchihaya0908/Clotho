@@ -96,7 +96,7 @@ export class ConfigActionManager implements BaseManager {
         fileUri: fileUri.toString()
       });
       await this.loadConfigFromFile(fileUri, true); // 传递 silent=true 表示自动加载
-    } catch (error) {
+    } catch {
       // 文件不存在，静默处理
       logger.debug('.clang-format file not found in workspace. Using default settings', {
         module: 'ConfigActionManager',
@@ -122,7 +122,7 @@ export class ConfigActionManager implements BaseManager {
       const fileContent = Buffer.from(fileContentBytes).toString('utf-8');
       const newConfig = this.formatService.parse(fileContent);
       await this.updateConfigState(newConfig, 'config-loaded-from-file');
-      
+
       if (!silent) {
         // 手动加载时显示信息弹窗
         vscode.window.showInformationMessage(
@@ -136,13 +136,13 @@ export class ConfigActionManager implements BaseManager {
           UI_CONSTANTS.NOTIFICATION_DISPLAY_TIME // Use centralized notification display time
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       await this.context.errorRecovery.handleError(
         'config-load-failed',
         error,
         { file: fileUri.toString() },
       );
-      
+
       if (!silent) {
         // 只有非静默模式下才显示错误弹窗
         vscode.window.showErrorMessage(
@@ -174,7 +174,7 @@ export class ConfigActionManager implements BaseManager {
       vscode.window.showInformationMessage(
         `Configuration saved to ${vscode.workspace.asRelativePath(fileUri)}.`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       await this.context.errorRecovery.handleError(
         'config-save-failed',
         error,
@@ -236,7 +236,7 @@ export class ConfigActionManager implements BaseManager {
 
     try {
       await vscode.workspace.fs.stat(fileUri);
-    } catch (error) {
+    } catch {
       const result = await vscode.window.showInformationMessage(
         '.clang-format file not found. Do you want to create it with the current configuration?',
         'Yes',
@@ -253,7 +253,7 @@ export class ConfigActionManager implements BaseManager {
   }
 
   private async updateConfigState(
-    newConfig: Record<string, any>,
+    newConfig: Record<string, unknown>,
     source: string,
   ): Promise<void> {
     await this.context.stateManager.updateState(

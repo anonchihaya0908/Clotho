@@ -7,7 +7,7 @@ import {
 import { UI_CONSTANTS } from '../../../common/constants';
 
 type MessageHandlerFunction = (
-  payload: any,
+  payload: unknown,
   context: ManagerContext,
 ) => Promise<void>;
 
@@ -61,7 +61,7 @@ export class MessageHandler implements BaseManager {
     try {
       this.logger.debug(`Handling message: ${message.type}`);
       await handler(message.payload, this.context);
-    } catch (error: any) {
+    } catch (error: unknown) {
       await this.context.errorRecovery.handleError(
         'message-handling-failed',
         error,
@@ -77,7 +77,7 @@ export class MessageHandler implements BaseManager {
    * 创建配置操作处理函数（带按需初始化）
    */
   private createConfigActionHandler(eventName: string) {
-    return async (payload: any, context: ManagerContext) => {
+    return async (payload: unknown, context: ManagerContext) => {
       this.logger.info(`Processing ${eventName}...`);
 
       // 先发送事件以确保 ConfigActionManager 被初始化
@@ -96,7 +96,7 @@ export class MessageHandler implements BaseManager {
   private setupMessageHandlers(): void {
     // 配置变更处理函数
     const handleConfigChange = async (
-      payload: any,
+      payload: unknown,
       context: ManagerContext,
     ) => {
       this.logger.debug('Config changed, delegating to coordinator:', payload);
@@ -226,7 +226,7 @@ export class MessageHandler implements BaseManager {
   /**
    * 验证消息基本格式
    */
-  private validateMessage(message: any): message is WebviewMessage {
+  private validateMessage(message: unknown): message is WebviewMessage {
     return message && typeof message.type === 'string';
   }
 

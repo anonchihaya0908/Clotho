@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { logger } from '../../common/logger';
 import { EditorOpenSource, ManagerContext } from '../../common/types';
-import { WebviewMessageType } from '../../common/types/clang-format-shared';
+import { GenericEventHandler } from '../../common/types/event-types';
+import { WebviewMessageType, WebviewMessage } from '../../common/types/clang-format-shared';
 import { ConfigActionManager } from './core/config-action-manager';
 import { ConfigChangeService } from './core/config-change-service';
 import { DebounceIntegration } from './core/debounce-integration';
@@ -96,7 +97,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       } else {
         throw new Error('Failed to create EditorManager');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       await this.errorRecovery.handleError('coordinator-startup-failed', error);
     }
   }
@@ -134,7 +135,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.stateManager.dispose();
     this.errorRecovery.dispose();
     this.managerRegistry.dispose();
-    this.configChangeService = null as any;
+    this.configChangeService = null as unknown as ConfigChangeService;
   }
 
   /**
@@ -182,7 +183,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.eventBus.on('webview-message-received', async (message) => {
       try {
         const messageHandler = await this.managerRegistry.getOrCreateInstance<MessageHandler>('messageHandler');
-        messageHandler?.handleMessage(message);
+        messageHandler?.handleMessage(message as WebviewMessage);
       } catch (error) {
         logger.error('Failed to get MessageHandler for webview message', error as Error, {
           module: 'ClangFormatEditorCoordinator',
@@ -194,12 +195,12 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     // 监听配置变化请求 - 使用新的配置变化服务
     this.eventBus.on(
       'config-change-requested',
-      async (payload: { key: string; value: any }) => {
+      (async (payload: { key: string; value: unknown }) => {
         if (process.env.CLOTHO_DEBUG === 'true') {
           logger.debug('Configuration change request received', { payload });
         }
         await this.configChangeService.handleConfigChange(payload);
-      },
+      }) as GenericEventHandler,
     );
 
     // 监听主编辑器关闭事件，联动关闭所有
@@ -249,7 +250,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     // Listen for configuration updates to refresh preview
     this.eventBus.on(
       'config-updated-for-preview',
-      ({ newConfig }: { newConfig: Record<string, any> }) => {
+      (({ newConfig }: { newConfig: Record<string, unknown> }) => {
         // 通过注册表获取 previewManager 实例（懒加载）
         this.managerRegistry.getOrCreateInstance<PreviewEditorManager>('previewManager').then(previewManager => {
           if (previewManager) {
@@ -266,15 +267,15 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
             operation: 'config-updated-for-preview',
           });
         });
-      },
+      }) as GenericEventHandler,
     );
 
     // Handle micro preview requests
     this.eventBus.on(
       'micro-preview-requested',
-      async ({ optionName, config, previewSnippet }: {
+      (async ({ optionName, config, previewSnippet }: {
         optionName: string;
-        config: Record<string, any>;
+        config: Record<string, unknown>;
         previewSnippet: string;
       }) => {
         try {
@@ -310,7 +311,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
             }
           });
         }
-      },
+      }) as GenericEventHandler,
     );
   }
 

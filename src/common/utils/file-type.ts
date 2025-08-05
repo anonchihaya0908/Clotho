@@ -12,7 +12,7 @@ import { HEADER_EXTENSIONS, SOURCE_EXTENSIONS } from '../constants';
  */
 export function isHeaderFile(filePath: string): boolean {
   const ext = path.extname(filePath).toLowerCase();
-  return HEADER_EXTENSIONS.includes(ext as any);
+  return HEADER_EXTENSIONS.includes(ext as (typeof HEADER_EXTENSIONS)[number]);
 }
 
 /**
@@ -20,7 +20,7 @@ export function isHeaderFile(filePath: string): boolean {
  */
 export function isSourceFile(filePath: string): boolean {
   const ext = path.extname(filePath).toLowerCase();
-  return SOURCE_EXTENSIONS.includes(ext as any);
+  return SOURCE_EXTENSIONS.includes(ext as (typeof SOURCE_EXTENSIONS)[number]);
 }
 
 /**

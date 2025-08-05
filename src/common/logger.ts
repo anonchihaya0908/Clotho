@@ -11,36 +11,36 @@ import * as vscode from 'vscode';
  * 日志级别枚举
  */
 export enum LogLevel {
-    SILLY = 0,
-    TRACE = 1,
-    DEBUG = 2,
-    INFO = 3,
-    WARN = 4,
-    ERROR = 5,
-    FATAL = 6,
+  SILLY = 0,
+  TRACE = 1,
+  DEBUG = 2,
+  INFO = 3,
+  WARN = 4,
+  ERROR = 5,
+  FATAL = 6,
 }
 
 /**
  * 日志配置接口
  */
 export interface LoggerConfig {
-    name?: string;
-    minLevel?: LogLevel;
-    displayDateTime?: boolean;
-    displayFunctionName?: boolean;
-    displayFilePath?: 'hidden' | 'displayAll' | 'hideNodeModulesOnly';
-    colorizePrettyLogs?: boolean;
-    prettyLogTemplate?: string;
+  name?: string;
+  minLevel?: LogLevel;
+  displayDateTime?: boolean;
+  displayFunctionName?: boolean;
+  displayFilePath?: 'hidden' | 'displayAll' | 'hideNodeModulesOnly';
+  colorizePrettyLogs?: boolean;
+  prettyLogTemplate?: string;
 }
 
 /**
  * 扩展的日志对象接口
  */
 interface ExtendedLogObj extends ILogObj {
-    module?: string;
-    operation?: string;
-    userId?: string;
-    requestId?: string;
+  module?: string;
+  operation?: string;
+  userId?: string;
+  requestId?: string;
 }
 
 /**
@@ -59,7 +59,7 @@ export class LoggerService {
       minLevel: config.minLevel || LogLevel.INFO,
       type: 'pretty',
       prettyLogTemplate: config.prettyLogTemplate ||
-                '{{yyyy}}.{{mm}}.{{dd}} {{hh}}:{{MM}}:{{ss}}:{{ms}}\t{{logLevelName}}\t[{{name}}]\t{{filePathWithLine}}{{nameWithDelimiterPrefix}}\t',
+        '{{yyyy}}.{{mm}}.{{dd}} {{hh}}:{{MM}}:{{ss}}:{{ms}}\t{{logLevelName}}\t[{{name}}]\t{{filePathWithLine}}{{nameWithDelimiterPrefix}}\t',
     };
 
     this.logger = new TsLogger<ExtendedLogObj>(defaultConfig);
@@ -92,16 +92,16 @@ export class LoggerService {
   /**
      * 输出日志到 VS Code Output Channel
      */
-  private logToOutputChannel(logObj: any): void {
+  private logToOutputChannel(logObj: Record<string, unknown>): void {
     if (this.outputChannel) {
       const timestamp = new Date().toISOString();
-      const level = (logObj._meta?.logLevelName || 'INFO').toUpperCase();
+      const level = ((logObj._meta as { logLevelName?: string })?.logLevelName || 'INFO').toUpperCase();
       const module = logObj.module ? `[${logObj.module}]` : '';
       const operation = logObj.operation ? `{${logObj.operation}}` : '';
 
       // 获取实际的日志消息
       const message = logObj[0] || logObj.message || 'No message';
-      const logLine = `${timestamp} ${level} ${module}${operation} ${logObj._meta?.name || 'Clotho'}: ${message}`;
+      const logLine = `${timestamp} ${level} ${module}${operation} ${(logObj._meta as { name?: string })?.name || 'Clotho'}: ${message}`;
       this.outputChannel.appendLine(logLine);
     }
   }
@@ -230,12 +230,12 @@ export class LoggerService {
   ): void {
     this.logForModule('INFO', module || 'Performance', operation,
       `Operation completed in ${duration}ms`, {
-        ...meta,
-        performance: {
-          duration,
-          operation,
-        }
-      });
+      ...meta,
+      performance: {
+        duration,
+        operation,
+      }
+    });
   }
 
   /**
@@ -248,9 +248,9 @@ export class LoggerService {
   ): void {
     this.logForModule('INFO', module, 'UserAction',
       `User performed: ${action}`, {
-        ...meta,
-        userAction: action,
-      });
+      ...meta,
+      userAction: action,
+    });
   }
 
   /**

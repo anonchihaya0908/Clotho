@@ -165,7 +165,7 @@ export class MemoryMonitor implements IMonitor {
         try {
           await clangdExtension.activate();
           this.logger.debug('clangd extension activated');
-        } catch (error) {
+        } catch {
           this.logger.debug(
             'Failed to activate clangd extension',
           );

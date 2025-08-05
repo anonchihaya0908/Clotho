@@ -177,7 +177,7 @@ export class TransitionManager {
     currentState: TransitionState;
     isTransitioning: boolean;
     elapsedTime: number;
-    debounceStatus: any;
+    debounceStatus: unknown;
     } {
     return {
       currentState: this.currentState,

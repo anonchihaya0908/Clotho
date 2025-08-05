@@ -45,13 +45,13 @@ export class ErrorRecoveryManager implements vscode.Disposable {
    */
   async handleError(
     errorCode: string,
-    error: any,
-    context?: Record<string, any>,
+    error: unknown,
+    context?: Record<string, unknown>,
   ): Promise<void> {
     const editorError: EditorError = {
       code: errorCode,
-      message: error.message || String(error),
-      context: { ...context, stack: error.stack },
+      message: (error as Error).message || String(error),
+      context: { ...context, stack: (error as Error).stack },
       timestamp: Date.now(),
       recoverable: this.isRecoverable(errorCode),
     };
@@ -160,8 +160,8 @@ export class ErrorRecoveryManager implements vscode.Disposable {
         module: this.moduleName,
         operation: 'attemptRecovery',
       });
-    } catch (recoveryError: any) {
-      const wrappedError = new Error(`Recovery attempt failed for ${errorCode}: ${recoveryError.message}`);
+    } catch (recoveryError: unknown) {
+      const wrappedError = new Error(`Recovery attempt failed for ${errorCode}: ${(recoveryError as Error).message}`);
       logger.error(wrappedError.message, recoveryError, {
         module: this.moduleName,
         operation: 'attemptRecovery',
@@ -177,7 +177,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
   private setupRecoveryStrategies(): void {
     // 预览创建失败：现在只记录错误，因为没有彩蛋可以回退
     this.recoveryStrategies.set('preview-creation-failed', {
-      async recover(error, stateManager, _eventBus) {
+      async recover(error, stateManager, _eventBus) { // eslint-disable-line @typescript-eslint/no-unused-vars
         const logError = new Error('Recovery: Preview creation failed and no fallback is available.');
         logger.error(logError.message, logError, {
           module: 'ErrorRecoveryManager',

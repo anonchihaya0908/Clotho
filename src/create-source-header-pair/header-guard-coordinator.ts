@@ -11,7 +11,7 @@ import { errorHandler } from '../common/error-handler';
 import { PairCreatorUI } from './ui';
 import { PairCreatorService } from './service';
 import { PairingRuleService } from '../pairing-rule-manager';
-import { HeaderGuardStyle } from '../common/types';
+import { HeaderGuardStyle, PairingRule } from '../common/types';
 
 /**
  * Coordinator for header guard configuration
@@ -22,7 +22,7 @@ export class HeaderGuardCoordinator {
     private readonly ui: PairCreatorUI,
     private readonly service: PairCreatorService,
     private readonly pairingRuleService: PairingRuleService,
-  ) {}
+  ) { }
 
   /**
    * Main workflow for configuring header guard style
@@ -74,13 +74,13 @@ export class HeaderGuardCoordinator {
    * Updates the header guard configuration for the specified language
    */
   private async updateHeaderGuardConfiguration(
-    existingRule: any,
+    existingRule: PairingRule,
     newHeaderGuardStyle: HeaderGuardStyle,
     language: 'c' | 'cpp'
   ): Promise<void> {
     try {
       // Create updated rule with new header guard style
-      const updatedRule = {
+      const updatedRule: PairingRule = {
         ...existingRule,
         headerGuardStyle: newHeaderGuardStyle,
       };

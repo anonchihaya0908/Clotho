@@ -24,7 +24,7 @@ export async function fileExists(uri: Uri): Promise<boolean> {
 export async function ensureDirectoryExists(uri: Uri): Promise<void> {
   try {
     await vscode.workspace.fs.createDirectory(uri);
-  } catch (error) {
+  } catch {
     // Directory might already exist, which is fine
   }
 }

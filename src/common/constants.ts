@@ -194,7 +194,7 @@ export const PERFORMANCE = {
   CLANGD_REQUEST_TIMEOUT: 3000,
   PROCESS_TIMEOUT: 10000, // 10 seconds
   COMMAND_EXECUTION_TIMEOUT: 10000,
-  
+
   //  Memory management settings
   ERROR_HISTORY_MAX_SIZE: 50, // Maximum error records to keep
   STATE_HISTORY_MAX_SIZE: 15, // Reduced from 20 for better memory usage
@@ -208,7 +208,7 @@ export const PERFORMANCE = {
 export const UI_CONSTANTS = {
   //  Event and listener limits
   MAX_EVENT_LISTENERS: 50,
-  
+
   // Timing and delays
   MESSAGE_HANDLER_DELAY: 10, // ms for message handler processing
   ERROR_RECOVERY_DELAY: 1500, // ms for error recovery wait time
@@ -217,25 +217,25 @@ export const UI_CONSTANTS = {
   NOTIFICATION_DISPLAY_TIME: 3000, // ms for notification auto-hide
   QUICK_DEBOUNCE_DELAY: 50, // ms for fast UI updates
   ANIMATION_DURATION: 2000, // ms for animations
-  
+
   //  General UI constants (merged from original UI_CONSTANTS)
   MAX_QUICK_PICK_ITEMS: 20,
   MAX_SEARCH_RESULTS: 20,
   FILE_PICKER_TIMEOUT: 30000, // 30 seconds
   WELCOME_MESSAGE_KEY: 'clotho.hasShownWelcome',
-  
+
   //  Visual styling constants
   BORDER_RADIUS: 4, // px
   OPACITY_DISABLED: 0.15,
   OPACITY_HOVER: 0.1,
   FONT_WEIGHT_MEDIUM: 500,
   FONT_WEIGHT_SEMIBOLD: 600,
-  
+
   //  Layout and sizing
   FULL_WIDTH_PERCENT: 100,
   FULL_HEIGHT_PERCENT: 100,
   AVATAR_BORDER_RADIUS: 50, // % for circular avatars
-  
+
   //  Color values (as numbers for calculations)
   GRAY_128: 128, // For rgba calculations
   OPACITY_15_PERCENT: 0.15,
@@ -243,13 +243,13 @@ export const UI_CONSTANTS = {
   OPACITY_30_PERCENT: 0.3,
   OPACITY_60_PERCENT: 0.6,
   OPACITY_70_PERCENT: 0.7,
-  
+
   //  Size constants
   AVATAR_SIZE: 256, // px
   BORDER_RADIUS_SMALL: 4, // px
   BORDER_RADIUS_MEDIUM: 5, // px
   BORDER_RADIUS_LARGE: 16, // px
-  
+
   //  Spacing constants
   PADDING_SMALL: 2, // px
   PADDING_MEDIUM: 5, // px
@@ -258,13 +258,13 @@ export const UI_CONSTANTS = {
   MARGIN_SMALL: 7, // px
   MARGIN_MEDIUM: 15, // px
   MARGIN_LARGE: 30, // px
-  
+
   //  Typography constants
   FONT_SIZE_SMALL: 12, // px
   FONT_SIZE_MEDIUM: 14, // px
   FONT_SIZE_LARGE: 22, // px
   LINE_HEIGHT_DEFAULT: 1.6,
-  
+
   //  Layout constraints
   MAX_CONTENT_WIDTH: 420, // px
   MIN_BUTTON_WIDTH: 180, // px

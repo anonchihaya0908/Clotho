@@ -93,7 +93,7 @@ export class DebounceIntegration implements BaseManager {
               await this.placeholderManager.createPlaceholder();
               return this.placeholderManager.getPlaceholderPanel()!;
             });
-          } catch (error) {
+          } catch {
             // 降级处理：直接创建占位符
             await this.placeholderManager.createPlaceholder();
           }
@@ -179,7 +179,7 @@ export class DebounceIntegration implements BaseManager {
   /**
    * 获取统计信息
    */
-  getStats(): any {
+  getStats(): { debounceManager: unknown; transitionManager: unknown; isEnabled: boolean } {
     return {
       debounceManager: this.debounceManager.getStatus(),
       transitionManager: this.transitionManager.getStats(),

@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
 import { UI_CONSTANTS } from '../../../common/constants';
-
-type EventHandler = (...args: any[]) => void;
+import { EventHandler, UnsubscribeFunction } from '../../../common/types/event-types';
 
 /**
  * 一个简单的事件总线，用于在不同管理器之间解耦通信
@@ -21,7 +20,7 @@ export class EventBus {
    * @param handler 事件处理函数
    * @returns 一个可以调用以取消订阅的函数
    */
-  on(eventName: string, handler: EventHandler): () => void {
+  on(eventName: string, handler: EventHandler): UnsubscribeFunction {
     this.emitter.on(eventName, handler);
     return () => this.emitter.off(eventName, handler);
   }
@@ -49,7 +48,7 @@ export class EventBus {
    * @param eventName 事件名称
    * @param args 传递给处理函数的参数
    */
-  emit(eventName: string, ...args: any[]): void {
+  emit(eventName: string, ...args: readonly unknown[]): void {
     this.emitter.emit(eventName, ...args);
   }
 
@@ -59,7 +58,7 @@ export class EventBus {
    * @param args 传递给处理函数的参数
    * @returns Promise<void>
    */
-  async emitAsync(eventName: string, ...args: any[]): Promise<void> {
+  async emitAsync(eventName: string, ...args: readonly unknown[]): Promise<void> {
     return new Promise((resolve) => {
       this.emitter.emit(eventName, ...args);
       // 使用微任务确保事件处理器有机会执行

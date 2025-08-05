@@ -23,17 +23,17 @@ export interface DebounceOptions {
 /**
  * 防抖函数缓存，避免重复创建
  */
-const debouncedFunctionsCache = new LRUCache<string, any>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+const debouncedFunctionsCache = new LRUCache<string, unknown>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
 
 /**
  *  增强版防抖函数 - 支持更多选项和缓存优化
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: readonly unknown[]) => unknown>(
   func: T,
   options: number | DebounceOptions,
 ): (...args: Parameters<T>) => void {
   // 兼容旧版本API（只传delay数字）
-  const opts: DebounceOptions = typeof options === 'number' 
+  const opts: DebounceOptions = typeof options === 'number'
     ? { delay: options, trailing: true }
     : { trailing: true, ...options };
 
@@ -70,10 +70,10 @@ export function debounce<T extends (...args: any[]) => any>(
     );
   }
 
-  function timerExpired() {
+  function timerExpired(): ReturnType<T> | void {
     const time = Date.now();
     if (shouldInvoke(time)) {
-      return trailingEdge(time);
+      return trailingEdge(time) as ReturnType<T> | void;
     }
     // 重新启动定时器
     const timeSinceLastCall = time - (lastCallTime || 0);
@@ -86,7 +86,7 @@ export function debounce<T extends (...args: any[]) => any>(
     if (opts.trailing && lastArgs) {
       return invokeFunc(time);
     }
-    lastArgs = undefined as any;
+    lastArgs = undefined as unknown as Parameters<T>;
     return undefined;
   }
 
@@ -96,7 +96,7 @@ export function debounce<T extends (...args: any[]) => any>(
     return opts.leading ? invokeFunc(time) : undefined;
   }
 
-  const debounced = (...args: Parameters<T>) => {
+  const debounced = (...args: Parameters<T>): ReturnType<T> | undefined => {
     const time = Date.now();
     const isInvoking = shouldInvoke(time);
 
@@ -105,24 +105,26 @@ export function debounce<T extends (...args: any[]) => any>(
 
     if (isInvoking) {
       if (timeout === null) {
-        return leadingEdge(lastCallTime);
+        return leadingEdge(lastCallTime) as ReturnType<T> | undefined;
       }
       if (opts.maxWait !== undefined) {
         timeout = startTimer(timerExpired, opts.delay);
-        return invokeFunc(lastCallTime);
+        return invokeFunc(lastCallTime) as ReturnType<T> | undefined;
       }
     }
-    
+
     if (timeout === null) {
       timeout = startTimer(timerExpired, opts.delay);
     }
+    return undefined;
   };
 
   // 添加cancel方法
-  (debounced as any).cancel = () => {
+  (debounced as typeof debounced & { cancel: () => void }).cancel = () => {
     cancelTimer();
     lastInvokeTime = 0;
-    lastArgs = lastCallTime = undefined as any;
+    lastArgs = undefined as unknown as Parameters<T>;
+    lastCallTime = undefined;
   };
 
   return debounced;
@@ -131,7 +133,7 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  *  增强版节流函数
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: readonly unknown[]) => unknown>(
   func: T,
   wait: number,
   options: { leading?: boolean; trailing?: boolean } = {},
@@ -148,14 +150,14 @@ export function throttle<T extends (...args: any[]) => any>(
 /**
  *  缓存的防抖函数创建器 - 避免重复创建相同的防抖函数
  */
-export function createCachedDebounce<T extends (...args: any[]) => any>(
+export function createCachedDebounce<T extends (...args: readonly unknown[]) => unknown>(
   key: string,
   func: T,
   options: number | DebounceOptions,
 ): (...args: Parameters<T>) => void {
   const cached = debouncedFunctionsCache.get(key);
   if (cached) {
-    return cached;
+    return cached as (...args: Parameters<T>) => void;
   }
 
   const debouncedFunc = debounce(func, options);
@@ -175,7 +177,7 @@ export function delay(ms: number): Promise<void> {
  */
 export function createCancelableDelay(ms: number): { promise: Promise<void>; cancel: () => void } {
   let timeoutId: NodeJS.Timeout;
-  let rejectFn: (reason?: any) => void;
+  let rejectFn: (reason?: unknown) => void;
 
   const promise = new Promise<void>((resolve, reject) => {
     rejectFn = reject;

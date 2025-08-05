@@ -21,7 +21,7 @@ import {
   isHeaderFile,
   memoryMonitor,
 } from '../common/utils';
-import { LogOperation, MonitorPerformance } from '../common/structured-logging';
+
 import { SwitchConfigService } from './config-manager';
 
 // ===============================
@@ -44,7 +44,7 @@ export class SwitchService {
   private static readonly fileExistsCache = new LRUCache<string, boolean>(PERFORMANCE.LRU_CACHE_MAX_SIZE * 2);
   private static readonly searchResultsCache = new LRUCache<string, SearchResult>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
   private static readonly pathNormalizeCache = new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
-  
+
   private configService: SwitchConfigService;
 
   // Cache configuration constants
@@ -54,7 +54,7 @@ export class SwitchService {
   constructor(configService?: SwitchConfigService) {
     // Allow dependency injection for testing
     this.configService = configService ?? new SwitchConfigService();
-    
+
     //  注册所有缓存到内存监控
     memoryMonitor.registerCache('SwitchService-regex', SwitchService.regexCache);
     memoryMonitor.registerCache('SwitchService-fileExists', SwitchService.fileExistsCache);
@@ -82,7 +82,7 @@ export class SwitchService {
   private async checkFileExistsCached(uri: vscode.Uri): Promise<boolean> {
     const key = uri.fsPath;
     const cached = SwitchService.fileExistsCache.get(key);
-    
+
     if (cached !== undefined) {
       return cached;
     }
@@ -112,7 +112,7 @@ export class SwitchService {
     if (cached !== undefined) {
       return cached;
     }
-    
+
     const normalized = path.normalize(filePath).replace(/\\/g, '/');
     SwitchService.pathNormalizeCache.set(filePath, normalized);
     return normalized;
@@ -126,7 +126,7 @@ export class SwitchService {
       const exists = await this.checkFileExistsCached(uri);
       return exists ? uri : null;
     });
-    
+
     const results = await Promise.all(promises);
     return results.filter((uri): uri is vscode.Uri => uri !== null);
   }
@@ -260,7 +260,7 @@ export class SwitchService {
             module: 'SwitchService',
             operation: 'tryClangdSwitch',
           });
-        } catch (error) {
+        } catch {
           logger.debug('Failed to activate clangd extension, using heuristic search', {
             module: 'SwitchService',
             operation: 'tryClangdSwitch',
@@ -369,10 +369,10 @@ export class SwitchService {
       const searchPromises = [
         // Strategy 1: 同目录搜索 (最快，优先级最高)
         this.searchSameDirectoryOptimized(directory, name, targetExtensions),
-        
+
         // Strategy 2: src/include结构搜索
         this.searchSrcIncludeStructureOptimized(currentPath, name, targetExtensions),
-        
+
         // Strategy 3: 并行测试结构搜索
         this.searchParallelTestsStructureOptimized(currentPath, name, targetExtensions),
       ];
@@ -436,10 +436,10 @@ export class SwitchService {
   ): Promise<SearchResult> {
     // 批量生成候选路径
     const candidateUris = this.generateCandidatePaths(directory, baseName, targetExtensions);
-    
+
     // 并行检查所有文件存在性
     const existingFiles = await this.checkMultipleFilesExist(candidateUris);
-    
+
     return { files: existingFiles, method: 'same-directory' };
   }
 
@@ -709,7 +709,7 @@ export class SwitchService {
             `${baseName}${ext}`,
           );
           const candidateUri = vscode.Uri.file(candidatePath);
-          
+
           //  使用缓存的文件存在性检查
           const exists = await this.checkFileExistsCached(candidateUri);
           if (exists) {

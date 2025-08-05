@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode';
 import { exec } from 'child_process';
-import { IMonitor, MonitorConfig } from './types';
+import { IMonitor, MonitorConfig, MemoryUsage, ClangdStatus, MemoryMonitorConfig } from './types';
 import { MemoryMonitor } from './monitors/memory-monitor';
 import { CpuMonitor } from './monitors/cpu-monitor';
 import { StatusMonitor } from './monitors/status-monitor';
@@ -88,8 +88,8 @@ export class MonitorCoordinator implements vscode.Disposable {
       await vscode.commands.executeCommand('clangd.restart');
 
       // Wait for clangd to start up
-              //  使用统一的延迟函数  
-        await delay(2000);
+      //  使用统一的延迟函数
+      await delay(2000);
 
       // Force all monitors to reset and re-detect PID (should now pick the main process)
       const memoryMonitor = this.getMonitor<MemoryMonitor>('memory');
@@ -148,7 +148,7 @@ export class MonitorCoordinator implements vscode.Disposable {
       }
 
       await new Promise<void>((resolve, reject) => {
-        exec(command, (error: any, stdout: string, _stderr: string) => {
+        exec(command, (error: Error | null, stdout: string) => {
           if (
             error &&
             !error.message.includes('not found') &&
@@ -176,7 +176,7 @@ export class MonitorCoordinator implements vscode.Disposable {
   public async startMonitoring(): Promise<void> {
     try {
       // Start all individual monitors
-      for (const [_name, monitor] of this.monitors) {
+      for (const [, monitor] of this.monitors) {
         await monitor.start();
         this.logger.info(`Started ${monitor.getName()}`);
       }
@@ -226,7 +226,9 @@ export class MonitorCoordinator implements vscode.Disposable {
 
       // Update status monitor status
       if (statusMonitor) {
-        (statusMonitor as any).updateStatus();
+        (statusMonitor as { updateStatus: () => Promise<void> }).updateStatus().catch(error => {
+          console.warn('Failed to update status monitor:', error);
+        });
       }
       const currentStatus = statusMonitor?.getCurrentStatus();
 
@@ -259,7 +261,7 @@ export class MonitorCoordinator implements vscode.Disposable {
       }
 
       // Stop all individual monitors
-      for (const [_name, monitor] of this.monitors) {
+      for (const [, monitor] of this.monitors) {
         monitor.stop();
         this.logger.info(`Stopped ${monitor.getName()}`);
       }
@@ -308,7 +310,7 @@ export class MonitorCoordinator implements vscode.Disposable {
 
       const updatePanelContent = async () => {
         // Ensure status is up-to-date before rendering
-        await (statusMonitor as any).updateStatus();
+        await (statusMonitor as { updateStatus: () => Promise<void> }).updateStatus();
 
         const lastMemoryUsage = memoryMonitor.getLastMemoryUsage();
         const currentStatus = statusMonitor.getCurrentStatus();
@@ -337,7 +339,7 @@ export class MonitorCoordinator implements vscode.Disposable {
               // After restart, poll for updates to show progress
               for (let i = 0; i < 5; i++) {
                 //  使用统一的延迟函数
-        await delay(1000);
+                await delay(1000);
                 await updatePanelContent();
               }
               return;
@@ -360,9 +362,9 @@ export class MonitorCoordinator implements vscode.Disposable {
    * Generate HTML content for the details panel
    */
   private generateDetailsHtml(
-    memoryUsage: any,
-    status: any,
-    config: any,
+    memoryUsage: MemoryUsage | undefined,
+    status: ClangdStatus | undefined,
+    config: MemoryMonitorConfig,
   ): string {
     const hasData = memoryUsage && status;
 
@@ -460,7 +462,7 @@ export class MonitorCoordinator implements vscode.Disposable {
             </div>
             
             ${hasData
-      ? `
+        ? `
                 <div class="section">
                     <h2> Memory Usage</h2>
                     <div class="info-grid">
@@ -497,13 +499,13 @@ export class MonitorCoordinator implements vscode.Disposable {
                             <span>${status.version || '未检测到版本信息'}</span>
                         </div>
                         ${status.pid
-        ? `
+          ? `
                         <div class="info-item">
                             <span class="info-label">Server Process ID:</span>
                             <span>${status.pid}</span>
                         </div>
                         `
-        : ''
+          : ''
         }
                     </div>
                 </div>
@@ -513,7 +515,7 @@ export class MonitorCoordinator implements vscode.Disposable {
                     <div class="info-grid">
                         <div class="info-item">
                             <span class="info-label">Update Interval:</span>
-                            <span>${config.updateInterval / 1000}s</span>
+                            <span>${(config.updateInterval || 5000) / 1000}s</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Warning Threshold:</span>
@@ -526,7 +528,7 @@ export class MonitorCoordinator implements vscode.Disposable {
                     </div>
                 </div>
             `
-      : `
+        : `
                 <div class="section no-data">
                     <h2> No Data Available</h2>
                     <p>Clangd process monitoring data is not available.</p>

@@ -3,6 +3,8 @@
  * Used by both frontend and backend to ensure type consistency
  */
 
+import { ConfigValue } from './event-types';
+
 // Configuration category enumeration - using English categories
 export enum ConfigCategories {
   BASIC = 'Basic Settings',
@@ -31,7 +33,7 @@ export interface ClangFormatOption {
   enumValues?: string[];
   min?: number;
   max?: number;
-  defaultValue: any;
+  defaultValue: ConfigValue;
   version: string; // clang-format version
   deprecated?: boolean;
   previewTemplate?: string;
@@ -40,7 +42,7 @@ export interface ClangFormatOption {
 
 // Clang-Format configuration interface
 export interface ClangFormatConfig {
-  [key: string]: any;
+  [key: string]: ConfigValue;
 }
 
 // WebView message types
@@ -109,7 +111,7 @@ export interface AppState {
 // Message interface
 export interface WebviewMessage {
   type: WebviewMessageType;
-  payload: any;
+  payload: unknown;
 }
 
 // Search request interface

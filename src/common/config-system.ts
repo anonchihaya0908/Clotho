@@ -102,7 +102,6 @@ export interface PathConfig extends EnhancedBaseConfig {
 // ===============================
 
 
-
 /**
  *  配置验证器
  * 提供标准的配置验证逻辑
@@ -213,10 +212,10 @@ export class ConfigValidator {
  */
 export class ConfigurationManager {
   private static instance: ConfigurationManager;
-  private configCache = new Map<string, any>();
+  private configCache = new Map<string, unknown>();
   private readonly configPrefix = 'clotho';
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): ConfigurationManager {
     if (!ConfigurationManager.instance) {
@@ -233,16 +232,17 @@ export class ConfigurationManager {
     defaultConfig: T
   ): T {
     const cacheKey = `${this.configPrefix}.${key}`;
-    
+
     // 检查缓存
     if (this.configCache.has(cacheKey)) {
-      return { ...defaultConfig, ...this.configCache.get(cacheKey) };
+      const cachedConfig = this.configCache.get(cacheKey) as Partial<T>;
+      return { ...defaultConfig, ...(cachedConfig || {}) };
     }
 
     // 从VS Code配置中读取
     const config = vscode.workspace.getConfiguration(this.configPrefix);
     const userConfig = config.get<Partial<T>>(key, {});
-    
+
     const finalConfig = {
       ...defaultConfig,
       ...userConfig,
@@ -251,7 +251,7 @@ export class ConfigurationManager {
 
     // 缓存配置
     this.configCache.set(cacheKey, finalConfig);
-    
+
     return finalConfig;
   }
 
@@ -264,11 +264,11 @@ export class ConfigurationManager {
     target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace
   ): Promise<void> {
     const cacheKey = `${this.configPrefix}.${key}`;
-    
+
     try {
       const vsConfig = vscode.workspace.getConfiguration(this.configPrefix);
       await vsConfig.update(key, config, target);
-      
+
       // 更新缓存
       const currentConfig = this.configCache.get(cacheKey) || {};
       this.configCache.set(cacheKey, {
@@ -333,7 +333,7 @@ export class ConfigurationManager {
    */
   onConfigurationChanged(
     key: string,
-    callback: (config: any) => void
+    callback: (config: unknown) => void
   ): vscode.Disposable {
     return vscode.workspace.onDidChangeConfiguration((event) => {
       const configKey = `${this.configPrefix}.${key}`;

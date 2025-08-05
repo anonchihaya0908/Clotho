@@ -100,7 +100,7 @@ export type ServiceFactory<T> = Factory<T, [ServiceContainer]>; /**
  * Enhanced ServiceContainer with improved type safety and maintainability
  */
 export class ServiceContainer {
-  private factories = new Map<ServiceName, ServiceFactory<any>>();
+  private factories = new Map<ServiceName, ServiceFactory<unknown>>();
   private cache = new Map<ServiceName, ServiceMap[ServiceName]>();
 
   /**
@@ -139,8 +139,8 @@ export class ServiceContainer {
     }
 
     const instance = factory(this);
-    this.cache.set(name, instance);
-    return instance;
+    this.cache.set(name, instance as ServiceMap[K]);
+    return instance as ServiceMap[K];
   }
 
   /**
@@ -169,7 +169,7 @@ export class ServiceContainer {
     isValid: boolean;
     missing: string[];
     registered: ServiceName[];
-    } {
+  } {
     const registered = this.getRegisteredServices();
 
     // Extract all keys from ServiceMap type programmatically
@@ -208,9 +208,9 @@ export class ServiceContainer {
     const errors: Array<{ service: string; error: Error }> = [];
 
     for (const [name, service] of this.cache.entries()) {
-      if (service && typeof (service as any).dispose === 'function') {
+      if (service && typeof (service as { dispose?: () => void }).dispose === 'function') {
         try {
-          (service as any).dispose();
+          (service as { dispose: () => void }).dispose();
           disposedServices.push(String(name));
         } catch (error) {
           errorHandler.handle(error, {

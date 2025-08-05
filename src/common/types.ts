@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 
 // Re-export core types for module accessibility
 export {
-  BaseConfig, BaseManager, ConfigScope, Disposable, EditorError, EditorState, ErrorContext, FileType, FileValidationResult, isValidConfigScope, isValidFileType, isValidLanguage, isValidSearchMethod, Language, LanguageDetectionResult, ManagerContext,
+  BaseConfig, BaseManager, ConfigScope, Disposable, EditorError, EditorState, FileType, FileValidationResult, isValidConfigScope, isValidFileType, isValidLanguage, isValidSearchMethod, Language, LanguageDetectionResult, ManagerContext,
   ManagerStatus, SearchMethod, SearchResult, StateChangeEvent, TemplateChoice, TemplateContext, TextDocument, TextEditor, Uri, ValidationResult, WorkspaceFolder
 } from './types/core';
 

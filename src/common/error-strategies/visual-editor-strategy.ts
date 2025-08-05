@@ -18,8 +18,8 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
   private errorHistory: Array<{ code: string; timestamp: number }> = [];
 
   constructor(
-        private stateManager?: any, // Will be properly typed when imported
-        private eventBus?: any,
+    private stateManager?: { updateState?: (state: unknown, reason?: string) => Promise<void>; getState?: () => { recoveryAttempts?: number } }, // Will be properly typed when imported
+    private eventBus?: { emit?: (event: string, ...args: readonly unknown[]) => void },
   ) {
     super();
   }
@@ -27,12 +27,12 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
   canHandle(error: ClothoError): boolean {
     // Handle errors from visual editor modules
     return error.context.module === 'VisualEditor' ||
-            error.context.module === 'ClangFormatEditor' ||
-            error.context.module === 'ErrorRecoveryManager' ||
-            error.context.module.startsWith('visual-editor');
+      error.context.module === 'ClangFormatEditor' ||
+      error.context.module === 'ErrorRecoveryManager' ||
+      error.context.module.startsWith('visual-editor');
   }
 
-  async handle(error: ClothoError, context: ErrorContext): Promise<ErrorStrategyResult> {
+  async handle(error: ClothoError, _context: ErrorContext): Promise<ErrorStrategyResult> { // eslint-disable-line @typescript-eslint/no-unused-vars
     logger.info(`Handling visual editor error: ${error.message}`, {
       module: this.name,
       operation: 'handle',
@@ -121,10 +121,9 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
   private async recoverPreviewOpen(): Promise<boolean> {
     try {
       // Attempt to reset preview state
-      if (this.stateManager) {
+      if (this.stateManager?.updateState) {
         await this.stateManager.updateState(
-          { previewMode: 'closed' },
-          'error-recovery'
+          { previewMode: 'closed' }
         );
       }
       return true;
@@ -136,10 +135,9 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
   private async recoverConfigLoad(): Promise<boolean> {
     try {
       // Reset to default configuration
-      if (this.stateManager) {
+      if (this.stateManager?.updateState) {
         await this.stateManager.updateState(
-          { currentConfig: {} },
-          'config-reset'
+          { currentConfig: {} }
         );
       }
       return true;
@@ -157,7 +155,7 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
     try {
       // Restart the webview communication
       if (this.eventBus) {
-        this.eventBus.emit('restart-communication');
+        this.eventBus?.emit?.('restart-communication');
       }
       return true;
     } catch {
@@ -168,14 +166,14 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
   private async defaultRecovery(): Promise<boolean> {
     // Default recovery: reset state
     try {
-      if (this.stateManager) {
+      if (this.stateManager?.updateState) {
+        const currentState = this.stateManager.getState?.() || {};
         await this.stateManager.updateState(
           {
             isInitialized: false,
             configDirty: false,
-            recoveryAttempts: (this.stateManager.getState().recoveryAttempts || 0) + 1,
-          },
-          'default-recovery'
+            recoveryAttempts: (currentState.recoveryAttempts || 0) + 1,
+          }
         );
       }
       return true;

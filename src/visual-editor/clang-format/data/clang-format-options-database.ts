@@ -2169,7 +2169,7 @@ using std::vector;`
 ];
 
 // 默认的 clang-format 配置
-export const DEFAULT_CLANG_FORMAT_CONFIG: Record<string, any> = {
+export const DEFAULT_CLANG_FORMAT_CONFIG: Record<string, unknown> = {
   BasedOnStyle: 'LLVM',
 };
 

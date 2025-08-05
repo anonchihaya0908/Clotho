@@ -71,12 +71,12 @@ export class PreviewEditorManager implements BaseManager {
 
           return currentState.previewEditor;
         }
-      } catch (error) {
+      } catch {
         // 现有预览无效，继续创建新预览
       }
     }
 
-          // Set creation lock
+    // Set creation lock
     this.isCreatingPreview = true;
 
     try {
@@ -314,7 +314,7 @@ export class PreviewEditorManager implements BaseManager {
    * 集成 clang-format 实时格式化功能
    */
   public async updatePreviewWithConfig(
-    newConfig: Record<string, any>,
+    newConfig: Record<string, unknown>,
   ): Promise<void> {
     const { previewUri } = this.context.stateManager.getState();
     if (!previewUri) {
@@ -356,7 +356,7 @@ export class PreviewEditorManager implements BaseManager {
   /**
    * 生成配置注释
    */
-  private generateConfigComment(config: Record<string, any>): string {
+  private generateConfigComment(config: Record<string, unknown>): string {
     const configEntries = Object.entries(config)
       .filter(([, value]) => value !== undefined && value !== null)
       .map(([key, value]) => `//   ${key}: ${JSON.stringify(value)}`)
@@ -383,7 +383,7 @@ ${configEntries || '//   (using base style defaults)'}
 
     this.context.eventBus.on(
       'config-updated-for-preview',
-      ({ newConfig }: any) => {
+      ({ newConfig }: { newConfig: Record<string, unknown> }) => {
         // 这里可以添加基于新配置更新预览的逻辑
         // 目前先简单地重新应用宏观预览代码，未来可以集成clang-format格式化
         this.updatePreviewWithConfig(newConfig);

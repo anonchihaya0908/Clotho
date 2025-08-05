@@ -2,7 +2,7 @@
  * Switch Header/Source module specific types
  */
 
-import { BaseConfig, SearchResult as CoreSearchResult } from '../common/types/core';
+import { SearchResult as CoreSearchResult } from '../common/types/core';
 import { PathConfig } from '../common/config-system';
 
 // ===============================

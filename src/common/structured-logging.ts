@@ -4,13 +4,10 @@
  */
 
 import { logger } from './logger';
-import { errorHandler } from './error-handler';
-import { 
-  BaseResult, 
-  DataResult, 
-  AsyncOptions, 
-  PerformanceStats, 
-  Factory 
+import {
+  DataResult,
+  AsyncOptions,
+  PerformanceStats
 } from './type-utilities';
 
 // ===============================
@@ -34,19 +31,19 @@ export interface OperationContext {
   /** 关联ID（用于追踪相关操作） */
   correlationId?: string;
   /** 额外的上下文数据 */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
  *  操作结果信息
  */
-export interface OperationResult extends DataResult<any> {
+export interface OperationResult extends DataResult<unknown> {
   /** 操作开始时间 */
   startTime: number;
   /** 操作结束时间 */
   endTime: number;
   /** 结果元数据 */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -225,11 +222,11 @@ export class StructuredLogger {
     operation: () => Promise<T>
   ): Promise<OperationResult> {
     const startTime = Date.now();
-    
+
     try {
       const data = await this.asyncOperation(context, operation);
       const endTime = Date.now();
-      
+
       return {
         success: true,
         data,
@@ -240,7 +237,7 @@ export class StructuredLogger {
     } catch (error) {
       const endTime = Date.now();
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       return {
         success: false,
         error: errorMessage,
@@ -288,7 +285,7 @@ export class StructuredLogger {
   } {
     const stats = this.getOperationStats();
     const totalOperations = stats.reduce((sum, stat) => sum + stat.totalOperations, 0);
-    
+
     // 收集所有错误
     const errorMap = new Map<string, number>();
     stats.forEach(stat => {
@@ -331,7 +328,7 @@ export class StructuredLogger {
     error?: string
   ): void {
     let stats = this.operationStats.get(operationKey);
-    
+
     if (!stats) {
       stats = {
         operationName: context.operation,
@@ -387,18 +384,18 @@ export class StructuredLogger {
  * 为方法添加自动的日志记录功能
  */
 export function LogOperation(context?: Partial<OperationContext>) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (target: unknown, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
-    
+
     if (typeof originalMethod !== 'function') {
       return descriptor;
     }
 
-    descriptor.value = function (...args: any[]) {
+    descriptor.value = function (...args: readonly unknown[]) {
       const operationContext: OperationContext = {
-        module: target.constructor.name,
+        module: (target as { constructor: { name: string } }).constructor.name,
         operation: propertyKey,
-        instanceId: (this as any).id || (this as any).name,
+        instanceId: (this as { id?: string; name?: string }).id || (this as { id?: string; name?: string }).name,
         ...context,
       };
 
@@ -425,19 +422,19 @@ export function MonitorPerformance(
   warningThreshold: number = 1000, // ms
   errorThreshold: number = 5000    // ms
 ) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (target: unknown, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
-    
+
     if (typeof originalMethod !== 'function') {
       return descriptor;
     }
 
-    descriptor.value = function (...args: any[]) {
+    descriptor.value = function (...args: readonly unknown[]) {
       const startTime = Date.now();
       const context: OperationContext = {
-        module: target.constructor.name,
+        module: (target as { constructor: { name: string } }).constructor.name,
         operation: propertyKey,
-        instanceId: (this as any).id || (this as any).name,
+        instanceId: (this as { id?: string; name?: string }).id || (this as { id?: string; name?: string }).name,
       };
 
       const result = originalMethod.apply(this, args);
@@ -453,8 +450,8 @@ export function MonitorPerformance(
         if (error) {
           logger.error(` Operation ${propertyKey} failed after ${duration}ms`, error, logContext);
         } else if (duration > errorThreshold) {
-          logger.error(` Operation ${propertyKey} took ${duration}ms (exceeds error threshold)`, 
-            new Error(`Performance threshold exceeded`), logContext);
+          logger.error(` Operation ${propertyKey} took ${duration}ms (exceeds error threshold)`,
+            new Error('Performance threshold exceeded'), logContext);
         } else if (duration > warningThreshold) {
           logger.warn(` Operation ${propertyKey} took ${duration}ms (exceeds warning threshold)`, logContext);
         } else {
@@ -490,9 +487,9 @@ export function MonitorPerformance(
  *  标准化事件发射器
  * 提供类型安全的事件处理
  */
-export class TypedEventEmitter<TEvents extends Record<string, any[]>> {
-  private listeners = new Map<keyof TEvents, Set<(...args: any[]) => void>>();
-  private onceListeners = new Map<keyof TEvents, Set<(...args: any[]) => void>>();
+export class TypedEventEmitter<TEvents extends Record<string, readonly unknown[]>> {
+  private listeners = new Map<keyof TEvents, Set<(...args: readonly unknown[]) => void>>();
+  private onceListeners = new Map<keyof TEvents, Set<(...args: readonly unknown[]) => void>>();
 
   /**
    * 添加事件监听器
@@ -501,7 +498,7 @@ export class TypedEventEmitter<TEvents extends Record<string, any[]>> {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
-    this.listeners.get(event)!.add(listener);
+    this.listeners.get(event)!.add(listener as (...args: readonly unknown[]) => void);
 
     // 返回取消订阅函数
     return () => this.off(event, listener);
@@ -514,18 +511,18 @@ export class TypedEventEmitter<TEvents extends Record<string, any[]>> {
     if (!this.onceListeners.has(event)) {
       this.onceListeners.set(event, new Set());
     }
-    this.onceListeners.get(event)!.add(listener);
+    this.onceListeners.get(event)!.add(listener as (...args: readonly unknown[]) => void);
 
     // 返回取消订阅函数
-    return () => this.onceListeners.get(event)?.delete(listener);
+    return () => this.onceListeners.get(event)?.delete(listener as (...args: readonly unknown[]) => void);
   }
 
   /**
    * 移除事件监听器
    */
   off<K extends keyof TEvents>(event: K, listener: (...args: TEvents[K]) => void): void {
-    this.listeners.get(event)?.delete(listener);
-    this.onceListeners.get(event)?.delete(listener);
+    this.listeners.get(event)?.delete(listener as (...args: readonly unknown[]) => void);
+    this.onceListeners.get(event)?.delete(listener as (...args: readonly unknown[]) => void);
   }
 
   /**
@@ -619,7 +616,7 @@ export class TypedEventEmitter<TEvents extends Record<string, any[]>> {
 export function createContext(
   module: string,
   operation: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): OperationContext {
   return {
     module,
@@ -636,7 +633,7 @@ export function logOperation<T>(
   module: string,
   operation: string,
   fn: () => T,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): T {
   return StructuredLogger.operation(createContext(module, operation, metadata), fn);
 }
@@ -648,7 +645,7 @@ export function logAsyncOperation<T>(
   module: string,
   operation: string,
   fn: () => Promise<T>,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): Promise<T> {
   return StructuredLogger.asyncOperation(createContext(module, operation, metadata), fn);
 }

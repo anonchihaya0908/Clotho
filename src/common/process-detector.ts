@@ -2,12 +2,12 @@
  * Process Detector - The "Ace Detective" of Clotho Extension
  *
  * A centralized detector for finding and analyzing system processes.
- * This detector is responsible for all process detection logic, including the 
+ * This detector is responsible for all process detection logic, including the
  * "parent-child DNA testing" to identify legitimate processes vs stale ones.
  */
 
 import * as process from 'node:process';
-import { PERFORMANCE } from './constants';
+
 import { errorHandler } from './error-handler';
 import { logger } from './logger';
 import { ProcessRunner } from './process-runner';
@@ -111,10 +111,10 @@ export class ProcessDetector {
     const cached = this.processListCache.get(processName);
     if (cached && this.isCacheValid(cached.timestamp, this.PROCESS_CACHE_TTL)) {
       if (this.DEBUG) {
-        logger.debug(`Using cached process list for ${processName}`, { 
-          module: 'ProcessDetector', 
+        logger.debug(`Using cached process list for ${processName}`, {
+          module: 'ProcessDetector',
           operation: 'getCachedProcessList',
-          cacheAge: Date.now() - cached.timestamp 
+          cacheAge: Date.now() - cached.timestamp
         });
       }
       return cached.processes;
@@ -139,10 +139,10 @@ export class ProcessDetector {
     const cached = this.detectionResultCache.get(cacheKey);
     if (cached && this.isCacheValid(cached.timestamp, this.DETECTION_CACHE_TTL)) {
       if (this.DEBUG) {
-        logger.debug(`Using cached detection result for ${cacheKey}`, { 
-          module: 'ProcessDetector', 
+        logger.debug(`Using cached detection result for ${cacheKey}`, {
+          module: 'ProcessDetector',
           operation: 'getCachedDetectionResult',
-          cacheAge: Date.now() - cached.timestamp 
+          cacheAge: Date.now() - cached.timestamp
         });
       }
       return cached.result;
@@ -167,9 +167,9 @@ export class ProcessDetector {
     this.processListCache.clear();
     this.detectionResultCache.clear();
     if (this.DEBUG) {
-      logger.debug('ProcessDetector cache cleared', { 
-        module: 'ProcessDetector', 
-        operation: 'clearCache' 
+      logger.debug('ProcessDetector cache cleared', {
+        module: 'ProcessDetector',
+        operation: 'clearCache'
       });
     }
   }
@@ -286,7 +286,7 @@ export class ProcessDetector {
     ourPid: number,
     processPpid: number
   ): 'direct-child' | 'grandchild' | 'orphan' {
-    if (processPpid === ourPid) {return 'direct-child';}
+    if (processPpid === ourPid) { return 'direct-child'; }
     // 可以添加更复杂的逻辑来检测 grandchild
     return 'orphan';
   }
@@ -345,7 +345,7 @@ export class ProcessDetector {
     try {
       // 生成缓存键，考虑API检测器的存在
       const cacheKey = `${processName}_${apiDetector ? 'with_api' : 'no_api'}`;
-      
+
       // 首先检查是否有缓存的检测结果
       const cachedResult = this.getCachedDetectionResult(cacheKey);
       if (cachedResult) {
@@ -377,7 +377,7 @@ export class ProcessDetector {
             candidateCount: 1,
             debugInfo: `API detected PID ${apiPid}`,
           } as ProcessDetectionResult;
-          
+
           // 缓存API检测成功的结果
           this.setCachedDetectionResult(cacheKey, result);
           return result;
@@ -390,15 +390,15 @@ export class ProcessDetector {
       if (this.DEBUG) {
         logger.debug(`Strategy 2: DNA testing for ${processName}`, { module: 'ProcessDetector', operation: 'getDiagnosticInfo' });
       }
-      
+
       //  性能优化：首先尝试从缓存获取进程列表
       let allProcesses = this.getCachedProcessList(processName);
       if (!allProcesses) {
         // 缓存未命中，执行昂贵的系统调用
         if (this.DEBUG) {
-          logger.debug(`Cache miss for ${processName}, fetching from system`, { 
-            module: 'ProcessDetector', 
-            operation: 'detectProcessWithStrategy' 
+          logger.debug(`Cache miss for ${processName}, fetching from system`, {
+            module: 'ProcessDetector',
+            operation: 'detectProcessWithStrategy'
           });
         }
         const rawProcesses = await ProcessRunner.getProcessInfo(processName);
@@ -423,7 +423,7 @@ export class ProcessDetector {
           candidateCount,
           debugInfo: `DNA test selected PID ${mainProcess.pid} from ${candidateCount} candidates`,
         } as ProcessDetectionResult;
-        
+
         // 缓存DNA检测成功的结果
         this.setCachedDetectionResult(cacheKey, result);
         return result;
@@ -436,7 +436,7 @@ export class ProcessDetector {
         candidateCount,
         debugInfo: `All strategies failed. Found ${candidateCount} candidates but none were legitimate children.`,
       } as ProcessDetectionResult;
-      
+
       this.setCachedDetectionResult(cacheKey, failedResult);
       return failedResult;
     } catch (error) {

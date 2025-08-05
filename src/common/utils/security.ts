@@ -42,7 +42,7 @@ class LRUNode<K, V> {
     public value: V,
     public prev: LRUNode<K, V> | null = null,
     public next: LRUNode<K, V> | null = null
-  ) {}
+  ) { }
 }
 
 export class SimpleCache<K, V> {
@@ -54,8 +54,8 @@ export class SimpleCache<K, V> {
   constructor(maxSize: number = PERFORMANCE.SIMPLE_CACHE_MAX_SIZE) {
     this.capacity = maxSize;
     // 创建哨兵节点简化边界处理
-    this.head = new LRUNode(null as any, null as any);
-    this.tail = new LRUNode(null as any, null as any);
+    this.head = new LRUNode(null as unknown as K, null as unknown as V);
+    this.tail = new LRUNode(null as unknown as K, null as unknown as V);
     this.head.next = this.tail;
     this.tail.prev = this.head;
   }
@@ -65,7 +65,7 @@ export class SimpleCache<K, V> {
     if (!node) {
       return undefined;
     }
-    
+
     // 移动到头部（最近使用）
     this.moveToHead(node);
     return node.value;
@@ -73,7 +73,7 @@ export class SimpleCache<K, V> {
 
   set(key: K, value: V): void {
     const existingNode = this.cache.get(key);
-    
+
     if (existingNode) {
       // 更新现有节点
       existingNode.value = value;
@@ -81,7 +81,7 @@ export class SimpleCache<K, V> {
     } else {
       // 添加新节点
       const newNode = new LRUNode(key, value);
-      
+
       if (this.cache.size >= this.capacity) {
         // 移除最少使用的节点
         const tail = this.removeTail();
@@ -89,7 +89,7 @@ export class SimpleCache<K, V> {
           this.cache.delete(tail.key);
         }
       }
-      
+
       this.cache.set(key, newNode);
       this.addToHead(newNode);
     }
@@ -104,7 +104,7 @@ export class SimpleCache<K, V> {
     if (!node) {
       return false;
     }
-    
+
     this.removeNode(node);
     this.cache.delete(key);
     return true;
@@ -133,7 +133,7 @@ export class SimpleCache<K, V> {
   private addToHead(node: LRUNode<K, V>): void {
     node.prev = this.head;
     node.next = this.head.next;
-    
+
     if (this.head.next) {
       this.head.next.prev = node;
     }

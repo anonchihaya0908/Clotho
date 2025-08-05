@@ -81,12 +81,12 @@ export class ProcessRunner {
       }
 
       return { stdout, stderr, exitCode: 0 };
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 对于失败的命令，返回错误信息而不是抛出异常
       return {
-        stdout: error.stdout || '',
-        stderr: error.stderr || error.message,
-        exitCode: error.code || 1,
+        stdout: (error as { stdout?: string }).stdout || '',
+        stderr: (error as { stderr?: string }).stderr || (error as Error).message,
+        exitCode: (error as { code?: number }).code || 1,
       };
     }
   }
@@ -110,7 +110,7 @@ export class ProcessRunner {
       }
 
       return result.stdout;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = `Command failed: ${command}`;
 
       errorHandler.handle(error, {
@@ -121,7 +121,7 @@ export class ProcessRunner {
       });
 
       // Re-throw with more context
-      throw new Error(`${errorMessage} - ${error.message}`);
+      throw new Error(`${errorMessage} - ${(error as Error).message}`);
     }
   }
 
@@ -245,7 +245,7 @@ export class ProcessRunner {
         psProcesses = [psProcesses];
       }
 
-      return psProcesses.map((p: any) => ({
+      return psProcesses.map((p: { ProcessId: number; ParentProcessId: number; WorkingSetSize?: number }) => ({
         pid: p.ProcessId,
         ppid: p.ParentProcessId,
         memory: (p.WorkingSetSize || 0) / 1024, // Convert to KB

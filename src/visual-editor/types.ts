@@ -2,7 +2,7 @@
  * Visual Editor module specific types
  */
 
-import { EditorState as CoreEditorState, BaseConfig } from '../common/types/core';
+import { EditorState as CoreEditorState } from '../common/types/core';
 import { ClangFormatConfig } from '../common/types/clang-format-shared';
 import { UIConfig } from '../common/config-system';
 
@@ -76,13 +76,13 @@ export interface PanelState {
 
 export interface ManagedComponent {
     name: string;
-    instance: any;
+    instance: unknown;
     dispose?(): void;
 }
 
 export interface ManagerRegistration {
     name: string;
-    factory: () => any;
+    factory: () => unknown;
     dependencies?: string[];
 }
 

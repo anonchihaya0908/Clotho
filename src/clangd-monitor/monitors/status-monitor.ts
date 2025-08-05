@@ -197,7 +197,7 @@ export class StatusMonitor implements IMonitor {
       // 注释掉烦人的调试日志
       // this.logger.debug('Trying command:', { command });
 
-      exec(command, { timeout: 5000 }, (error, stdout, _stderr) => {
+      exec(command, { timeout: 5000 }, (error, stdout) => {
         if (error) {
           this.logger.debug(
             `${clangdPath} --version failed:`,

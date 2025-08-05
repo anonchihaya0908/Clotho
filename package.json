@@ -288,8 +288,8 @@
         "lint:fix": "eslint src --ext ts --fix",
         "test": "node ./out/test/runTest.js",
         "package": "node scripts/vsix-toolkit.js package",
-        "package:quick": "@vscode/vsce package --no-dependencies",
-        "package:old": "npm run build:production && @vscode/vsce package",
+        "package:quick": "npx @vscode/vsce package --no-dependencies",
+        "package:old": "npm run build:production && npx @vscode/vsce package",
         "diagnose": "node scripts/vsix-toolkit.js diagnose",
         "fix-packaging": "node scripts/vsix-toolkit.js fix",
         "format": "npx prettier --write \"src/**/*.ts\"",
@@ -344,7 +344,6 @@
     "dependencies": {
         "pidusage": "^4.0.1",
         "tslog": "^4.9.3",
-        "vsce": "^2.15.0",
         "vscode-languageclient": "^9.0.1"
     }
 }

@@ -35,7 +35,9 @@ export interface BaseConfig {
 import type { ValidationResult as BaseValidationResult } from '../type-utilities';
 
 //  使用统一的ValidationResult类型
-export interface ValidationResult extends BaseValidationResult {}
+export interface ValidationResult extends BaseValidationResult {
+    validatedValue?: unknown;
+}
 
 export interface FileValidationResult extends ValidationResult {
     existingFilePath?: string;
@@ -89,7 +91,7 @@ export interface EditorState {
 export interface EditorError {
     code: string;
     message: string;
-    context: Record<string, any>;
+    context: Record<string, unknown>;
     timestamp: number;
     recoverable: boolean;
     module?: string;
@@ -108,9 +110,17 @@ export interface BaseManager {
 
 export interface ManagerContext {
     extensionUri: vscode.Uri;
-    stateManager?: any; // Will be properly typed in specific implementations
-    errorRecovery?: any;
-    eventBus?: any;
+    stateManager?: {
+        updateState(state: Record<string, unknown>, reason?: string): Promise<void>;
+        getState(): Record<string, unknown>;
+    };
+    errorRecovery?: {
+        handleError(code: string, error: Error, context?: Record<string, unknown>): Promise<void>;
+    };
+    eventBus?: {
+        emit(event: string, ...args: readonly unknown[]): void;
+        on(event: string, handler: (...args: readonly unknown[]) => void): () => void;
+    };
 }
 
 export interface ManagerStatus {
@@ -156,11 +166,11 @@ export interface TemplateChoice {
 
 export interface StateChangeEvent {
     type: 'config' | 'error' | 'lifecycle' | 'preview';
-    from: any;
-    to: any;
+    from: unknown;
+    to: unknown;
     timestamp: number;
     source: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
 // ===============================

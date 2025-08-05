@@ -11,8 +11,8 @@ import { CLANG_FORMAT_OPTIONS } from './data/clang-format-options-database';
  * 配置键到预览模板的映射接口
  */
 interface KeywordToTemplateMapping {
-    keywords: string[];
-    template: string;
+  keywords: string[];
+  template: string;
 }
 
 /**
@@ -180,7 +180,7 @@ private:
   public static generatePreviewCode(
     key: string,
     category: ConfigCategories,
-    _type: 'boolean' | 'number' | 'string' | 'enum'
+    _type: 'boolean' | 'number' | 'string' | 'enum' // eslint-disable-line @typescript-eslint/no-unused-vars
   ): string {
     // 首先尝试从数据库中获取专门的预览模板
     const option = CLANG_FORMAT_OPTIONS.find(opt => opt.key === key);

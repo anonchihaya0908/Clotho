@@ -13,9 +13,9 @@ import { ManagerContext } from '../../../common/types';
  * Manageable component interface
  */
 export interface ManagedComponent {
-    readonly name: string;
-    initialize?(context: ManagerContext): Promise<void>;
-    dispose?(): void;
+  readonly name: string;
+  initialize?(context: ManagerContext): Promise<void>;
+  dispose?(): void;
 }
 
 /**
@@ -27,21 +27,21 @@ export type ManagerFactory<T extends ManagedComponent = ManagedComponent> = () =
  * Manager registration info (supports lazy loading)
  */
 export interface ManagerRegistration {
-    name: string;
-    instance?: ManagedComponent; // Optional for lazy loading
-    factory?: ManagerFactory; // Factory for lazy creation
-    initialized: boolean;
-    initializationTime?: number;
+  name: string;
+  instance?: ManagedComponent; // Optional for lazy loading
+  factory?: ManagerFactory; // Factory for lazy creation
+  initialized: boolean;
+  initializationTime?: number;
 }
 
 /**
  * Initialization result
  */
 export interface InitializationResult {
-    success: boolean;
-    initialized: string[];
-    failed: Array<{ name: string; error: Error }>;
-    totalTimeMs: number;
+  success: boolean;
+  initialized: string[];
+  failed: Array<{ name: string; error: Error }>;
+  totalTimeMs: number;
 }
 
 /**
@@ -242,7 +242,7 @@ export class ManagerRegistry implements vscode.Disposable {
         await this.initializeManager(registration, context);
         initialized.push(registration.name);
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         const wrappedError = error instanceof Error
           ? error
           : new Error(`Unknown error: ${String(error)}`);
@@ -303,10 +303,10 @@ export class ManagerRegistry implements vscode.Disposable {
      * Get initialization statistics (simplified)
      */
   getInitializationStats(): Array<{
-        name: string;
-        initialized: boolean;
-        initializationTime?: number;
-    }> {
+    name: string;
+    initialized: boolean;
+    initializationTime?: number;
+  }> {
     return Array.from(this.registrations.values()).map(reg => ({
       name: reg.name,
       initialized: reg.initialized,
@@ -332,7 +332,7 @@ export class ManagerRegistry implements vscode.Disposable {
           disposedManagers.push(registration.name);
         }
         registration.initialized = false;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const wrappedError = error instanceof Error
           ? error
           : new Error(`Unknown error: ${String(error)}`);

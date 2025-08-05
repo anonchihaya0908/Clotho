@@ -6,5 +6,5 @@
 // Export all core types
 export * from './core';
 
-// Export shared clang-format types  
+// Export shared clang-format types
 export * from './clang-format-shared';

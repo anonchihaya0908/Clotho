@@ -11,12 +11,12 @@
  *  通用工厂函数类型
  * 用于创建任意类型的实例
  */
-export type Factory<T, TArgs extends any[] = []> = (...args: TArgs) => T;
+export type Factory<T, TArgs extends readonly unknown[] = readonly unknown[]> = (...args: TArgs) => T;
 
 /**
  *  异步工厂函数类型
  */
-export type AsyncFactory<T, TArgs extends any[] = []> = (...args: TArgs) => Promise<T>;
+export type AsyncFactory<T, TArgs extends readonly unknown[] = readonly unknown[]> = (...args: TArgs) => Promise<T>;
 
 /**
  *  重置函数类型
@@ -85,7 +85,7 @@ export interface ValidationResult {
  *  批量操作结果
  * 用于批量处理的结果统计
  */
-export interface BatchResult<TItem, TResult = any> extends BaseResult {
+export interface BatchResult<TItem, TResult = unknown> extends BaseResult {
   /** 处理的总数 */
   total: number;
   /** 成功的数量 */
@@ -108,9 +108,9 @@ export interface BatchResult<TItem, TResult = any> extends BaseResult {
  *  通用状态枚举
  * 标准化的状态值
  */
-export type CommonStatus = 
+export type CommonStatus =
   | 'idle'
-  | 'pending' 
+  | 'pending'
   | 'running'
   | 'completed'
   | 'failed'
@@ -120,7 +120,7 @@ export type CommonStatus =
  *  生命周期状态
  * 用于管理组件生命周期
  */
-export type LifecycleStatus = 
+export type LifecycleStatus =
   | 'created'
   | 'initializing'
   | 'ready'
@@ -210,7 +210,7 @@ export interface MemoryStats extends BaseStats {
  *  增强的管理器接口
  * 为各种管理器提供统一的接口
  */
-export interface EnhancedManager<TConfig = {}, TStats = BaseStats> {
+export interface EnhancedManager<TConfig = object, TStats = BaseStats> {
   /** 管理器名称 */
   readonly name: string;
   /** 管理器状态 */
@@ -233,14 +233,14 @@ export interface EnhancedManager<TConfig = {}, TStats = BaseStats> {
  *  可观察的管理器接口
  * 支持事件监听的管理器
  */
-export interface ObservableManager<TConfig = {}, TStats = BaseStats, TEvent = string> 
+export interface ObservableManager<TConfig = object, TStats = BaseStats, TEvent = string>
   extends EnhancedManager<TConfig, TStats> {
   /** 添加事件监听器 */
-  on(event: TEvent, handler: (...args: any[]) => void): () => void;
+  on(event: TEvent, handler: (...args: readonly unknown[]) => void): () => void;
   /** 移除事件监听器 */
-  off(event: TEvent, handler: (...args: any[]) => void): void;
+  off(event: TEvent, handler: (...args: readonly unknown[]) => void): void;
   /** 触发事件 */
-  emit(event: TEvent, ...args: any[]): void;
+  emit(event: TEvent, ...args: readonly unknown[]): void;
 }
 
 // ===============================
@@ -312,7 +312,7 @@ export interface Cancellable {
 /**
  * ⏳ 进度报告接口
  */
-export interface ProgressReporter<T = any> {
+export interface ProgressReporter<T = unknown> {
   /** 报告进度 */
   report(progress: {
     /** 进度百分比 0-100 */
@@ -360,7 +360,7 @@ export type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, 
  *  字符串字面量联合转数组
  * 将字符串字面量联合类型转换为数组类型
  */
-export type UnionToTuple<T extends string> = T extends any ? [T] : never;
+export type UnionToTuple<T extends string> = T extends string ? [T] : never;
 
 /**
  *  提取Promise类型
@@ -436,7 +436,7 @@ export function enumValues<T extends Record<string, string | number>>(enumObject
 }
 
 /**
- *  创建枚举键数组  
+ *  创建枚举键数组
  */
 export function enumKeys<T extends Record<string, string | number>>(enumObject: T): (keyof T)[] {
   return Object.keys(enumObject);

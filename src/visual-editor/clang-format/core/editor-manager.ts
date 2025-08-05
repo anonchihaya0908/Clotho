@@ -70,7 +70,7 @@ export class ClangFormatEditorManager implements BaseManager {
 
       // 【关键】发送初始化消息到webview
       await this.sendInitializationMessage();
-    } catch (error: any) {
+    } catch (error: unknown) {
       await this.context.errorRecovery.handleError(
         'editor-creation-failed',
         error,
@@ -113,7 +113,7 @@ export class ClangFormatEditorManager implements BaseManager {
         module: this.name,
         operation: 'sendInitializationMessage',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       errorHandler.handle(error, {
         module: this.name,
         operation: 'initialization-message-failed',

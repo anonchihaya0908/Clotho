@@ -161,7 +161,7 @@ function registerServices(context: vscode.ExtensionContext): void {
     (container) => new SwitchService(container.get('switchConfigService')));
 
   serviceContainer.register('switchUI',
-    (container) => new SwitchUI());
+    () => new SwitchUI());
 
   serviceContainer.register('switchCoordinator',
     (container) => new SwitchCoordinator(
@@ -189,7 +189,7 @@ function registerServices(context: vscode.ExtensionContext): void {
     });
   });
 
-      // Clang-Format Visual Editor
+  // Clang-Format Visual Editor
   serviceContainer.register(
     'clangFormatEditorCoordinator',
     () => new ClangFormatEditorCoordinator(context.extensionUri),
@@ -273,8 +273,8 @@ export function cleanup(): void {
  * This makes it easier to manage and maintain all command registrations.
  */
 function registerCommands(context: vscode.ExtensionContext): void {
-  const register = (command: string, handler: (...args: any[]) => any) => {
-    return vscode.commands.registerCommand(command, async (...args: any[]) => {
+  const register = (command: string, handler: (...args: unknown[]) => unknown) => {
+    return vscode.commands.registerCommand(command, async (...args: unknown[]) => {
       try {
         await handler(...args);
       } catch (error) {

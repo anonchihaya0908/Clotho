@@ -10,25 +10,25 @@ import { ClothoError, ErrorContext } from '../error-handler';
 // ===============================
 
 export interface ErrorStrategy {
-    /**
-     * Strategy name for identification
-     */
-    readonly name: string;
+  /**
+   * Strategy name for identification
+   */
+  readonly name: string;
 
-    /**
-     * Determines if this strategy can handle the given error
-     */
-    canHandle(error: ClothoError): boolean;
+  /**
+   * Determines if this strategy can handle the given error
+   */
+  canHandle(error: ClothoError): boolean;
 
-    /**
-     * Handles the error using this strategy
-     */
-    handle(error: ClothoError, context: ErrorContext): Promise<ErrorStrategyResult>;
+  /**
+   * Handles the error using this strategy
+   */
+  handle(error: ClothoError, context: ErrorContext): Promise<ErrorStrategyResult>;
 
-    /**
-     * Clean up any resources used by this strategy
-     */
-    dispose?(): void;
+  /**
+   * Clean up any resources used by this strategy
+   */
+  dispose?(): void;
 }
 
 // ===============================
@@ -36,25 +36,25 @@ export interface ErrorStrategy {
 // ===============================
 
 export interface ErrorStrategyResult {
-    /**
-     * Whether the error was successfully handled
-     */
-    handled: boolean;
+  /**
+   * Whether the error was successfully handled
+   */
+  handled: boolean;
 
-    /**
-     * Whether the operation should be retried
-     */
-    shouldRetry: boolean;
+  /**
+   * Whether the operation should be retried
+   */
+  shouldRetry: boolean;
 
-    /**
-     * Additional context or data from the handling process
-     */
-    metadata?: Record<string, any>;
+  /**
+   * Additional context or data from the handling process
+   */
+  metadata?: Record<string, unknown>;
 
-    /**
-     * Next action to take if any
-     */
-    nextAction?: 'reset' | 'restart' | 'ignore' | 'escalate';
+  /**
+   * Next action to take if any
+   */
+  nextAction?: 'reset' | 'restart' | 'ignore' | 'escalate';
 }
 
 // ===============================
@@ -62,49 +62,49 @@ export interface ErrorStrategyResult {
 // ===============================
 
 export abstract class BaseErrorStrategy implements ErrorStrategy {
-    abstract readonly name: string;
+  abstract readonly name: string;
 
-    abstract canHandle(error: ClothoError): boolean;
+  abstract canHandle(error: ClothoError): boolean;
 
-    abstract handle(error: ClothoError, context: ErrorContext): Promise<ErrorStrategyResult>;
+  abstract handle(error: ClothoError, context: ErrorContext): Promise<ErrorStrategyResult>;
 
-    /**
-     * Helper method to create a successful result
-     */
-    protected createSuccessResult(metadata?: Record<string, any>): ErrorStrategyResult {
-      return {
-        handled: true,
-        shouldRetry: false,
-        metadata,
-      };
-    }
+  /**
+   * Helper method to create a successful result
+   */
+  protected createSuccessResult(metadata?: Record<string, unknown>): ErrorStrategyResult {
+    return {
+      handled: true,
+      shouldRetry: false,
+      metadata,
+    };
+  }
 
-    /**
-     * Helper method to create a retry result
-     */
-    protected createRetryResult(metadata?: Record<string, any>): ErrorStrategyResult {
-      return {
-        handled: true,
-        shouldRetry: true,
-        metadata,
-      };
-    }
+  /**
+   * Helper method to create a retry result
+   */
+  protected createRetryResult(metadata?: Record<string, unknown>): ErrorStrategyResult {
+    return {
+      handled: true,
+      shouldRetry: true,
+      metadata,
+    };
+  }
 
-    /**
-     * Helper method to create a failure result
-     */
-    protected createFailureResult(nextAction?: ErrorStrategyResult['nextAction']): ErrorStrategyResult {
-      return {
-        handled: false,
-        shouldRetry: false,
-        nextAction,
-      };
-    }
+  /**
+   * Helper method to create a failure result
+   */
+  protected createFailureResult(nextAction?: ErrorStrategyResult['nextAction']): ErrorStrategyResult {
+    return {
+      handled: false,
+      shouldRetry: false,
+      nextAction,
+    };
+  }
 
-    /**
-     * Default dispose implementation (no-op)
-     */
-    dispose(): void {
-      // Override in subclasses if cleanup is needed
-    }
+  /**
+   * Default dispose implementation (no-op)
+   */
+  dispose(): void {
+    // Override in subclasses if cleanup is needed
+  }
 }

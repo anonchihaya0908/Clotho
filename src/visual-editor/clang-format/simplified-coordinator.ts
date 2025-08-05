@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import { errorHandler } from '../../common/error-handler';
 import { logger } from '../../common/logger';
+import { ManagerContext } from '../../common/types/core';
 import { logAsyncOperation } from '../../common/structured-logging';
 import { EditorOpenSource } from '../../common/types';
 import { WebviewMessageType } from '../../common/types/clang-format-shared';
@@ -31,7 +32,7 @@ import { ConfigChangeService } from './core/config-change-service';
 
 /**
  *  Simplified ClangFormat Editor Coordinator
- * 
+ *
  * Follows unified coordinator architecture pattern:
  * - Clean dependency injection
  * - Clear separation of responsibilities
@@ -42,16 +43,16 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
   //  Core services (via dependency injection)
   private readonly formatService: ClangFormatService;
   private readonly guideService: ClangFormatGuideService;
-  
-  //  UI managers (via dependency injection)  
+
+  //  UI managers (via dependency injection)
   private readonly editorManager: ClangFormatEditorManager;
   private readonly previewManager: PreviewEditorManager;
   private readonly placeholderManager: PlaceholderWebviewManager;
-  
+
   //  Configuration and state management
   private readonly configActionManager: ConfigActionManager;
   private readonly stateManager: EditorStateManager;
-  
+
   //  Event and error handling
   private readonly eventBus: EventBus;
   private readonly messageHandler: MessageHandler;
@@ -73,7 +74,7 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
     this.eventBus = new EventBus();
     this.stateManager = new EditorStateManager(this.eventBus);
     this.errorRecovery = new ErrorRecoveryManager(this.stateManager, this.eventBus);
-    
+
     //  Initialize configuration management
     this.configChangeService = new ConfigChangeService(
       this.stateManager,
@@ -102,35 +103,35 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
    */
   async initialize(): Promise<void> {
     return logAsyncOperation('SimplifiedClangFormatCoordinator', 'initialize', async () => {
-    if (this.isInitialized) {
-      return;
-    }
+      if (this.isInitialized) {
+        return;
+      }
 
-    try {
-      //  Prepare manager context
-      const context = this.createManagerContext();
+      try {
+        //  Prepare manager context
+        const context = this.createManagerContext();
 
-      //  Initialize components in dependency order
-      await this.initializeInOrder(context);
+        //  Initialize components in dependency order
+        await this.initializeInOrder(context);
 
-      //  Setup event listeners
-      this.setupEventListeners();
+        //  Setup event listeners
+        this.setupEventListeners();
 
-      this.isInitialized = true;
+        this.isInitialized = true;
 
-      logger.info('SimplifiedClangFormatCoordinator initialized successfully', {
-        module: 'SimplifiedClangFormatCoordinator',
-        operation: 'initialize',
-      });
-    } catch (error) {
-      await errorHandler.handle(error, {
-        operation: 'initialize',
-        module: 'SimplifiedClangFormatCoordinator',
-        showToUser: true,
-        logLevel: 'error',
-      });
-      throw error;
-    }
+        logger.info('SimplifiedClangFormatCoordinator initialized successfully', {
+          module: 'SimplifiedClangFormatCoordinator',
+          operation: 'initialize',
+        });
+      } catch (error) {
+        await errorHandler.handle(error, {
+          operation: 'initialize',
+          module: 'SimplifiedClangFormatCoordinator',
+          showToUser: true,
+          logLevel: 'error',
+        });
+        throw error;
+      }
     }); // 结束logAsyncOperation
   }
 
@@ -139,30 +140,30 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
    */
   async openEditor(source: EditorOpenSource = EditorOpenSource.COMMAND): Promise<void> {
     return logAsyncOperation('SimplifiedClangFormatCoordinator', 'openEditor', async () => {
-    if (!this.isInitialized) {
-      await this.initialize();
-    }
+      if (!this.isInitialized) {
+        await this.initialize();
+      }
 
-    try {
-      //  委托给编辑器管理器
-      // TODO: need to implement specific editor opening logic
-      logger.info('Opening clang-format editor', {
-        module: 'SimplifiedClangFormatCoordinator',
-        operation: 'openEditor',
-        source,
-      });
-      
-      //  更新状态
-      await this.stateManager.updateState(
-        { 
-          // 更新基本状态
-        },
-        'editor-opened'
-      );
+      try {
+        //  委托给编辑器管理器
+        // TODO: need to implement specific editor opening logic
+        logger.info('Opening clang-format editor', {
+          module: 'SimplifiedClangFormatCoordinator',
+          operation: 'openEditor',
+          source,
+        });
 
-    } catch (error) {
-      await this.errorRecovery.handleError('editor-open-failed', error, { source });
-    }
+        //  更新状态
+        await this.stateManager.updateState(
+          {
+            // 更新基本状态
+          },
+          'editor-opened'
+        );
+
+      } catch (error) {
+        await this.errorRecovery.handleError('editor-open-failed', error, { source });
+      }
     }); // 结束logAsyncOperation
   }
 
@@ -187,15 +188,15 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
    *  处理Webview消息
    */
   async handleWebviewMessage(
-    message: { type: WebviewMessageType; payload?: any },
-    panel: vscode.WebviewPanel
+    message: { type: WebviewMessageType; payload?: unknown },
+    _panel: vscode.WebviewPanel // eslint-disable-line @typescript-eslint/no-unused-vars
   ): Promise<void> {
     if (!this.isInitialized) {
       await this.initialize();
     }
 
     try {
-      const context = this.createManagerContext();
+      // const context = this.createManagerContext(); // 保留供未来使用
       // TODO: 实现消息处理逻辑
       logger.debug('Processing webview message', {
         module: 'SimplifiedClangFormatCoordinator',
@@ -215,7 +216,7 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
   dispose(): void {
     //  按相反顺序销毁组件
     this.disposeInReverseOrder();
-    
+
     logger.info('SimplifiedClangFormatCoordinator disposed', {
       module: 'SimplifiedClangFormatCoordinator',
       operation: 'dispose',
@@ -241,14 +242,14 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
   /**
    *  按依赖顺序初始化组件
    */
-  private async initializeInOrder(context: any): Promise<void> {
+  private async initializeInOrder(context: ManagerContext): Promise<void> {
     const initTasks = [
       //  先初始化配置管理
       { name: 'configActionManager', manager: this.configActionManager },
-      
+
       //  初始化消息处理
       { name: 'messageHandler', manager: this.messageHandler },
-      
+
       //  初始化UI管理器
       { name: 'editorManager', manager: this.editorManager },
       { name: 'previewManager', manager: this.previewManager },
@@ -330,8 +331,8 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
 
     managers.forEach((manager) => {
       try {
-        if (manager && typeof (manager as any).dispose === 'function') {
-          (manager as any).dispose();
+        if (manager && typeof (manager as { dispose?: () => void }).dispose === 'function') {
+          (manager as { dispose: () => void }).dispose();
         }
       } catch (error) {
         logger.error('Error disposing manager', error as Error, {

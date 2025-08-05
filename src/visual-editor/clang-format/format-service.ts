@@ -45,7 +45,7 @@ export class ClangFormatService {
    * @param config The configuration object.
    * @returns A string like "{BasedOnStyle: Google, IndentWidth: 4}"
    */
-  private static _serializeConfigToYaml(config: Record<string, any>): string {
+  private static _serializeConfigToYaml(config: Record<string, unknown>): string {
     const parts = Object.entries(config)
       // 过滤掉那些应该被继承的、未定义的值
       .filter(
@@ -65,7 +65,7 @@ export class ClangFormatService {
    * @param content The string content of the file.
    * @returns A configuration object.
    */
-  public parse(content: string): Record<string, any> {
+  public parse(content: string): Record<string, unknown> {
     return this.parseConfigContent(content);
   }
 
@@ -74,7 +74,7 @@ export class ClangFormatService {
    * @param config The configuration object.
    * @returns A string suitable for a .clang-format file.
    */
-  public stringify(config: Record<string, any>): string {
+  public stringify(config: Record<string, unknown>): string {
     return this.generateConfigFile(config);
   }
 
@@ -88,7 +88,7 @@ export class ClangFormatService {
    */
   public async format(
     code: string,
-    config: Record<string, any>,
+    config: Record<string, unknown>,
   ): Promise<FormatResult> {
     return new Promise(async (resolve) => {
       try {
@@ -161,7 +161,7 @@ export class ClangFormatService {
    */
   async formatMicroPreview(
     code: string,
-    config: Record<string, any>,
+    config: Record<string, unknown>,
   ): Promise<FormatResult> {
     return this.format(code, config);
   }
@@ -169,7 +169,7 @@ export class ClangFormatService {
   /**
    * 格式化完整代码（用于宏观预览）- 兼容旧接口
    */
-  async formatMacroPreview(config: Record<string, any>): Promise<FormatResult> {
+  async formatMacroPreview(config: Record<string, unknown>): Promise<FormatResult> {
     return this.format(MACRO_PREVIEW_CODE, config);
   }
 
@@ -177,7 +177,7 @@ export class ClangFormatService {
    * 验证配置的有效性
    */
   async validateConfig(
-    config: Record<string, any>,
+    config: Record<string, unknown>,
   ): Promise<ConfigValidationResult> {
     try {
       // 使用简单代码测试配置是否有效
@@ -185,10 +185,10 @@ export class ClangFormatService {
       const result = await this.format(testCode, config);
 
       if (result.success) {
-        return { 
-          isValid: true, 
-          errors: [], 
-          warnings: [] 
+        return {
+          isValid: true,
+          errors: [],
+          warnings: []
         };
       } else {
         return {
@@ -221,7 +221,7 @@ export class ClangFormatService {
    * Generates the content for a .clang-format configuration file.
    * (Internal helper for stringify)
    */
-  private generateConfigFile(config: Record<string, any>): string {
+  private generateConfigFile(config: Record<string, unknown>): string {
     const lines: string[] = [];
 
     // 添加注释头
@@ -250,7 +250,7 @@ export class ClangFormatService {
    * 保存配置到文件
    */
   async saveConfigToFile(
-    config: Record<string, any>,
+    config: Record<string, unknown>,
     filePath: string,
   ): Promise<void> {
     try {
@@ -266,7 +266,7 @@ export class ClangFormatService {
   /**
    * 从文件加载配置
    */
-  async loadConfigFromFile(filePath: string): Promise<Record<string, any>> {
+  async loadConfigFromFile(filePath: string): Promise<Record<string, unknown>> {
     try {
       const content = await fs.promises.readFile(filePath, 'utf8');
       return this.parseConfigContent(content);
@@ -296,7 +296,7 @@ export class ClangFormatService {
   /**
    * 应用配置到工作区
    */
-  async applyConfigToWorkspace(config: Record<string, any>): Promise<void> {
+  async applyConfigToWorkspace(config: Record<string, unknown>): Promise<void> {
     try {
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -324,7 +324,7 @@ export class ClangFormatService {
     }
   }
 
-  private formatConfigValue(value: any): string {
+  private formatConfigValue(value: unknown): string {
     if (typeof value === 'string') {
       return value;
     } else if (typeof value === 'boolean') {
@@ -343,8 +343,8 @@ export class ClangFormatService {
     }
   }
 
-  private parseConfigContent(content: string): Record<string, any> {
-    const config: Record<string, any> = {};
+  private parseConfigContent(content: string): Record<string, unknown> {
+    const config: Record<string, unknown> = {};
     const lines = content.split(/\r?\n/);
 
     for (const line of lines) {
@@ -368,7 +368,7 @@ export class ClangFormatService {
       let valueStr = trimmedLine.substring(colonIndex + 1).trim();
 
       // 解析值
-      let value: any = valueStr;
+      let value: unknown = valueStr;
 
       // Remove possible quotes
       if (
@@ -409,7 +409,7 @@ export class ClangFormatService {
           } else {
             value = [];
           }
-        } catch (error) {
+        } catch {
           logger.warn(`Failed to parse array value for ${key}: ${valueStr}`, {
             module: 'ClangFormatService',
             operation: 'parseConfigurationLine',
