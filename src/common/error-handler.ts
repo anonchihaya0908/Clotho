@@ -412,7 +412,7 @@ export function handleErrors(context: Partial<ErrorContext> = {}) {
         module: target.constructor.name,
         showToUser: false,
         logLevel: 'error',
-        rethrow: false, // 默认不重新抛出错误
+        rethrow: false, // Do not rethrow errors by default
         ...context,
       };
 

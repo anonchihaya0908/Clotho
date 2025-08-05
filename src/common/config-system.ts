@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode';
 import { logger } from './logger';
+import { ConfigValidationResult } from './types/core';
 
 // ===============================
 // 基础配置接口系统
@@ -100,12 +101,7 @@ export interface PathConfig extends EnhancedBaseConfig {
 // 配置验证系统
 // ===============================
 
-export interface ConfigValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-  fixed?: boolean; // 是否自动修复了配置
-}
+
 
 /**
  * 🔍 配置验证器

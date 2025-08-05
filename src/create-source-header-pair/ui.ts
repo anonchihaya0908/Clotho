@@ -17,8 +17,9 @@ import {
 } from '../pairing-rule-manager';
 import { errorHandler } from '../common/error-handler';
 import { toPascalCase } from '../common/utils';
+import { VALIDATION_PATTERNS } from '../common/constants';
 import { PairCreatorService } from './service';
-import { Language, TEMPLATE_RULES, VALIDATION_PATTERNS } from './templates';
+import { Language, TEMPLATE_RULES } from './templates';
 import { HeaderGuardStyle } from '../common/types';
 
 // Type to clearly express user intent when selecting custom rules

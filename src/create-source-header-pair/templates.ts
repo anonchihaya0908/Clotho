@@ -19,11 +19,6 @@ export type TemplateKey =
   | 'C_EMPTY'
   | 'CPP_EMPTY';
 
-// Regular expression patterns to validate C/C++ identifiers
-export const VALIDATION_PATTERNS = {
-  IDENTIFIER: /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-};
-
 // Template rules for available file pair types
 export const TEMPLATE_RULES: PairingRule[] = [
   {

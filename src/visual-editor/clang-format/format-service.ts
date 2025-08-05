@@ -185,11 +185,16 @@ export class ClangFormatService {
       const result = await this.format(testCode, config);
 
       if (result.success) {
-        return { isValid: true };
+        return { 
+          isValid: true, 
+          errors: [], 
+          warnings: [] 
+        };
       } else {
         return {
           isValid: false,
-          error: result.error || 'Unknown configuration error',
+          errors: [result.error || 'Unknown configuration error'],
+          warnings: []
         };
       }
     } catch (error) {
@@ -202,10 +207,12 @@ export class ClangFormatService {
 
       return {
         isValid: false,
-        error:
+        errors: [
           error instanceof Error
             ? error.message
-            : 'Configuration validation failed',
+            : 'Configuration validation failed'
+        ],
+        warnings: []
       };
     }
   }

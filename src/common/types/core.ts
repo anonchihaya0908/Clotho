@@ -41,8 +41,11 @@ export interface FileValidationResult extends ValidationResult {
     existingFilePath?: string;
 }
 
-export interface ConfigValidationResult extends ValidationResult {
-    // Configuration-specific validation properties can be added here
+export interface ConfigValidationResult {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+    fixed?: boolean; // Whether configuration was automatically fixed
 }
 
 export interface FormatResult {
@@ -90,15 +93,6 @@ export interface EditorError {
     timestamp: number;
     recoverable: boolean;
     module?: string;
-}
-
-export interface ErrorContext {
-    operation: string;
-    module: string;
-    instanceId?: string;
-    showToUser?: boolean;
-    logLevel?: 'debug' | 'info' | 'warn' | 'error';
-    rethrow?: boolean;
 }
 
 // ===============================
