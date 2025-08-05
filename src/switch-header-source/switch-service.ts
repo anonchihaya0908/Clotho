@@ -19,6 +19,7 @@ import { SearchResult } from '../common/types/core';
 import {
   LRUCache,
   isHeaderFile,
+  memoryMonitor,
 } from '../common/utils';
 import { SwitchConfigService } from './config-manager';
 
@@ -51,6 +52,12 @@ export class SwitchService {
   constructor(configService?: SwitchConfigService) {
     // Allow dependency injection for testing
     this.configService = configService ?? new SwitchConfigService();
+    
+    // 🧠 注册所有缓存到内存监控
+    memoryMonitor.registerCache('SwitchService-regex', this.regexCache);
+    memoryMonitor.registerCache('SwitchService-fileExists', this.fileExistsCache);
+    memoryMonitor.registerCache('SwitchService-searchResults', this.searchResultsCache);
+    memoryMonitor.registerCache('SwitchService-pathNormalize', this.pathNormalizeCache);
   }
 
   /**

@@ -203,6 +203,11 @@ export const PERFORMANCE = {
   CLANGD_REQUEST_TIMEOUT: 3000,
   PROCESS_TIMEOUT: 10000, // 10 seconds
   COMMAND_EXECUTION_TIMEOUT: 10000,
+  
+  // 🧠 Memory management settings
+  ERROR_HISTORY_MAX_SIZE: 50, // Maximum error records to keep
+  STATE_HISTORY_MAX_SIZE: 15, // Reduced from 20 for better memory usage
+  OBJECT_POOL_MAX_SIZE: 20, // Maximum objects in pool
 } as const;
 
 // ===============================

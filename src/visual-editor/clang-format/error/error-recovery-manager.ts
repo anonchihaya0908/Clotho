@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { logger } from '../../../common/logger';
 import { EditorError } from '../../../common/types';
 import { delay } from '../../../common/utils/performance';
+import { BoundedHistory, memoryMonitor } from '../../../common/utils/memory';
+import { PERFORMANCE } from '../../../common/constants';
 import { EventBus } from '../messaging/event-bus';
 import { EditorStateManager } from '../state/editor-state-manager';
 
@@ -22,7 +24,7 @@ interface RecoveryStrategy {
  */
 export class ErrorRecoveryManager implements vscode.Disposable {
   private recoveryStrategies = new Map<string, RecoveryStrategy>();
-  private errorHistory: EditorError[] = [];
+  private errorHistory = new BoundedHistory<EditorError>(PERFORMANCE.ERROR_HISTORY_MAX_SIZE);
   private maxRecoveryAttempts = 3;
   private readonly moduleName = 'ErrorRecoveryManager';
 
@@ -31,6 +33,8 @@ export class ErrorRecoveryManager implements vscode.Disposable {
     private eventBus: EventBus,
   ) {
     this.setupRecoveryStrategies();
+    // 🧠 注册错误历史到内存监控
+    memoryMonitor.registerHistory('ErrorRecoveryManager', this.errorHistory);
   }
 
   /**
@@ -226,7 +230,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
   }
 
   dispose(): void {
-    this.errorHistory = [];
+    this.errorHistory.clear();
     this.recoveryStrategies.clear();
   }
 }

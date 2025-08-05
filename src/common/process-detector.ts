@@ -11,7 +11,7 @@ import { PERFORMANCE } from './constants';
 import { errorHandler } from './error-handler';
 import { logger } from './logger';
 import { ProcessRunner } from './process-runner';
-import { LRUCache } from './utils';
+import { LRUCache, memoryMonitor } from './utils';
 
 /**
  * Extended process information with metadata
@@ -567,3 +567,7 @@ export class ProcessDetector {
     return processes.reduce((total, process) => total + process.memory, 0);
   }
 }
+
+// 🧠 注册ProcessDetector的静态缓存到内存监控
+memoryMonitor.registerCache('ProcessDetector-processList', ProcessDetector['processListCache']);
+memoryMonitor.registerCache('ProcessDetector-detectionResult', ProcessDetector['detectionResultCache']);

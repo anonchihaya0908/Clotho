@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { logger } from '../../../common/logger';
 import { StateChangeEvent } from '../../../common/types';
+import { BoundedHistory, memoryMonitor } from '../../../common/utils/memory';
+import { PERFORMANCE } from '../../../common/constants';
 import { VisualEditorState } from '../../types';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';
 import { EventBus } from '../messaging/event-bus';
@@ -17,12 +19,14 @@ type StateSnapshot = {
  */
 export class EditorStateManager implements vscode.Disposable {
   private state: VisualEditorState;
-  private stateHistory: StateSnapshot[] = [];
+  private stateHistory = new BoundedHistory<StateSnapshot>(PERFORMANCE.STATE_HISTORY_MAX_SIZE);
   private disposables: vscode.Disposable[] = [];
   private readonly moduleName = 'VisualEditorStateManager';
 
   constructor(private eventBus: EventBus) {
     this.state = this.createInitialState();
+    // 🧠 注册状态历史到内存监控
+    memoryMonitor.registerHistory('EditorStateManager', this.stateHistory);
   }
 
   /**
@@ -103,7 +107,7 @@ export class EditorStateManager implements vscode.Disposable {
 
   dispose(): void {
     this.disposables.forEach((d) => d.dispose());
-    this.stateHistory = [];
+    this.stateHistory.clear();
   }
 
   /**
@@ -147,11 +151,7 @@ export class EditorStateManager implements vscode.Disposable {
    * 保存状态快照，用于历史记录和回滚
    */
   private saveSnapshot(state: VisualEditorState, source: string): void {
-    if (this.stateHistory.length > 20) {
-      // 限制历史记录大小
-      this.stateHistory.shift();
-    }
-
+    // 🧠 BoundedHistory 自动管理大小限制，无需手动检查
     this.stateHistory.push({
       state: { ...state },
       timestamp: Date.now(),
