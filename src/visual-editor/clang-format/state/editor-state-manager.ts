@@ -5,6 +5,7 @@ import { BoundedHistory, memoryMonitor } from '../../../common/utils/memory';
 import { PERFORMANCE } from '../../../common/constants';
 import { VisualEditorState } from '../../types';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';
+import { ClangFormatConfig } from '../../../common/types/clang-format-shared';
 import { EventBus } from '../messaging/event-bus';
 
 type StateSnapshot = {
@@ -118,7 +119,7 @@ export class EditorStateManager implements vscode.Disposable {
       isInitialized: false,
       isVisible: false,
       previewMode: 'closed',
-      currentConfig: DEFAULT_CLANG_FORMAT_CONFIG || {},
+      currentConfig: (DEFAULT_CLANG_FORMAT_CONFIG || {}) as ClangFormatConfig,
       configDirty: false,
       recoveryAttempts: 0,
     };

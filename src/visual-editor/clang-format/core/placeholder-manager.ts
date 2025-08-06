@@ -84,12 +84,14 @@ export class PlaceholderWebviewManager implements BaseManager {
     this.setupPanelEventListeners();
 
     // 状态更新的职责已上移
-    await this.context.stateManager.updateState(
-      {
-        previewMode: 'closed',
-      },
-      'placeholder-created',
-    );
+    if (this.context.stateManager) {
+      await this.context.stateManager.updateState(
+        {
+          previewMode: 'closed',
+        },
+        'placeholder-created',
+      );
+    }
 
     return this.panel;
   }
@@ -170,7 +172,7 @@ export class PlaceholderWebviewManager implements BaseManager {
     this.panel = undefined; // 面板被销毁，重置引用
 
     // 当用户手动关闭占位符时，我们认为他们希望结束整个会话
-    this.context.eventBus.emit('editor-closed');
+    this.context.eventBus?.emit('editor-closed');
   }
 
   dispose(): void {
@@ -184,7 +186,7 @@ export class PlaceholderWebviewManager implements BaseManager {
     // this.context.eventBus.on('preview-closed', async () => { ... });
 
     // 监听预览打开事件，清理占位符
-    this.context.eventBus.on('preview-opened', () => {
+    this.context.eventBus?.on('preview-opened', () => {
       logger.debug('Preview opened, disposing placeholder', {
         module: this.name,
         operation: 'onPreviewOpened',
@@ -193,15 +195,15 @@ export class PlaceholderWebviewManager implements BaseManager {
     });
 
     // Listen for main editor close events - destroy placeholder accordingly
-    this.context.eventBus.on('editor-closed', () => {
+    this.context.eventBus?.on('editor-closed', () => {
       this.disposePanel();
     });
 
     // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
-    this.context.eventBus.on('editor-visibility-changed', async ({ isVisible }: { isVisible: boolean }) => {
+    this.context.eventBus?.on('editor-visibility-changed', (async ({ isVisible }: { isVisible: boolean }) => {
       if (isVisible) {
         // 主编辑器变为可见，请求恢复代码预览（而不是显示占位符）
-        this.context.eventBus.emit('open-preview-requested', {
+        this.context.eventBus?.emit('open-preview-requested', {
           source: 'editor-visibility-restored',
           forceReopen: true,
         });
@@ -209,10 +211,10 @@ export class PlaceholderWebviewManager implements BaseManager {
         // 主编辑器变为不可见，销毁占位符
         this.hidePlaceholder();
       }
-    });
+    }) as any);
 
     // Listen for preview hidden due to visibility settings
-    this.context.eventBus.on('preview-hidden-by-visibility', () => {
+    this.context.eventBus?.on('preview-hidden-by-visibility', () => {
       logger.debug('Preview is hidden due to visibility settings, not creating placeholder', {
         module: this.name,
         operation: 'createPlaceholder',
@@ -236,7 +238,7 @@ export class PlaceholderWebviewManager implements BaseManager {
     this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
       if (message.type === WebviewMessageType.REOPEN_PREVIEW) {
         // 请求重新打开的逻辑已上移到 Coordinator/MessageHandler
-        this.context.eventBus.emit('open-preview-requested', {
+        this.context.eventBus?.emit('open-preview-requested', {
           source: 'placeholder',
           forceReopen: true,
         });

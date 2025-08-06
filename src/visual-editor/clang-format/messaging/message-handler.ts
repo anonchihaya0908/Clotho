@@ -43,11 +43,13 @@ export class MessageHandler implements BaseManager {
       const error = new Error(
         `Invalid message format: ${JSON.stringify(message)}`,
       );
-      await this.context.errorRecovery.handleError(
-        'message-validation-failed',
-        error,
-        { message },
-      );
+      if (this.context.errorRecovery) {
+        await this.context.errorRecovery.handleError(
+          'message-validation-failed',
+          error,
+          { message },
+        );
+      }
       return;
     }
 
@@ -62,14 +64,16 @@ export class MessageHandler implements BaseManager {
       this.logger.debug(`Handling message: ${message.type}`);
       await handler(message.payload, this.context);
     } catch (error: unknown) {
-      await this.context.errorRecovery.handleError(
-        'message-handling-failed',
-        error,
-        {
-          messageType: message.type,
-          payload: message.payload,
-        },
-      );
+      if (this.context.errorRecovery) {
+        await this.context.errorRecovery.handleError(
+          'message-handling-failed',
+          error as Error,
+          {
+            messageType: message.type,
+            payload: message.payload,
+          },
+        );
+      }
     }
   }
 
@@ -81,11 +85,11 @@ export class MessageHandler implements BaseManager {
       this.logger.info(`Processing ${eventName}...`);
 
       // 先发送事件以确保 ConfigActionManager 被初始化
-      context.eventBus.emit('ensure-config-manager-ready');
+      context.eventBus?.emit('ensure-config-manager-ready');
 
       // Use centralized delay constant for message processing
       setTimeout(() => {
-        context.eventBus.emit(eventName, payload);
+        context.eventBus?.emit(eventName, payload);
       }, UI_CONSTANTS.MESSAGE_HANDLER_DELAY);
     };
   }
@@ -101,7 +105,7 @@ export class MessageHandler implements BaseManager {
     ) => {
       this.logger.debug('Config changed, delegating to coordinator:', payload);
       // 不直接处理，而是触发事件让 coordinator 统一处理
-      context.eventBus.emit('config-change-requested', payload);
+      context.eventBus?.emit('config-change-requested', payload);
     };
 
     // 配置变更 - 支持两种消息类型格式
@@ -150,7 +154,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.REOPEN_PREVIEW,
       async (payload, context) => {
-        context.eventBus.emit('open-preview-requested', payload);
+        context.eventBus?.emit('open-preview-requested', payload);
       },
     );
 
@@ -159,7 +163,7 @@ export class MessageHandler implements BaseManager {
       WebviewMessageType.GET_MICRO_PREVIEW,
       async (payload, context) => {
         this.logger.debug('Micro preview requested:', payload);
-        context.eventBus.emit('micro-preview-requested', payload);
+        context.eventBus?.emit('micro-preview-requested', payload);
       },
     );
 
@@ -168,7 +172,7 @@ export class MessageHandler implements BaseManager {
       WebviewMessageType.GET_MACRO_PREVIEW,
       async (payload, context) => {
         this.logger.debug('Macro preview requested:', payload);
-        context.eventBus.emit('macro-preview-requested', payload);
+        context.eventBus?.emit('macro-preview-requested', payload);
       },
     );
 
@@ -179,7 +183,7 @@ export class MessageHandler implements BaseManager {
         this.logger.debug('Settings updated:', payload);
         // 这里可以处理应用程序设置的更新
         // 比如显示/隐藏指南按钮等
-        context.eventBus.emit('settings-updated', payload);
+        context.eventBus?.emit('settings-updated', payload);
       },
     );
 
@@ -189,7 +193,7 @@ export class MessageHandler implements BaseManager {
       async (payload, context) => {
         this.logger.debug('Config option hover:', payload);
         // 这里可以处理选项悬停时的预览高亮
-        context.eventBus.emit('config-option-hover', payload);
+        context.eventBus?.emit('config-option-hover', payload);
       },
     );
 
@@ -199,7 +203,7 @@ export class MessageHandler implements BaseManager {
       async (payload, context) => {
         this.logger.debug('Config option focus:', payload);
         // 这里可以处理选项获得焦点时的操作
-        context.eventBus.emit('config-option-focus', payload);
+        context.eventBus?.emit('config-option-focus', payload);
       },
     );
 
@@ -209,7 +213,7 @@ export class MessageHandler implements BaseManager {
       async (payload, context) => {
         this.logger.debug('Clear highlights');
         // 这里可以处理清除预览高亮的操作
-        context.eventBus.emit('clear-highlights', payload);
+        context.eventBus?.emit('clear-highlights', payload);
       },
     );
 
@@ -218,7 +222,7 @@ export class MessageHandler implements BaseManager {
       WebviewMessageType.WEBVIEW_READY,
       async (payload, context) => {
         this.logger.info('Webview is ready, triggering editor-fully-ready event');
-        context.eventBus.emit('editor-fully-ready', payload);
+        context.eventBus?.emit('editor-fully-ready', payload);
       },
     );
   }
@@ -227,7 +231,7 @@ export class MessageHandler implements BaseManager {
    * 验证消息基本格式
    */
   private validateMessage(message: unknown): message is WebviewMessage {
-    return message && typeof message.type === 'string';
+    return Boolean(message && typeof message === 'object' && message !== null && typeof (message as any).type === 'string');
   }
 
   dispose(): void {

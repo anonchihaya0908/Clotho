@@ -162,7 +162,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
       });
     } catch (recoveryError: unknown) {
       const wrappedError = new Error(`Recovery attempt failed for ${errorCode}: ${(recoveryError as Error).message}`);
-      logger.error(wrappedError.message, recoveryError, {
+      logger.error(wrappedError.message, recoveryError as Error, {
         module: this.moduleName,
         operation: 'attemptRecovery',
       });

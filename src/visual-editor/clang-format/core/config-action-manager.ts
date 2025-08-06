@@ -56,6 +56,10 @@ export class ConfigActionManager implements BaseManager {
    */
   private setupEventListeners(): void {
     const eventBus = this.context.eventBus;
+    if (!eventBus) {
+      console.warn('EventBus is not available in ConfigActionManager');
+      return;
+    }
 
     // 监听UI的动作请求
     eventBus.on('load-workspace-config-requested', () =>
@@ -137,23 +141,25 @@ export class ConfigActionManager implements BaseManager {
         );
       }
     } catch (error: unknown) {
-      await this.context.errorRecovery.handleError(
-        'config-load-failed',
-        error,
-        { file: fileUri.toString() },
-      );
+      if (this.context.errorRecovery) {
+        await this.context.errorRecovery.handleError(
+          'config-load-failed',
+          error as Error,
+          { file: fileUri.toString() },
+        );
+      }
 
       if (!silent) {
         // 只有非静默模式下才显示错误弹窗
         vscode.window.showErrorMessage(
-          `Failed to read or parse configuration file: ${error.message}`,
+          `Failed to read or parse configuration file: ${(error as Error).message || 'Unknown error'}`,
         );
       } else {
         // 自动加载失败时仅记录日志，不打扰用户
         logger.warn('Auto-load failed, using default configuration', {
           module: 'ConfigActionManager',
           operation: 'loadConfigFromFile',
-          error: error.message
+          error: (error as Error).message || 'Unknown error'
         });
       }
     }
@@ -161,27 +167,34 @@ export class ConfigActionManager implements BaseManager {
 
   private async writeConfigToFile(fileUri: vscode.Uri): Promise<void> {
     try {
+      if (!this.context.stateManager) {
+        throw new Error('StateManager is not available');
+      }
       const currentConfig = this.context.stateManager.getState().currentConfig;
-      const fileContent = this.formatService.stringify(currentConfig);
+      const fileContent = this.formatService.stringify(currentConfig as Record<string, unknown>);
       await vscode.workspace.fs.writeFile(
         fileUri,
         Buffer.from(fileContent, 'utf-8'),
       );
-      await this.context.stateManager.updateState(
-        { configDirty: false },
-        'config-saved',
-      );
+      if (this.context.stateManager) {
+        await this.context.stateManager.updateState(
+          { configDirty: false },
+          'config-saved',
+        );
+      }
       vscode.window.showInformationMessage(
         `Configuration saved to ${vscode.workspace.asRelativePath(fileUri)}.`,
       );
     } catch (error: unknown) {
-      await this.context.errorRecovery.handleError(
-        'config-save-failed',
-        error,
-        { file: fileUri.toString() },
-      );
+      if (this.context.errorRecovery) {
+        await this.context.errorRecovery.handleError(
+          'config-save-failed',
+          error as Error,
+          { file: fileUri.toString() },
+        );
+      }
       vscode.window.showErrorMessage(
-        `Failed to save configuration file: ${error.message}`,
+        `Failed to save configuration file: ${(error as Error).message || 'Unknown error'}`,
       );
     }
   }
@@ -256,14 +269,18 @@ export class ConfigActionManager implements BaseManager {
     newConfig: Record<string, unknown>,
     source: string,
   ): Promise<void> {
-    await this.context.stateManager.updateState(
-      { currentConfig: newConfig, configDirty: source !== 'config-saved' },
-      source,
-    );
-    this.context.eventBus.emit('post-message-to-webview', {
-      type: WebviewMessageType.CONFIG_LOADED,
-      payload: { config: newConfig },
-    });
+    if (this.context.stateManager) {
+      await this.context.stateManager.updateState(
+        { currentConfig: newConfig, configDirty: source !== 'config-saved' },
+        source,
+      );
+    }
+    if (this.context.eventBus) {
+      this.context.eventBus.emit('post-message-to-webview', {
+        type: WebviewMessageType.CONFIG_LOADED,
+        payload: { config: newConfig },
+      });
+    }
     // 注意：不再发送 'config-updated-for-preview' 事件
     // 该事件现在由 ConfigChangeService 统一处理，避免重复调用
   }

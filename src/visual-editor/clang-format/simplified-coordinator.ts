@@ -284,7 +284,7 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
     //  配置变化监听
     this.eventBus.on('config-changed', async (changes) => {
       try {
-        await this.configChangeService.handleConfigChange(changes);
+        await this.configChangeService.handleConfigChange(changes as { key: string; value: unknown; });
       } catch (error) {
         await this.errorRecovery.handleError('config-change-failed', error);
       }
@@ -295,7 +295,7 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
       logger.debug('State changed', {
         module: 'SimplifiedClangFormatCoordinator',
         operation: 'setupEventListeners',
-        changeType: event.changeType,
+        changeType: (event as any).changeType,
       });
     });
 

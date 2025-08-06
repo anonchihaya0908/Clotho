@@ -72,7 +72,7 @@ export class DebounceIntegration implements BaseManager {
           await this.previewManager.closePreview();
 
           // Only create placeholder when editor is visible and initialized
-          const state = this.context?.stateManager.getState();
+          const state = this.context?.stateManager?.getState();
           if (!state?.isVisible || !state?.isInitialized) {
             logger.debug('Editor is not visible or not initialized, skipping placeholder creation', {
               module: 'DebounceIntegration',
@@ -117,8 +117,8 @@ export class DebounceIntegration implements BaseManager {
         'preview-reopen-handler',
         async () => {
           // Check if preview already exists to avoid duplication
-          const state = this.context?.stateManager.getState();
-          if (state?.previewMode === 'open' && state?.previewEditor && !state.previewEditor.document.isClosed) {
+          const state = this.context?.stateManager?.getState();
+          if (state?.previewMode === 'open' && state?.previewEditor && !(state.previewEditor as any)?.document?.isClosed) {
             logger.debug('Preview already exists and is open, skipping creation', {
               module: 'DebounceIntegration',
               operation: 'createDebouncedPreviewReopenHandler',
@@ -142,7 +142,8 @@ export class DebounceIntegration implements BaseManager {
           try {
             await this.transitionManager.switchToPreview(async () => {
               await this.previewManager.openPreview();
-              return this.context.stateManager.getState().previewEditor!;
+              const state = this.context?.stateManager?.getState();
+              return (state?.previewEditor as any) || null;
             });
           } catch (error) {
             logger.error('Transition manager failed, using fallback', error as Error, {

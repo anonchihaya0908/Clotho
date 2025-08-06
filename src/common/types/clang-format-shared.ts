@@ -4,6 +4,7 @@
  */
 
 import { ConfigValue } from './event-types';
+export { ConfigValue };
 
 // Configuration category enumeration - using English categories
 export enum ConfigCategories {

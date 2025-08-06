@@ -333,7 +333,7 @@ export class ClangFormatService {
       return value.toString();
     } else if (Array.isArray(value)) {
       return `[${value.map((v) => this.formatConfigValue(v)).join(', ')}]`;
-    } else if (typeof value === 'object') {
+    } else if (typeof value === 'object' && value !== null) {
       const entries = Object.entries(value).map(
         ([k, v]) => `${k}: ${this.formatConfigValue(v)}`,
       );

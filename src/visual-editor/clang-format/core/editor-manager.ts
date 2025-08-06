@@ -39,10 +39,12 @@ export class ClangFormatEditorManager implements BaseManager {
   async createOrShowEditor(source: EditorOpenSource): Promise<void> {
     if (this.panel) {
       this.panel.reveal(vscode.ViewColumn.One);
-      await this.context.stateManager.updateState(
-        { isVisible: true },
-        'editor-revealed'
-      );
+      if (this.context.stateManager) {
+        await this.context.stateManager.updateState(
+          { isVisible: true },
+          'editor-revealed'
+        );
+      }
       return;
     }
 
@@ -60,22 +62,26 @@ export class ClangFormatEditorManager implements BaseManager {
       this.panel.webview.html = await this.generateWebviewContent();
       this.setupPanelEventListeners();
 
-      await this.context.stateManager.updateState(
-        {
-          isVisible: true,
-          isInitialized: true,
-        },
-        'editor-created'
-      );
+      if (this.context.stateManager) {
+        await this.context.stateManager.updateState(
+          {
+            isVisible: true,
+            isInitialized: true,
+          },
+          'editor-created'
+        );
+      }
 
       // 【关键】发送初始化消息到webview
       await this.sendInitializationMessage();
     } catch (error: unknown) {
-      await this.context.errorRecovery.handleError(
-        'editor-creation-failed',
-        error,
-        { source }
-      );
+      if (this.context.errorRecovery) {
+        await this.context.errorRecovery.handleError(
+          'editor-creation-failed',
+          error as Error,
+          { source }
+        );
+      }
     }
   }
 
@@ -91,7 +97,7 @@ export class ClangFormatEditorManager implements BaseManager {
         '../../../common/types/clang-format-shared'
       );
 
-      const currentState = this.context.stateManager.getState();
+      const currentState = this.context.stateManager?.getState() || {};
 
       // 获取设置
       const config = vscode.workspace.getConfiguration('clotho.clangFormat');
@@ -143,18 +149,18 @@ export class ClangFormatEditorManager implements BaseManager {
   }
 
   private setupEventListeners() {
-    this.context.eventBus.on(
+    this.context.eventBus?.on(
       'create-editor-requested',
-      (source: EditorOpenSource) => {
+      ((source: EditorOpenSource) => {
         this.createOrShowEditor(source);
-      }
+      }) as any,
     );
 
-    this.context.eventBus.on(
+    this.context.eventBus?.on(
       'post-message-to-webview',
-      (message: WebviewMessage) => {
+      ((message: WebviewMessage) => {
         this.postMessage(message);
-      }
+      }) as any
     );
   }
 
@@ -165,32 +171,33 @@ export class ClangFormatEditorManager implements BaseManager {
 
     this.panel.onDidDispose(() => {
       this.panel = undefined;
-      this.context.stateManager.updateState(
+      this.context.stateManager?.updateState(
         { isVisible: false },
         'editor-closed'
       );
-      this.context.eventBus.emit('editor-closed'); // 通知其他管理器
+      this.context.eventBus?.emit('editor-closed'); // 通知其他管理器
     });
 
     this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
       // 处理来自 webview 的日志消息
       if (message.type === WebviewMessageType.WEBVIEW_LOG) {
-        const { level, message: logMessage, meta } = message.payload;
+        const payload = message.payload as { level?: string; message?: string; meta?: unknown };
+        const { level, message: logMessage, meta } = payload;
         switch (level) {
           case 'debug':
-            logger.debug(`[Webview] ${logMessage}`, meta);
+            logger.debug(`[Webview] ${logMessage}`, meta as any);
             break;
           case 'info':
-            logger.info(`[Webview] ${logMessage}`, meta);
+            logger.info(`[Webview] ${logMessage}`, meta as any);
             break;
           case 'warn':
-            logger.warn(`[Webview] ${logMessage}`, meta);
+            logger.warn(`[Webview] ${logMessage}`, meta as any);
             break;
           case 'error':
-            logger.error(`[Webview] ${logMessage}`, meta);
+            logger.error(`[Webview] ${logMessage}`, meta as any);
             break;
           default:
-            logger.info(`[Webview] ${logMessage}`, meta);
+            logger.info(`[Webview] ${logMessage}`, meta as any);
         }
         return; // 不需要进一步处理日志消息
       }
@@ -200,17 +207,21 @@ export class ClangFormatEditorManager implements BaseManager {
         operation: 'onDidReceiveMessage',
         payload: message.payload,
       });
-      await this.context.eventBus.emit('webview-message-received', message);
+      if (this.context.eventBus) {
+        await this.context.eventBus.emit('webview-message-received', message);
+      }
     });
 
     this.panel.onDidChangeViewState(
       async (e: vscode.WebviewPanelOnDidChangeViewStateEvent) => {
         const isVisible = e.webviewPanel.visible;
-        await this.context.stateManager.updateState(
-          { isVisible },
-          'editor-visibility-changed'
-        );
-        this.context.eventBus.emit('editor-visibility-changed', { isVisible });
+        if (this.context.stateManager) {
+          await this.context.stateManager.updateState(
+            { isVisible },
+            'editor-visibility-changed'
+          );
+        }
+        this.context.eventBus?.emit('editor-visibility-changed', { isVisible });
       }
     );
 

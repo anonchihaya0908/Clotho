@@ -6,6 +6,7 @@
 import { ErrorRecoveryManager } from '../error/error-recovery-manager';
 import { EventBus } from '../messaging/event-bus';
 import { EditorStateManager } from '../state/editor-state-manager';
+import { ConfigValue } from '../../../common/types/clang-format-shared';
 
 /**
  * Configuration change context (simplified)
@@ -67,7 +68,7 @@ export class ConfigChangeService {
       if (value === 'inherit' || value === undefined || value === null) {
         delete newConfig[key];
       } else {
-        newConfig[key] = value;
+        newConfig[key] = value as ConfigValue;
       }
 
       // Direct operations instead of complex handler pattern:
@@ -108,7 +109,7 @@ export class ConfigChangeService {
     } catch (error: unknown) {
       const result: ConfigChangeResult = {
         success: false,
-        error,
+        error: error instanceof Error ? error : new Error(String(error)),
         affectedHandlers: [],
         executionTimeMs: Date.now() - startTime,
       };
