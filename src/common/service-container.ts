@@ -169,7 +169,7 @@ export class ServiceContainer {
     isValid: boolean;
     missing: string[];
     registered: ServiceName[];
-  } {
+    } {
     const registered = this.getRegisteredServices();
 
     // Extract all keys from ServiceMap type programmatically
