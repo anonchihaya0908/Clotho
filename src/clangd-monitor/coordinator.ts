@@ -227,7 +227,7 @@ export class MonitorCoordinator implements vscode.Disposable {
       // Update status monitor status
       if (statusMonitor) {
         (statusMonitor as { updateStatus: () => Promise<void> }).updateStatus().catch(error => {
-          console.warn('Failed to update status monitor:', error);
+          this.logger.warn('Failed to update status monitor', { error });
         });
       }
       const currentStatus = statusMonitor?.getCurrentStatus();

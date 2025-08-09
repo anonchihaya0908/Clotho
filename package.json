@@ -334,12 +334,12 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/your-username/clotho.git"
+        "url": "https://github.com/anonchihaya0908/Clotho.git"
     },
     "bugs": {
-        "url": "https://github.com/your-username/clotho/issues"
+        "url": "https://github.com/anonchihaya0908/Clotho/issues"
     },
-    "homepage": "https://github.com/your-username/clotho#readme",
+    "homepage": "https://github.com/anonchihaya0908/Clotho#readme",
     "license": "Apache-2.0",
     "dependencies": {
         "pidusage": "^4.0.1",

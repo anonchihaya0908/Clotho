@@ -19,7 +19,7 @@ export class MemoryMonitor implements IMonitor {
   private static readonly DEFAULT_CONFIG: Required<MemoryMonitorConfig> = {
     updateInterval: 5000, // 5 seconds for responsive monitoring
     warningThreshold: 2048, // 2GB (yellow)
-    errorThreshold: 3072, // 3GB (red)
+    errorThreshold: 4096, // 4GB (red) - align with contributes defaults
     //  统一配置体系新增属性
     unit: 'MB',
     enabled: true,

@@ -32,7 +32,7 @@
 │  │              (System commands)                              │ │
 │  │  • runCommand()                                             │ │
 │  │  • getProcessInfo()                                         │ │
-│  │  • Windows WMIC / PowerShell                               │ │
+  │  │  • Windows PowerShell (Get-CimInstance)                     │ │
 │  │  • Unix ps commands                                        │ │
 │  └─────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
@@ -61,7 +61,7 @@
 
 1. **Monitor Startup** → ProcessService.findMainProcessByName('clangd')
 2. **ProcessService** → ProcessRunner.getProcessInfo('clangd')
-3. **ProcessRunner** → Execute system commands (WMIC/ps)
+3. **ProcessRunner** → Execute system commands (PowerShell Get-CimInstance / ps)
 4. **System Response** → Parse process list with PID/PPID/Memory
 5. **DNA Testing** → Filter legitimate children vs stale processes
 6. **Selection** → Choose main process (highest memory among children)
@@ -95,7 +95,7 @@
 - ProcessService can be mocked for unit tests
 - Clear interfaces and dependencies
 
-## 🧬 Revolutionary DNA Testing
+## 🧬 DNA Testing (Direct Children)
 
 The ProcessService uses our "parent-child DNA testing" approach:
 
@@ -104,6 +104,7 @@ The ProcessService uses our "parent-child DNA testing" approach:
 3. **Filter Direct Children** - Processes with PPID = our PID
 4. **Select Main Process** - Highest memory among legitimate children
 5. **Avoid Stale Processes** - Ignore orphans from old sessions
+   (grandchildren detection can be added later if needed)
 
 ## 📊 Status Bar Integration
 

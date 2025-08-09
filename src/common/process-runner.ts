@@ -197,59 +197,37 @@ export class ProcessRunner {
   private static async getWindowsProcessInfo(
     processName: string,
   ): Promise<Array<{ pid: number; ppid: number; memory: number }>> {
-    const processes: Array<{ pid: number; ppid: number; memory: number }> = [];
-
+    // PowerShell 7+ compatible implementation using Get-CimInstance
     try {
-      // Try WMIC first
-      const wmicCommand = `wmic process where "name='${processName}.exe'" get processid,parentprocessid,workingsetsize /format:csv`;
-      const stdout = await ProcessRunner.runCommand(wmicCommand);
+      const shell = (await ProcessRunner.commandExists('pwsh')) ? 'pwsh' : 'powershell';
+      const script = `Get-CimInstance Win32_Process -Filter \"name='${processName}.exe'\" | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json -Compress`;
+      const command = `${shell} -NoProfile -ExecutionPolicy Bypass -Command \"${script}\"`;
 
-      if (!stdout || stdout.includes('No Instance')) {
-        throw new Error('WMIC returned no instances');
-      }
-
-      // Parse WMIC CSV output
-      const lines = stdout.split('\n');
-      for (const line of lines) {
-        if (line.includes(`${processName}.exe`)) {
-          const parts = line.split(',');
-          if (parts.length >= 4) {
-            // CSV format: Node,Name,ParentProcessId,ProcessId,WorkingSetSize
-            const ppid = parseInt(parts[2]?.trim());
-            const pid = parseInt(parts[3]?.trim());
-            const memory = parseInt(parts[4]?.trim()) / 1024; // Convert to KB
-
-            if (!isNaN(pid) && !isNaN(ppid) && !isNaN(memory)) {
-              processes.push({ pid, ppid, memory });
-            }
-          }
-        }
-      }
-
-      return processes;
-    } catch (wmicError) {
-      if (this.DEBUG) {
-        logger.debug('WMIC failed, trying PowerShell fallback', { module: 'ProcessRunner', operation: 'getProcessInfo', error: wmicError });
-      }
-
-      // PowerShell fallback
-      const psCommand = `powershell "Get-WmiObject -Class Win32_Process -Filter \\"name='${processName}.exe'\\" | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json"`;
-      const psOutput = await ProcessRunner.runCommand(psCommand);
-
+      const psOutput = await ProcessRunner.runCommand(command);
       if (!psOutput.trim()) {
         return [];
       }
 
-      let psProcesses = JSON.parse(psOutput);
-      if (!Array.isArray(psProcesses)) {
-        psProcesses = [psProcesses];
-      }
+      const processesJson = JSON.parse(psOutput) as
+        | Array<{ ProcessId: number; ParentProcessId: number; WorkingSetSize?: number }>
+        | { ProcessId: number; ParentProcessId: number; WorkingSetSize?: number };
 
-      return psProcesses.map((p: { ProcessId: number; ParentProcessId: number; WorkingSetSize?: number }) => ({
+      const arr = Array.isArray(processesJson) ? processesJson : [processesJson];
+
+      return arr.map((p) => ({
         pid: p.ProcessId,
         ppid: p.ParentProcessId,
-        memory: (p.WorkingSetSize || 0) / 1024, // Convert to KB
+        // Convert bytes to KB for consistency with *nix path
+        memory: Math.max(0, Math.floor(((p.WorkingSetSize ?? 0) as number) / 1024)),
       }));
+    } catch (error) {
+      errorHandler.handle(error, {
+        operation: 'getWindowsProcessInfo',
+        module: 'ProcessRunner',
+        showToUser: false,
+        logLevel: 'debug',
+      });
+      return [];
     }
   }
 

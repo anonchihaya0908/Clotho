@@ -1,13 +1,13 @@
-# Clotho - C/C++ Header Source Pair Creator
+# Clotho - C/C++ Header/Source Pair Creator
 
-[![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/your-publisher-name.clotho.svg)](https://marketplace.visualstudio.com/items?itemName=your-publisher-name.clotho)
+[![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/Togawa-Sakiko.clotho.svg)](https://marketplace.visualstudio.com/items?itemName=Togawa-Sakiko.clotho)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 Clotho is a powerful Visual Studio Code extension that simplifies C/C++ development by providing intelligent header/source file pair creation and management. Named after the Greek fate who spins the thread of life, Clotho weaves together your C/C++ source and header files seamlessly.
 
 ## 🚀 Features
 
-### � **NEW!** Visual Clang-Format Editor
+### ✨ NEW! Visual Clang-Format Editor
 - **Three-Pane Interface**: Configuration panel, micro previews, and macro preview
 - **Real-time Preview**: See formatting changes instantly as you adjust settings
 - **Category Organization**: Options grouped by Alignment, Braces, Spacing, Indentation, etc.
@@ -15,7 +15,7 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 - **Workspace Integration**: Seamlessly manage `.clang-format` files in your projects
 - **Live Validation**: Instant feedback on configuration validity
 
-### �🎯 Smart File Pair Creation
+### 🎯 Smart File Pair Creation
 - **Intelligent Language Detection**: Automatically detects C vs C++ context from your current workspace
 - **Multiple Template Types**: Choose from class, struct, or empty file templates
 - **Custom File Extensions**: Support for various C/C++ file extensions (.h/.cpp, .hh/.cc, .hpp/.cxx, etc.)
@@ -31,9 +31,9 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 - **Global Settings**: Set up default preferences for all projects
 - **Template Customization**: Adapts templates based on your file extension preferences
 
-### 📊 Clangd Memory Monitoring
+### 📊 Clangd Monitoring
 - **Real-time Memory Usage**: Monitor clangd server memory consumption in the status bar
-- **Process Information**: View detailed clangd process information including PID and version
+- **Process Information**: View detailed clangd process information including PID and version (direct child processes)
 - **Configurable Thresholds**: Set custom warning and error memory thresholds
 - **Smart Detection**: Automatically detects clangd process through extension API
 - **Cross-platform Support**: Works on Windows, macOS, and Linux
@@ -42,7 +42,7 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 
 1. Open Visual Studio Code
 2. Press `Ctrl+P` to open the Quick Open dialog
-3. Type `ext install your-publisher-name.clotho` and press Enter
+3. Type `ext install Togawa-Sakiko.clotho` and press Enter
 4. Restart VS Code if prompted
 
 ## 🎮 Usage
@@ -133,7 +133,7 @@ Configure custom pairing rules in your workspace or user settings:
 
 ```json
 {
-  "clotho.switchHeaderSource.searchPaths": [
+  "clotho.switch.searchPaths": [
     ".",
     "../include",
     "../src",

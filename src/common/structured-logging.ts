@@ -282,7 +282,7 @@ export class StructuredLogger {
       slowestOperation: string;
       fastestOperation: string;
     };
-  } {
+    } {
     const stats = this.getOperationStats();
     const totalOperations = stats.reduce((sum, stat) => sum + stat.totalOperations, 0);
 
