@@ -61,6 +61,16 @@
                 "category": "Clotho"
             },
             {
+                "command": "clotho.restartClangd",
+                "title": "Restart Clangd Server",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.debugClangd",
+                "title": "Debug Clangd Monitor Status",
+                "category": "Clotho"
+            },
+            {
                 "command": "clotho.openClangFormatEditor",
                 "title": "Open Clang-Format Visual Editor",
                 "category": "Clotho",
@@ -100,6 +110,12 @@
                 },
                 {
                     "command": "clotho.configureRules"
+                },
+                {
+                    "command": "clotho.restartClangd"
+                },
+                {
+                    "command": "clotho.debugClangd"
                 },
                 {
                     "command": "clotho.openClangFormatEditor"
@@ -213,6 +229,32 @@
                         "type": "string"
                     }
                 },
+                "clotho.clangdMonitor.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable clangd memory monitoring in the status bar"
+                },
+                "clotho.clangdMonitor.updateInterval": {
+                    "type": "number",
+                    "default": 5000,
+                    "description": "Update interval for memory monitoring in milliseconds",
+                    "minimum": 5000,
+                    "maximum": 300000
+                },
+                "clotho.clangdMonitor.warningThreshold": {
+                    "type": "number",
+                    "default": 2048,
+                    "description": "Memory usage warning threshold in MB",
+                    "minimum": 100,
+                    "maximum": 10000
+                },
+                "clotho.clangdMonitor.errorThreshold": {
+                    "type": "number",
+                    "default": 4096,
+                    "description": "Memory usage error threshold in MB",
+                    "minimum": 500,
+                    "maximum": 20000
+                },
                 "clotho.clangFormat.showGuideButton": {
                     "type": "boolean",
                     "default": true,
@@ -265,7 +307,7 @@
         "watch:extension": "npm run esbuild:watch",
         "watch:webview": "npm run dev --workspace=webviews/visual-editor/clang-format",
         "dev": "npm run build && code --extensionDevelopmentPath=. --new-window",
-        "dev:f5": "npm run build:fast",
+        "dev:f5": "node scripts/dev-quick-simple.js",
         "dev:f5:quick": "npm run esbuild",
         "dev:check": "node scripts/dev-helper.js check",
         "dev:watch": "node scripts/dev-helper.js watch",

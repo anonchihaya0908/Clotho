@@ -274,7 +274,7 @@ export class LoggerService {
  */
 export const logger = LoggerService.getInstance({
   name: 'Clotho',
-  minLevel: LogLevel.DEBUG, // 临时启用调试日志
+  minLevel: process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO,
   displayFunctionName: true,
   displayFilePath: 'hideNodeModulesOnly',
   colorizePrettyLogs: true,
