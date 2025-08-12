@@ -49,7 +49,7 @@ export const COMMANDS = {
   SWITCH_HEADER_SOURCE: 'clotho.switchHeaderSource',
   CONFIGURE_RULES: 'clotho.configureRules',
   CONFIGURE_HEADER_GUARD: 'clotho.configureHeaderGuard',
-  SHOW_CLANGD_DETAILS: 'clotho.showClangdDetails',
+
   OPEN_CLANG_FORMAT_EDITOR: 'clotho.openClangFormatEditor',
 } as const;
 
@@ -105,14 +105,6 @@ export const TEST_PATTERNS = [
   /^Test(.+)$/, // TestMyClass -> MyClass
 ] as const;
 
-// ===============================
-// External Extension IDs
-// ===============================
-
-export const EXTERNAL_EXTENSIONS = {
-  CLANGD: 'llvm-vs-code-extensions.vscode-clangd',
-} as const;
-
 // Note: UI_CONSTANTS is defined later with all UI-related constants merged
 
 // ===============================
@@ -130,8 +122,7 @@ export const ERROR_MESSAGES = {
     `No corresponding ${fileType} file found for '${fileName}'. You may need to create it manually.`,
   SWITCH_FAILED: (error: string) => `Failed to switch header/source: ${error}`,
   UNEXPECTED_ERROR: 'An unexpected error occurred.',
-  CLANGD_NOT_FOUND: 'clangd extension not found',
-  CLANGD_NOT_RUNNING: 'clangd client is not running',
+
   GLOBAL_SEARCH_FAILED: 'Global file search failed',
 } as const;
 
@@ -191,7 +182,7 @@ export const PERFORMANCE = {
   LRU_CACHE_MAX_SIZE: 50,
   SIMPLE_CACHE_MAX_SIZE: 100,
   FILE_SEARCH_TIMEOUT: 5000,
-  CLANGD_REQUEST_TIMEOUT: 3000,
+
   PROCESS_TIMEOUT: 10000, // 10 seconds
   COMMAND_EXECUTION_TIMEOUT: 10000,
 
@@ -281,9 +272,6 @@ export const UI_TIMING = {
   TRANSITION_MAX_TIME: 2000, // 2 seconds
   ERROR_RECOVERY_DELAY: 1500, // 1.5 seconds
   STATUS_UPDATE_INTERVAL: 2000, // 2 seconds
-  CLANGD_CPU_MONITOR_INTERVAL: 3000, // 3 seconds
-  CLANGD_MEMORY_MONITOR_INTERVAL: 5000, // 5 seconds
-  CLANGD_STATUS_CHECK_DELAY: 3000, // 3 seconds
   UI_REFRESH_DELAY: 100, // For UI operations
 } as const;
 
@@ -300,6 +288,9 @@ export const ERROR_HANDLING = {
   CLEANUP_INTERVAL: 60000, // 1 minute
   DEBOUNCE_LOCK_TIMEOUT: 5000, // 5 seconds
   DEBOUNCE_CHECK_INTERVAL: 10, // 10ms
+  MAX_ERROR_RATE: 10, // Max errors per minute
+  MAX_RECENT_ERRORS: 5, // Max recent errors to keep
+  MAX_TIMESTAMP_HISTORY: 100, // Max error timestamp history
 } as const;
 
 // ===============================

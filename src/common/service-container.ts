@@ -22,7 +22,7 @@
  * - Better type safety with enhanced TypeScript inference.
  */
 
-import { MonitorCoordinator } from '../clangd-monitor';
+
 import {
   PairCoordinator,
   PairCreatorService,
@@ -73,9 +73,6 @@ export interface ServiceMap {
   switchService: SwitchService;
   switchUI: SwitchUI;
   switchCoordinator: SwitchCoordinator;
-
-  // Clangd Monitor
-  monitorCoordinator: MonitorCoordinator;
 
   // Clang-Format Visual Editor
   clangFormatEditorCoordinator: ClangFormatEditorCoordinator;
@@ -169,7 +166,7 @@ export class ServiceContainer {
     isValid: boolean;
     missing: string[];
     registered: ServiceName[];
-    } {
+  } {
     const registered = this.getRegisteredServices();
 
     // Extract all keys from ServiceMap type programmatically
@@ -184,7 +181,6 @@ export class ServiceContainer {
       'switchService',
       'switchUI',
       'switchCoordinator',
-      'monitorCoordinator',
       'clangFormatEditorCoordinator',
       'clangFormatGuideService'
     ];

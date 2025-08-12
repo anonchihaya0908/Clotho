@@ -31,7 +31,8 @@ export class ClothoError extends Error {
 
 export class ErrorHandler {
   private static errorCount = 0;
-  private static readonly MAX_ERROR_RATE = 10; // Max errors per minute
+  private static readonly MAX_ERROR_RATE = ERROR_HANDLING.MAX_ERROR_RATE;
+  private static readonly MAX_TIMESTAMP_HISTORY = ERROR_HANDLING.MAX_TIMESTAMP_HISTORY;
   private static errorTimestamps: number[] = [];
 
   private logger: LoggerService;
@@ -152,6 +153,7 @@ export class ErrorHandler {
 
   /**
    * Tracks error rate to prevent spam
+   * 增强版本：限制历史记录大小，防止内存泄漏
    */
   private trackErrorRate(): void {
     const now = Date.now();
@@ -162,6 +164,11 @@ export class ErrorHandler {
     ErrorHandler.errorTimestamps = ErrorHandler.errorTimestamps.filter(
       timestamp => now - timestamp < ERROR_HANDLING.ERROR_RATE_WINDOW
     );
+
+    // 防止历史记录无限增长 - 保留最近的记录
+    if (ErrorHandler.errorTimestamps.length > ErrorHandler.MAX_TIMESTAMP_HISTORY) {
+      ErrorHandler.errorTimestamps = ErrorHandler.errorTimestamps.slice(-ErrorHandler.MAX_TIMESTAMP_HISTORY);
+    }
   }
 
   /**
@@ -178,7 +185,7 @@ export class ErrorHandler {
     totalErrors: number;
     recentErrors: number;
     isRateLimited: boolean;
-    } {
+  } {
     return {
       totalErrors: ErrorHandler.errorCount,
       recentErrors: ErrorHandler.errorTimestamps.length,

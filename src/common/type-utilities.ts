@@ -66,19 +66,28 @@ export interface DataResult<T> extends BaseResult {
 
 /**
  *  验证结果类型
- * 标准化的验证结果接口，保持向后兼容
+ * 统一继承 BaseResult，消除概念重复
  */
-export interface ValidationResult {
-  /** 是否有效 */
-  isValid: boolean;
-  /** 错误信息（失败时） */
-  error?: string;
-  /** 警告信息 */
-  warnings?: string[];
+export interface ValidationResult extends BaseResult {
   /** 修复建议 */
   fixes?: string[];
-  /** 操作是否成功（可选，与isValid保持一致） */
-  success?: boolean;
+}
+
+/**
+ * 创建验证结果的工厂函数
+ */
+export function createValidationResult(
+  success: boolean,
+  error?: string,
+  warnings?: string[],
+  fixes?: string[]
+): ValidationResult {
+  return {
+    success,
+    error,
+    warnings,
+    fixes,
+  };
 }
 
 /**

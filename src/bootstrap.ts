@@ -8,7 +8,7 @@
  */
 
 import * as vscode from 'vscode';
-import { MonitorCoordinator } from './clangd-monitor';
+
 import { COMMANDS } from './common/constants';
 import { errorHandler } from './common/error-handler';
 import { logger } from './common/logger';
@@ -170,25 +170,6 @@ function registerServices(context: vscode.ExtensionContext): void {
       container.get('switchConfigService')
     ));
 
-  // Clangd Monitor - pass configuration from VS Code settings
-  serviceContainer.register('monitorCoordinator', () => {
-    const config = vscode.workspace.getConfiguration('clotho.clangdMonitor');
-    return new MonitorCoordinator({
-      memory: {
-        updateInterval: config.get<number>('updateInterval', 5000),
-        warningThreshold: config.get<number>('warningThreshold', 2048), // 2GB (yellow)
-        errorThreshold: config.get<number>('errorThreshold', 4096), // 4GB (red)
-      },
-      cpu: {
-        updateInterval: config.get<number>('updateInterval', 3000),
-        warningThreshold: config.get<number>('cpuWarningThreshold', 50), // 50% (yellow)
-        errorThreshold: config.get<number>('cpuErrorThreshold', 80), // 80% (red)
-        normalizeCpu: true,
-        showRawCpuInTooltip: true,
-      },
-    });
-  });
-
   // Clang-Format Visual Editor
   serviceContainer.register(
     'clangFormatEditorCoordinator',
@@ -213,37 +194,6 @@ async function initializeCoordinators(): Promise<void> {
   serviceContainer.get('pairCoordinator');
   serviceContainer.get('switchCoordinator');
   serviceContainer.get('clangFormatGuideService');
-
-  // Initialize and start the monitor coordinator
-  const monitorCoordinator = serviceContainer.get('monitorCoordinator');
-
-  // Check if clangd monitoring is enabled in configuration
-  const config = vscode.workspace.getConfiguration('clotho.clangdMonitor');
-  const isMonitoringEnabled = config.get<boolean>('enabled', true);
-
-  if (isMonitoringEnabled) {
-    try {
-      await monitorCoordinator.startMonitoring();
-      logger.info('Clangd monitoring started successfully', {
-        module: 'Bootstrap',
-        operation: 'startMonitoring'
-      });
-    } catch (error) {
-      logger.error(
-        'Failed to start clangd monitoring',
-        error as Error,
-        {
-          module: 'Bootstrap',
-          operation: 'startMonitoring'
-        }
-      );
-    }
-  } else {
-    logger.info('Clangd monitoring disabled by configuration', {
-      module: 'Bootstrap',
-      operation: 'startMonitoring'
-    });
-  }
 }
 
 /**
@@ -314,20 +264,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
     },
   );
 
-  // Clangd Monitor Commands
-  const showClangdDetailsCommand = register(
-    COMMANDS.SHOW_CLANGD_DETAILS,
-    () => {
-      const coordinator = serviceContainer.get('monitorCoordinator');
-      return coordinator.showClangdDetails();
-    },
-  );
-
-  const restartClangdCommand = register('clotho.restartClangd', () => {
-    const coordinator = serviceContainer.get('monitorCoordinator');
-    return coordinator.restartClangd();
-  });
-
   // Visual Editor Commands
   const openClangFormatEditorCommand = register(
     COMMANDS.OPEN_CLANG_FORMAT_EDITOR,
@@ -343,8 +279,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
     newSourcePairCommand,
     configureHeaderGuardCommand,
     switchHeaderSourceCommand,
-    showClangdDetailsCommand,
-    restartClangdCommand,
     openClangFormatEditorCommand,
   );
 }

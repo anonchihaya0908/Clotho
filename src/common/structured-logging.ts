@@ -4,6 +4,7 @@
  */
 
 import { logger } from './logger';
+import { ERROR_HANDLING } from './constants';
 import {
   DataResult,
   AsyncOptions,
@@ -68,7 +69,7 @@ export interface OperationStats extends PerformanceStats {
  */
 export class StructuredLogger {
   private static operationStats = new Map<string, OperationStats>();
-  private static readonly MAX_RECENT_ERRORS = 5;
+  private static readonly MAX_RECENT_ERRORS = ERROR_HANDLING.MAX_RECENT_ERRORS;
 
   /**
    *  记录并执行操作（同步版本）
@@ -82,14 +83,7 @@ export class StructuredLogger {
     const operationKey = `${context.module}.${context.operation}`;
 
     // 记录操作开始
-    logger.info(` Starting operation: ${context.operation}`, {
-      module: context.module,
-      operation: context.operation,
-      instanceId: context.instanceId,
-      correlationId: context.correlationId,
-      startTime,
-      metadata: context.metadata,
-    });
+    this.logOperationStart(context, startTime);
 
     try {
       // 执行操作
@@ -98,15 +92,7 @@ export class StructuredLogger {
       const duration = endTime - startTime;
 
       // 记录成功
-      logger.info(` Operation completed: ${context.operation}`, {
-        module: context.module,
-        operation: context.operation,
-        instanceId: context.instanceId,
-        correlationId: context.correlationId,
-        duration,
-        success: true,
-        metadata: context.metadata,
-      });
+      this.logOperationSuccess(context, duration, 'operation');
 
       // 更新统计信息
       this.updateStats(operationKey, context, duration, true);
@@ -118,16 +104,7 @@ export class StructuredLogger {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       // 记录错误
-      logger.error(` Operation failed: ${context.operation}`, error as Error, {
-        module: context.module,
-        operation: context.operation,
-        instanceId: context.instanceId,
-        correlationId: context.correlationId,
-        duration,
-        success: false,
-        error: errorMessage,
-        metadata: context.metadata,
-      });
+      this.logOperationError(context, duration, 'operation', error as Error);
 
       // 更新统计信息
       this.updateStats(operationKey, context, duration, false, errorMessage);
@@ -145,72 +122,17 @@ export class StructuredLogger {
     operation: () => Promise<T>,
     options?: AsyncOptions
   ): Promise<T> {
-    const startTime = Date.now();
-    const operationKey = `${context.module}.${context.operation}`;
-
-    // 记录操作开始
-    logger.info(` Starting async operation: ${context.operation}`, {
-      module: context.module,
-      operation: context.operation,
-      instanceId: context.instanceId,
-      correlationId: context.correlationId,
-      startTime,
-      timeout: options?.timeout,
-      metadata: context.metadata,
-    });
-
-    try {
-      // 设置超时处理
-      let result: T;
+    const wrappedOperation = async () => {
       if (options?.timeout) {
-        result = await Promise.race([
+        return Promise.race([
           operation(),
           this.createTimeoutPromise<T>(options.timeout, context)
         ]);
-      } else {
-        result = await operation();
       }
+      return operation();
+    };
 
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      // 记录成功
-      logger.info(` Async operation completed: ${context.operation}`, {
-        module: context.module,
-        operation: context.operation,
-        instanceId: context.instanceId,
-        correlationId: context.correlationId,
-        duration,
-        success: true,
-        metadata: context.metadata,
-      });
-
-      // 更新统计信息
-      this.updateStats(operationKey, context, duration, true);
-
-      return result;
-    } catch (error) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      // 记录错误
-      logger.error(` Async operation failed: ${context.operation}`, error as Error, {
-        module: context.module,
-        operation: context.operation,
-        instanceId: context.instanceId,
-        correlationId: context.correlationId,
-        duration,
-        success: false,
-        error: errorMessage,
-        metadata: context.metadata,
-      });
-
-      // 更新统计信息
-      this.updateStats(operationKey, context, duration, false, errorMessage);
-
-      throw error;
-    }
+    return this.executeWithLogging(context, wrappedOperation, options);
   }
 
   /**
@@ -282,7 +204,7 @@ export class StructuredLogger {
       slowestOperation: string;
       fastestOperation: string;
     };
-    } {
+  } {
     const stats = this.getOperationStats();
     const totalOperations = stats.reduce((sum, stat) => sum + stat.totalOperations, 0);
 
@@ -361,6 +283,109 @@ export class StructuredLogger {
     }
 
     this.operationStats.set(operationKey, stats);
+  }
+
+  /**
+   * 异步操作的执行和日志记录逻辑
+   * 专门处理异步操作，支持超时和其他异步选项
+   */
+  private static async executeWithLogging<T>(
+    context: OperationContext,
+    operation: () => Promise<T>,
+    options?: AsyncOptions
+  ): Promise<T> {
+    const startTime = Date.now();
+    const operationKey = `${context.module}.${context.operation}`;
+    const operationType = 'async operation';
+
+    // 记录操作开始
+    this.logOperationStart(context, startTime, options);
+
+    try {
+      // 执行操作
+      const result = await operation();
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      // 记录成功
+      this.logOperationSuccess(context, duration, operationType);
+
+      // 更新统计信息
+      this.updateStats(operationKey, context, duration, true);
+
+      return result;
+    } catch (error) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // 记录错误
+      this.logOperationError(context, duration, operationType, error as Error);
+
+      // 更新统计信息
+      this.updateStats(operationKey, context, duration, false, errorMessage);
+
+      throw error;
+    }
+  }
+
+  /**
+   * 记录操作开始
+   */
+  private static logOperationStart(
+    context: OperationContext,
+    startTime: number,
+    options?: AsyncOptions
+  ): void {
+    logger.info(` Starting ${options?.timeout ? 'async ' : ''}operation: ${context.operation}`, {
+      module: context.module,
+      operation: context.operation,
+      instanceId: context.instanceId,
+      correlationId: context.correlationId,
+      startTime,
+      timeout: options?.timeout,
+      metadata: context.metadata,
+    });
+  }
+
+  /**
+   * 记录操作成功
+   */
+  private static logOperationSuccess(
+    context: OperationContext,
+    duration: number,
+    operationType: string
+  ): void {
+    logger.info(` ${operationType} completed: ${context.operation}`, {
+      module: context.module,
+      operation: context.operation,
+      instanceId: context.instanceId,
+      correlationId: context.correlationId,
+      duration,
+      success: true,
+      metadata: context.metadata,
+    });
+  }
+
+  /**
+   * 记录操作错误
+   */
+  private static logOperationError(
+    context: OperationContext,
+    duration: number,
+    operationType: string,
+    error: Error
+  ): void {
+    logger.error(` ${operationType} failed: ${context.operation}`, error, {
+      module: context.module,
+      operation: context.operation,
+      instanceId: context.instanceId,
+      correlationId: context.correlationId,
+      duration,
+      success: false,
+      error: error.message,
+      metadata: context.metadata,
+    });
   }
 
   /**
@@ -584,15 +609,41 @@ export class TypedEventEmitter<TEvents extends Record<string, readonly unknown[]
 
   /**
    * 移除所有监听器
+   * 增强版本：确保完全清理，防止内存泄漏
    */
   removeAllListeners<K extends keyof TEvents>(event?: K): void {
     if (event) {
-      this.listeners.delete(event);
-      this.onceListeners.delete(event);
+      // 清理指定事件的监听器
+      const regularListeners = this.listeners.get(event);
+      const onceListeners = this.onceListeners.get(event);
+
+      if (regularListeners) {
+        regularListeners.clear();
+        this.listeners.delete(event);
+      }
+
+      if (onceListeners) {
+        onceListeners.clear();
+        this.onceListeners.delete(event);
+      }
     } else {
+      // 清理所有监听器
+      this.listeners.forEach(listenerSet => listenerSet.clear());
+      this.onceListeners.forEach(listenerSet => listenerSet.clear());
       this.listeners.clear();
       this.onceListeners.clear();
     }
+  }
+
+  /**
+   * 销毁事件发射器，完全清理资源
+   */
+  dispose(): void {
+    this.removeAllListeners();
+    logger.debug('TypedEventEmitter disposed', {
+      module: 'TypedEventEmitter',
+      operation: 'dispose'
+    });
   }
 
   /**

@@ -60,3 +60,14 @@ docs
 cursor.md
 *.md
 .cursor
+*.bat
+*.cpp
+*.h
+*.hpp
+*.c
+*.h
+*.hpp
+*.c
+*.h
+*.hpp
+*.c

@@ -2,7 +2,7 @@
  * Main App Component for Clang-Format Editor
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ConfigPanel } from './components/ConfigPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useDebounce, useMultiKeyDebounce, useIsMounted } from './hooks/useDebounce';
@@ -109,6 +109,9 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         sendMessage(WebviewMessageType.CLEAR_HIGHLIGHTS);
     }, [sendMessage]);
 
+    // 存储重置计时器引用以便清理
+    const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
+
     // 处理工具栏操作 - 添加日志和错误处理
     const handleToolbarAction = useCallback((action: string) => {
         webviewLog.debug('Toolbar action triggered', { action });
@@ -128,12 +131,21 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     sendMessage(WebviewMessageType.IMPORT_CONFIG);
                     break;
                 case 'reset':
+                    // 清理之前的计时器
+                    if (resetTimerRef.current) {
+                        clearTimeout(resetTimerRef.current);
+                    }
+
                     // 设置重置标志
                     setState(prev => ({ ...prev, isConfigReset: true }));
                     sendMessage(WebviewMessageType.RESET_CONFIG);
-                    // 3秒后清除重置标志
-                    setTimeout(() => {
-                        setState(prev => ({ ...prev, isConfigReset: false }));
+
+                    // 3秒后清除重置标志 - 确保组件仍然挂载
+                    resetTimerRef.current = setTimeout(() => {
+                        if (isMountedRef.current) {
+                            setState(prev => ({ ...prev, isConfigReset: false }));
+                        }
+                        resetTimerRef.current = null;
                     }, 3000);
                     break;
                 case 'openClangFormatFile':
@@ -145,7 +157,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         } catch (error) {
             webviewLog.error('Error handling toolbar action', { action, error });
         }
-    }, [sendMessage]);
+    }, [sendMessage, isMountedRef]);
 
     // 监听来自 VS Code 的消息 - 添加内存泄漏防护
     useEffect(() => {
@@ -312,6 +324,12 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         return () => {
             window.removeEventListener('message', handleMessage);
             window.removeEventListener('beforeunload', handleBeforeUnload);
+
+            // 清理计时器
+            if (resetTimerRef.current) {
+                clearTimeout(resetTimerRef.current);
+                resetTimerRef.current = null;
+            }
         };
     }, [sendMessage]); // 依赖中加入 sendMessage
 

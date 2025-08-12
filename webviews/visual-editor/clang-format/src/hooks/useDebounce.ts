@@ -5,17 +5,18 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
 
 /**
- * 防抖 Hook
+ * 防抖 Hook - 增强版本，防止组件卸载后执行
  * @param callback 要防抖的函数
  * @param delay 防抖延迟时间（毫秒）
  * @returns 防抖后的函数
  */
-export function useDebounce<T extends(...args: any[]) => any>(
+export function useDebounce<T extends (...args: any[]) => any>(
   callback: T,
   delay: number
 ): (...args: Parameters<T>) => void {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const callbackRef = useRef<T>(callback);
+  const isMountedRef = useIsMounted();
 
   // 保持回调函数的最新引用
   useEffect(() => {
@@ -27,33 +28,42 @@ export function useDebounce<T extends(...args: any[]) => any>(
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
     };
   }, []);
 
   return useCallback((...args: Parameters<T>) => {
+    // 如果组件已卸载，不执行任何操作
+    if (!isMountedRef.current) return;
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
     timeoutRef.current = setTimeout(() => {
-      callbackRef.current(...args);
+      // 双重检查组件是否仍然挂载
+      if (isMountedRef.current) {
+        callbackRef.current(...args);
+      }
+      timeoutRef.current = null;
     }, delay);
-  }, [delay]);
+  }, [delay, isMountedRef]);
 }
 
 /**
- * 多键防抖 Hook - 为不同的键提供独立的防抖
+ * 多键防抖 Hook - 增强版本，防止组件卸载后执行
  * @param callback 要防抖的函数
  * @param delay 防抖延迟时间（毫秒）
  * @returns 防抖后的函数
  */
-export function useMultiKeyDebounce<T extends(key: string, ...args: any[]) => any>(
+export function useMultiKeyDebounce<T extends (key: string, ...args: any[]) => any>(
   callback: T,
   delay: number
 ): (key: string, ...args: Parameters<T> extends [string, ...infer U] ? U : never) => void {
   const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const callbackRef = useRef(callback);
+  const isMountedRef = useIsMounted();
 
   // 保持回调函数的最新引用
   useEffect(() => {
@@ -69,6 +79,9 @@ export function useMultiKeyDebounce<T extends(key: string, ...args: any[]) => an
   }, []);
 
   return useCallback((key: string, ...args: any[]) => {
+    // 如果组件已卸载，不执行任何操作
+    if (!isMountedRef.current) return;
+
     const timeouts = timeoutsRef.current;
 
     // 清除该键的现有定时器
@@ -79,12 +92,15 @@ export function useMultiKeyDebounce<T extends(key: string, ...args: any[]) => an
 
     // 设置新的定时器
     const timeoutId = setTimeout(() => {
-      callbackRef.current(key, ...args);
+      // 双重检查组件是否仍然挂载
+      if (isMountedRef.current) {
+        callbackRef.current(key, ...args);
+      }
       timeouts.delete(key);
     }, delay);
 
     timeouts.set(key, timeoutId);
-  }, [delay]);
+  }, [delay, isMountedRef]);
 }
 
 /**
@@ -93,7 +109,7 @@ export function useMultiKeyDebounce<T extends(key: string, ...args: any[]) => an
  * @param delay 节流延迟时间（毫秒）
  * @returns 节流后的函数
  */
-export function useThrottle<T extends(...args: any[]) => any>(
+export function useThrottle<T extends (...args: any[]) => any>(
   callback: T,
   delay: number
 ): (...args: Parameters<T>) => void {
