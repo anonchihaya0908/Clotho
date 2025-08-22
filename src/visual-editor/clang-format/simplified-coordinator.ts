@@ -6,10 +6,10 @@
 import * as vscode from 'vscode';
 import { errorHandler } from '../../common/error-handler';
 import { logger } from '../../common/logger';
-import { ManagerContext } from '../../common/types/core';
 import { logAsyncOperation } from '../../common/structured-logging';
 import { EditorOpenSource } from '../../common/types';
 import { WebviewMessageType } from '../../common/types/clang-format-shared';
+import { ManagerContext } from '../../common/types/core';
 
 // Core service imports
 import { ClangFormatService } from './format-service';
@@ -17,18 +17,18 @@ import { ClangFormatGuideService } from './guide-service';
 
 // UI manager imports
 import { ClangFormatEditorManager } from './core/editor-manager';
-import { PreviewEditorManager } from './core/preview-manager';
 import { PlaceholderWebviewManager } from './core/placeholder-manager';
+import { PreviewEditorManager } from './core/preview-manager';
 
 // Configuration and state management
 import { ConfigActionManager } from './core/config-action-manager';
 import { EditorStateManager } from './state/editor-state-manager';
 
 // Event and error handling
+import { ConfigChangeService } from './core/config-change-service';
+import { ErrorRecoveryManager } from './error/error-recovery-manager';
 import { EventBus } from './messaging/event-bus';
 import { MessageHandler } from './messaging/message-handler';
-import { ErrorRecoveryManager } from './error/error-recovery-manager';
-import { ConfigChangeService } from './core/config-change-service';
 
 /**
  *  Simplified ClangFormat Editor Coordinator
@@ -146,7 +146,6 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
 
       try {
         //  委托给编辑器管理器
-        // TODO: need to implement specific editor opening logic
         logger.info('Opening clang-format editor', {
           module: 'SimplifiedClangFormatCoordinator',
           operation: 'openEditor',
@@ -197,7 +196,6 @@ export class SimplifiedClangFormatCoordinator implements vscode.Disposable {
 
     try {
       // const context = this.createManagerContext(); // 保留供未来使用
-      // TODO: 实现消息处理逻辑
       logger.debug('Processing webview message', {
         module: 'SimplifiedClangFormatCoordinator',
         operation: 'handleWebviewMessage',

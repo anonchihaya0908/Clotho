@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
+import { UI_CONSTANTS } from '../../../common/constants';
+import { logger } from '../../../common/logger';
 import {
   BaseManager,
   ManagerContext,
   ManagerStatus,
 } from '../../../common/types';
-import { logger } from '../../../common/logger';
-import { UI_CONSTANTS } from '../../../common/constants';
 import { WebviewMessageType } from '../../../common/types/clang-format-shared';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';
 import { ClangFormatService } from '../format-service';
@@ -57,7 +57,6 @@ export class ConfigActionManager implements BaseManager {
   private setupEventListeners(): void {
     const eventBus = this.context.eventBus;
     if (!eventBus) {
-      console.warn('EventBus is not available in ConfigActionManager');
       return;
     }
 

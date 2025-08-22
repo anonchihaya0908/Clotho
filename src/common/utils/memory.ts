@@ -320,13 +320,13 @@ export class MemoryMonitor {
    */
   cleanup(): void {
     // 清理缓存
-    for (const [name, cache] of this.caches) {
+    for (const [, cache] of this.caches) {
       try {
         if ('clear' in cache && typeof cache.clear === 'function') {
           (cache as { clear: () => void }).clear();
         }
-      } catch (error) {
-        console.warn(`Failed to clear cache ${name}:`, error);
+      } catch {
+        // Silently handle cache clear failures
       }
     }
 

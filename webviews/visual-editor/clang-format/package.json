@@ -1,6 +1,6 @@
 {
     "name": "visual-editor-clang-format-webview",
-    "version": "1.0.9",
+    "version": "1.0.10",
     "private": true,
     "description": "Webview frontend for Clotho clang-format visual editor",
     "scripts": {
