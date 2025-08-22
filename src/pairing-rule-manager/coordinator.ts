@@ -3,8 +3,7 @@
  * Orchestrates the pairing rule management workflow between service and UI layers
  */
 
-import * as vscode from 'vscode';
-import { errorHandler } from '../common/error-handler';
+import { BaseCoordinator } from '../common/base-coordinator';
 import { PairingRuleUI } from './ui';
 
 /**
@@ -12,36 +11,36 @@ import { PairingRuleUI } from './ui';
  * Uses dependency injection and delegates all implementation details to
  * service and UI layers.
  */
-export class PairingRuleCoordinator implements vscode.Disposable {
+export class PairingRuleCoordinator extends BaseCoordinator {
   /**
    * Constructor with dependency injection - receives pre-configured instances
    */
   constructor(
     private readonly ui: PairingRuleUI,
   ) {
+    super(); // Initialize BaseCoordinator
+
+    // Validate dependencies
+    this.validateDependencies({
+      ui: this.ui,
+    });
+
     // Commands are now registered centrally in bootstrap.ts
   }
 
   /**
-   * Dispose method for cleanup when extension is deactivated
+   * Get the module name for logging purposes
    */
-  dispose(): void {
-    // No resources to dispose since commands are managed centrally
+  protected getModuleName(): string {
+    return 'PairingRuleCoordinator';
   }
 
   /**
    * Opens the configuration wizard for pairing rules
    */
   public async configureRules(): Promise<void> {
-    try {
+    return this.executeOperation('configureRules', async () => {
       await this.ui.showConfigurationWizard();
-    } catch (error) {
-      errorHandler.handle(error, {
-        operation: 'configureRules',
-        module: 'PairingRuleCoordinator',
-        showToUser: true,
-        logLevel: 'error',
-      });
-    }
+    });
   }
 }

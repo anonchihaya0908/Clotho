@@ -22,76 +22,27 @@
  * - Better type safety with enhanced TypeScript inference.
  */
 
-import { SimpleClangdMonitor } from '../clangd-monitor/simple-monitor';
-import {
-  PairCoordinator,
-  PairCreatorService,
-  PairCreatorUI,
-} from '../create-source-header-pair';
-import { HeaderGuardCoordinator } from '../create-source-header-pair/header-guard-coordinator';
-import {
-  PairingRuleCoordinator,
-  PairingRuleService,
-  PairingRuleUI,
-} from '../pairing-rule-manager';
-import {
-  SwitchCoordinator,
-  SwitchService,
-  SwitchUI,
-} from '../switch-header-source';
-import { SwitchConfigService } from '../switch-header-source/config-manager';
-import { ClangFormatEditorCoordinator } from '../visual-editor';
-import { ClangFormatGuideService } from '../visual-editor/clang-format/guide-service';
 import { errorHandler } from './error-handler';
 import { logger } from './logger';
 import { Factory } from './type-utilities';
+import {
+  generateServiceReport,
+  ServiceMap,
+  ServiceName,
+  ServiceValidationResult,
+  validateServiceRegistration as typeValidateServiceRegistration
+} from './types/service-types';
 
 /**
- * Service Map - The single source of truth for all services
- * ==========================================================
- *
- * This is the ONLY place where service types need to be defined.
- * When adding a new service:
- * 1. Add the service type mapping here
- * 2. Register the service in bootstrap.ts
- * 3. That's it! ServiceCollection is automatically updated.
+ * Re-export service types for backward compatibility
  */
-export interface ServiceMap {
-  // Pairing Rule Manager
-  pairingRuleService: PairingRuleService;
-  pairingRuleUI: PairingRuleUI;
-  pairingRuleCoordinator: PairingRuleCoordinator;
-
-  // Create Source/Header Pair
-  pairCreatorService: PairCreatorService;
-  pairCreatorUI: PairCreatorUI;
-  pairCoordinator: PairCoordinator;
-  headerGuardCoordinator: HeaderGuardCoordinator;
-
-  // Switch Header/Source
-  switchConfigService: SwitchConfigService;
-  switchService: SwitchService;
-  switchUI: SwitchUI;
-  switchCoordinator: SwitchCoordinator;
-
-  // Clangd Monitor
-  clangdMonitor: SimpleClangdMonitor;
-
-  // Clang-Format Visual Editor
-  clangFormatEditorCoordinator: ClangFormatEditorCoordinator;
-  clangFormatGuideService: ClangFormatGuideService;
-}
+export type { ServiceMap, ServiceName, ServiceType } from './types/service-types';
 
 /**
  * Automatically generated ServiceCollection from ServiceMap
  * No need to maintain this manually - it's derived from ServiceMap
  */
 export type ServiceCollection = ServiceMap;
-
-/**
- * Type-safe service names
- */
-export type ServiceName = keyof ServiceMap;
 
 /**
  *  Type-safe service factory function using generic Factory type
@@ -161,43 +112,22 @@ export class ServiceContainer {
   }
 
   /**
-   * Validates that all services in ServiceMap are registered
+   * Validates that all services in ServiceMap are registered using type-safe validation
    * Useful for development and testing to ensure no services are missing
-   * @returns Object with validation results
+   * @returns Comprehensive validation result with detailed information
    */
-  public validateServiceRegistration(): {
-    isValid: boolean;
-    missing: string[];
-    registered: ServiceName[];
-  } {
+  public validateServiceRegistration(): ServiceValidationResult {
     const registered = this.getRegisteredServices();
+    return typeValidateServiceRegistration(registered);
+  }
 
-    // Extract all keys from ServiceMap type programmatically
-    // This ensures we don't have to manually maintain this list
-    const expectedServices: ServiceName[] = [
-      'pairingRuleService',
-      'pairingRuleUI',
-      'pairingRuleCoordinator',
-      'pairCreatorService',
-      'pairCreatorUI',
-      'pairCoordinator',
-      'headerGuardCoordinator',
-      'switchConfigService',
-      'switchService',
-      'switchUI',
-      'switchCoordinator',
-      'clangdMonitor',
-      'clangFormatEditorCoordinator',
-      'clangFormatGuideService'
-    ];
-
-    const missing = expectedServices.filter(service => !registered.includes(service));
-
-    return {
-      isValid: missing.length === 0,
-      missing,
-      registered
-    };
+  /**
+   * Generate a detailed service registration report for debugging
+   * @returns Human-readable report of service registration status
+   */
+  public generateServiceReport(): string {
+    const registered = this.getRegisteredServices();
+    return generateServiceReport(registered);
   }
 
   /**

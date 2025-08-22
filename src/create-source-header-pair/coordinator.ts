@@ -8,6 +8,7 @@
 
 import * as vscode from 'vscode';
 
+import { BaseCoordinator } from '../common/base-coordinator';
 import { ERROR_MESSAGES } from '../common/constants';
 import { PairingRule } from '../common/types';
 import { PairingRuleService } from '../pairing-rule-manager';
@@ -17,48 +18,61 @@ import { PairCreatorUI } from './ui';
 
 // PairCoordinator orchestrates the workflow between UI and Service layers.
 // It follows the single responsibility principle and uses dependency injection.
-export class PairCoordinator implements vscode.Disposable {
+export class PairCoordinator extends BaseCoordinator {
   // Constructor with dependency injection - receives pre-configured instances
   constructor(
     private readonly service: PairCreatorService,
     private readonly ui: PairCreatorUI,
     private readonly pairingRuleService: PairingRuleService,
   ) {
+    super(); // Initialize BaseCoordinator
+
+    // Validate dependencies
+    this.validateDependencies({
+      service: this.service,
+      ui: this.ui,
+      pairingRuleService: this.pairingRuleService,
+    });
+
     // Commands are now registered centrally in bootstrap.ts
   }
 
-  // Dispose method for cleanup when extension is deactivated
-  dispose() {
-    // No resources to dispose since commands are managed centrally
+  /**
+   * Get the module name for logging purposes
+   */
+  protected getModuleName(): string {
+    return 'PairCoordinator';
   }
 
   // Main workflow orchestration - clean coordinator layer
   public async create(): Promise<void> {
-    // 1. Determine where to create files
-    const targetDirectory = await this.getTargetDirectory();
-    if (!targetDirectory) {
-      this.ui.showError(ERROR_MESSAGES.NO_TARGET_DIRECTORY);
-      return;
-    }
+    return this.executeOperation('create', async () => {
+      // 1. Determine where to create files
+      const targetDirectory = await this.getTargetDirectory();
+      if (!targetDirectory) {
+        this.ui.showError(ERROR_MESSAGES.NO_TARGET_DIRECTORY);
+        return;
+      }
 
-    // 2. Get user preferences (delegates to service for config detection)
-    const userPreferences = await this.getUserPreferences();
-    if (!userPreferences) {
-      return; // User cancelled
-    }
+      // 2. Get user preferences (delegates to service for config detection)
+      const userPreferences = await this.getUserPreferences();
+      if (!userPreferences) {
+        return; // User cancelled
+      }
 
-    const fileName = await this.ui.promptForFileName(userPreferences.rule);
-    if (!fileName) {
-      return; // User cancelled
-    }
+      const fileName = await this.ui.promptForFileName(userPreferences.rule);
+      if (!fileName) {
+        return; // User cancelled
+      }
 
-    // 3. Validate and create files
-    await this.createFilePair(targetDirectory, fileName, userPreferences.rule);
+      // 3. Validate and create files
+      await this.createFilePair(targetDirectory, fileName, userPreferences.rule);
 
-    // 4. Handle post-creation config save if needed
-    if (userPreferences.needsSaving) {
-      await this.ui.offerToSaveCompleteConfig(userPreferences.rule, this.service, this.pairingRuleService);
-    }
+      // 4. Handle post-creation config save if needed
+      if (userPreferences.needsSaving) {
+        await this.ui.offerToSaveCompleteConfig(userPreferences.rule, this.service, this.pairingRuleService);
+      }
+    });
   }
 
   /**
