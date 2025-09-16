@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { UI_CONSTANTS } from '../../../common/constants';
-import { logger } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 import {
   BaseManager,
   ManagerContext,
@@ -15,6 +15,8 @@ import { ClangFormatService } from '../format-service';
  * 例如加载、保存、导入、导出、重置等。
  */
 export class ConfigActionManager implements BaseManager {
+  private readonly logger = createModuleLogger('ConfigActionManager');
+
   readonly name = 'ConfigActionManager';
 
   private context!: ManagerContext;
@@ -23,7 +25,7 @@ export class ConfigActionManager implements BaseManager {
   constructor() {
     // 由于 ClangFormatService 的构造函数是私有的，这里应通过其提供的静态方法获取实例
     this.formatService = ClangFormatService.getInstance();
-    logger.debug('ConfigActionManager constructed', {
+    this.logger.debug('ConfigActionManager constructed', {
       module: 'ConfigActionManager',
       operation: 'constructor'
     });
@@ -32,7 +34,7 @@ export class ConfigActionManager implements BaseManager {
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
     this.setupEventListeners();
-    logger.info('ConfigActionManager initialized', {
+    this.logger.info('ConfigActionManager initialized', {
       module: 'ConfigActionManager',
       operation: 'initialize'
     });
@@ -93,7 +95,7 @@ export class ConfigActionManager implements BaseManager {
 
     try {
       await vscode.workspace.fs.stat(fileUri);
-      logger.info('Found .clang-format file in workspace, auto-loading', {
+      this.logger.info('Found .clang-format file in workspace, auto-loading', {
         module: 'ConfigActionManager',
         operation: 'autoLoadWorkspaceConfig',
         fileUri: fileUri.toString()
@@ -101,7 +103,7 @@ export class ConfigActionManager implements BaseManager {
       await this.loadConfigFromFile(fileUri, true); // 传递 silent=true 表示自动加载
     } catch {
       // 文件不存在，静默处理
-      logger.debug('.clang-format file not found in workspace. Using default settings', {
+      this.logger.debug('.clang-format file not found in workspace. Using default settings', {
         module: 'ConfigActionManager',
         operation: 'autoLoadWorkspaceConfig'
       });
@@ -155,7 +157,7 @@ export class ConfigActionManager implements BaseManager {
         );
       } else {
         // 自动加载失败时仅记录日志，不打扰用户
-        logger.warn('Auto-load failed, using default configuration', {
+        this.logger.warn('Auto-load failed, using default configuration', {
           module: 'ConfigActionManager',
           operation: 'loadConfigFromFile',
           error: (error as Error).message || 'Unknown error'

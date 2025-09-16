@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode';
 import { errorHandler } from '../../../common/error-handler';
-import { LoggerService } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { UI_CONSTANTS } from '../../../common/constants';
 import { DebounceManager } from './debounce-manager';
 
@@ -37,7 +37,7 @@ export class TransitionManager {
   }
   private debounceManager: DebounceManager;
   private transitionStartTime: number = 0;
-  private readonly logger = LoggerService.getInstance().createChildLogger('TransitionManager');
+  private readonly logger = createModuleLogger('TransitionManager');
 
   private readonly defaultOptions: TransitionOptions = {
     maxTransitionTime: UI_CONSTANTS.MAX_TRANSITION_TIME, // Use centralized transition time constant
@@ -178,7 +178,7 @@ export class TransitionManager {
     isTransitioning: boolean;
     elapsedTime: number;
     debounceStatus: unknown;
-    } {
+  } {
     return {
       currentState: this.currentState,
       isTransitioning: this.isTransitioning(),

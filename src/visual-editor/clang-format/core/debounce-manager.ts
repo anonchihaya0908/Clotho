@@ -5,7 +5,7 @@
 
 import { ERROR_HANDLING } from '../../../common/constants';
 import { errorHandler } from '../../../common/error-handler';
-import { logger } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 
 /**
  * 防抖配置选项
@@ -29,6 +29,8 @@ export interface LockOptions {
  * 防抖管理器
  */
 export class DebounceManager {
+  private readonly logger = createModuleLogger('DebounceManager');
+
   private timers = new Map<string, NodeJS.Timeout>();
   private locks = new Set<string>();
   private lockTimers = new Map<string, NodeJS.Timeout>();
@@ -117,7 +119,7 @@ export class DebounceManager {
       if (this.locks.has(key)) {
         if (options.throwOnTimeout !== false) {
           // 使用更友好的日志级别
-          logger.debug('Operation already in progress, skipping duplicate call', {
+          this.logger.debug('Operation already in progress, skipping duplicate call', {
             module: 'DebounceManager',
             operation: key,
           });
@@ -136,7 +138,7 @@ export class DebounceManager {
         const lockTimer = setTimeout(() => {
           this.locks.delete(key);
           this.lockTimers.delete(key);
-          logger.warn('Lock timed out', {
+          this.logger.warn('Lock timed out', {
             module: 'DebounceManager',
             operation: key,
             timeout: options.timeout
@@ -297,7 +299,7 @@ export class DebounceManager {
     activeTimers: string[];
     activeLocks: string[];
     pendingQueues: string[];
-    } {
+  } {
     return {
       activeTimers: Array.from(this.timers.keys()),
       activeLocks: Array.from(this.locks),
@@ -313,7 +315,7 @@ export class DebounceManager {
     this.releaseAllLocks();
     this.pendingOperations.clear();
 
-    logger.info('All resources disposed', {
+    this.logger.info('All resources disposed', {
       module: 'DebounceManager',
       operation: 'dispose'
     });

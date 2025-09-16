@@ -6,7 +6,7 @@
 
 import * as vscode from 'vscode';
 import { errorHandler } from '../../../common/error-handler';
-import { logger } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { ManagerContext } from '../../../common/types';
 
 /**
@@ -55,6 +55,8 @@ export interface InitializationResult {
  * (Removed complex priority system)
  */
 export class ManagerRegistry implements vscode.Disposable {
+  private readonly logger = createModuleLogger('ManagerRegistry');
+
   private registrations = new Map<string, ManagerRegistration>();
   private isInitialized = false;
   private disposables: vscode.Disposable[] = [];
@@ -65,7 +67,7 @@ export class ManagerRegistry implements vscode.Disposable {
      */
   register(name: string, instance: ManagedComponent): void {
     if (this.registrations.has(name)) {
-      logger.warn(`Manager ${name} is already registered, replacing...`, {
+      this.logger.warn(`Manager ${name} is already registered, replacing...`, {
         module: 'ManagerRegistry',
         operation: 'register',
       });
@@ -83,7 +85,7 @@ export class ManagerRegistry implements vscode.Disposable {
      */
   registerFactory<T extends ManagedComponent>(name: string, factory: ManagerFactory<T>): void {
     if (this.registrations.has(name)) {
-      logger.warn(`Manager ${name} is already registered, replacing...`, {
+      this.logger.warn(`Manager ${name} is already registered, replacing...`, {
         module: 'ManagerRegistry',
         operation: 'registerFactory',
       });
@@ -95,7 +97,7 @@ export class ManagerRegistry implements vscode.Disposable {
       initialized: false,
     });
 
-    logger.debug(`Registered manager factory: ${name}`, {
+    this.logger.debug(`Registered manager factory: ${name}`, {
       module: 'ManagerRegistry',
       operation: 'registerFactory',
     });
@@ -115,7 +117,7 @@ export class ManagerRegistry implements vscode.Disposable {
       try {
         registration.instance.dispose();
       } catch (error) {
-        logger.warn(`Error disposing manager ${name}:`, {
+        this.logger.warn(`Error disposing manager ${name}:`, {
           module: 'ManagerRegistry',
           operation: 'unregister',
           error,
@@ -156,7 +158,7 @@ export class ManagerRegistry implements vscode.Disposable {
 
     // If factory exists, create instance lazily
     if (registration.factory) {
-      logger.debug(`Lazy loading manager: ${name}`, {
+      this.logger.debug(`Lazy loading manager: ${name}`, {
         module: 'ManagerRegistry',
         operation: 'getInstance',
       });
@@ -167,7 +169,7 @@ export class ManagerRegistry implements vscode.Disposable {
       // If we have context cached, initialize immediately
       if (this.context && !registration.initialized) {
         this.initializeManager(registration, this.context).catch(error => {
-          logger.error(`Failed to initialize lazy-loaded manager ${name}`, error, {
+          this.logger.error(`Failed to initialize lazy-loaded manager ${name}`, error, {
             module: 'ManagerRegistry',
             operation: 'getInstance',
           });
@@ -212,7 +214,7 @@ export class ManagerRegistry implements vscode.Disposable {
     registration.initializationTime = Date.now() - initStart;
     registration.initialized = true;
 
-    logger.debug(`Manager ${registration.name} initialized in ${registration.initializationTime}ms`, {
+    this.logger.debug(`Manager ${registration.name} initialized in ${registration.initializationTime}ms`, {
       module: 'ManagerRegistry',
       operation: 'initializeManager',
     });
@@ -274,7 +276,7 @@ export class ManagerRegistry implements vscode.Disposable {
 
     // 记录初始化结果
     if (result.success) {
-      logger.info(` Managers initialized successfully in ${result.totalTimeMs}ms (${initialized.length} eager, ${factoryOnlyCount} lazy)`, {
+      this.logger.info(` Managers initialized successfully in ${result.totalTimeMs}ms (${initialized.length} eager, ${factoryOnlyCount} lazy)`, {
         module: 'ManagerRegistry',
         operation: 'initializeAll',
         eagerCount: initialized.length,
@@ -282,7 +284,7 @@ export class ManagerRegistry implements vscode.Disposable {
         detail: `Eager: ${initialized.join(' → ')}`,
       });
     } else {
-      logger.warn(` Manager initialization completed with ${failed.length} failures:`, {
+      this.logger.warn(` Manager initialization completed with ${failed.length} failures:`, {
         module: 'ManagerRegistry',
         operation: 'initializeAll',
         failed: failed.map(f => ({ name: f.name, message: f.error.message })),
@@ -355,7 +357,7 @@ export class ManagerRegistry implements vscode.Disposable {
       try {
         disposable.dispose();
       } catch (error) {
-        logger.warn('Error disposing disposable:', {
+        this.logger.warn('Error disposing disposable:', {
           module: 'ManagerRegistry',
           operation: 'dispose',
           error,
@@ -369,13 +371,13 @@ export class ManagerRegistry implements vscode.Disposable {
 
     // 记录清理结果
     if (disposalErrors.length === 0) {
-      logger.info(` All ${disposedManagers.length} managers disposed successfully`, {
+      this.logger.info(` All ${disposedManagers.length} managers disposed successfully`, {
         module: 'ManagerRegistry',
         operation: 'dispose',
         detail: `Disposal order: ${disposedManagers.join(' → ')}`,
       });
     } else {
-      logger.warn(` Manager disposal completed with ${disposalErrors.length} errors:`, {
+      this.logger.warn(` Manager disposal completed with ${disposalErrors.length} errors:`, {
         module: 'ManagerRegistry',
         operation: 'dispose',
         errors: disposalErrors.map(e => ({ name: e.name, message: e.error.message })),

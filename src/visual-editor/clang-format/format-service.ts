@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { errorHandler } from '../../common/error-handler';
-import { logger } from '../../common/logger';
+import { createModuleLogger } from '../../common/logger/unified-logger';
 import { getLineEnding } from '../../common/platform-utils';
 import { ProcessRunner } from '../../common/process-runner';
 import { ConfigValidationResult, FormatResult } from '../../common/types/core';
@@ -19,6 +19,7 @@ import {
 
 export class ClangFormatService {
   private static instance: ClangFormatService | undefined;
+  private readonly logger = createModuleLogger('ClangFormatService');
 
   private constructor() { }
 
@@ -410,7 +411,7 @@ export class ClangFormatService {
             value = [];
           }
         } catch {
-          logger.warn(`Failed to parse array value for ${key}: ${valueStr}`, {
+          this.logger.warn(`Failed to parse array value for ${key}: ${valueStr}`, {
             module: 'ClangFormatService',
             operation: 'parseConfigurationLine',
           });
@@ -423,7 +424,7 @@ export class ClangFormatService {
     }
 
     // 调试输出，帮助排查数据不准确的问题
-    logger.debug('Parsed configuration', {
+    this.logger.debug('Parsed configuration', {
       config,
       module: 'ClangFormatService',
       operation: 'parseConfigurationLine',

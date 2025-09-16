@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode';
-import { logger } from './logger';
+import { createModuleLogger } from '../logger/unified-logger';
 import { ConfigValidationResult } from './types/core';
 
 // ===============================

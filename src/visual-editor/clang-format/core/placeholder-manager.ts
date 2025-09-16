@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { errorHandler } from '../../../common/error-handler';
-import { logger } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { isDarkTheme } from '../../../common/platform-utils';
 import {
   BaseManager,
@@ -16,6 +16,8 @@ import { getNonce } from '../../../common/utils';
  * 【重构后】只负责创建、销毁和更新占位符 Webview，不包含决策逻辑
  */
 export class PlaceholderWebviewManager implements BaseManager {
+  private readonly logger = createModuleLogger('PlaceholderWebviewManager');
+
   readonly name = 'PlaceholderManager';
 
   private panel: vscode.WebviewPanel | undefined;
@@ -48,7 +50,7 @@ export class PlaceholderWebviewManager implements BaseManager {
   async createPlaceholder(): Promise<vscode.WebviewPanel> {
     // 检查是否已经存在有效的面板
     if (this.panel && this.panel.visible) {
-      logger.debug('Reusing existing placeholder panel', {
+      this.logger.debug('Reusing existing placeholder panel', {
         module: this.name,
         operation: 'createPlaceholder',
       });
@@ -58,14 +60,14 @@ export class PlaceholderWebviewManager implements BaseManager {
 
     // 如果面板存在但不可见，说明可能已经被销毁，清理引用
     if (this.panel && !this.panel.visible) {
-      logger.debug('Cleaning up disposed placeholder panel reference', {
+      this.logger.debug('Cleaning up disposed placeholder panel reference', {
         module: this.name,
         operation: 'createPlaceholder',
       });
       this.panel = undefined;
     }
 
-    logger.debug('Creating new placeholder panel', {
+    this.logger.debug('Creating new placeholder panel', {
       module: this.name,
       operation: 'createPlaceholder',
     });
@@ -118,12 +120,12 @@ export class PlaceholderWebviewManager implements BaseManager {
       this.panel.dispose();
       this.panel = undefined;
 
-      logger.debug('Placeholder destroyed when switching away from clang-format editor', {
+      this.logger.debug('Placeholder destroyed when switching away from clang-format editor', {
         module: this.name,
         operation: 'hidePlaceholder',
       });
     } catch (error) {
-      logger.warn('Failed to destroy placeholder', {
+      this.logger.warn('Failed to destroy placeholder', {
         module: this.name,
         operation: 'hidePlaceholder',
         error: error instanceof Error ? error.message : String(error)
@@ -187,7 +189,7 @@ export class PlaceholderWebviewManager implements BaseManager {
 
     // 监听预览打开事件，清理占位符
     this.context.eventBus?.on('preview-opened', () => {
-      logger.debug('Preview opened, disposing placeholder', {
+      this.logger.debug('Preview opened, disposing placeholder', {
         module: this.name,
         operation: 'onPreviewOpened',
       });
@@ -215,7 +217,7 @@ export class PlaceholderWebviewManager implements BaseManager {
 
     // Listen for preview hidden due to visibility settings
     this.context.eventBus?.on('preview-hidden-by-visibility', () => {
-      logger.debug('Preview is hidden due to visibility settings, not creating placeholder', {
+      this.logger.debug('Preview is hidden due to visibility settings, not creating placeholder', {
         module: this.name,
         operation: 'createPlaceholder',
       });
@@ -598,12 +600,12 @@ export class PlaceholderWebviewManager implements BaseManager {
 
     this.characterImagePaths = allImagePaths;
     if (this.characterImagePaths.length > 0) {
-      logger.debug(
+      this.logger.debug(
         `Successfully loaded ${this.characterImagePaths.length} character images.`,
         { module: this.name, operation: 'loadCharacterImagePaths' },
       );
     } else {
-      logger.warn('No character images found.', {
+      this.logger.warn('No character images found.', {
         module: this.name,
         operation: 'loadCharacterImagePaths',
       });

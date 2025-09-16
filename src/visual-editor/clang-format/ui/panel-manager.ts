@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode';
 import { errorHandler } from '../../../common/error-handler';
-import { LoggerService } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 
 /**
  * 面板配置选项
@@ -80,11 +80,11 @@ export interface PanelManager {
  * ClangFormat面板管理器实现
  */
 export class ClangFormatPanelManager
-implements PanelManager, vscode.Disposable {
+  implements PanelManager, vscode.Disposable {
   private panels = new Map<string, vscode.WebviewPanel>();
   private panelStates = new Map<string, PanelState>();
   private disposables: vscode.Disposable[] = [];
-  private readonly logger = LoggerService.getInstance().createChildLogger('PanelManager');
+  private readonly logger = createModuleLogger('PanelManager');
 
   constructor() {
     // 监听活跃编辑器变化
@@ -354,7 +354,7 @@ implements PanelManager, vscode.Disposable {
     activePanels: number;
     visiblePanels: number;
     oldestPanel?: { id: string; age: number };
-    } {
+  } {
     const allPanels = this.getAllPanels();
     const totalPanels = allPanels.size;
     let activePanels = 0;

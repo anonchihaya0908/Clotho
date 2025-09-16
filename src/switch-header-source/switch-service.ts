@@ -14,7 +14,7 @@ import {
   TEST_PATTERNS,
 } from '../common/constants';
 import { errorHandler } from '../common/error-handler';
-import { logger } from '../common/logger';
+import { createModuleLogger } from '../common/logger/unified-logger';
 import { SearchResult } from '../common/types/core';
 import {
   LRUCache,
@@ -45,6 +45,7 @@ export class SwitchService {
   private static readonly searchResultsCache = new LRUCache<string, SearchResult>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
   private static readonly pathNormalizeCache = new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
 
+  private readonly logger = createModuleLogger('SwitchService');
   private configService: SwitchConfigService;
 
   // Cache configuration constants
@@ -245,7 +246,7 @@ export class SwitchService {
         'llvm-vs-code-extensions.vscode-clangd',
       );
       if (!clangdExtension) {
-        logger.debug('clangd extension not found, using heuristic search', {
+        this.logger.debug('clangd extension not found, using heuristic search', {
           module: 'SwitchService',
           operation: 'tryClangdSwitch',
         });
@@ -256,12 +257,12 @@ export class SwitchService {
       if (!clangdExtension.isActive) {
         try {
           await clangdExtension.activate();
-          logger.debug('clangd extension activated', {
+          this.logger.debug('clangd extension activated', {
             module: 'SwitchService',
             operation: 'tryClangdSwitch',
           });
         } catch {
-          logger.debug('Failed to activate clangd extension, using heuristic search', {
+          this.logger.debug('Failed to activate clangd extension, using heuristic search', {
             module: 'SwitchService',
             operation: 'tryClangdSwitch',
           });
@@ -272,7 +273,7 @@ export class SwitchService {
       // Step 3: Check if the API is available
       const api = clangdExtension.exports;
       if (!api?.getClient) {
-        logger.debug('clangd API not available, using heuristic search', {
+        this.logger.debug('clangd API not available, using heuristic search', {
           module: 'SwitchService',
           operation: 'tryClangdSwitch',
         });
@@ -283,7 +284,7 @@ export class SwitchService {
       const client = api.getClient();
       if (!client || client.state !== 2) {
         // 2 = Running state
-        logger.debug('clangd client not running, using heuristic search', {
+        this.logger.debug('clangd client not running, using heuristic search', {
           module: 'SwitchService',
           operation: 'tryClangdSwitch',
         });
@@ -303,7 +304,7 @@ export class SwitchService {
 
       if (result && typeof result === 'string') {
         const targetUri = vscode.Uri.parse(result);
-        logger.debug(`clangd found partner file: ${targetUri.fsPath}`, {
+        this.logger.debug(`clangd found partner file: ${targetUri.fsPath}`, {
           module: 'SwitchService',
           operation: 'tryClangdSwitch',
         });
@@ -311,13 +312,13 @@ export class SwitchService {
         // Verify the file exists
         try {
           await vscode.workspace.fs.stat(targetUri);
-          logger.info('Successfully used clangd for precise file switching', {
+          this.logger.info('Successfully used clangd for precise file switching', {
             module: 'SwitchService',
             operation: 'tryClangdSwitch',
           });
           return { files: [targetUri], method: 'clangd' };
         } catch {
-          logger.debug('clangd result file does not exist, using heuristic search', {
+          this.logger.debug('clangd result file does not exist, using heuristic search', {
             module: 'SwitchService',
             operation: 'tryClangdSwitch',
           });
@@ -325,13 +326,13 @@ export class SwitchService {
         }
       }
 
-      logger.debug('clangd returned no result, using heuristic search', {
+      this.logger.debug('clangd returned no result, using heuristic search', {
         module: 'SwitchService',
         operation: 'tryClangdSwitch',
       });
       return { files: [], method: 'clangd' };
     } catch (error) {
-      logger.debug('clangd integration failed, using heuristic search', {
+      this.logger.debug('clangd integration failed, using heuristic search', {
         module: 'SwitchService',
         operation: 'tryClangdSwitch',
         error,

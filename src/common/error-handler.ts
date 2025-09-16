@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import { ERROR_HANDLING } from './constants';
 import { delay as asyncDelay } from './utils/performance';
 import { ErrorStrategy, ErrorStrategyResult } from './error-strategies/base-strategy';
-import { logger, LoggerService } from './logger';
+import { createModuleLogger } from './logger/unified-logger';
 
 export interface ErrorContext {
   operation: string;
@@ -35,11 +35,10 @@ export class ErrorHandler {
   private static readonly MAX_TIMESTAMP_HISTORY = ERROR_HANDLING.MAX_TIMESTAMP_HISTORY;
   private static errorTimestamps: number[] = [];
 
-  private logger: LoggerService;
+  private readonly logger = createModuleLogger('ErrorHandler');
   private strategies: ErrorStrategy[] = [];
 
-  constructor(logger: LoggerService) {
-    this.logger = logger;
+  constructor() {
     // Initialize with default strategies
     this.initializeDefaultStrategies();
   }
@@ -48,7 +47,7 @@ export class ErrorHandler {
    * Register an error handling strategy
    */
   public registerStrategy(strategy: ErrorStrategy): void {
-    logger.info(`Registering error strategy: ${strategy.name}`, {
+    this.logger.info(`Registering error strategy: ${strategy.name}`, {
       module: 'ErrorHandler',
       operation: 'registerStrategy',
     });
@@ -64,7 +63,7 @@ export class ErrorHandler {
       const strategy = this.strategies[index];
       strategy.dispose?.();
       this.strategies.splice(index, 1);
-      logger.info(`Unregistered error strategy: ${strategyName}`, {
+      this.logger.info(`Unregistered error strategy: ${strategyName}`, {
         module: 'ErrorHandler',
         operation: 'unregisterStrategy',
       });
@@ -101,7 +100,7 @@ export class ErrorHandler {
 
     // Handle retry logic
     if (strategyResult?.shouldRetry && !context.rethrow) {
-      logger.info(`Strategy suggests retry for error: ${clothoError.message}`, {
+      this.logger.info(`Strategy suggests retry for error: ${clothoError.message}`, {
         module: 'ErrorHandler',
         operation: 'handle',
         strategy: strategyResult.metadata?.strategy,
@@ -122,7 +121,7 @@ export class ErrorHandler {
     for (const strategy of this.strategies) {
       try {
         if (strategy.canHandle(error)) {
-          logger.info(`Attempting error recovery with strategy: ${strategy.name}`, {
+          this.logger.info(`Attempting error recovery with strategy: ${strategy.name}`, {
             module: 'ErrorHandler',
             operation: 'tryStrategies',
             errorCode: error.message,
@@ -131,7 +130,7 @@ export class ErrorHandler {
           const result = await strategy.handle(error, context);
 
           if (result.handled) {
-            logger.info(`Error successfully handled by strategy: ${strategy.name}`, {
+            this.logger.info(`Error successfully handled by strategy: ${strategy.name}`, {
               module: 'ErrorHandler',
               operation: 'tryStrategies',
               result: result,
@@ -140,7 +139,7 @@ export class ErrorHandler {
           }
         }
       } catch (strategyError) {
-        logger.error(`Strategy ${strategy.name} failed to handle error`, strategyError as Error, {
+        this.logger.error(`Strategy ${strategy.name} failed to handle error`, strategyError as Error, {
           module: 'ErrorHandler',
           operation: 'tryStrategies',
           originalError: error.message,
@@ -223,20 +222,19 @@ export class ErrorHandler {
     const { operation, module, logLevel = 'error' } = error.context;
     const message = `${operation} failed`;
 
-    this.logger.logForModule(
-      logLevel.toUpperCase() as 'ERROR' | 'WARN' | 'INFO' | 'DEBUG',
-      module,
-      operation,
-      message,
-      {
+    const logMethod = this.logger[logLevel as keyof typeof this.logger] as (message: string, error?: Error, context?: any) => void;
+    if (typeof logMethod === 'function') {
+      logMethod.call(this.logger, message, error, {
+        module,
+        operation,
         error: {
           name: error.name,
           message: error.message,
           stack: error.stack,
           cause: error.cause,
         },
-      },
-    );
+      });
+    }
   }
 
   /**
@@ -395,7 +393,7 @@ export class ErrorHandler {
 /**
  * Global instance of ErrorHandler
  */
-export const errorHandler = new ErrorHandler(logger);
+export const errorHandler = new ErrorHandler();
 
 
 /**

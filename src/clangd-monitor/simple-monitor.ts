@@ -5,22 +5,24 @@
 
 import * as vscode from 'vscode';
 import { UI_TIMING } from '../common/constants';
-import { logger } from '../common/logger';
+import { createModuleLogger } from '../common/logger/unified-logger';
 import { ProcessDetector } from '../common/process-detector';
 
 // 导入 pidusage 用于内存和CPU监控
 import pidusage from 'pidusage';
 
 interface ClangdInfo {
-    pid: number;
-    memory: number; // bytes
-    cpu: number; // percentage
-    version?: string;
-    isRunning: boolean;
-    lastUpdate: Date;
+  pid: number;
+  memory: number; // bytes
+  cpu: number; // percentage
+  version?: string;
+  isRunning: boolean;
+  lastUpdate: Date;
 }
 
 export class SimpleClangdMonitor implements vscode.Disposable {
+  private readonly logger = createModuleLogger('SimpleClangdMonitor');
+
   private statusBarItem: vscode.StatusBarItem;
   private updateTimer: NodeJS.Timeout | undefined;
   private currentInfo: ClangdInfo | undefined;
@@ -69,14 +71,14 @@ export class SimpleClangdMonitor implements vscode.Disposable {
   private async updateClangdInfo(): Promise<void> {
     try {
       // 1. 查找 clangd 进程
-      logger.debug('Searching for clangd process...', {
+      this.logger.debug('Searching for clangd process...', {
         module: 'SimpleClangdMonitor',
         operation: 'updateClangdInfo',
       });
 
       const pid = await this.findClangdPid();
       if (!pid) {
-        logger.debug('No clangd process found', {
+        this.logger.debug('No clangd process found', {
           module: 'SimpleClangdMonitor',
           operation: 'updateClangdInfo',
         });
@@ -85,7 +87,7 @@ export class SimpleClangdMonitor implements vscode.Disposable {
         return;
       }
 
-      logger.debug(`Found clangd process: ${pid}`, {
+      this.logger.debug(`Found clangd process: ${pid}`, {
         module: 'SimpleClangdMonitor',
         operation: 'updateClangdInfo',
         pid,
@@ -112,7 +114,7 @@ export class SimpleClangdMonitor implements vscode.Disposable {
 
       this.updateStatusBar();
     } catch (error) {
-      logger.debug('Failed to update clangd info', {
+      this.logger.debug('Failed to update clangd info', {
         module: 'SimpleClangdMonitor',
         error: error instanceof Error ? error.message : String(error),
       });
@@ -131,7 +133,7 @@ export class SimpleClangdMonitor implements vscode.Disposable {
       // 1. 尝试通过 VS Code API 获取
       const apiPid = await this.findClangdPidViaApi();
       if (apiPid) {
-        logger.info(`Using API-detected PID: ${apiPid}`, {
+        this.logger.info(`Using API-detected PID: ${apiPid}`, {
           module: 'SimpleClangdMonitor',
           operation: 'findClangdPid',
           pid: apiPid,
@@ -140,14 +142,14 @@ export class SimpleClangdMonitor implements vscode.Disposable {
       }
 
       // 2. 通过进程名查找
-      logger.debug('API detection failed, trying process name detection...', {
+      this.logger.debug('API detection failed, trying process name detection...', {
         module: 'SimpleClangdMonitor',
         operation: 'findClangdPid',
       });
 
       const process = await ProcessDetector.findMainProcessByName('clangd');
       if (process?.pid) {
-        logger.info(`Using process-detected PID: ${process.pid}`, {
+        this.logger.info(`Using process-detected PID: ${process.pid}`, {
           module: 'SimpleClangdMonitor',
           operation: 'findClangdPid',
           pid: process.pid,
@@ -155,14 +157,14 @@ export class SimpleClangdMonitor implements vscode.Disposable {
         return process.pid;
       }
 
-      logger.warn('No clangd process found by any method', {
+      this.logger.warn('No clangd process found by any method', {
         module: 'SimpleClangdMonitor',
         operation: 'findClangdPid',
       });
 
       return undefined;
     } catch (error) {
-      logger.error('Error finding clangd PID', error as Error, {
+      this.logger.error('Error finding clangd PID', error as Error, {
         module: 'SimpleClangdMonitor',
         operation: 'findClangdPid',
       });
@@ -175,7 +177,7 @@ export class SimpleClangdMonitor implements vscode.Disposable {
    */
   private async findClangdPidViaApi(): Promise<number | undefined> {
     try {
-      logger.debug('Attempting API-based PID detection...', {
+      this.logger.debug('Attempting API-based PID detection...', {
         module: 'SimpleClangdMonitor',
         operation: 'findClangdPidViaApi',
       });
@@ -185,7 +187,7 @@ export class SimpleClangdMonitor implements vscode.Disposable {
       );
 
       if (!clangdExtension) {
-        logger.debug('Clangd extension not found', {
+        this.logger.debug('Clangd extension not found', {
           module: 'SimpleClangdMonitor',
           operation: 'findClangdPidViaApi',
         });
@@ -193,7 +195,7 @@ export class SimpleClangdMonitor implements vscode.Disposable {
       }
 
       if (!clangdExtension.isActive) {
-        logger.debug('Clangd extension not active', {
+        this.logger.debug('Clangd extension not active', {
           module: 'SimpleClangdMonitor',
           operation: 'findClangdPidViaApi',
         });
@@ -202,7 +204,7 @@ export class SimpleClangdMonitor implements vscode.Disposable {
 
       const api = clangdExtension.exports;
       if (!api?.getClient) {
-        logger.debug('Clangd API getClient not available', {
+        this.logger.debug('Clangd API getClient not available', {
           module: 'SimpleClangdMonitor',
           operation: 'findClangdPidViaApi',
         });
@@ -211,21 +213,21 @@ export class SimpleClangdMonitor implements vscode.Disposable {
 
       const client = api.getClient();
       if (!client) {
-        logger.debug('Clangd client not available', {
+        this.logger.debug('Clangd client not available', {
           module: 'SimpleClangdMonitor',
           operation: 'findClangdPidViaApi',
         });
         return undefined;
       }
 
-      logger.debug(`Clangd client state: ${client.state}`, {
+      this.logger.debug(`Clangd client state: ${client.state}`, {
         module: 'SimpleClangdMonitor',
         operation: 'findClangdPidViaApi',
         clientState: client.state,
       });
 
       if (client.state !== 2) { // 2 = Running state
-        logger.debug('Clangd client not in running state', {
+        this.logger.debug('Clangd client not in running state', {
           module: 'SimpleClangdMonitor',
           operation: 'findClangdPidViaApi',
           clientState: client.state,
@@ -242,13 +244,13 @@ export class SimpleClangdMonitor implements vscode.Disposable {
       );
 
       if (pid) {
-        logger.info(`Found clangd PID via API: ${pid}`, {
+        this.logger.info(`Found clangd PID via API: ${pid}`, {
           module: 'SimpleClangdMonitor',
           operation: 'findClangdPidViaApi',
           pid,
         });
       } else {
-        logger.debug('Could not extract PID from clangd client', {
+        this.logger.debug('Could not extract PID from clangd client', {
           module: 'SimpleClangdMonitor',
           operation: 'findClangdPidViaApi',
         });
@@ -256,7 +258,7 @@ export class SimpleClangdMonitor implements vscode.Disposable {
 
       return pid;
     } catch (error) {
-      logger.debug('Error in API-based PID detection', {
+      this.logger.debug('Error in API-based PID detection', {
         module: 'SimpleClangdMonitor',
         operation: 'findClangdPidViaApi',
         error: error instanceof Error ? error.message : String(error),
@@ -343,25 +345,25 @@ export class SimpleClangdMonitor implements vscode.Disposable {
    * 调试信息 - 手动检查clangd状态
    */
   public async debugClangdStatus(): Promise<void> {
-    logger.info('=== Clangd Monitor Debug Info ===', {
+    this.logger.info('=== Clangd Monitor Debug Info ===', {
       module: 'SimpleClangdMonitor',
       operation: 'debugClangdStatus',
     });
 
     // 检查监控器状态
-    logger.info(`Monitor running: ${!!this.updateTimer}`, {
+    this.logger.info(`Monitor running: ${!!this.updateTimer}`, {
       module: 'SimpleClangdMonitor',
       operation: 'debugClangdStatus',
     });
 
-    logger.info(`Current info: ${JSON.stringify(this.currentInfo)}`, {
+    this.logger.info(`Current info: ${JSON.stringify(this.currentInfo)}`, {
       module: 'SimpleClangdMonitor',
       operation: 'debugClangdStatus',
     });
 
     // 手动尝试查找PID
     const pid = await this.findClangdPid();
-    logger.info(`Manual PID search result: ${pid}`, {
+    this.logger.info(`Manual PID search result: ${pid}`, {
       module: 'SimpleClangdMonitor',
       operation: 'debugClangdStatus',
       pid,
@@ -371,34 +373,34 @@ export class SimpleClangdMonitor implements vscode.Disposable {
     const clangdExtension = vscode.extensions.getExtension(
       'llvm-vs-code-extensions.vscode-clangd'
     );
-    logger.info(`Clangd extension found: ${!!clangdExtension}`, {
+    this.logger.info(`Clangd extension found: ${!!clangdExtension}`, {
       module: 'SimpleClangdMonitor',
       operation: 'debugClangdStatus',
     });
-    logger.info(`Clangd extension active: ${clangdExtension?.isActive}`, {
+    this.logger.info(`Clangd extension active: ${clangdExtension?.isActive}`, {
       module: 'SimpleClangdMonitor',
       operation: 'debugClangdStatus',
     });
 
     if (clangdExtension?.isActive) {
       const api = clangdExtension.exports;
-      logger.info(`Clangd API available: ${!!api}`, {
+      this.logger.info(`Clangd API available: ${!!api}`, {
         module: 'SimpleClangdMonitor',
         operation: 'debugClangdStatus',
       });
-      logger.info(`Clangd getClient available: ${!!api?.getClient}`, {
+      this.logger.info(`Clangd getClient available: ${!!api?.getClient}`, {
         module: 'SimpleClangdMonitor',
         operation: 'debugClangdStatus',
       });
 
       if (api?.getClient) {
         const client = api.getClient();
-        logger.info(`Clangd client available: ${!!client}`, {
+        this.logger.info(`Clangd client available: ${!!client}`, {
           module: 'SimpleClangdMonitor',
           operation: 'debugClangdStatus',
         });
         if (client) {
-          logger.info(`Clangd client state: ${client.state}`, {
+          this.logger.info(`Clangd client state: ${client.state}`, {
             module: 'SimpleClangdMonitor',
             operation: 'debugClangdStatus',
             clientState: client.state,
@@ -431,7 +433,7 @@ export class SimpleClangdMonitor implements vscode.Disposable {
 
       vscode.window.showInformationMessage('Clangd restarted successfully');
     } catch (error) {
-      logger.error('Failed to restart clangd', error as Error, {
+      this.logger.error('Failed to restart clangd', error as Error, {
         module: 'SimpleClangdMonitor',
         operation: 'restartClangd',
       });

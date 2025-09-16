@@ -27,7 +27,7 @@ export * from './constants';
 export * from './utils';
 
 //  Structured logging and event handling
-export * from './structured-logging';
+export * from './logger/unified-logger';
 
 // Heartbeat animation utilities
 export * from './heartbeat-animation';

@@ -11,8 +11,11 @@ import * as vscode from 'vscode';
 import { SimpleClangdMonitor } from './clangd-monitor/simple-monitor';
 import { COMMANDS } from './common/constants';
 import { errorHandler } from './common/error-handler';
-import { logger } from './common/logger';
+import { UnifiedLogger } from './common/logger/unified-logger';
 import { ServiceContainer } from './common/service-container';
+
+// Create global logger instance
+const logger = UnifiedLogger.getInstance();
 import {
   PairCoordinator,
   PairCreatorService,
@@ -48,7 +51,7 @@ export async function bootstrap(
   context: vscode.ExtensionContext,
 ): Promise<void> {
   //  Initialize Logger system (highest priority)
-  logger.initializeOutputChannel();
+  logger.initialize();
   logger.info('Clotho extension starting up...', {
     module: 'Bootstrap',
     operation: 'startup'

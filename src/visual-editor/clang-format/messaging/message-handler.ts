@@ -1,4 +1,4 @@
-import { LoggerService } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { BaseManager, ManagerContext } from '../../../common/types';
 import {
   WebviewMessage,
@@ -20,7 +20,7 @@ export class MessageHandler implements BaseManager {
 
   private context!: ManagerContext;
   private messageHandlers = new Map<string, MessageHandlerFunction>();
-  private readonly logger = LoggerService.getInstance().createChildLogger('MessageHandler');
+  private readonly logger = createModuleLogger('MessageHandler');
 
   constructor() {
     this.setupMessageHandlers();

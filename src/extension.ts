@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode';
 import { bootstrap } from './bootstrap';
-import { logger } from './common/logger';
+import { UnifiedLogger } from './common/logger/unified-logger';
 
 // Global reference to track activation state
 let isActivated = false;

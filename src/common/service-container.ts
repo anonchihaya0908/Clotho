@@ -23,7 +23,7 @@
  */
 
 import { errorHandler } from './error-handler';
-import { logger } from './logger';
+import { createModuleLogger } from '../logger/unified-logger';
 import { Factory } from './type-utilities';
 import {
   generateServiceReport,

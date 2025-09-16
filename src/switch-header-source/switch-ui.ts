@@ -8,7 +8,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { errorHandler } from '../common/error-handler';
-import { logger } from '../common/logger';
+import { createModuleLogger } from '../common/logger/unified-logger';
 
 /**
  * UI service class for switch header/source functionality.
@@ -16,6 +16,8 @@ import { logger } from '../common/logger';
  * Uses instance-based pattern for consistency with other modules and better testability.
  */
 export class SwitchUI {
+  private readonly logger = createModuleLogger('SwitchUI');
+
   constructor() {
     // Initialize any required state here if needed
   }
@@ -67,7 +69,7 @@ export class SwitchUI {
    * Shows debug information about the search method used.
    */
   public showDebugInfo(method: string, foundCount: number): void {
-    logger.debug(`Found ${foundCount} file(s) using method: ${method}`, {
+    this.logger.debug(`Found ${foundCount} file(s) using method: ${method}`, {
       module: 'SwitchUI',
       operation: 'showDebugInfo',
     });
@@ -114,7 +116,7 @@ export class SwitchUI {
     try {
       const document = await vscode.workspace.openTextDocument(fileUri);
       await vscode.window.showTextDocument(document);
-      logger.debug(`Successfully opened file - ${fileUri.fsPath}`, {
+      this.logger.debug(`Successfully opened file - ${fileUri.fsPath}`, {
         module: 'SwitchUI',
         operation: 'openFile',
       });

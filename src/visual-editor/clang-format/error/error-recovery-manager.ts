@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { logger } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { EditorError } from '../../../common/types';
 import { delay } from '../../../common/utils/performance';
 import { BoundedHistory, memoryMonitor } from '../../../common/utils/memory';
@@ -23,6 +23,8 @@ interface RecoveryStrategy {
  * 提供统一的错误处理和自动恢复机制
  */
 export class ErrorRecoveryManager implements vscode.Disposable {
+  private readonly logger = createModuleLogger('ErrorRecoveryManager');
+
   private recoveryStrategies = new Map<string, RecoveryStrategy>();
   private errorHistory = new BoundedHistory<EditorError>(PERFORMANCE.ERROR_HISTORY_MAX_SIZE);
   private maxRecoveryAttempts = 3;
@@ -60,7 +62,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
 
     // 创建一个错误对象，用于记录
     const logError = new Error(`[ErrorRecovery] Code: ${errorCode}. Message: ${editorError.message}`);
-    logger.error(logError.message, logError, {
+    this.logger.error(logError.message, logError, {
       module: this.moduleName,
       operation: 'handleError',
       errorDetails: editorError,
@@ -85,7 +87,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
    */
   private async handleUnrecoverableError(error: EditorError): Promise<void> {
     const logError = new Error(`Unrecoverable error occurred: ${error.code}. Resetting to safe state.`);
-    logger.error(logError.message, logError, {
+    this.logger.error(logError.message, logError, {
       module: this.moduleName,
       operation: 'handleUnrecoverableError',
     });
@@ -107,7 +109,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
     const currentState = this.stateManager.getState();
 
     if (!strategy) {
-      logger.warn(`No recovery strategy found for error code: ${errorCode}.`, {
+      this.logger.warn(`No recovery strategy found for error code: ${errorCode}.`, {
         module: this.moduleName,
         operation: 'attemptRecovery',
       });
@@ -117,7 +119,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
 
     if (currentState.recoveryAttempts >= this.maxRecoveryAttempts) {
       const maxAttemptsError = new Error(`Maximum recovery attempts reached for error: ${errorCode}. Resetting to safe state.`);
-      logger.error(maxAttemptsError.message, maxAttemptsError, {
+      this.logger.error(maxAttemptsError.message, maxAttemptsError, {
         module: this.moduleName,
         operation: 'attemptRecovery',
       });
@@ -129,7 +131,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
       return;
     }
 
-    logger.info(
+    this.logger.info(
       `Attempting recovery for ${errorCode} (Attempt ${currentState.recoveryAttempts + 1
       })`,
       {
@@ -156,13 +158,13 @@ export class ErrorRecoveryManager implements vscode.Disposable {
         },
         'recovery-successful',
       );
-      logger.info(`Recovery successful for ${errorCode}.`, {
+      this.logger.info(`Recovery successful for ${errorCode}.`, {
         module: this.moduleName,
         operation: 'attemptRecovery',
       });
     } catch (recoveryError: unknown) {
       const wrappedError = new Error(`Recovery attempt failed for ${errorCode}: ${(recoveryError as Error).message}`);
-      logger.error(wrappedError.message, recoveryError as Error, {
+      this.logger.error(wrappedError.message, recoveryError as Error, {
         module: this.moduleName,
         operation: 'attemptRecovery',
       });
@@ -179,7 +181,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
     this.recoveryStrategies.set('preview-creation-failed', {
       async recover(error, stateManager, _eventBus) { // eslint-disable-line @typescript-eslint/no-unused-vars
         const logError = new Error('Recovery: Preview creation failed and no fallback is available.');
-        logger.error(logError.message, logError, {
+        this.logger.error(logError.message, logError, {
           module: 'ErrorRecoveryManager',
           operation: 'recover.preview-creation-failed',
           errorDetails: { message: error.message },
@@ -196,7 +198,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
     // 编辑器主面板创建失败：延迟重试
     this.recoveryStrategies.set('editor-creation-failed', {
       async recover(_error, _stateManager, eventBus) {
-        logger.info('Recovery: Retrying editor creation after a delay.', {
+        this.logger.info('Recovery: Retrying editor creation after a delay.', {
           module: 'ErrorRecoveryManager',
           operation: 'recover.editor-creation-failed',
         });
@@ -209,7 +211,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
     // 消息处理失败：通常忽略，只记录
     this.recoveryStrategies.set('message-handling-failed', {
       async recover(_error, stateManager) {
-        logger.warn(`Ignoring message handling error: ${_error.message}`, {
+        this.logger.warn(`Ignoring message handling error: ${_error.message}`, {
           module: 'ErrorRecoveryManager',
           operation: 'recover.message-handling-failed',
         });

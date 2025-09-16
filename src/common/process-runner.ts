@@ -8,7 +8,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { PERFORMANCE } from './constants';
 import { errorHandler } from './error-handler';
-import { logger } from './logger';
+import { createModuleLogger } from '../logger/unified-logger';
 
 // 执行选项的明确类型定义
 interface ExecOptions {

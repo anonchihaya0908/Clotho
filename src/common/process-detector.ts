@@ -9,7 +9,7 @@
 import * as process from 'node:process';
 
 import { errorHandler } from './error-handler';
-import { logger } from './logger';
+import { createModuleLogger } from '../logger/unified-logger';
 import { ProcessRunner } from './process-runner';
 import { LRUCache, memoryMonitor } from './utils';
 

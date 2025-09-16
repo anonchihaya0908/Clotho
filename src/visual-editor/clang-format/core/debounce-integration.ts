@@ -4,7 +4,7 @@
  */
 
 import { errorHandler } from '../../../common/error-handler';
-import { logger } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { BaseManager, ManagerContext, ManagerStatus } from '../../../common/types';
 import { UI_CONSTANTS } from '../../../common/constants';
 import { DebounceManager } from './debounce-manager';
@@ -16,6 +16,8 @@ import { TransitionManager, TransitionState } from './transition-manager';
  * 防抖集成器
  */
 export class DebounceIntegration implements BaseManager {
+  private readonly logger = createModuleLogger('DebounceIntegration');
+
   readonly name = 'DebounceIntegration';
 
   private debounceManager: DebounceManager;
@@ -74,7 +76,7 @@ export class DebounceIntegration implements BaseManager {
           // Only create placeholder when editor is visible and initialized
           const state = this.context?.stateManager?.getState();
           if (!state?.isVisible || !state?.isInitialized) {
-            logger.debug('Editor is not visible or not initialized, skipping placeholder creation', {
+            this.logger.debug('Editor is not visible or not initialized, skipping placeholder creation', {
               module: 'DebounceIntegration',
               operation: 'createDebouncedPreviewCloseHandler',
               isVisible: state?.isVisible,
@@ -119,7 +121,7 @@ export class DebounceIntegration implements BaseManager {
           // Check if preview already exists to avoid duplication
           const state = this.context?.stateManager?.getState();
           if (state?.previewMode === 'open' && state?.previewEditor && !(state.previewEditor as any)?.document?.isClosed) {
-            logger.debug('Preview already exists and is open, skipping creation', {
+            this.logger.debug('Preview already exists and is open, skipping creation', {
               module: 'DebounceIntegration',
               operation: 'createDebouncedPreviewReopenHandler',
               previewMode: state.previewMode,
@@ -129,7 +131,7 @@ export class DebounceIntegration implements BaseManager {
 
           // Additional concurrency check
           if (this.transitionManager.getCurrentState() !== TransitionState.IDLE) {
-            logger.debug('Transition already in progress, skipping operation', {
+            this.logger.debug('Transition already in progress, skipping operation', {
               module: 'DebounceIntegration',
               operation: 'createDebouncedPreviewReopenHandler',
               currentState: this.transitionManager.getCurrentState(),
@@ -146,7 +148,7 @@ export class DebounceIntegration implements BaseManager {
               return (state?.previewEditor as any) || null;
             });
           } catch (error) {
-            logger.error('Transition manager failed, using fallback', error as Error, {
+            this.logger.error('Transition manager failed, using fallback', error as Error, {
               module: 'DebounceIntegration',
               operation: 'debouncedPreviewReopen'
             });

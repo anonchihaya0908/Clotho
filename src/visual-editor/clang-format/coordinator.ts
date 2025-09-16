@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { logger } from '../../common/logger';
+import { BaseCoordinator } from '../../common/base-coordinator';
 import { EditorOpenSource, ManagerContext } from '../../common/types';
 import { GenericEventHandler } from '../../common/types/event-types';
 import { WebviewMessageType, WebviewMessage } from '../../common/types/clang-format-shared';
@@ -20,7 +20,7 @@ import { EditorStateManager } from './state/editor-state-manager';
  * 主协调器
  * 负责初始化和协调各个管理器
  */
-export class ClangFormatEditorCoordinator implements vscode.Disposable {
+export class ClangFormatEditorCoordinator extends BaseCoordinator {
   private eventBus: EventBus;
   private stateManager: EditorStateManager;
   private errorRecovery: ErrorRecoveryManager;
@@ -31,6 +31,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
   private isInitialized = false;
 
   constructor(private extensionUri: vscode.Uri) {
+    super(); // Initialize BaseCoordinator
     // 1. 初始化核心服务
     this.eventBus = new EventBus();
     this.stateManager = new EditorStateManager(this.eventBus);
@@ -49,6 +50,13 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     // 3. 初始化管理器注册表
     this.managerRegistry = new ManagerRegistry();
     this.registerManagers();
+  }
+
+  /**
+   * Get the module name for logging purposes
+   */
+  protected getModuleName(): string {
+    return 'ClangFormatEditorCoordinator';
   }
 
   /**
@@ -71,7 +79,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       );
     });
 
-    logger.info('All manager factories registered for lazy loading', {
+    this.logger.info('All manager factories registered for lazy loading', {
       module: 'ClangFormatEditorCoordinator',
       operation: 'registerManagers',
       count: 6,
@@ -129,7 +137,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
   /**
    * 统一的资源清理
    */
-  dispose(): void {
+  override dispose(): void {
     this.disposables.forEach((d) => d.dispose());
     this.eventBus.dispose();
     this.stateManager.dispose();
@@ -150,13 +158,13 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
         if (handler) {
           await handler();
         } else {
-          logger.error('Debounce integration handler not available', undefined, {
+          this.logger.error('Debounce integration handler not available', undefined, {
             module: 'ClangFormatEditorCoordinator',
             operation: 'open-preview-requested',
           });
         }
       } catch (error) {
-        logger.error('Failed to get DebounceIntegration for preview reopen', error as Error, {
+        this.logger.error('Failed to get DebounceIntegration for preview reopen', error as Error, {
           module: 'ClangFormatEditorCoordinator',
           operation: 'open-preview-requested',
         });
@@ -172,7 +180,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
           handler();
         }
       } catch (error) {
-        logger.error('Failed to get DebounceIntegration for preview close', error as Error, {
+        this.logger.error('Failed to get DebounceIntegration for preview close', error as Error, {
           module: 'ClangFormatEditorCoordinator',
           operation: 'preview-closed',
         });
@@ -185,7 +193,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
         const messageHandler = await this.managerRegistry.getOrCreateInstance<MessageHandler>('messageHandler');
         messageHandler?.handleMessage(message as WebviewMessage);
       } catch (error) {
-        logger.error('Failed to get MessageHandler for webview message', error as Error, {
+        this.logger.error('Failed to get MessageHandler for webview message', error as Error, {
           module: 'ClangFormatEditorCoordinator',
           operation: 'webview-message-received',
         });
@@ -197,7 +205,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
       'config-change-requested',
       (async (payload: { key: string; value: unknown }) => {
         if (process.env.CLOTHO_DEBUG === 'true') {
-          logger.debug('Configuration change request received', { payload });
+          this.logger.debug('Configuration change request received', { payload });
         }
         await this.configChangeService.handleConfigChange(payload);
       }) as GenericEventHandler,
@@ -218,13 +226,13 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     // Listen for editor creation retry requests from error recovery
     this.eventBus.on('retry-editor-creation-requested', async () => {
       try {
-        logger.info('Retrying editor creation due to error recovery', {
+        this.logger.info('Retrying editor creation due to error recovery', {
           module: 'ClangFormatEditorCoordinator',
           operation: 'retry-editor-creation-requested',
         });
         await this.showEditor(EditorOpenSource.ERROR_RECOVERY);
       } catch (error) {
-        logger.error('Failed to retry editor creation', error as Error, {
+        this.logger.error('Failed to retry editor creation', error as Error, {
           module: 'ClangFormatEditorCoordinator',
           operation: 'retry-editor-creation-requested',
         });
@@ -235,12 +243,12 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
     this.eventBus.on('ensure-config-manager-ready', async () => {
       try {
         await this.managerRegistry.getOrCreateInstance('configActionManager');
-        logger.debug('ConfigActionManager initialized on demand', {
+        this.logger.debug('ConfigActionManager initialized on demand', {
           module: 'ClangFormatEditorCoordinator',
           operation: 'ensure-config-manager-ready',
         });
       } catch (error) {
-        logger.error('Failed to initialize ConfigActionManager on demand', error as Error, {
+        this.logger.error('Failed to initialize ConfigActionManager on demand', error as Error, {
           module: 'ClangFormatEditorCoordinator',
           operation: 'ensure-config-manager-ready',
         });
@@ -256,13 +264,13 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
           if (previewManager) {
             previewManager.updatePreviewWithConfig(newConfig);
           } else {
-            logger.warn('Preview manager not found', {
+            this.logger.warn('Preview manager not found', {
               module: 'ClangFormatEditorCoordinator',
               operation: 'config-updated-for-preview',
             });
           }
         }).catch(error => {
-          logger.error('Failed to get PreviewManager for config update', error as Error, {
+          this.logger.error('Failed to get PreviewManager for config update', error as Error, {
             module: 'ClangFormatEditorCoordinator',
             operation: 'config-updated-for-preview',
           });
@@ -296,7 +304,7 @@ export class ClangFormatEditorCoordinator implements vscode.Disposable {
             }
           });
         } catch (error) {
-          logger.error('Micro preview processing failed', error instanceof Error ? error : new Error(String(error)), {
+          this.logger.error('Micro preview processing failed', error instanceof Error ? error : new Error(String(error)), {
             module: 'ClangFormatEditorCoordinator',
             operation: 'handleMicroPreview',
           });

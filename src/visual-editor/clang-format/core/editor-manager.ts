@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { errorHandler } from '../../../common/error-handler';
-import { logger } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { isDarkTheme } from '../../../common/platform-utils';
 import {
   BaseManager,
@@ -18,6 +18,8 @@ import { getNonce } from '../../../common/utils';
  * 负责主Webview面板的创建、配置、内容生成和生命周期管理
  */
 export class ClangFormatEditorManager implements BaseManager {
+  private readonly logger = createModuleLogger('ClangFormatEditorManager');
+
   readonly name = 'EditorManager';
 
   private panel: vscode.WebviewPanel | undefined;
@@ -27,7 +29,7 @@ export class ClangFormatEditorManager implements BaseManager {
   async initialize(context: ManagerContext): Promise<void> {
     this.context = context;
     this.setupEventListeners();
-    logger.debug('EditorManager initialized.', {
+    this.logger.debug('EditorManager initialized.', {
       module: this.name,
       operation: 'initialize',
     });
@@ -115,7 +117,7 @@ export class ClangFormatEditorManager implements BaseManager {
       };
 
       await this.postMessage(initMessage);
-      logger.debug('Sent initialization message to webview', {
+      this.logger.debug('Sent initialization message to webview', {
         module: this.name,
         operation: 'sendInitializationMessage',
       });
@@ -135,7 +137,7 @@ export class ClangFormatEditorManager implements BaseManager {
     if (this.panel) {
       await this.panel.webview.postMessage(message);
     } else {
-      logger.warn('Cannot post message: Editor panel is not available.', {
+      this.logger.warn('Cannot post message: Editor panel is not available.', {
         module: this.name,
         operation: 'postMessage',
       });
@@ -185,24 +187,24 @@ export class ClangFormatEditorManager implements BaseManager {
         const { level, message: logMessage, meta } = payload;
         switch (level) {
           case 'debug':
-            logger.debug(`[Webview] ${logMessage}`, meta as any);
+            this.logger.debug(`[Webview] ${logMessage}`, meta as any);
             break;
           case 'info':
-            logger.info(`[Webview] ${logMessage}`, meta as any);
+            this.logger.info(`[Webview] ${logMessage}`, meta as any);
             break;
           case 'warn':
-            logger.warn(`[Webview] ${logMessage}`, meta as any);
+            this.logger.warn(`[Webview] ${logMessage}`, meta as any);
             break;
           case 'error':
-            logger.error(`[Webview] ${logMessage}`, meta as any);
+            this.logger.error(`[Webview] ${logMessage}`, meta as any);
             break;
           default:
-            logger.info(`[Webview] ${logMessage}`, meta as any);
+            this.logger.info(`[Webview] ${logMessage}`, meta as any);
         }
         return; // 不需要进一步处理日志消息
       }
 
-      logger.debug(`Received webview message: ${message.type}`, {
+      this.logger.debug(`Received webview message: ${message.type}`, {
         module: this.name,
         operation: 'onDidReceiveMessage',
         payload: message.payload,
@@ -286,7 +288,7 @@ export class ClangFormatEditorManager implements BaseManager {
     const scriptUri = webview.asWebviewUri(scriptPath);
     const styleUri = webview.asWebviewUri(stylePath);
 
-    logger.debug('Creating webview content...', {
+    this.logger.debug('Creating webview content...', {
       module: this.name,
       operation: 'generateWebviewContent',
       scriptUri: scriptUri.toString(),

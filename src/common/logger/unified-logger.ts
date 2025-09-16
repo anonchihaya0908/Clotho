@@ -13,7 +13,19 @@
 
 import { ILogObj, ISettingsParam, Logger as TsLogger } from 'tslog';
 import * as vscode from 'vscode';
-import { LogLevel } from '../logger';
+
+/**
+ * 日志级别枚举
+ */
+export enum LogLevel {
+  SILLY = 0,
+  TRACE = 1,
+  DEBUG = 2,
+  INFO = 3,
+  WARN = 4,
+  ERROR = 5,
+  FATAL = 6,
+}
 
 // ===============================
 // Types and Interfaces

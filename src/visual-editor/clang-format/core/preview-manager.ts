@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { UI_TIMING } from '../../../common/constants';
 import { delay } from '../../../common/utils/performance';
-import { logger } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { BaseManager, ManagerContext } from '../../../common/types';
 import { MACRO_PREVIEW_CODE } from '../data/clang-format-options-database';
 import { ClangFormatService } from '../format-service';
@@ -12,6 +12,8 @@ import { ClangFormatPreviewProvider } from '../preview-provider';
  * 【重构后】只负责创建、更新和关闭预览文档，不包含决策逻辑
  */
 export class PreviewEditorManager implements BaseManager {
+  private readonly logger = createModuleLogger('PreviewEditorManager');
+
   readonly name = 'PreviewManager';
 
   private context!: ManagerContext;
@@ -42,7 +44,7 @@ export class PreviewEditorManager implements BaseManager {
   async openPreview(): Promise<vscode.TextEditor> {
     // Prevent concurrent creation
     if (this.isCreatingPreview) {
-      logger.debug('预览正在创建中，等待完成', {
+      this.logger.debug('预览正在创建中，等待完成', {
         module: 'PreviewManager',
         operation: 'openPreview'
       });
@@ -117,7 +119,7 @@ export class PreviewEditorManager implements BaseManager {
 
       return editor;
     } catch (error) {
-      logger.error('Failed to create preview editor', error as Error, {
+      this.logger.error('Failed to create preview editor', error as Error, {
         module: 'PreviewManager',
         operation: 'openPreview'
       });
@@ -209,7 +211,7 @@ export class PreviewEditorManager implements BaseManager {
         }
       }
     } catch (error) {
-      logger.error('Failed to hide preview', error as Error, {
+      this.logger.error('Failed to hide preview', error as Error, {
         module: 'PreviewManager',
         operation: 'hidePreview'
       });
@@ -227,7 +229,7 @@ export class PreviewEditorManager implements BaseManager {
     }
 
     try {
-      logger.debug('恢复预览显示', {
+      this.logger.debug('恢复预览显示', {
         module: 'PreviewManager',
         operation: 'showPreview',
         viewColumn: this.hiddenViewColumn
@@ -236,7 +238,7 @@ export class PreviewEditorManager implements BaseManager {
       // Check if preview content still exists
       const hasContent = this.previewProvider.hasContent(previewUri as any);
       if (!hasContent) {
-        logger.debug('预览内容已丢失，重新创建', {
+        this.logger.debug('预览内容已丢失，重新创建', {
           module: 'PreviewManager',
           operation: 'showPreview'
         });
@@ -263,12 +265,12 @@ export class PreviewEditorManager implements BaseManager {
       this.isHidden = false;
       this.hiddenViewColumn = undefined;
 
-      logger.debug('Preview restored successfully', {
+      this.logger.debug('Preview restored successfully', {
         module: 'PreviewManager',
         operation: 'showPreview'
       });
     } catch (error) {
-      logger.error('Failed to restore preview, trying to recreate', error as Error, {
+      this.logger.error('Failed to restore preview, trying to recreate', error as Error, {
         module: 'PreviewManager',
         operation: 'showPreview'
       });
@@ -291,13 +293,13 @@ export class PreviewEditorManager implements BaseManager {
         }
 
         // 重新创建预览
-        logger.debug('重新创建预览', {
+        this.logger.debug('重新创建预览', {
           module: 'PreviewManager',
           operation: 'showPreview'
         });
         await this.openPreview();
       } catch (recreateError) {
-        logger.error('Failed to recreate preview as well', recreateError as Error, {
+        this.logger.error('Failed to recreate preview as well', recreateError as Error, {
           module: 'PreviewManager',
           operation: 'showPreview'
         });
@@ -353,7 +355,7 @@ export class PreviewEditorManager implements BaseManager {
         this.previewProvider.updateContent(previewUri as any, updatedContent);
       }
     } catch (error) {
-      logger.error('Error updating preview', error as Error, {
+      this.logger.error('Error updating preview', error as Error, {
         module: 'PreviewManager',
         operation: 'updatePreviewContent'
       });
@@ -461,21 +463,21 @@ ${configEntries || '//   (using base style defaults)'}
       for (const tab of event.closed) {
         const tabInput = tab.input as { uri?: vscode.Uri };
         if (tabInput?.uri?.toString() === state.previewUri.toString()) {
-          logger.debug('预览标签被关闭', {
+          this.logger.debug('预览标签被关闭', {
             module: 'PreviewManager',
             operation: 'onTabClosed'
           });
 
           // If close is due to programmatic hiding, don't clear state
           if (this.isHidden) {
-            logger.debug('这是程序隐藏导致的关闭，保持状态', {
+            this.logger.debug('这是程序隐藏导致的关闭，保持状态', {
               module: 'PreviewManager',
               operation: 'onTabClosed'
             });
             return; // 不处理程序隐藏导致的标签关闭
           }
 
-          logger.debug('这是用户手动关闭', {
+          this.logger.debug('这是用户手动关闭', {
             module: 'PreviewManager',
             operation: 'onTabClosed'
           });
@@ -485,7 +487,7 @@ ${configEntries || '//   (using base style defaults)'}
             state.isVisible &&
             state.isInitialized &&
             state.previewMode === 'open';
-          logger.debug('是否应创建占位符', {
+          this.logger.debug('是否应创建占位符', {
             module: 'PreviewManager',
             operation: 'onTabClosed',
             shouldCreatePlaceholder
@@ -510,7 +512,7 @@ ${configEntries || '//   (using base style defaults)'}
             this.hiddenViewColumn = undefined;
 
             if (shouldCreatePlaceholder) {
-              logger.debug('发送预览关闭事件，以创建占位符', {
+              this.logger.debug('发送预览关闭事件，以创建占位符', {
                 module: 'PreviewManager',
                 operation: 'onTabClosed'
               });
