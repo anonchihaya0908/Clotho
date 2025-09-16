@@ -5,11 +5,14 @@
 
 import * as vscode from 'vscode';
 import { bootstrap } from './bootstrap';
-import { UnifiedLogger } from './common/logger/unified-logger';
+import { createModuleLogger, unifiedLogger } from './common/logger/unified-logger';
 
 // Global reference to track activation state
 let isActivated = false;
 let activationPromise: Promise<void> | null = null;
+
+// Create logger instance for this module
+const logger = createModuleLogger('Extension');
 
 /**
  * Extension activation function
@@ -54,9 +57,7 @@ async function performActivation(context: vscode.ExtensionContext): Promise<void
   const startTime = Date.now();
 
   try {
-    // Initialize logger first
-    logger.initializeOutputChannel();
-
+    // Logger output channel is initialized by the unified logger factory
     logger.info('Clotho extension is activating...', {
       module: 'Extension',
       operation: 'activate',
@@ -75,8 +76,6 @@ async function performActivation(context: vscode.ExtensionContext): Promise<void
       activationTime: `${activationTime}ms`
     });
 
-    // Log performance metrics
-    logger.logPerformance('Extension Activation', activationTime, 'Extension');
 
   } catch (error) {
     const activationTime = Date.now() - startTime;
@@ -97,7 +96,7 @@ async function performActivation(context: vscode.ExtensionContext): Promise<void
     vscode.window.showErrorMessage(userMessage, 'Show Logs', 'Report Issue')
       .then(selection => {
         if (selection === 'Show Logs') {
-          logger.showOutputChannel();
+          unifiedLogger.showOutputChannel();
         } else if (selection === 'Report Issue') {
           vscode.env.openExternal(vscode.Uri.parse(
             'https://github.com/anonchihaya0908/Clotho/issues/new'

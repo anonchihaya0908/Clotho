@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { logger } from '../../../common/logger';
+import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { StateChangeEvent } from '../../../common/types';
 import { BoundedHistory, memoryMonitor } from '../../../common/utils/memory';
 import { PERFORMANCE } from '../../../common/constants';
@@ -23,6 +23,7 @@ export class EditorStateManager implements vscode.Disposable {
   private stateHistory = new BoundedHistory<StateSnapshot>(PERFORMANCE.STATE_HISTORY_MAX_SIZE);
   private disposables: vscode.Disposable[] = [];
   private readonly moduleName = 'VisualEditorStateManager';
+  private readonly logger = createModuleLogger('EditorStateManager');
 
   constructor(private eventBus: EventBus) {
     this.state = this.createInitialState();
@@ -53,7 +54,7 @@ export class EditorStateManager implements vscode.Disposable {
       const error = new Error(
         `Invalid state transition from source: ${source}`,
       );
-      logger.error(error.message, error, {
+      this.logger.error(error.message, error, {
         module: this.moduleName,
         operation: 'updateState',
         context: { from: oldState, to: newState },
@@ -79,12 +80,12 @@ export class EditorStateManager implements vscode.Disposable {
       const oldState = { ...this.state };
       this.state = lastSnapshot.state;
       await this.notifyStateChange(oldState, this.state, 'rollback');
-      logger.info('Rolled back to previous state.', {
+      this.logger.info('Rolled back to previous state.', {
         module: this.moduleName,
         operation: 'rollbackToPreviousState',
       });
     } else {
-      logger.warn('No previous state to roll back to.', {
+      this.logger.warn('No previous state to roll back to.', {
         module: this.moduleName,
         operation: 'rollbackToPreviousState',
       });
@@ -100,7 +101,7 @@ export class EditorStateManager implements vscode.Disposable {
     this.state = safeState;
 
     await this.notifyStateChange(oldState, this.state, 'safety-reset');
-    logger.info('State has been reset to a safe initial state.', {
+    this.logger.info('State has been reset to a safe initial state.', {
       module: this.moduleName,
       operation: 'resetToSafeState',
     });
@@ -135,7 +136,7 @@ export class EditorStateManager implements vscode.Disposable {
       to.previewMode === 'open' &&
       from.previewUri?.toString() !== to.previewUri?.toString()
     ) {
-      logger.warn(
+      this.logger.warn(
         'State Validation: Cannot open a new preview while another is already active.',
         {
           module: this.moduleName,

@@ -11,11 +11,11 @@ import * as vscode from 'vscode';
 import { SimpleClangdMonitor } from './clangd-monitor/simple-monitor';
 import { COMMANDS } from './common/constants';
 import { errorHandler } from './common/error-handler';
-import { UnifiedLogger } from './common/logger/unified-logger';
+import { createModuleLogger } from './common/logger/unified-logger';
 import { ServiceContainer } from './common/service-container';
 
 // Create global logger instance
-const logger = UnifiedLogger.getInstance();
+const logger = createModuleLogger('Bootstrap');
 import {
   PairCoordinator,
   PairCreatorService,
@@ -50,8 +50,7 @@ export let serviceContainer: ServiceContainer;
 export async function bootstrap(
   context: vscode.ExtensionContext,
 ): Promise<void> {
-  //  Initialize Logger system (highest priority)
-  logger.initialize();
+  //  Logger system is already initialized by createModuleLogger
   logger.info('Clotho extension starting up...', {
     module: 'Bootstrap',
     operation: 'startup'
@@ -250,8 +249,7 @@ export function cleanup(): void {
     serviceContainer.dispose();
   }
 
-  // Clean up Logger resources
-  logger.dispose();
+  // Logger cleanup is handled automatically by unified logger
 
   logger.info('Clotho extension cleanup completed', {
     module: 'Bootstrap',

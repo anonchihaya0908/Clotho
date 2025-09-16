@@ -4,7 +4,7 @@
  */
 
 import { ClothoError, ErrorContext } from '../error-handler';
-import { logger } from '../logger';
+import { createModuleLogger } from '../logger/unified-logger';
 import { BaseErrorStrategy, ErrorStrategyResult } from './base-strategy';
 
 // ===============================
@@ -16,6 +16,7 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
 
   private maxRecoveryAttempts = 3;
   private errorHistory: Array<{ code: string; timestamp: number }> = [];
+  private readonly logger = createModuleLogger('VisualEditorErrorStrategy');
 
   constructor(
     private stateManager?: { updateState?: (state: unknown, reason?: string) => Promise<void>; getState?: () => { recoveryAttempts?: number } }, // Will be properly typed when imported
@@ -33,7 +34,7 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
   }
 
   async handle(error: ClothoError, _context: ErrorContext): Promise<ErrorStrategyResult> { // eslint-disable-line @typescript-eslint/no-unused-vars
-    logger.info(`Handling visual editor error: ${error.message}`, {
+    this.logger.info(`Handling visual editor error: ${error.message}`, {
       module: this.name,
       operation: 'handle',
       errorCode: error.message,
@@ -44,7 +45,7 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
 
     // Check if we've exceeded retry attempts
     if (this.getRecentErrorCount(error.message) > this.maxRecoveryAttempts) {
-      logger.warn(`Max recovery attempts exceeded for error: ${error.message}`, {
+      this.logger.warn(`Max recovery attempts exceeded for error: ${error.message}`, {
         module: this.name,
         operation: 'handle',
       });
@@ -56,7 +57,7 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
       const recovered = await this.attemptRecovery(error);
 
       if (recovered) {
-        logger.info(`Successfully recovered from error: ${error.message}`, {
+        this.logger.info(`Successfully recovered from error: ${error.message}`, {
           module: this.name,
           operation: 'handle',
         });
@@ -69,7 +70,7 @@ export class VisualEditorErrorStrategy extends BaseErrorStrategy {
         });
       }
     } catch (recoveryError) {
-      logger.error(`Failed to recover from error: ${error.message}`, recoveryError as Error, {
+      this.logger.error(`Failed to recover from error: ${error.message}`, recoveryError as Error, {
         module: this.name,
         operation: 'handle',
       });

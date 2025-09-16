@@ -7,7 +7,7 @@
  */
 
 import { errorHandler } from '../error-handler';
-import { logger } from '../logger';
+import { createModuleLogger } from '../logger/unified-logger';
 
 /**
  * Decorator for automatic operation logging
@@ -16,6 +16,7 @@ import { logger } from '../logger';
 export function logOperation(target: any, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
   const originalMethod = descriptor.value;
   const className = target.constructor.name;
+  const logger = createModuleLogger(`${className}-Decorator`);
 
   descriptor.value = async function (...args: any[]) {
     const startTime = Date.now();
@@ -89,6 +90,7 @@ export function trackPerformance(slowThresholdMs: number = 1000) {
   return function (target: any, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
     const originalMethod = descriptor.value;
     const className = target.constructor.name;
+    const logger = createModuleLogger(`${className}-Performance`);
 
     descriptor.value = async function (...args: any[]) {
       const startTime = Date.now();
@@ -155,6 +157,7 @@ export function requireDependencies(...dependencyNames: string[]) {
   return function (target: any, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
     const originalMethod = descriptor.value;
     const className = target.constructor.name;
+    const logger = createModuleLogger(`${className}-Dependencies`);
 
     descriptor.value = function (...args: any[]) {
       // Check if dependencies exist on the instance
@@ -193,6 +196,7 @@ export function requireDependencies(...dependencyNames: string[]) {
 export function requireNotDisposed(target: any, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
   const originalMethod = descriptor.value;
   const className = target.constructor.name;
+  const logger = createModuleLogger(`${className}-Lifecycle`);
 
   descriptor.value = function (...args: any[]) {
     if ((this as any).isDisposed) {

@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode';
 import { errorHandler } from '../error-handler';
-import { LoggerService } from '../logger';
+import { createModuleLogger } from '../logger/unified-logger';
 
 /**
  * 通用实例管理器接口
@@ -76,12 +76,12 @@ export interface InstanceManagerConfig {
  * 通用实例管理器实现
  */
 export class BaseInstanceManager<T extends Disposable>
-implements InstanceManager<T>, vscode.Disposable {
+  implements InstanceManager<T>, vscode.Disposable {
   private instances = new Map<string, T>();
   private config: InstanceManagerConfig;
   private cleanupTimer?: NodeJS.Timeout;
   private disposables: vscode.Disposable[] = [];
-  private readonly logger = LoggerService.getInstance().createChildLogger('InstanceManager');
+  private readonly logger = createModuleLogger('InstanceManager');
 
   constructor(config: InstanceManagerConfig = {}) {
     this.config = {
