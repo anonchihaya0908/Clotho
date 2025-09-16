@@ -57,7 +57,7 @@ async function performActivation(context: vscode.ExtensionContext): Promise<void
   const startTime = Date.now();
 
   try {
-    // Logger output channel is initialized by the unified logger factory
+    // Logger output channel is automatically initialized by the unified logger
     logger.info('Clotho extension is activating...', {
       module: 'Extension',
       operation: 'activate',
@@ -76,6 +76,7 @@ async function performActivation(context: vscode.ExtensionContext): Promise<void
       activationTime: `${activationTime}ms`
     });
 
+    // Performance tracking is handled automatically by the unified logger
 
   } catch (error) {
     const activationTime = Date.now() - startTime;
