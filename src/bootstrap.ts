@@ -8,7 +8,6 @@
  */
 
 import * as vscode from 'vscode';
-import { SimpleClangdMonitor } from './clangd-monitor/simple-monitor';
 import { COMMANDS } from './common/constants';
 import { errorHandler } from './common/error-handler';
 import { createModuleLogger } from './common/logger/unified-logger';
@@ -172,8 +171,6 @@ function registerServices(context: vscode.ExtensionContext): void {
       container.get('switchConfigService')
     ));
 
-  // Clangd Monitor - 简化版本
-  serviceContainer.register('clangdMonitor', () => new SimpleClangdMonitor());
 
   // Clang-Format Visual Editor
   serviceContainer.register(
@@ -200,40 +197,6 @@ async function initializeCoordinators(): Promise<void> {
   serviceContainer.get('switchCoordinator');
   serviceContainer.get('clangFormatGuideService');
 
-  // Initialize and start the simple monitor
-  const clangdMonitor = serviceContainer.get('clangdMonitor') as SimpleClangdMonitor;
-
-  // Check if clangd monitoring is enabled in configuration
-  const config = vscode.workspace.getConfiguration('clotho.clangdMonitor');
-  const isMonitoringEnabled = config.get<boolean>('enabled', true);
-
-  if (isMonitoringEnabled) {
-    try {
-      logger.info('Starting clangd monitoring...', {
-        module: 'Bootstrap',
-        operation: 'startMonitoring'
-      });
-      clangdMonitor.start();
-      logger.info('Clangd monitoring started successfully', {
-        module: 'Bootstrap',
-        operation: 'startMonitoring'
-      });
-    } catch (error) {
-      logger.error(
-        'Failed to start clangd monitoring',
-        error as Error,
-        {
-          module: 'Bootstrap',
-          operation: 'startMonitoring'
-        }
-      );
-    }
-  } else {
-    logger.info('Clangd monitoring disabled by configuration', {
-      module: 'Bootstrap',
-      operation: 'startMonitoring'
-    });
-  }
 }
 
 /**
@@ -303,16 +266,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
     },
   );
 
-  // Clangd Monitor Commands - 简化版本
-  const restartClangdCommand = register('clotho.restartClangd', () => {
-    const monitor = serviceContainer.get('clangdMonitor') as SimpleClangdMonitor;
-    return monitor.restartClangd();
-  });
-
-  const debugClangdCommand = register('clotho.debugClangd', () => {
-    const monitor = serviceContainer.get('clangdMonitor') as SimpleClangdMonitor;
-    return monitor.debugClangdStatus();
-  });
 
   // Visual Editor Commands
   const openClangFormatEditorCommand = register(
@@ -329,8 +282,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
     newSourcePairCommand,
     configureHeaderGuardCommand,
     switchHeaderSourceCommand,
-    restartClangdCommand,
-    debugClangdCommand,
     openClangFormatEditorCommand,
   );
 }

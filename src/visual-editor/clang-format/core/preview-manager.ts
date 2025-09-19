@@ -6,6 +6,7 @@ import { BaseManager, ManagerContext } from '../../../common/types';
 import { MACRO_PREVIEW_CODE } from '../data/clang-format-options-database';
 import { ClangFormatService } from '../format-service';
 import { ClangFormatPreviewProvider } from '../preview-provider';
+import { VisualEditorState } from '../../types';
 
 /**
  * 预览编辑器管理器
@@ -53,13 +54,13 @@ export class PreviewEditorManager implements BaseManager {
         //  使用统一的延迟函数，确保稳定状态
         await delay(UI_TIMING.PREVIEW_DEBOUNCE);
       }
-      const state = this.context.stateManager?.getState() || {};
+      const state = (this.context.stateManager?.getState() as unknown) as VisualEditorState || {} as VisualEditorState;
       if (state.previewEditor && !(state.previewEditor as any)?.document?.isClosed) {
         return state.previewEditor as any;
       }
     }
 
-    const currentState = this.context.stateManager?.getState() || {};
+    const currentState = (this.context.stateManager?.getState() as unknown) as VisualEditorState || {} as VisualEditorState;
 
     // 【优化】如果已有预览且未被关闭，直接复用
     if (currentState.previewUri && currentState.previewEditor) {
@@ -454,7 +455,7 @@ ${configEntries || '//   (using base style defaults)'}
 
     // Listen for editor tab close events - distinguish manual vs programmatic close
     vscode.window.tabGroups.onDidChangeTabs(async (event) => {
-      const state = this.context.stateManager?.getState() || {};
+      const state = (this.context.stateManager?.getState() as unknown) as VisualEditorState || {} as VisualEditorState;
       if (!state.previewUri) {
         return;
       }
@@ -462,7 +463,7 @@ ${configEntries || '//   (using base style defaults)'}
       // 检查是否有预览标签被关闭
       for (const tab of event.closed) {
         const tabInput = tab.input as { uri?: vscode.Uri };
-        if (tabInput?.uri?.toString() === state.previewUri.toString()) {
+        if (tabInput?.uri?.toString() === state.previewUri?.toString()) {
           this.logger.debug('预览标签被关闭', {
             module: 'PreviewManager',
             operation: 'onTabClosed'
@@ -494,7 +495,9 @@ ${configEntries || '//   (using base style defaults)'}
           });
 
           // 清理预览内容（只有用户手动关闭时才清理）
-          this.previewProvider.clearContent(state.previewUri as any);
+          if (state.previewUri) {
+            this.previewProvider.clearContent(state.previewUri as any);
+          }
 
           // 更新状态 - 无论如何都要确保状态被设置为closed
           if (this.context.stateManager) {

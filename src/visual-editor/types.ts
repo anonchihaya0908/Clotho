@@ -2,6 +2,7 @@
  * Visual Editor module specific types
  */
 
+import * as vscode from 'vscode';
 import { EditorState as CoreEditorState } from '../common/types/core';
 import { ClangFormatConfig } from '../common/types/clang-format-shared';
 import { UIConfig } from '../common/config-system';
@@ -29,7 +30,10 @@ export interface VisualEditorConfig extends UIConfig {
 export interface VisualEditorState extends CoreEditorState {
     // Visual editor specific state
     previewMode: 'open' | 'closed' | 'transitioning';
-    previewUri?: string;
+    previewUri?: vscode.Uri;
+    previewEditor?: vscode.TextEditor;
+    isVisible?: boolean;
+    isInitialized?: boolean;
 
     // Configuration state
     currentConfig: ClangFormatConfig;

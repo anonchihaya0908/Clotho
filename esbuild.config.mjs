@@ -16,7 +16,6 @@ const baseConfig = {
   external: [
     'vscode',
     'vscode-languageclient' // VSCode API相关，需要外部化
-    // 尝试将pidusage打包进bundle而不是外部化
   ],
   format: 'cjs',
   platform: 'node',

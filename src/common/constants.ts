@@ -281,8 +281,6 @@ export const UI_TIMING = {
   TRANSITION_MAX_TIME: 2000, // 2 seconds
   ERROR_RECOVERY_DELAY: 1500, // 1.5 seconds
   STATUS_UPDATE_INTERVAL: 2000, // 2 seconds
-  CLANGD_CPU_MONITOR_INTERVAL: 3000, // 3 seconds
-  CLANGD_MEMORY_MONITOR_INTERVAL: 5000, // 5 seconds
   CLANGD_STATUS_CHECK_DELAY: 3000, // 3 seconds
   UI_REFRESH_DELAY: 100, // For UI operations
 } as const;

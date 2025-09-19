@@ -2,7 +2,7 @@
     "name": "clotho",
     "displayName": "Clotho - C/C++ clangd enhancer",
     "description": "A powerful VS Code extension for enhancing C/C++ development with clangd.",
-    "version": "1.0.11",
+    "version": "1.0.12",
     "publisher": "Togawa-Sakiko",
     "private": true,
     "workspaces": [
@@ -61,16 +61,6 @@
                 "category": "Clotho"
             },
             {
-                "command": "clotho.restartClangd",
-                "title": "Restart Clangd Server",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.debugClangd",
-                "title": "Debug Clangd Monitor Status",
-                "category": "Clotho"
-            },
-            {
                 "command": "clotho.openClangFormatEditor",
                 "title": "Open Clang-Format Visual Editor",
                 "category": "Clotho",
@@ -110,12 +100,6 @@
                 },
                 {
                     "command": "clotho.configureRules"
-                },
-                {
-                    "command": "clotho.restartClangd"
-                },
-                {
-                    "command": "clotho.debugClangd"
                 },
                 {
                     "command": "clotho.openClangFormatEditor"
@@ -229,32 +213,6 @@
                         "type": "string"
                     }
                 },
-                "clotho.clangdMonitor.enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Enable clangd memory monitoring in the status bar"
-                },
-                "clotho.clangdMonitor.updateInterval": {
-                    "type": "number",
-                    "default": 5000,
-                    "description": "Update interval for memory monitoring in milliseconds",
-                    "minimum": 5000,
-                    "maximum": 300000
-                },
-                "clotho.clangdMonitor.warningThreshold": {
-                    "type": "number",
-                    "default": 2048,
-                    "description": "Memory usage warning threshold in MB",
-                    "minimum": 100,
-                    "maximum": 10000
-                },
-                "clotho.clangdMonitor.errorThreshold": {
-                    "type": "number",
-                    "default": 4096,
-                    "description": "Memory usage error threshold in MB",
-                    "minimum": 500,
-                    "maximum": 20000
-                },
                 "clotho.clangFormat.showGuideButton": {
                     "type": "boolean",
                     "default": true,
@@ -320,7 +278,6 @@
     "devDependencies": {
         "@types/mocha": "^10.0.10",
         "@types/node": "^20.19.0",
-        "@types/pidusage": "^2.0.5",
         "@types/vscode": "^1.74.0",
         "@typescript-eslint/eslint-plugin": "^8.39.0",
         "@typescript-eslint/parser": "^8.39.0",
@@ -342,7 +299,6 @@
     "homepage": "https://github.com/anonchihaya0908/Clotho#readme",
     "license": "Apache-2.0",
     "dependencies": {
-        "pidusage": "^4.0.1",
         "tslog": "^4.9.3",
         "vscode-languageclient": "^9.0.1"
     }
