@@ -11,7 +11,10 @@ import * as vscode from 'vscode';
 import { errorHandler } from '../../common/error-handler';
 import { createModuleLogger } from '../../common/logger/unified-logger';
 import { getLineEnding } from '../../common/platform-utils';
-import { ProcessRunner } from '../../common/process-runner';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 import { ConfigValidationResult, FormatResult } from '../../common/types/core';
 import {
   MACRO_PREVIEW_CODE,
@@ -93,7 +96,11 @@ export class ClangFormatService {
   ): Promise<FormatResult> {
     return new Promise(async (resolve) => {
       try {
-        if (!(await ProcessRunner.commandExists('clang-format'))) {
+        // Check if clang-format exists in PATH
+        try {
+          const checkCommand = process.platform === 'win32' ? 'where clang-format' : 'which clang-format';
+          await execAsync(checkCommand);
+        } catch {
           return resolve({
             success: false,
             formattedCode: code,

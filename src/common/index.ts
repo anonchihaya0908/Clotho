@@ -33,11 +33,5 @@ export * from './logger/unified-logger';
 // Error handling
 export { ClothoError, errorHandler } from './error-handler';
 
-// Process execution utilities
-export * from './process-runner';
-
-// Process detection and analysis services
-export * from './process-detector';
-
 // Service container for dependency injection
 export * from './service-container';
