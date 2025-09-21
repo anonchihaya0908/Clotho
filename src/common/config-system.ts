@@ -4,7 +4,10 @@
  */
 
 import * as vscode from 'vscode';
-import { createModuleLogger } from '../logger/unified-logger';
+import { createModuleLogger } from './logger/unified-logger';
+
+// Create logger instance
+const logger = createModuleLogger('ConfigSystem');
 import { ConfigValidationResult } from './types/core';
 
 // ===============================

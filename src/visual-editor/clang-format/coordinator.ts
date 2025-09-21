@@ -204,7 +204,7 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
     this.eventBus.on(
       'config-change-requested',
       (async (payload: { key: string; value: unknown }) => {
-        if (process.env.CLOTHO_DEBUG === 'true') {
+        if (process.env['CLOTHO_DEBUG'] === 'true') {
           this.logger.debug('Configuration change request received', { payload });
         }
         await this.configChangeService.handleConfigChange(payload);

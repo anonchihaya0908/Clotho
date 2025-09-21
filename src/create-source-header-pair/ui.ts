@@ -90,7 +90,7 @@ export class PairCreatorUI {
   private createUseDefaultOption(): vscode.QuickPickItem & {
     key: string;
     isSpecial: boolean;
-    } {
+  } {
     return {
       key: 'use_default',
       label: '$(list-unordered) Use Default Templates',
@@ -882,9 +882,9 @@ export class PairCreatorUI {
         language: rule.language,
         headerExt: rule.headerExt,
         sourceExt: rule.sourceExt,
-        isClass: rule.isClass,
-        isStruct: rule.isStruct,
-        headerGuardStyle: rule.headerGuardStyle,
+        isClass: rule.isClass ?? false,
+        isStruct: rule.isStruct ?? false,
+        headerGuardStyle: rule.headerGuardStyle ?? 'pragma_once',
       };
 
       // Use precise update to preserve other language settings

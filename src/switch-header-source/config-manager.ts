@@ -105,7 +105,10 @@ export class SwitchConfigService {
         'switch.searchPaths',
         DEFAULT_SWITCH_CONFIG.searchPaths,
       ),
-      excludePaths: DEFAULT_SWITCH_CONFIG.excludePaths,
+      excludePaths: config.get<string[]>(
+        'switch.excludePaths',
+        DEFAULT_SWITCH_CONFIG.excludePaths ?? [],
+      ),
     };
   }
 

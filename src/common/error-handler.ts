@@ -22,7 +22,7 @@ export class ClothoError extends Error {
   constructor(
     message: string,
     public readonly context: ErrorContext,
-    public override readonly cause?: unknown,
+    public readonly cause?: unknown,
   ) {
     super(message);
     this.name = 'ClothoError';
@@ -61,7 +61,9 @@ export class ErrorHandler {
     const index = this.strategies.findIndex(s => s.name === strategyName);
     if (index !== -1) {
       const strategy = this.strategies[index];
-      strategy.dispose?.();
+      if (strategy) {
+        strategy.dispose?.();
+      }
       this.strategies.splice(index, 1);
       this.logger.info(`Unregistered error strategy: ${strategyName}`, {
         module: 'ErrorHandler',
@@ -103,7 +105,7 @@ export class ErrorHandler {
       this.logger.info(`Strategy suggests retry for error: ${clothoError.message}`, {
         module: 'ErrorHandler',
         operation: 'handle',
-        strategy: strategyResult.metadata?.strategy,
+        strategy: strategyResult.metadata?.['strategy'],
       });
     }
 
@@ -364,8 +366,13 @@ export class ErrorHandler {
     let successCount = 0;
 
     for (let i = 0; i < operations.length; i++) {
+      const operation = operations[i];
+      if (!operation) {
+        results.push(undefined);
+        continue;
+      }
       try {
-        const result = await operations[i]();
+        const result = await operation();
         results.push(result);
         successCount++;
       } catch (error) {

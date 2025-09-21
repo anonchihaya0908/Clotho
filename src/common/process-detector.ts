@@ -9,9 +9,12 @@
 import * as process from 'node:process';
 
 import { errorHandler } from './error-handler';
-import { createModuleLogger } from '../logger/unified-logger';
+import { createModuleLogger } from './logger/unified-logger';
 import { ProcessRunner } from './process-runner';
 import { LRUCache, memoryMonitor } from './utils';
+
+// Create logger instance
+const logger = createModuleLogger('ProcessDetector');
 
 /**
  * Extended process information with metadata
@@ -87,7 +90,7 @@ interface CachedProcessList {
  */
 export class ProcessDetector {
   // Debug mode control - only show detailed logs in development environment
-  private static readonly DEBUG = process.env.CLOTHO_DEBUG === 'true';
+  private static readonly DEBUG = process.env['CLOTHO_DEBUG'] === 'true';
 
   // 缓存配置常量
   private static readonly PROCESS_CACHE_TTL = 3000; // 3秒缓存，平衡性能和准确性
@@ -317,8 +320,16 @@ export class ProcessDetector {
     candidates.sort((a, b) => b.memory - a.memory);
     const selectedProcess = candidates[0];
 
+    if (!selectedProcess) {
+      logger.error('No candidate process found after sorting', undefined, { module: 'ProcessDetector', operation: 'selectMainProcess' });
+      return undefined;
+    }
+
     const result: ProcessInfo = {
-      ...selectedProcess,
+      pid: selectedProcess.pid,
+      ppid: selectedProcess.ppid || 0,
+      memory: selectedProcess.memory,
+      name: selectedProcess.name || '',
       relationship: selectedRelationship,
       isMainProcess: true,
     };

@@ -7,7 +7,7 @@
  * TypeScript's advanced type system.
  */
 
-import { SimpleClangdMonitor } from '../../clangd-monitor/simple-monitor';
+// SimpleClangdMonitor has been removed
 import {
   PairCoordinator,
   PairCreatorService,
@@ -54,8 +54,7 @@ export interface ServiceMap {
   switchUI: SwitchUI;
   switchCoordinator: SwitchCoordinator;
 
-  // Clangd Monitor
-  clangdMonitor: SimpleClangdMonitor;
+  // Clangd Monitor (removed)
 
   // Clang-Format Visual Editor
   clangFormatEditorCoordinator: ClangFormatEditorCoordinator;
@@ -134,8 +133,8 @@ class ServiceMapExtractor {
     'switchUI',
     'switchCoordinator',
 
-    // Clangd Monitor
-    'clangdMonitor',
+    // Clangd Monitor (removed)
+    // 'clangdMonitor',
 
     // Clang-Format Visual Editor
     'clangFormatEditorCoordinator',

@@ -228,7 +228,7 @@ export class BaseInstanceManager<T extends Disposable>
       dispose: () => {
         if (this.cleanupTimer) {
           clearInterval(this.cleanupTimer);
-          this.cleanupTimer = undefined;
+          this.cleanupTimer = null as any;
         }
       },
     });

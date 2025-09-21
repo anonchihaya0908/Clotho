@@ -23,7 +23,10 @@
  */
 
 import { errorHandler } from './error-handler';
-import { createModuleLogger } from '../logger/unified-logger';
+import { createModuleLogger } from './logger/unified-logger';
+
+// Create logger instance
+const logger = createModuleLogger('ServiceContainer');
 import { Factory } from './type-utilities';
 import {
   generateServiceReport,

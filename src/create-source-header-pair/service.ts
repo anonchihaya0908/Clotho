@@ -28,7 +28,7 @@ export class PairCreatorService {
   // Use LRU cache to optimize file status checks and avoid memory leaks.
 
   private static readonly fileStatCache = new LRUCache<string, boolean>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
-  private static readonly CACHE_TTL = 5000; // 5 seconds
+  // Cache TTL removed as it's not currently used
 
   // Definitive file extensions for fast lookup
   private static readonly DEFINITIVE_EXTENSIONS = {
@@ -353,7 +353,7 @@ export class PairCreatorService {
     }
 
     // Return single workspace folder directly
-    if (workspaceFolders?.length === 1) {
+    if (workspaceFolders?.length === 1 && workspaceFolders[0]) {
       return workspaceFolders[0].uri;
     }
 
@@ -573,6 +573,10 @@ export class PairCreatorService {
 
     const selectedRule = sortedRules[0];
 
+    if (!selectedRule) {
+      throw new Error('No matching pairing rule found');
+    }
+
     // Don't set default headerGuardStyle here - let UI layer handle missing values
     return selectedRule;
   }
@@ -606,9 +610,9 @@ export class PairCreatorService {
       language: rule.language,
       headerExt: rule.headerExt,
       sourceExt: rule.sourceExt,
-      isClass: rule.isClass,
-      isStruct: rule.isStruct,
-      headerGuardStyle: rule.headerGuardStyle,
+      isClass: rule.isClass ?? false,
+      isStruct: rule.isStruct ?? false,
+      headerGuardStyle: rule.headerGuardStyle ?? 'pragma_once',
     };
 
     // Use existing PairingRuleService methods - don't reinvent the wheel

@@ -111,7 +111,7 @@ export class ClangFormatEditorManager implements BaseManager {
           options: CLANG_FORMAT_OPTIONS,
           categories: Object.values(ConfigCategories),
           currentConfig:
-            currentState.currentConfig || DEFAULT_CLANG_FORMAT_CONFIG,
+            currentState['currentConfig'] || DEFAULT_CLANG_FORMAT_CONFIG,
           settings: { showGuideButton },
         },
       };

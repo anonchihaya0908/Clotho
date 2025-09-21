@@ -88,6 +88,9 @@ export class ConfigActionManager implements BaseManager {
     if (!workspaceFolders || workspaceFolders.length === 0) {
       return; // 没有打开工作区，静默处理
     }
+    if (!workspaceFolders[0]) {
+      throw new Error('No workspace folder found');
+    }
     const fileUri = vscode.Uri.joinPath(
       workspaceFolders[0].uri,
       '.clang-format',
@@ -116,6 +119,9 @@ export class ConfigActionManager implements BaseManager {
       vscode.window.showWarningMessage(
         'Please open a workspace to manage .clang-format files.',
       );
+      return undefined;
+    }
+    if (!workspaceFolders[0]) {
       return undefined;
     }
     return vscode.Uri.joinPath(workspaceFolders[0].uri, '.clang-format');
@@ -171,7 +177,7 @@ export class ConfigActionManager implements BaseManager {
       if (!this.context.stateManager) {
         throw new Error('StateManager is not available');
       }
-      const currentConfig = this.context.stateManager.getState().currentConfig;
+      const currentConfig = this.context.stateManager.getState()['currentConfig'];
       const fileContent = this.formatService.stringify(currentConfig as Record<string, unknown>);
       await vscode.workspace.fs.writeFile(
         fileUri,
@@ -222,14 +228,18 @@ export class ConfigActionManager implements BaseManager {
     };
     const fileUris = await vscode.window.showOpenDialog(options);
     if (fileUris && fileUris.length > 0) {
-      await this.loadConfigFromFile(fileUris[0]);
+      const firstFile = fileUris[0];
+      if (firstFile) {
+        await this.loadConfigFromFile(firstFile);
+      }
     }
   }
 
   private async handleExportConfig(): Promise<void> {
+    const defaultUri = await this.getWorkspaceClangFormatUri();
     const options: vscode.SaveDialogOptions = {
       saveLabel: 'Export',
-      defaultUri: await this.getWorkspaceClangFormatUri(),
+      ...(defaultUri && { defaultUri }),
     };
     const fileUri = await vscode.window.showSaveDialog(options);
     if (fileUri) {

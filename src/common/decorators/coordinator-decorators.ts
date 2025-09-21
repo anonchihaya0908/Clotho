@@ -34,7 +34,7 @@ export function logOperation(target: any, propertyKey: string, descriptor: Prope
       logger.info(`Operation completed: ${propertyKey}`, {
         module: className,
         operation: propertyKey,
-        duration: `${duration}ms`,
+        duration: duration,
         success: true
       });
 
@@ -103,7 +103,7 @@ export function trackPerformance(slowThresholdMs: number = 1000) {
           logger.warn(`Slow operation detected: ${propertyKey}`, {
             module: className,
             operation: propertyKey,
-            duration: `${duration}ms`,
+            duration: duration,
             threshold: `${slowThresholdMs}ms`,
             performance: 'slow'
           });
@@ -111,7 +111,7 @@ export function trackPerformance(slowThresholdMs: number = 1000) {
           logger.debug(`Performance tracked: ${propertyKey}`, {
             module: className,
             operation: propertyKey,
-            duration: `${duration}ms`,
+            duration: duration,
             performance: 'normal'
           });
         }

@@ -72,33 +72,42 @@ export abstract class BaseErrorStrategy implements ErrorStrategy {
    * Helper method to create a successful result
    */
   protected createSuccessResult(metadata?: Record<string, unknown>): ErrorStrategyResult {
-    return {
+    const result: ErrorStrategyResult = {
       handled: true,
       shouldRetry: false,
-      metadata,
     };
+    if (metadata) {
+      result.metadata = metadata;
+    }
+    return result;
   }
 
   /**
    * Helper method to create a retry result
    */
   protected createRetryResult(metadata?: Record<string, unknown>): ErrorStrategyResult {
-    return {
+    const result: ErrorStrategyResult = {
       handled: true,
       shouldRetry: true,
-      metadata,
     };
+    if (metadata) {
+      result.metadata = metadata;
+    }
+    return result;
   }
 
   /**
    * Helper method to create a failure result
    */
   protected createFailureResult(nextAction?: ErrorStrategyResult['nextAction']): ErrorStrategyResult {
-    return {
+    const result: ErrorStrategyResult = {
       handled: false,
       shouldRetry: false,
-      nextAction,
     };
+    if (nextAction) {
+      result.nextAction = nextAction;
+    }
+    return result;
   }
 
   /**

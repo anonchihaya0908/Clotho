@@ -56,7 +56,9 @@ export class HeartbeatAnimation {
       if (!this.isRunning) { return; }
 
       const isVisible = visibilityFrames[this.currentFrame];
-      callback(isVisible);
+      if (isVisible !== undefined) {
+        callback(isVisible);
+      }
 
       this.currentFrame = (this.currentFrame + 1) % visibilityFrames.length;
     };
@@ -127,7 +129,8 @@ export class HeartbeatAnimation {
       return true; // 默认可见
     }
     const visibilityFrames = [true, false, true, false];
-    return visibilityFrames[this.currentFrame];
+    const visibility = visibilityFrames[this.currentFrame];
+    return visibility ?? true;
   }
 
   /**

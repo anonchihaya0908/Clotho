@@ -56,7 +56,7 @@ export class MessageHandler implements BaseManager {
     const handler = this.messageHandlers.get(message.type);
     if (!handler) {
       this.logger.warn(`No handler found for message type: ${message.type}`);
-      this.logger.debug('Available handlers:', Array.from(this.messageHandlers.keys()));
+      this.logger.debug('Available handlers:', { handlers: Array.from(this.messageHandlers.keys()) });
       return;
     }
 
@@ -103,7 +103,7 @@ export class MessageHandler implements BaseManager {
       payload: unknown,
       context: ManagerContext,
     ) => {
-      this.logger.debug('Config changed, delegating to coordinator:', payload);
+      this.logger.debug('Config changed, delegating to coordinator:', { payload });
       // 不直接处理，而是触发事件让 coordinator 统一处理
       context.eventBus?.emit('config-change-requested', payload);
     };
@@ -162,7 +162,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.GET_MICRO_PREVIEW,
       async (payload, context) => {
-        this.logger.debug('Micro preview requested:', payload);
+        this.logger.debug('Micro preview requested:', { payload });
         context.eventBus?.emit('micro-preview-requested', payload);
       },
     );
@@ -171,7 +171,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.GET_MACRO_PREVIEW,
       async (payload, context) => {
-        this.logger.debug('Macro preview requested:', payload);
+        this.logger.debug('Macro preview requested:', { payload });
         context.eventBus?.emit('macro-preview-requested', payload);
       },
     );
@@ -180,7 +180,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.UPDATE_SETTINGS,
       async (payload, context) => {
-        this.logger.debug('Settings updated:', payload);
+        this.logger.debug('Settings updated:', { payload });
         // 这里可以处理应用程序设置的更新
         // 比如显示/隐藏指南按钮等
         context.eventBus?.emit('settings-updated', payload);
@@ -191,7 +191,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.CONFIG_OPTION_HOVER,
       async (payload, context) => {
-        this.logger.debug('Config option hover:', payload);
+        this.logger.debug('Config option hover:', { payload });
         // 这里可以处理选项悬停时的预览高亮
         context.eventBus?.emit('config-option-hover', payload);
       },
@@ -201,7 +201,7 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.CONFIG_OPTION_FOCUS,
       async (payload, context) => {
-        this.logger.debug('Config option focus:', payload);
+        this.logger.debug('Config option focus:', { payload });
         // 这里可以处理选项获得焦点时的操作
         context.eventBus?.emit('config-option-focus', payload);
       },

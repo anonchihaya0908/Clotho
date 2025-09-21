@@ -147,7 +147,7 @@ export class SwitchUI {
       return;
     }
 
-    if (files.length === 1) {
+    if (files.length === 1 && files[0]) {
       await this.openFile(files[0]);
       return;
     }

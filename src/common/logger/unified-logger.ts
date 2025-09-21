@@ -147,13 +147,13 @@ export class UnifiedLogger {
     if (!this.outputChannel) return;
 
     const timestamp = new Date().toISOString();
-    const level = ((logObj._meta as { logLevelName?: string })?.logLevelName || 'INFO').toUpperCase();
-    const module = logObj.module ? `[${logObj.module}]` : '';
-    const operation = logObj.operation ? `{${logObj.operation}}` : '';
-    const correlationId = logObj.correlationId ? `<${logObj.correlationId}>` : '';
-    const duration = logObj.duration ? ` (${logObj.duration}ms)` : '';
+    const level = ((logObj['_meta'] as { logLevelName?: string })?.logLevelName || 'INFO').toUpperCase();
+    const module = logObj['module'] ? `[${logObj['module']}]` : '';
+    const operation = logObj['operation'] ? `{${logObj['operation']}}` : '';
+    const correlationId = logObj['correlationId'] ? `<${logObj['correlationId']}>` : '';
+    const duration = logObj['duration'] ? ` (${logObj['duration']}ms)` : '';
 
-    const message = logObj[0] || logObj.message || 'No message';
+    const message = logObj[0] || logObj['message'] || 'No message';
     const logLine = `${timestamp} ${level} ${module}${operation}${correlationId}${duration} ${this.config.name}: ${message}`;
 
     this.outputChannel.appendLine(logLine);
@@ -236,7 +236,7 @@ export class UnifiedLogger {
       operation,
       correlationId,
       startTime,
-      metadata,
+      ...(metadata && { metadata }),
     };
 
     this.info(`Starting operation: ${operation}`, context);
@@ -284,7 +284,7 @@ export class UnifiedLogger {
       operation,
       correlationId,
       startTime,
-      metadata,
+      ...(metadata && { metadata }),
     };
 
     this.info(`Starting async operation: ${operation}`, context);
@@ -442,7 +442,7 @@ export class UnifiedLogger {
       duration,
       success,
       performance,
-      metadata,
+      ...(metadata && { metadata }),
     };
 
     if (performance === 'slow') {
@@ -467,7 +467,7 @@ export class UnifiedLogger {
       duration,
       success: false,
       performance: 'failed',
-      metadata,
+      ...(metadata && { metadata }),
     };
 
     this.error(`Operation failed: ${operation} (${duration}ms)`, error, context);
@@ -584,7 +584,7 @@ export class ModuleLogger {
  */
 export const unifiedLogger = UnifiedLogger.getInstance({
   name: 'Clotho',
-  minLevel: process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO,
+  minLevel: process.env['NODE_ENV'] === 'development' ? LogLevel.DEBUG : LogLevel.INFO,
   enablePerformanceTracking: true,
   enableOutputChannel: true,
   slowOperationThreshold: 1000,

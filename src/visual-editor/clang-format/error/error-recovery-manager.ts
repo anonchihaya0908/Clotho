@@ -153,7 +153,6 @@ export class ErrorRecoveryManager implements vscode.Disposable {
       // 恢复成功，重置错误状态和尝试次数
       await this.stateManager.updateState(
         {
-          lastError: undefined,
           recoveryAttempts: 0,
         },
         'recovery-successful',
@@ -181,7 +180,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
     this.recoveryStrategies.set('preview-creation-failed', {
       async recover(error, stateManager, _eventBus) { // eslint-disable-line @typescript-eslint/no-unused-vars
         const logError = new Error('Recovery: Preview creation failed and no fallback is available.');
-        this.logger.error(logError.message, logError, {
+        (this as any).logger.error(logError.message, logError, {
           module: 'ErrorRecoveryManager',
           operation: 'recover.preview-creation-failed',
           errorDetails: { message: error.message },
@@ -198,7 +197,7 @@ export class ErrorRecoveryManager implements vscode.Disposable {
     // 编辑器主面板创建失败：延迟重试
     this.recoveryStrategies.set('editor-creation-failed', {
       async recover(_error, _stateManager, eventBus) {
-        this.logger.info('Recovery: Retrying editor creation after a delay.', {
+        (this as any).logger.info('Recovery: Retrying editor creation after a delay.', {
           module: 'ErrorRecoveryManager',
           operation: 'recover.editor-creation-failed',
         });
@@ -211,13 +210,13 @@ export class ErrorRecoveryManager implements vscode.Disposable {
     // 消息处理失败：通常忽略，只记录
     this.recoveryStrategies.set('message-handling-failed', {
       async recover(_error, stateManager) {
-        this.logger.warn(`Ignoring message handling error: ${_error.message}`, {
+        (this as any).logger.warn(`Ignoring message handling error: ${_error.message}`, {
           module: 'ErrorRecoveryManager',
           operation: 'recover.message-handling-failed',
         });
         // 清除错误状态，因为这是一个非关键错误
         await stateManager.updateState(
-          { lastError: undefined },
+          {},
           'ignore-message-error',
         );
       },

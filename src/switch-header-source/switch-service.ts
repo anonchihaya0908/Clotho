@@ -49,8 +49,8 @@ export class SwitchService {
   private configService: SwitchConfigService;
 
   // Cache configuration constants
-  private static readonly FILE_CACHE_TTL = 5000; // 5 seconds file existence cache
-  private static readonly SEARCH_CACHE_TTL = 10000; // 10 seconds search results cache
+  // File cache TTL removed as it's not currently used
+  // Search cache TTL removed as it's not currently used
 
   constructor(configService?: SwitchConfigService) {
     // Allow dependency injection for testing
@@ -216,7 +216,7 @@ export class SwitchService {
     for (const pattern of TEST_PATTERNS) {
       const match = baseName.match(pattern);
       if (match) {
-        return match[1];
+        return match[1] ?? ''; // Handle potential undefined
       }
     }
 
@@ -405,9 +405,12 @@ export class SwitchService {
   // Individual Search Strategies
   // ===============================
 
+  /* These methods are kept for future use and intentionally unused in current implementation */
+
   /**
    * Strategy 1: Search in the same directory - the most common case.
    */
+  // @ts-ignore: This method is kept for future use
   private async searchSameDirectory(
     directory: string,
     baseName: string,
@@ -447,6 +450,7 @@ export class SwitchService {
   /**
    * Strategy 2: Search in classic src/include structures.
    */
+  // @ts-ignore: This method is kept for future use
   private async searchSrcIncludeStructure(
     currentPath: string,
     baseName: string,
@@ -472,8 +476,8 @@ export class SwitchService {
     const srcMatch = normalizedPath.match(srcRegex);
     if (srcMatch) {
       patterns.push({
-        rootPath: srcMatch[1],
-        subPath: path.dirname(srcMatch[3]),
+        rootPath: srcMatch[1] ?? '',
+        subPath: path.dirname(srcMatch[3] ?? ''),
         targetDirs: headerDirs,
       });
     }
@@ -486,8 +490,8 @@ export class SwitchService {
     const includeMatch = normalizedPath.match(headerRegex);
     if (includeMatch) {
       patterns.push({
-        rootPath: includeMatch[1],
-        subPath: path.dirname(includeMatch[3]),
+        rootPath: includeMatch[1] ?? '',
+        subPath: path.dirname(includeMatch[3] ?? ''),
         targetDirs: sourceDirs,
       });
     }
@@ -532,8 +536,8 @@ export class SwitchService {
     const srcMatch = normalizedPath.match(srcRegex);
     if (srcMatch) {
       patterns.push({
-        rootPath: srcMatch[1],
-        subPath: path.dirname(srcMatch[3]),
+        rootPath: srcMatch[1] ?? '',
+        subPath: path.dirname(srcMatch[3] ?? ''),
         targetDirs: headerDirs,
       });
     }
@@ -546,8 +550,8 @@ export class SwitchService {
     const includeMatch = normalizedPath.match(headerRegex);
     if (includeMatch) {
       patterns.push({
-        rootPath: includeMatch[1],
-        subPath: path.dirname(includeMatch[3]),
+        rootPath: includeMatch[1] ?? '',
+        subPath: path.dirname(includeMatch[3] ?? ''),
         targetDirs: sourceDirs,
       });
     }
@@ -566,6 +570,7 @@ export class SwitchService {
   /**
    * Strategy 3: Search in parallel src/tests structures.
    */
+  // @ts-ignore: This method is kept for future use
   private async searchParallelTestsStructure(
     currentPath: string,
     baseName: string,
@@ -590,8 +595,8 @@ export class SwitchService {
 
     if (testsMatch) {
       patterns.push({
-        rootPath: testsMatch[1],
-        subPath: path.dirname(testsMatch[3]),
+        rootPath: testsMatch[1] ?? '',
+        subPath: path.dirname(testsMatch[3] ?? ''),
         targetDirs: [...sourceDirs, ...headerDirs],
       });
 
@@ -635,8 +640,8 @@ export class SwitchService {
 
     if (testsMatch) {
       patterns.push({
-        rootPath: testsMatch[1],
-        subPath: path.dirname(testsMatch[3]),
+        rootPath: testsMatch[1] ?? '',
+        subPath: path.dirname(testsMatch[3] ?? ''),
         targetDirs: [...sourceDirs, ...headerDirs],
       });
 

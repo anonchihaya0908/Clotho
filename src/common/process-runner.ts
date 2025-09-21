@@ -8,7 +8,10 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { PERFORMANCE } from './constants';
 import { errorHandler } from './error-handler';
-import { createModuleLogger } from '../logger/unified-logger';
+import { createModuleLogger } from './logger/unified-logger';
+
+// Create logger instance
+const logger = createModuleLogger('ProcessRunner');
 
 // 执行选项的明确类型定义
 interface ExecOptions {
@@ -44,7 +47,7 @@ export class ProcessRunner {
     };
 
   // 调试模式控制
-  private static readonly DEBUG = process.env.CLOTHO_DEBUG === 'true';
+  private static readonly DEBUG = process.env['CLOTHO_DEBUG'] === 'true';
 
   // 异步执行器，避免重复 promisify
   private static readonly execAsync = promisify(exec);
@@ -250,7 +253,7 @@ export class ProcessRunner {
     // Parse ps output
     for (const line of lines) {
       const parts = line.trim().split(/\s+/);
-      if (parts.length >= 4) {
+      if (parts.length >= 4 && parts[0] && parts[1] && parts[2]) {
         const pid = parseInt(parts[0]);
         const ppid = parseInt(parts[1]);
         const memory = parseInt(parts[2]); // RSS in KB

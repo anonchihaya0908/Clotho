@@ -377,12 +377,22 @@ export class ClangFormatPanelManager
       }
     }
 
-    return {
+    const stats: {
+      totalPanels: number;
+      activePanels: number;
+      visiblePanels: number;
+      oldestPanel?: { id: string; age: number };
+    } = {
       totalPanels,
       activePanels,
       visiblePanels,
-      oldestPanel,
     };
+
+    if (oldestPanel) {
+      stats.oldestPanel = oldestPanel;
+    }
+
+    return stats;
   }
 
   /**

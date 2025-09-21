@@ -75,12 +75,12 @@ export class DebounceIntegration implements BaseManager {
 
           // Only create placeholder when editor is visible and initialized
           const state = this.context?.stateManager?.getState();
-          if (!state?.isVisible || !state?.isInitialized) {
+          if (!state?.['isVisible'] || !state?.['isInitialized']) {
             this.logger.debug('Editor is not visible or not initialized, skipping placeholder creation', {
               module: 'DebounceIntegration',
               operation: 'createDebouncedPreviewCloseHandler',
-              isVisible: state?.isVisible,
-              isInitialized: state?.isInitialized,
+              isVisible: state?.['isVisible'],
+              isInitialized: state?.['isInitialized'],
             });
             return;
           }
@@ -120,11 +120,11 @@ export class DebounceIntegration implements BaseManager {
         async () => {
           // Check if preview already exists to avoid duplication
           const state = this.context?.stateManager?.getState();
-          if (state?.previewMode === 'open' && state?.previewEditor && !(state.previewEditor as any)?.document?.isClosed) {
+          if (state?.['previewMode'] === 'open' && state?.['previewEditor'] && !(state['previewEditor'] as any)?.document?.isClosed) {
             this.logger.debug('Preview already exists and is open, skipping creation', {
               module: 'DebounceIntegration',
               operation: 'createDebouncedPreviewReopenHandler',
-              previewMode: state.previewMode,
+              previewMode: state['previewMode'],
             });
             return;
           }
@@ -145,7 +145,7 @@ export class DebounceIntegration implements BaseManager {
             await this.transitionManager.switchToPreview(async () => {
               await this.previewManager.openPreview();
               const state = this.context?.stateManager?.getState();
-              return (state?.previewEditor as any) || null;
+              return (state?.['previewEditor'] as any) || null;
             });
           } catch (error) {
             this.logger.error('Transition manager failed, using fallback', error as Error, {

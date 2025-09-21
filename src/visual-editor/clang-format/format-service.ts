@@ -288,6 +288,9 @@ export class ClangFormatService {
     }
 
     // 查找第一个工作区文件夹中的 .clang-format 文件
+    if (!workspaceFolders[0]) {
+      throw new Error('No workspace folder found');
+    }
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
     const configPath = path.join(workspaceRoot, '.clang-format');
 
@@ -304,6 +307,9 @@ export class ClangFormatService {
         throw new Error('No workspace folder is open');
       }
 
+      if (!workspaceFolders[0]) {
+        throw new Error('No workspace folder found');
+      }
       const workspaceRoot = workspaceFolders[0].uri.fsPath;
       const configPath = path.join(workspaceRoot, '.clang-format');
 

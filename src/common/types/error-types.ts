@@ -32,22 +32,22 @@ export type ErrorConstructor<T extends Error = Error> = new (message?: string) =
  * 错误上下文信息
  */
 export interface ErrorContext {
-    operation?: string;
-    module?: string;
-    showToUser?: boolean;
-    logLevel?: 'error' | 'warn' | 'info';
-    rethrow?: boolean;
-    metadata?: Record<string, unknown>;
+  operation?: string;
+  module?: string;
+  showToUser?: boolean;
+  logLevel?: 'error' | 'warn' | 'info';
+  rethrow?: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 /**
  * 扩展错误上下文
  */
 export interface ExtendedErrorContext extends ErrorContext {
-    timestamp?: number;
-    correlationId?: string;
-    instanceId?: string;
-    retryCount?: number;
+  timestamp?: number;
+  correlationId?: string;
+  instanceId?: string;
+  retryCount?: number;
 }
 
 // ===============================
@@ -58,19 +58,19 @@ export interface ExtendedErrorContext extends ErrorContext {
  * 错误恢复策略结果
  */
 export interface ErrorRecoveryResult {
-    handled: boolean;
-    shouldRetry: boolean;
-    recoveryAction?: string;
-    metadata?: Record<string, unknown>;
+  handled: boolean;
+  shouldRetry: boolean;
+  recoveryAction?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /**
  * 错误恢复策略接口
  */
 export interface ErrorRecoveryStrategy {
-    canHandle(error: ErrorLike): boolean;
-    handle(error: ErrorLike, context: ErrorContext): Promise<ErrorRecoveryResult>;
-    getName(): string;
+  canHandle(error: ErrorLike): boolean;
+  handle(error: ErrorLike, context: ErrorContext): Promise<ErrorRecoveryResult>;
+  getName(): string;
 }
 
 // ===============================
@@ -81,31 +81,31 @@ export interface ErrorRecoveryStrategy {
  * Clotho 应用错误
  */
 export interface ClothoError extends Error {
-    code: string;
-    context: Record<string, unknown>;
-    recoverable: boolean;
-    timestamp: number;
+  code: string;
+  context: Record<string, unknown>;
+  recoverable: boolean;
+  timestamp: number;
 }
 
 /**
  * 编辑器错误
  */
 export interface EditorError {
-    code: string;
-    message: string;
-    context: Record<string, unknown>;
-    timestamp: number;
-    recoverable: boolean;
-    module?: string;
+  code: string;
+  message: string;
+  context: Record<string, unknown>;
+  timestamp: number;
+  recoverable: boolean;
+  module?: string;
 }
 
 /**
  * 验证错误
  */
 export interface ValidationError extends Error {
-    field: string;
-    value: unknown;
-    constraint: string;
+  field: string;
+  value: unknown;
+  constraint: string;
 }
 
 // ===============================
@@ -135,8 +135,8 @@ export type ErrorHandler<TResult = void> = (error: ErrorLike, context?: ErrorCon
  * 错误捕获装饰器选项
  */
 export interface ErrorCatchOptions extends ErrorContext {
-    transform?: ErrorTransform;
-    onError?: ErrorHandler;
+  transform?: ErrorTransform;
+  onError?: ErrorHandler;
 }
 
 // ===============================
@@ -156,9 +156,9 @@ export function isError(value: unknown): value is Error {
 export function isErrorLike(value: unknown): value is ErrorLike {
   return isError(value) || (
     typeof value === 'object' &&
-        value !== null &&
-        'message' in value &&
-        typeof (value as Record<string, unknown>).message === 'string'
+    value !== null &&
+    'message' in value &&
+    typeof (value as Record<string, unknown>)['message'] === 'string'
   );
 }
 

@@ -622,7 +622,8 @@ export class PlaceholderWebviewManager implements BaseManager {
     const randomIndex = Math.floor(
       Math.random() * this.characterImagePaths.length,
     );
-    return this.characterImagePaths[randomIndex];
+    const imagePath = this.characterImagePaths[randomIndex];
+    return imagePath ?? this.characterImagePaths[0] ?? '';
   }
 
   /**
@@ -650,7 +651,8 @@ export class PlaceholderWebviewManager implements BaseManager {
       return '';
     }
     const randomIndex = Math.floor(Math.random() * this.footerTexts.length);
-    return this.footerTexts[randomIndex];
+    const footerText = this.footerTexts[randomIndex];
+    return footerText ?? this.footerTexts[0] ?? 'Loading...';
   }
 
   getStatus() {

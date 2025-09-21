@@ -309,11 +309,16 @@ export class ManagerRegistry implements vscode.Disposable {
     initialized: boolean;
     initializationTime?: number;
   }> {
-    return Array.from(this.registrations.values()).map(reg => ({
-      name: reg.name,
-      initialized: reg.initialized,
-      initializationTime: reg.initializationTime,
-    }));
+    return Array.from(this.registrations.values()).map(reg => {
+      const status: { name: string; initialized: boolean; initializationTime?: number } = {
+        name: reg.name,
+        initialized: reg.initialized,
+      };
+      if (reg.initializationTime !== undefined) {
+        status.initializationTime = reg.initializationTime;
+      }
+      return status;
+    });
   }
 
   /**

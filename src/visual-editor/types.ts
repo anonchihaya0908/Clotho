@@ -32,8 +32,10 @@ export interface VisualEditorState extends CoreEditorState {
     previewMode: 'open' | 'closed' | 'transitioning';
     previewUri?: vscode.Uri;
     previewEditor?: vscode.TextEditor;
-    isVisible?: boolean;
-    isInitialized?: boolean;
+
+    // Override inherited properties to match interface requirements
+    isVisible: boolean;
+    isInitialized: boolean;
 
     // Configuration state
     currentConfig: ClangFormatConfig;

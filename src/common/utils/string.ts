@@ -44,7 +44,7 @@ export function toHeaderGuardCase(input: string): string {
 export function cleanTestBaseName(baseName: string): string {
   for (const pattern of TEST_PATTERNS) {
     const match = baseName.match(pattern);
-    if (match) {
+    if (match && match[1]) {
       return match[1];
     }
   }

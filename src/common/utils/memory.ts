@@ -22,7 +22,9 @@ export class ObjectPool<T> {
     maxSize: number = PERFORMANCE.OBJECT_POOL_MAX_SIZE
   ) {
     this.createFn = createFunction;
-    this.resetFn = resetFunction;
+    if (resetFunction) {
+      this.resetFn = resetFunction;
+    }
     this.maxSize = maxSize;
   }
 
