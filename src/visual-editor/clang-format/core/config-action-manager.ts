@@ -86,6 +86,10 @@ export class ConfigActionManager implements BaseManager {
   private async autoLoadWorkspaceConfig(): Promise<void> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
+      this.logger.info('No workspace folder found, using default clang-format settings', {
+        module: 'ConfigActionManager',
+        operation: 'autoLoadWorkspaceConfig'
+      });
       return; // 没有打开工作区，静默处理
     }
     if (!workspaceFolders[0]) {
@@ -98,17 +102,21 @@ export class ConfigActionManager implements BaseManager {
 
     try {
       await vscode.workspace.fs.stat(fileUri);
-      this.logger.info('Found .clang-format file in workspace, auto-loading', {
+      this.logger.info('Found .clang-format file in workspace, auto-loading configuration', {
         module: 'ConfigActionManager',
         operation: 'autoLoadWorkspaceConfig',
-        fileUri: fileUri.toString()
+        fileUri: fileUri.toString(),
+        workspaceRoot: workspaceFolders[0].uri.fsPath
       });
       await this.loadConfigFromFile(fileUri, true); // 传递 silent=true 表示自动加载
     } catch {
-      // 文件不存在，静默处理
-      this.logger.debug('.clang-format file not found in workspace. Using default settings', {
+      // 文件不存在，记录详细信息但静默处理
+      this.logger.info('.clang-format file not found in workspace, using default settings', {
         module: 'ConfigActionManager',
-        operation: 'autoLoadWorkspaceConfig'
+        operation: 'autoLoadWorkspaceConfig',
+        workspaceRoot: workspaceFolders[0].uri.fsPath,
+        expectedPath: fileUri.fsPath,
+        message: 'This is normal if no .clang-format file exists in the project'
       });
     }
   }

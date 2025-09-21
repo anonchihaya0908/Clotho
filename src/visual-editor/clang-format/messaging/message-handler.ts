@@ -221,7 +221,11 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.WEBVIEW_READY,
       async (payload, context) => {
-        this.logger.info('Webview is ready, triggering editor-fully-ready event');
+        this.logger.info('Webview is ready, triggering editor initialization sequence', {
+          module: 'MessageHandler',
+          operation: 'webview-ready',
+          message: 'Starting auto-load of workspace .clang-format file'
+        });
         context.eventBus?.emit('editor-fully-ready', payload);
       },
     );
