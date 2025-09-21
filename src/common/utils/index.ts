@@ -27,8 +27,6 @@ export * from './config';
 // Language detection utilities
 export * from './language';
 
-// Array manipulation utilities
-export * from './array';
 
 // Performance optimization utilities
 export * from './performance';

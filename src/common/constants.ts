@@ -276,7 +276,6 @@ export const UI_CONSTANTS = {
 // ===============================
 
 export const UI_TIMING = {
-  HEARTBEAT_INTERVAL: 1000, // 1 second
   PREVIEW_DEBOUNCE: 50,
   TRANSITION_MAX_TIME: 2000, // 2 seconds
   ERROR_RECOVERY_DELAY: 1500, // 1.5 seconds

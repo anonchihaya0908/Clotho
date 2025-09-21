@@ -11,7 +11,7 @@ import * as process from 'node:process';
 import { errorHandler } from './error-handler';
 import { createModuleLogger } from './logger/unified-logger';
 import { ProcessRunner } from './process-runner';
-import { LRUCache, memoryMonitor } from './utils';
+import { LRUCache } from './utils';
 
 // Create logger instance
 const logger = createModuleLogger('ProcessDetector');
@@ -579,6 +579,3 @@ export class ProcessDetector {
   }
 }
 
-//  注册ProcessDetector的静态缓存到内存监控
-memoryMonitor.registerCache('ProcessDetector-processList', ProcessDetector['processListCache']);
-memoryMonitor.registerCache('ProcessDetector-detectionResult', ProcessDetector['detectionResultCache']);

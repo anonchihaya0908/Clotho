@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { StateChangeEvent } from '../../../common/types';
-import { BoundedHistory, memoryMonitor } from '../../../common/utils/memory';
+import { BoundedHistory } from '../../../common/utils/memory';
 import { PERFORMANCE } from '../../../common/constants';
 import { VisualEditorState } from '../../types';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';
@@ -27,8 +27,6 @@ export class EditorStateManager implements vscode.Disposable {
 
   constructor(private eventBus: EventBus) {
     this.state = this.createInitialState();
-    //  注册状态历史到内存监控
-    memoryMonitor.registerHistory('EditorStateManager', this.stateHistory);
   }
 
   /**

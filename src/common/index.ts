@@ -11,7 +11,7 @@ export {
   Factory, AsyncFactory, ResetFunction, Selector, Predicate,
   BaseResult, DataResult, BatchResult,
   CommonStatus, LifecycleStatus, StateMachine,
-  BaseStats, CountStats, PerformanceStats, MemoryStats,
+  BaseStats, CountStats, PerformanceStats,
   EnhancedManager, ObservableManager,
   Cache, TTLCache, AsyncOptions, Cancellable, ProgressReporter,
   DeepReadonly, DeepPartial, RequireFields, OptionalFields,
@@ -29,8 +29,6 @@ export * from './utils';
 //  Structured logging and event handling
 export * from './logger/unified-logger';
 
-// Heartbeat animation utilities
-export * from './heartbeat-animation';
 
 // Error handling
 export { ClothoError, errorHandler } from './error-handler';

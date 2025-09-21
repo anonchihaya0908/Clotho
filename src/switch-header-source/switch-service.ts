@@ -19,7 +19,6 @@ import { SearchResult } from '../common/types/core';
 import {
   LRUCache,
   isHeaderFile,
-  memoryMonitor,
 } from '../common/utils';
 
 import { SwitchConfigService } from './config-manager';
@@ -56,11 +55,6 @@ export class SwitchService {
     // Allow dependency injection for testing
     this.configService = configService ?? new SwitchConfigService();
 
-    //  注册所有缓存到内存监控
-    memoryMonitor.registerCache('SwitchService-regex', SwitchService.regexCache);
-    memoryMonitor.registerCache('SwitchService-fileExists', SwitchService.fileExistsCache);
-    memoryMonitor.registerCache('SwitchService-searchResults', SwitchService.searchResultsCache);
-    memoryMonitor.registerCache('SwitchService-pathNormalize', SwitchService.pathNormalizeCache);
   }
 
   /**
@@ -410,7 +404,7 @@ export class SwitchService {
   /**
    * Strategy 1: Search in the same directory - the most common case.
    */
-  // @ts-ignore: This method is kept for future use
+  // @ts-expect-error: This method is kept for future use
   private async searchSameDirectory(
     directory: string,
     baseName: string,
@@ -450,7 +444,7 @@ export class SwitchService {
   /**
    * Strategy 2: Search in classic src/include structures.
    */
-  // @ts-ignore: This method is kept for future use
+  // @ts-expect-error: This method is kept for future use
   private async searchSrcIncludeStructure(
     currentPath: string,
     baseName: string,
@@ -570,7 +564,7 @@ export class SwitchService {
   /**
    * Strategy 3: Search in parallel src/tests structures.
    */
-  // @ts-ignore: This method is kept for future use
+  // @ts-expect-error: This method is kept for future use
   private async searchParallelTestsStructure(
     currentPath: string,
     baseName: string,

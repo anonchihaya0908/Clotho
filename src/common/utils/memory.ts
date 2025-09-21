@@ -1,6 +1,6 @@
 /**
  *  内存管理工具集
- * 提供对象池、弱引用管理和内存监控功能
+ * 提供对象池、弱引用管理功能
  */
 
 import { PERFORMANCE } from '../constants';
@@ -216,136 +216,6 @@ export class WeakReferenceManager<K extends object, V> {
   }
 }
 
-/**
- *  内存使用监控器
- */
-export class MemoryMonitor {
-  private static instance: MemoryMonitor;
-  private caches = new Map<string, { getStats: () => unknown }>();
-  private objectPools = new Map<string, ObjectPool<unknown>>();
-  private histories = new Map<string, BoundedHistory<unknown>>();
-
-  private constructor() { }
-
-  static getInstance(): MemoryMonitor {
-    if (!MemoryMonitor.instance) {
-      MemoryMonitor.instance = new MemoryMonitor();
-    }
-    return MemoryMonitor.instance;
-  }
-
-  /**
-   * 注册缓存以供监控
-   */
-  registerCache(name: string, cache: { getStats: () => unknown }): void {
-    this.caches.set(name, cache);
-  }
-
-  /**
-   * 注册对象池以供监控
-   */
-  registerObjectPool(name: string, pool: ObjectPool<unknown>): void {
-    this.objectPools.set(name, pool);
-  }
-
-  /**
-   * 注册历史记录以供监控
-   */
-  registerHistory(name: string, history: BoundedHistory<unknown>): void {
-    this.histories.set(name, history);
-  }
-
-  /**
-   * 获取内存使用报告
-   */
-  getMemoryReport(): {
-    caches: Record<string, unknown>;
-    objectPools: Record<string, unknown>;
-    histories: Record<string, unknown>;
-    summary: {
-      totalCaches: number;
-      totalPools: number;
-      totalHistories: number;
-      estimatedMemoryUsage: string;
-    };
-  } {
-    const caches: Record<string, unknown> = {};
-    const objectPools: Record<string, unknown> = {};
-    const histories: Record<string, unknown> = {};
-
-    // 收集缓存统计
-    for (const [name, cache] of this.caches) {
-      try {
-        caches[name] = cache.getStats();
-      } catch {
-        caches[name] = { error: 'Failed to get stats' };
-      }
-    }
-
-    // 收集对象池统计
-    for (const [name, pool] of this.objectPools) {
-      objectPools[name] = pool.getStats();
-    }
-
-    // 收集历史记录统计
-    for (const [name, history] of this.histories) {
-      histories[name] = history.getStats();
-    }
-
-    // 估算总内存使用量
-    let estimatedKB = 0;
-    for (const cache of Object.values(caches)) {
-      if ((cache as { size?: number }).size) { estimatedKB += (cache as { size: number }).size * 0.5; } // 估算每个缓存项0.5KB
-    }
-    for (const history of Object.values(histories)) {
-      if ((history as { memoryUsageEstimate?: string }).memoryUsageEstimate) {
-        const kb = parseInt((history as { memoryUsageEstimate: string }).memoryUsageEstimate.replace(/[^\d]/g, ''));
-        estimatedKB += isNaN(kb) ? 0 : kb;
-      }
-    }
-
-    return {
-      caches,
-      objectPools,
-      histories,
-      summary: {
-        totalCaches: this.caches.size,
-        totalPools: this.objectPools.size,
-        totalHistories: this.histories.size,
-        estimatedMemoryUsage: `~${Math.round(estimatedKB)}KB`,
-      },
-    };
-  }
-
-  /**
-   * 清理所有注册的缓存和池
-   */
-  cleanup(): void {
-    // 清理缓存
-    for (const [, cache] of this.caches) {
-      try {
-        if ('clear' in cache && typeof cache.clear === 'function') {
-          (cache as { clear: () => void }).clear();
-        }
-      } catch {
-        // Silently handle cache clear failures
-      }
-    }
-
-    // 清理对象池
-    for (const pool of this.objectPools.values()) {
-      pool.clear();
-    }
-
-    // 清理历史记录
-    for (const history of this.histories.values()) {
-      history.clear();
-    }
-  }
-}
-
-// 导出全局内存监控实例
-export const memoryMonitor = MemoryMonitor.getInstance();
 
 /**
  *  预定义的对象池工厂
@@ -366,7 +236,6 @@ export class ObjectPoolFactory {
         }
       );
       this.pools.set('SearchResult', pool as ObjectPool<unknown>);
-      memoryMonitor.registerObjectPool('SearchResult', pool as ObjectPool<unknown>);
     }
     return this.pools.get('SearchResult')! as ObjectPool<{ files: unknown[]; method: string }>;
   }
@@ -386,7 +255,6 @@ export class ObjectPoolFactory {
         }
       );
       this.pools.set('ProcessInfo', pool as ObjectPool<unknown>);
-      memoryMonitor.registerObjectPool('ProcessInfo', pool as ObjectPool<unknown>);
     }
     return this.pools.get('ProcessInfo')! as ObjectPool<{ pid: number; ppid: number; memory: number; name: string }>;
   }
@@ -408,7 +276,6 @@ export class ObjectPoolFactory {
         }
       );
       this.pools.set('ConfigObject', pool as ObjectPool<unknown>);
-      memoryMonitor.registerObjectPool('ConfigObject', pool as ObjectPool<unknown>);
     }
     return this.pools.get('ConfigObject')! as ObjectPool<Record<string, unknown>>;
   }

@@ -187,20 +187,6 @@ export interface PerformanceStats extends BaseStats {
   successRate: number;
 }
 
-/**
- *  内存统计
- * 用于内存使用情况的统计
- */
-export interface MemoryStats extends BaseStats {
-  /** 已使用内存 */
-  used: number;
-  /** 总可用内存 */
-  available: number;
-  /** 内存单位 */
-  unit: 'B' | 'KB' | 'MB' | 'GB';
-  /** 使用百分比 */
-  percentage: number;
-}
 
 // ===============================
 // 管理器模式

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { EditorError } from '../../../common/types';
 import { delay } from '../../../common/utils/performance';
-import { BoundedHistory, memoryMonitor } from '../../../common/utils/memory';
+import { BoundedHistory } from '../../../common/utils/memory';
 import { PERFORMANCE, UI_CONSTANTS } from '../../../common/constants';
 import { EventBus } from '../messaging/event-bus';
 import { EditorStateManager } from '../state/editor-state-manager';
@@ -35,8 +35,6 @@ export class ErrorRecoveryManager implements vscode.Disposable {
     private eventBus: EventBus,
   ) {
     this.setupRecoveryStrategies();
-    //  注册错误历史到内存监控
-    memoryMonitor.registerHistory('ErrorRecoveryManager', this.errorHistory);
   }
 
   /**
