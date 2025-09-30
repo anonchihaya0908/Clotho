@@ -399,31 +399,6 @@ export class SwitchService {
   // Individual Search Strategies
   // ===============================
 
-  /* These methods are kept for future use and intentionally unused in current implementation */
-
-  /**
-   * Strategy 1: Search in the same directory - the most common case.
-   */
-  // @ts-expect-error: This method is kept for future use
-  private async searchSameDirectory(
-    directory: string,
-    baseName: string,
-    targetExtensions: string[],
-  ): Promise<SearchResult> {
-    const files: vscode.Uri[] = [];
-    for (const ext of targetExtensions) {
-      const candidatePath = path.join(directory, `${baseName}${ext}`);
-      const candidateUri = vscode.Uri.file(candidatePath);
-      try {
-        await vscode.workspace.fs.stat(candidateUri);
-        files.push(candidateUri);
-      } catch {
-        // File does not exist, continue.
-      }
-    }
-    return { files, method: 'same-directory' };
-  }
-
   /**
    *  优化版本：同目录搜索，使用批量文件检查和路径生成优化
    */
@@ -439,66 +414,6 @@ export class SwitchService {
     const existingFiles = await this.checkMultipleFilesExist(candidateUris);
 
     return { files: existingFiles, method: 'same-directory' };
-  }
-
-  /**
-   * Strategy 2: Search in classic src/include structures.
-   */
-  // @ts-expect-error: This method is kept for future use
-  private async searchSrcIncludeStructure(
-    currentPath: string,
-    baseName: string,
-    targetExtensions: string[],
-  ): Promise<SearchResult> {
-    const files: vscode.Uri[] = [];
-    const normalizedPath = path.normalize(currentPath).replace(/\\/g, '/');
-
-    const config = this.configService.getConfig();
-    const { sourceDirs, headerDirs } = config;
-
-    const patterns: Array<{
-      rootPath: string;
-      subPath: string;
-      targetDirs: string[];
-    }> = [];
-
-    // Check if current path contains any source directory
-    const sourceDirPattern = `(${sourceDirs.join('|')})`;
-    const srcRegex = this.getCachedRegex(
-      `^(.+?)\\/${sourceDirPattern}\\/(.*)$`,
-    );
-    const srcMatch = normalizedPath.match(srcRegex);
-    if (srcMatch) {
-      patterns.push({
-        rootPath: srcMatch[1] ?? '',
-        subPath: path.dirname(srcMatch[3] ?? ''),
-        targetDirs: headerDirs,
-      });
-    }
-
-    // Check if current path contains any header directory
-    const headerDirPattern = `(${headerDirs.join('|')})`;
-    const headerRegex = this.getCachedRegex(
-      `^(.+?)\\/${headerDirPattern}\\/(.*)$`,
-    );
-    const includeMatch = normalizedPath.match(headerRegex);
-    if (includeMatch) {
-      patterns.push({
-        rootPath: includeMatch[1] ?? '',
-        subPath: path.dirname(includeMatch[3] ?? ''),
-        targetDirs: sourceDirs,
-      });
-    }
-
-    // Use the extracted common search logic
-    const foundFiles = await this.findFilesAcrossDirs(
-      patterns,
-      baseName,
-      targetExtensions,
-    );
-    files.push(...foundFiles);
-
-    return { files, method: 'src-include' };
   }
 
   /**
@@ -559,51 +474,6 @@ export class SwitchService {
     files.push(...foundFiles);
 
     return { files, method: 'src-include' };
-  }
-
-  /**
-   * Strategy 3: Search in parallel src/tests structures.
-   */
-  // @ts-expect-error: This method is kept for future use
-  private async searchParallelTestsStructure(
-    currentPath: string,
-    baseName: string,
-    targetExtensions: string[],
-  ): Promise<SearchResult> {
-    const files: vscode.Uri[] = [];
-    const normalizedPath = path.normalize(currentPath).replace(/\\/g, '/');
-
-    const config = this.configService.getConfig();
-    const { sourceDirs, headerDirs, testDirs } = config;
-
-    const patterns: Array<{
-      rootPath: string;
-      subPath: string;
-      targetDirs: string[];
-    }> = [];
-
-    // Check if current path is in a test directory
-    const testDirPattern = `(${testDirs.join('|')})`;
-    const testRegex = this.getCachedRegex(`^(.+?)\\/${testDirPattern}\\/(.*)$`);
-    const testsMatch = normalizedPath.match(testRegex);
-
-    if (testsMatch) {
-      patterns.push({
-        rootPath: testsMatch[1] ?? '',
-        subPath: path.dirname(testsMatch[3] ?? ''),
-        targetDirs: [...sourceDirs, ...headerDirs],
-      });
-
-      // Use the extracted common search logic
-      const foundFiles = await this.findFilesAcrossDirs(
-        patterns,
-        baseName,
-        targetExtensions,
-      );
-      files.push(...foundFiles);
-    }
-
-    return { files, method: 'parallel-tests' };
   }
 
   /**

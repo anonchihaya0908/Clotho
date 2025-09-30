@@ -7,7 +7,7 @@
 //
 
 import * as vscode from 'vscode';
-import { errorHandler } from '../common/error-handler';
+import { BaseCoordinator } from '../common/base-coordinator';
 import { PairCreatorUI } from './ui';
 import { PairCreatorService } from './service';
 import { PairingRuleService } from '../pairing-rule-manager';
@@ -17,19 +17,26 @@ import { HeaderGuardStyle, PairingRule } from '../common/types';
  * Coordinator for header guard configuration
  * Provides a dedicated command to configure header guard style without creating files
  */
-export class HeaderGuardCoordinator {
+export class HeaderGuardCoordinator extends BaseCoordinator {
   constructor(
     private readonly ui: PairCreatorUI,
     private readonly service: PairCreatorService,
     private readonly pairingRuleService: PairingRuleService,
-  ) { }
+  ) {
+    super();
+    this.validateDependencies({ ui, service, pairingRuleService });
+  }
+
+  protected getModuleName(): string {
+    return 'HeaderGuardCoordinator';
+  }
 
   /**
    * Main workflow for configuring header guard style
    * Shows current settings and allows user to update the header guard preference
    */
   public async configureHeaderGuard(): Promise<void> {
-    try {
+    return this.executeOperation('configureHeaderGuard', async () => {
       // 1. Detect language context
       const { language } = await this.service.detectLanguageFromEditor();
 
@@ -60,14 +67,7 @@ export class HeaderGuardCoordinator {
 
       // 6. Update the configuration
       await this.updateHeaderGuardConfiguration(existingRule, newHeaderGuardStyle, language);
-
-    } catch (error) {
-      errorHandler.handle(error, {
-        module: 'HeaderGuardCoordinator',
-        operation: 'configureHeaderGuard',
-        showToUser: true,
-      });
-    }
+    });
   }
 
   /**
@@ -101,9 +101,13 @@ export class HeaderGuardCoordinator {
   }
 
   /**
-   * Cleanup method - currently no resources to dispose
+   * Override dispose method from BaseCoordinator
+   * Currently no additional resources to clean up
    */
-  dispose(): void {
-    // No resources to dispose
+  protected override onDispose(): void {
+    // No additional resources to dispose
+    this.logger.debug('HeaderGuardCoordinator disposed', {
+      operation: 'dispose'
+    });
   }
 }

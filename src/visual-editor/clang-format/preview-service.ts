@@ -258,31 +258,4 @@ private:
         return this.PREVIEW_TEMPLATES.GENERAL.DEFAULT;
     }
   }
-
-  /**
-     * 获取所有可用的预览模板（用于测试或调试）
-     */
-  public static getAllTemplates() {
-    return this.PREVIEW_TEMPLATES;
-  }
-
-  /**
-     * 验证预览代码是否为有效的 C++ 语法
-     * @param code 要验证的代码
-     * @returns 是否为有效代码
-     */
-  public static isValidPreviewCode(code: string): boolean {
-    // 简单的验证逻辑
-    if (!code || code.trim().length === 0) {
-      return false;
-    }
-
-    // 检查基本的语法完整性（简化版）
-    const openBraces = (code.match(/\{/g) || []).length;
-    const closeBraces = (code.match(/\}/g) || []).length;
-    const openParens = (code.match(/\(/g) || []).length;
-    const closeParens = (code.match(/\)/g) || []).length;
-
-    return openBraces === closeBraces && openParens === closeParens;
-  }
 }

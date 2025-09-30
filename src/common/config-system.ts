@@ -3,11 +3,6 @@
  * 提供标准化的配置接口、验证和管理机制
  */
 
-import * as vscode from 'vscode';
-import { createModuleLogger } from './logger/unified-logger';
-
-// Create logger instance
-const logger = createModuleLogger('ConfigSystem');
 import { ConfigValidationResult } from './types/core';
 
 // ===============================
@@ -209,147 +204,8 @@ export class ConfigValidator {
 // 配置管理器
 // ===============================
 
-/**
- *  统一配置管理器
- * 管理所有模块的配置，提供统一的接口
- */
-export class ConfigurationManager {
-  private static instance: ConfigurationManager;
-  private configCache = new Map<string, unknown>();
-  private readonly configPrefix = 'clotho';
-
-  private constructor() { }
-
-  static getInstance(): ConfigurationManager {
-    if (!ConfigurationManager.instance) {
-      ConfigurationManager.instance = new ConfigurationManager();
-    }
-    return ConfigurationManager.instance;
-  }
-
-  /**
-   * 获取配置
-   */
-  getConfig<T extends EnhancedBaseConfig>(
-    key: string,
-    defaultConfig: T
-  ): T {
-    const cacheKey = `${this.configPrefix}.${key}`;
-
-    // 检查缓存
-    if (this.configCache.has(cacheKey)) {
-      const cachedConfig = this.configCache.get(cacheKey) as Partial<T>;
-      return { ...defaultConfig, ...(cachedConfig || {}) };
-    }
-
-    // 从VS Code配置中读取
-    const config = vscode.workspace.getConfiguration(this.configPrefix);
-    const userConfig = config.get<Partial<T>>(key, {});
-
-    const finalConfig = {
-      ...defaultConfig,
-      ...userConfig,
-      lastModified: Date.now(),
-    };
-
-    // 缓存配置
-    this.configCache.set(cacheKey, finalConfig);
-
-    return finalConfig;
-  }
-
-  /**
-   * 更新配置
-   */
-  async updateConfig<T extends EnhancedBaseConfig>(
-    key: string,
-    config: Partial<T>,
-    target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace
-  ): Promise<void> {
-    const cacheKey = `${this.configPrefix}.${key}`;
-
-    try {
-      const vsConfig = vscode.workspace.getConfiguration(this.configPrefix);
-      await vsConfig.update(key, config, target);
-
-      // 更新缓存
-      const currentConfig = this.configCache.get(cacheKey) || {};
-      this.configCache.set(cacheKey, {
-        ...currentConfig,
-        ...config,
-        lastModified: Date.now(),
-      });
-
-      logger.info(`Configuration updated for ${key}`, {
-        module: 'ConfigurationManager',
-        operation: 'updateConfig',
-        key,
-        target: vscode.ConfigurationTarget[target],
-      });
-    } catch (error) {
-      logger.error(`Failed to update configuration for ${key}`, error as Error, {
-        module: 'ConfigurationManager',
-        operation: 'updateConfig',
-        key,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * 验证并获取配置
-   */
-  getValidatedConfig<T extends EnhancedBaseConfig>(
-    key: string,
-    defaultConfig: T,
-    validator: (config: T) => ConfigValidationResult
-  ): { config: T; validation: ConfigValidationResult } {
-    const config = this.getConfig(key, defaultConfig);
-    const validation = validator(config);
-
-    if (!validation.isValid) {
-      logger.warn(`Configuration validation failed for ${key}`, {
-        module: 'ConfigurationManager',
-        operation: 'getValidatedConfig',
-        errors: validation.errors,
-        warnings: validation.warnings,
-      });
-    }
-
-    return { config, validation };
-  }
-
-  /**
-   * 清除配置缓存
-   */
-  clearCache(key?: string): void {
-    if (key) {
-      const cacheKey = `${this.configPrefix}.${key}`;
-      this.configCache.delete(cacheKey);
-    } else {
-      this.configCache.clear();
-    }
-  }
-
-  /**
-   * 监听配置变化
-   */
-  onConfigurationChanged(
-    key: string,
-    callback: (config: unknown) => void
-  ): vscode.Disposable {
-    return vscode.workspace.onDidChangeConfiguration((event) => {
-      const configKey = `${this.configPrefix}.${key}`;
-      if (event.affectsConfiguration(configKey)) {
-        // 清除缓存
-        this.clearCache(key);
-        // 获取新配置并回调
-        const newConfig = vscode.workspace.getConfiguration(this.configPrefix).get(key);
-        callback(newConfig);
-      }
-    });
-  }
-}
+// ConfigurationManager 类已被移除，因为当前未被使用
+// 如果将来需要统一配置管理，可以重新实现
 
 // ===============================
 // 便捷工厂函数
@@ -419,6 +275,3 @@ export class ConfigFactory {
     };
   }
 }
-
-// 导出全局配置管理器实例
-export const configManager = ConfigurationManager.getInstance();
