@@ -35,3 +35,6 @@ export { ClothoError, errorHandler } from './error-handler';
 
 // Service container for dependency injection
 export * from './service-container';
+
+// Internationalization (i18n)
+export { Localization, L } from './i18n';

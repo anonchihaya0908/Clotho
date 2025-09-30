@@ -1,10 +1,11 @@
 {
     "name": "clotho",
-    "displayName": "Clotho - C/C++ clangd Enhancer",
-    "description": "A powerful VS Code extension for enhancing C/C++ development with clangd.",
+    "displayName": "%displayName%",
+    "description": "%description%",
     "version": "1.0.15",
     "publisher": "Togawa-Sakiko",
     "private": true,
+    "l10n": "./l10n",
     "workspaces": [
         "webviews/visual-editor/clang-format"
     ],
@@ -42,28 +43,28 @@
         "commands": [
             {
                 "command": "clotho.newSourcePair",
-                "title": "New C/C++ Header/Source Pair",
-                "category": "Clotho"
+                "title": "%command.newSourcePair.title%",
+                "category": "%command.newSourcePair.category%"
             },
             {
                 "command": "clotho.switchHeaderSource",
-                "title": "Switch Between Header/Source",
-                "category": "Clotho"
+                "title": "%command.switchHeaderSource.title%",
+                "category": "%command.switchHeaderSource.category%"
             },
             {
                 "command": "clotho.configureRules",
-                "title": "Configure C++ File Extension Rules",
-                "category": "Clotho"
+                "title": "%command.configureRules.title%",
+                "category": "%command.configureRules.category%"
             },
             {
                 "command": "clotho.configureHeaderGuard",
-                "title": "Configure Header Guard Style",
-                "category": "Clotho"
+                "title": "%command.configureHeaderGuard.title%",
+                "category": "%command.configureHeaderGuard.category%"
             },
             {
                 "command": "clotho.openClangFormatEditor",
-                "title": "Open Clang-Format Visual Editor",
-                "category": "Clotho",
+                "title": "%command.openClangFormatEditor.title%",
+                "category": "%command.openClangFormatEditor.category%",
                 "icon": "$(edit)"
             }
         ],
