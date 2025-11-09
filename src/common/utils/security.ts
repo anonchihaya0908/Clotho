@@ -38,11 +38,18 @@ export function getNonce(): string {
 // 双向链表节点
 class LRUNode<K, V> {
   constructor(
-    public key: K,
-    public value: V,
+    public key: K | null,
+    public value: V | null,
     public prev: LRUNode<K, V> | null = null,
     public next: LRUNode<K, V> | null = null
   ) { }
+  
+  /**
+   * 检查是否为哨兵节点
+   */
+  isSentinel(): boolean {
+    return this.key === null && this.value === null;
+  }
 }
 
 export class SimpleCache<K, V> {
@@ -53,22 +60,22 @@ export class SimpleCache<K, V> {
 
   constructor(maxSize: number = PERFORMANCE.SIMPLE_CACHE_MAX_SIZE) {
     this.capacity = maxSize;
-    // 创建哨兵节点简化边界处理
-    this.head = new LRUNode(null as unknown as K, null as unknown as V);
-    this.tail = new LRUNode(null as unknown as K, null as unknown as V);
+    // 创建哨兵节点简化边界处理（使用 null 标记哨兵节点）
+    this.head = new LRUNode<K, V>(null, null);
+    this.tail = new LRUNode<K, V>(null, null);
     this.head.next = this.tail;
     this.tail.prev = this.head;
   }
 
   get(key: K): V | undefined {
     const node = this.cache.get(key);
-    if (!node) {
+    if (!node || node.isSentinel()) {
       return undefined;
     }
 
     // 移动到头部（最近使用）
     this.moveToHead(node);
-    return node.value;
+    return node.value ?? undefined;
   }
 
   set(key: K, value: V): void {
@@ -85,7 +92,7 @@ export class SimpleCache<K, V> {
       if (this.cache.size >= this.capacity) {
         // 移除最少使用的节点
         const tail = this.removeTail();
-        if (tail) {
+        if (tail && tail.key !== null) {
           this.cache.delete(tail.key);
         }
       }
@@ -156,7 +163,7 @@ export class SimpleCache<K, V> {
 
   private removeTail(): LRUNode<K, V> | null {
     const lastNode = this.tail.prev;
-    if (lastNode && lastNode !== this.head) {
+    if (lastNode && lastNode !== this.head && !lastNode.isSentinel()) {
       this.removeNode(lastNode);
       return lastNode;
     }

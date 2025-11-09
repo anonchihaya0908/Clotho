@@ -1,12 +1,10 @@
 import * as vscode from 'vscode';
-import { UI_TIMING } from '../../../common/constants';
-import { delay } from '../../../common/utils/performance';
 import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { BaseManager, ManagerContext } from '../../../common/types';
 import { MACRO_PREVIEW_CODE } from '../data/clang-format-options-database';
 import { ClangFormatService } from '../format-service';
 import { ClangFormatPreviewProvider } from '../preview-provider';
-import { VisualEditorState } from '../../types';
+import { getStateOrDefault } from '../types/state';
 
 /**
  * 预览编辑器管理器
@@ -25,8 +23,11 @@ export class PreviewEditorManager implements BaseManager {
   private isHidden: boolean = false;
   private hiddenViewColumn: vscode.ViewColumn | undefined;
 
-  // Prevent concurrent creation lock
-  private isCreatingPreview: boolean = false;
+  // Prevent concurrent creation - use Promise instead of boolean lock
+  private creationPromise: Promise<vscode.TextEditor> | null = null;
+  
+  // Disposables tracking for proper cleanup
+  private readonly disposables: vscode.Disposable[] = [];
 
   constructor() {
     this.previewProvider = ClangFormatPreviewProvider.getInstance();
@@ -43,45 +44,50 @@ export class PreviewEditorManager implements BaseManager {
    * 【新增】支持复用现有预览，避免重复创建
    */
   async openPreview(): Promise<vscode.TextEditor> {
-    // Prevent concurrent creation
-    if (this.isCreatingPreview) {
-      this.logger.debug('预览正在创建中，等待完成', {
+    // Prevent concurrent creation - return existing promise if already creating
+    if (this.creationPromise) {
+      this.logger.debug('预览正在创建中，返回现有Promise', {
         module: 'PreviewManager',
         operation: 'openPreview'
       });
-      // 等待当前创建完成，然后返回结果
-      while (this.isCreatingPreview) {
-        //  使用统一的延迟函数，确保稳定状态
-        await delay(UI_TIMING.PREVIEW_DEBOUNCE);
-      }
-      const state = (this.context.stateManager?.getState() as unknown) as VisualEditorState || {} as VisualEditorState;
-      if (state.previewEditor && !(state.previewEditor as any)?.document?.isClosed) {
-        return state.previewEditor as any;
-      }
+      return this.creationPromise;
     }
 
-    const currentState = (this.context.stateManager?.getState() as unknown) as VisualEditorState || {} as VisualEditorState;
+    const currentState = getStateOrDefault(this.context.stateManager?.getState());
 
     // 【优化】如果已有预览且未被关闭，直接复用
     if (currentState.previewUri && currentState.previewEditor) {
       try {
         // 检查编辑器是否仍然有效
-        if (!(currentState.previewEditor as any)?.document?.isClosed) {
+        const doc = currentState.previewEditor.document;
+        if (doc && !doc.isClosed) {
           // 如果预览被隐藏，恢复显示
           if (this.isHidden) {
             await this.showPreview();
           }
 
-          return currentState.previewEditor as any;
+          return currentState.previewEditor;
         }
       } catch {
         // 现有预览无效，继续创建新预览
       }
     }
 
-    // Set creation lock
-    this.isCreatingPreview = true;
+    // Set creation promise
+    this.creationPromise = this.performPreviewCreation();
 
+    try {
+      const editor = await this.creationPromise;
+      return editor;
+    } finally {
+      this.creationPromise = null;
+    }
+  }
+
+  /**
+   * 执行预览创建的实际逻辑
+   */
+  private async performPreviewCreation(): Promise<vscode.TextEditor> {
     try {
       // 【完善】清理所有现有预览标签页
       await this.cleanupAllExistingPreviews();
@@ -122,12 +128,9 @@ export class PreviewEditorManager implements BaseManager {
     } catch (error) {
       this.logger.error('Failed to create preview editor', error as Error, {
         module: 'PreviewManager',
-        operation: 'openPreview'
+        operation: 'performPreviewCreation'
       });
       throw error;
-    } finally {
-      // Release creation lock
-      this.isCreatingPreview = false;
     }
   }
 
@@ -233,11 +236,11 @@ export class PreviewEditorManager implements BaseManager {
       this.logger.debug('恢复预览显示', {
         module: 'PreviewManager',
         operation: 'showPreview',
-        viewColumn: this.hiddenViewColumn
+        metadata: { viewColumn: this.hiddenViewColumn }
       });
 
       // Check if preview content still exists
-      const hasContent = this.previewProvider.hasContent(previewUri as any);
+      const hasContent = this.previewProvider.hasContent(previewUri);
       if (!hasContent) {
         this.logger.debug('预览内容已丢失，重新创建', {
           module: 'PreviewManager',
@@ -245,11 +248,11 @@ export class PreviewEditorManager implements BaseManager {
         });
         // 重新创建预览内容
         const initialContent = MACRO_PREVIEW_CODE;
-        this.previewProvider.updateContent(previewUri as any, initialContent);
+        this.previewProvider.updateContent(previewUri, initialContent);
       }
 
       // 重新打开预览编辑器
-      const editor = await vscode.window.showTextDocument(previewUri as any, {
+      const editor = await vscode.window.showTextDocument(previewUri, {
         viewColumn: this.hiddenViewColumn || vscode.ViewColumn.Two,
         preserveFocus: true,
         preview: false,
@@ -315,10 +318,10 @@ export class PreviewEditorManager implements BaseManager {
    * 更新预览内容
    */
   async updatePreviewContent(newContent: string): Promise<void> {
-    const state = this.context.stateManager?.getState() || {};
+    const state = getStateOrDefault(this.context.stateManager?.getState());
     const { previewUri } = state;
     if (previewUri) {
-      this.previewProvider.updateContent(previewUri as any, newContent);
+      this.previewProvider.updateContent(previewUri, newContent);
     }
   }
 
@@ -329,7 +332,7 @@ export class PreviewEditorManager implements BaseManager {
   public async updatePreviewWithConfig(
     newConfig: Record<string, unknown>,
   ): Promise<void> {
-    const state = this.context.stateManager?.getState() || {};
+    const state = getStateOrDefault(this.context.stateManager?.getState());
     const { previewUri } = state;
     if (!previewUri) {
       return;
@@ -347,13 +350,13 @@ export class PreviewEditorManager implements BaseManager {
         const configComment = this.generateConfigComment(newConfig);
         const updatedContent = `${configComment}\n\n${formatResult.formattedCode}`;
 
-        this.previewProvider.updateContent(previewUri as any, updatedContent);
+        this.previewProvider.updateContent(previewUri, updatedContent);
       } else {
         // 如果格式化失败，回退到原始代码 + 配置注释
         const configComment = this.generateConfigComment(newConfig);
         const updatedContent = `${configComment}\n\n${MACRO_PREVIEW_CODE}`;
 
-        this.previewProvider.updateContent(previewUri as any, updatedContent);
+        this.previewProvider.updateContent(previewUri, updatedContent);
       }
     } catch (error) {
       this.logger.error('Error updating preview', error as Error, {
@@ -363,7 +366,7 @@ export class PreviewEditorManager implements BaseManager {
       // 出错时回退到原始代码
       const configComment = this.generateConfigComment(newConfig);
       const updatedContent = `${configComment}\n\n${MACRO_PREVIEW_CODE}`;
-      this.previewProvider.updateContent(previewUri as any, updatedContent);
+      this.previewProvider.updateContent(previewUri, updatedContent);
     }
   }
 
@@ -383,6 +386,9 @@ ${configEntries || '//   (using base style defaults)'}
   }
 
   dispose(): void {
+    // Clean up all disposables
+    this.disposables.forEach(d => d.dispose());
+    this.disposables.length = 0;
     this.closePreview();
   }
 
@@ -397,22 +403,23 @@ ${configEntries || '//   (using base style defaults)'}
 
     this.context.eventBus?.on(
       'config-updated-for-preview',
-      (({ newConfig }: { newConfig: Record<string, unknown> }) => {
+      ((payload: unknown) => {
+        const { newConfig } = payload as { newConfig: Record<string, unknown> };
         // 这里可以添加基于新配置更新预览的逻辑
         // 目前先简单地重新应用宏观预览代码，未来可以集成clang-format格式化
         this.updatePreviewWithConfig(newConfig);
-      }) as any,
+      }),
     );
 
     // Listen for main editor close events - close preview accordingly
     this.context.eventBus?.on('editor-closed', async () => {
       await this.closePreview();
 
-      // 清理预览内容和状态
-      const state = this.context.stateManager?.getState() || {};
+      // 清理预览内容和犹态
+      const state = getStateOrDefault(this.context.stateManager?.getState());
       const { previewUri } = state;
       if (previewUri) {
-        this.previewProvider.clearContent(previewUri as any);
+        this.previewProvider.clearContent(previewUri);
         if (this.context.stateManager) {
           await this.context.stateManager.updateState(
             {
@@ -427,8 +434,9 @@ ${configEntries || '//   (using base style defaults)'}
     });
 
     // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
-    this.context.eventBus?.on('editor-visibility-changed', (async ({ isVisible }: { isVisible: boolean }) => {
-      const state = this.context.stateManager?.getState() || {};
+    this.context.eventBus?.on('editor-visibility-changed', async (payload: unknown) => {
+      const { isVisible } = payload as { isVisible: boolean };
+      const state = getStateOrDefault(this.context.stateManager?.getState());
       const { previewMode } = state;
       if (previewMode !== 'open') {
         return; // 只有在预览打开时才处理可见性变化
@@ -451,11 +459,11 @@ ${configEntries || '//   (using base style defaults)'}
           });
         }
       }
-    }) as any);
+    });
 
     // Listen for editor tab close events - distinguish manual vs programmatic close
-    vscode.window.tabGroups.onDidChangeTabs(async (event) => {
-      const state = (this.context.stateManager?.getState() as unknown) as VisualEditorState || {} as VisualEditorState;
+    const tabChangeListener = vscode.window.tabGroups.onDidChangeTabs(async (event: vscode.TabChangeEvent) => {
+      const state = getStateOrDefault(this.context.stateManager?.getState());
       if (!state.previewUri) {
         return;
       }
@@ -488,15 +496,16 @@ ${configEntries || '//   (using base style defaults)'}
             state.isVisible &&
             state.isInitialized &&
             state.previewMode === 'open';
+            
           this.logger.debug('是否应创建占位符', {
             module: 'PreviewManager',
             operation: 'onTabClosed',
-            shouldCreatePlaceholder
+            metadata: { shouldCreatePlaceholder }
           });
 
           // 清理预览内容（只有用户手动关闭时才清理）
           if (state.previewUri) {
-            this.previewProvider.clearContent(state.previewUri as any);
+            this.previewProvider.clearContent(state.previewUri);
           }
 
           // 更新状态 - 无论如何都要确保状态被设置为closed
@@ -526,6 +535,8 @@ ${configEntries || '//   (using base style defaults)'}
         }
       }
     });
+    // Track the disposable
+    this.disposables.push(tabChangeListener);
   }
 
   getStatus() {

@@ -39,7 +39,7 @@ export const CONFIG_TEMPLATES = {
       testDirs: ['tests', 'test'],
       searchPaths: ['.', '../include', '../src', './include', './src'],
       excludePaths: [
-        ...(DEFAULT_SWITCH_CONFIG.excludePaths || []), //  防止undefined
+        ...(DEFAULT_SWITCH_CONFIG.excludePaths || []),
         '**/CMakeFiles/**',
       ],
     } as SwitchConfig,
@@ -107,9 +107,25 @@ export class SwitchConfigService {
       ),
       excludePaths: config.get<string[]>(
         'switch.excludePaths',
-        DEFAULT_SWITCH_CONFIG.excludePaths ?? [],
+        DEFAULT_SWITCH_CONFIG.excludePaths,
       ),
     };
+  }
+
+  /**
+   * 更新多个配置键值对
+   * @private
+   */
+  private async updateConfigKeys(
+    updates: Record<string, unknown>,
+    target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace
+  ): Promise<void> {
+    const config = vscode.workspace.getConfiguration('clotho');
+    await Promise.all(
+      Object.entries(updates).map(([key, value]) =>
+        config.update(`switch.${key}`, value, target)
+      )
+    );
   }
 
   /**
@@ -120,33 +136,19 @@ export class SwitchConfigService {
   ): Promise<void> {
     const template = CONFIG_TEMPLATES[templateKey];
     if (!template) {
-      throw new Error(`Unknown template: ${templateKey}`);
+      const availableTemplates = Object.keys(CONFIG_TEMPLATES).join(', ');
+      throw new Error(
+        `Unknown configuration template: "${templateKey}". ` +
+        `Available templates: ${availableTemplates}`
+      );
     }
 
-    const config = vscode.workspace.getConfiguration('clotho');
-
-    await Promise.all([
-      config.update(
-        'switch.sourceDirs',
-        template.config.sourceDirs,
-        vscode.ConfigurationTarget.Workspace,
-      ),
-      config.update(
-        'switch.headerDirs',
-        template.config.headerDirs,
-        vscode.ConfigurationTarget.Workspace,
-      ),
-      config.update(
-        'switch.testDirs',
-        template.config.testDirs,
-        vscode.ConfigurationTarget.Workspace,
-      ),
-      config.update(
-        'switch.searchPaths',
-        template.config.searchPaths,
-        vscode.ConfigurationTarget.Workspace,
-      ),
-    ]);
+    await this.updateConfigKeys({
+      sourceDirs: template.config.sourceDirs,
+      headerDirs: template.config.headerDirs,
+      testDirs: template.config.testDirs,
+      searchPaths: template.config.searchPaths,
+    });
 
     vscode.window.showInformationMessage(
       `Applied ${template.name} configuration template.`,
