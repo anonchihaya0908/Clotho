@@ -18,6 +18,7 @@ import { errorHandler } from '../error-handler';
 import { SimpleCache as LRUCache } from './security';
 import { PERFORMANCE } from '../constants';
 import { IFileSystemService } from '../interfaces/services';
+import { getCacheManager, CacheCategory } from '../cache';
 
 /**
  * Unified File System Service implementation
@@ -48,6 +49,21 @@ export class FileSystemService implements IFileSystemService {
 
     // Smaller cache for file content (less frequently needed)
     this.fileContentCache = new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+
+    // Register caches with CacheManager
+    const cacheManager = getCacheManager();
+    cacheManager.registerCache(
+      'fs:fileExists',
+      this.fileExistsCache,
+      CacheCategory.FileSystem,
+      'File existence check cache'
+    );
+    cacheManager.registerCache(
+      'fs:fileContent',
+      this.fileContentCache,
+      CacheCategory.FileSystem,
+      'File content cache'
+    );
 
     this.logger.info('FileSystemService initialized', {
       module: 'FileSystemService',

@@ -5,6 +5,7 @@
 
 import { SimpleCache as LRUCache } from './security';
 import { PERFORMANCE } from '../constants';
+import { getCacheManager, CacheCategory } from '../cache';
 
 /**
  * 防抖选项接口
@@ -25,10 +26,23 @@ export interface DebounceOptions {
  * 使用延迟初始化避免模块加载时的构造函数错误
  */
 let debouncedFunctionsCache: LRUCache<string, unknown> | undefined;
+let cachesRegistered = false;
 
 function getDebouncedFunctionsCache(): LRUCache<string, unknown> {
   if (!debouncedFunctionsCache) {
     debouncedFunctionsCache = new LRUCache<string, unknown>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+    
+    // Register with CacheManager
+    if (!cachesRegistered) {
+      const cacheManager = getCacheManager();
+      cacheManager.registerCache(
+        'perf:debouncedFunctions',
+        debouncedFunctionsCache,
+        CacheCategory.Function,
+        'Debounced functions cache'
+      );
+      cachesRegistered = true;
+    }
   }
   return debouncedFunctionsCache;
 }

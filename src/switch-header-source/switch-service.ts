@@ -22,6 +22,7 @@ import {
   FileSystemService,
 } from '../common/utils';
 import { ISwitchService } from '../common/interfaces/services';
+import { getCacheManager, CacheCategory } from '../common/cache';
 
 import { SwitchConfigService } from './config-manager';
 
@@ -45,10 +46,12 @@ export class SwitchService implements ISwitchService {
   private static _regexCache: LRUCache<string, RegExp> | undefined;
   private static _searchResultsCache: LRUCache<string, SearchResult> | undefined;
   private static _pathNormalizeCache: LRUCache<string, string> | undefined;
+  private static _cachesRegistered = false;
 
   private static get regexCache(): LRUCache<string, RegExp> {
     if (!this._regexCache) {
       this._regexCache = new LRUCache<string, RegExp>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+      this.registerStaticCaches();
     }
     return this._regexCache;
   }
@@ -56,6 +59,7 @@ export class SwitchService implements ISwitchService {
   private static get searchResultsCache(): LRUCache<string, SearchResult> {
     if (!this._searchResultsCache) {
       this._searchResultsCache = new LRUCache<string, SearchResult>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+      this.registerStaticCaches();
     }
     return this._searchResultsCache;
   }
@@ -63,8 +67,49 @@ export class SwitchService implements ISwitchService {
   private static get pathNormalizeCache(): LRUCache<string, string> {
     if (!this._pathNormalizeCache) {
       this._pathNormalizeCache = new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+      this.registerStaticCaches();
     }
     return this._pathNormalizeCache;
+  }
+
+  /**
+   * Register static caches with CacheManager (called once)
+   */
+  private static registerStaticCaches(): void {
+    if (this._cachesRegistered) {
+      return;
+    }
+
+    const cacheManager = getCacheManager();
+    
+    if (this._regexCache) {
+      cacheManager.registerCache(
+        'switch:regex',
+        this._regexCache,
+        CacheCategory.Regex,
+        'Regex pattern cache for file switching'
+      );
+    }
+    
+    if (this._searchResultsCache) {
+      cacheManager.registerCache(
+        'switch:searchResults',
+        this._searchResultsCache,
+        CacheCategory.Search,
+        'Search results cache for file switching'
+      );
+    }
+    
+    if (this._pathNormalizeCache) {
+      cacheManager.registerCache(
+        'switch:pathNormalize',
+        this._pathNormalizeCache,
+        CacheCategory.Path,
+        'Path normalization cache'
+      );
+    }
+
+    this._cachesRegistered = true;
   }
 
   private readonly logger = createModuleLogger('SwitchService');
