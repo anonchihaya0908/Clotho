@@ -71,3 +71,5 @@ cursor.md
 *.h
 *.hpp
 *.c
+
+.windsurf
