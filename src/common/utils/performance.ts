@@ -3,7 +3,7 @@
  * 提供防抖、节流和延迟执行的统一实现
  */
 
-import { LRUCache } from '.';
+import { SimpleCache as LRUCache } from './security';
 import { PERFORMANCE } from '../constants';
 
 /**
@@ -22,8 +22,16 @@ export interface DebounceOptions {
 
 /**
  * 防抖函数缓存，避免重复创建
+ * 使用延迟初始化避免模块加载时的构造函数错误
  */
-const debouncedFunctionsCache = new LRUCache<string, unknown>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+let debouncedFunctionsCache: LRUCache<string, unknown> | undefined;
+
+function getDebouncedFunctionsCache(): LRUCache<string, unknown> {
+  if (!debouncedFunctionsCache) {
+    debouncedFunctionsCache = new LRUCache<string, unknown>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+  }
+  return debouncedFunctionsCache;
+}
 
 /**
  *  增强版防抖函数 - 支持更多选项和缓存优化
@@ -155,13 +163,14 @@ export function createCachedDebounce<T extends (...args: readonly unknown[]) => 
   func: T,
   options: number | DebounceOptions,
 ): (...args: Parameters<T>) => void {
-  const cached = debouncedFunctionsCache.get(key);
+  const cache = getDebouncedFunctionsCache();
+  const cached = cache.get(key);
   if (cached) {
     return cached as (...args: Parameters<T>) => void;
   }
 
   const debouncedFunc = debounce(func, options);
-  debouncedFunctionsCache.set(key, debouncedFunc);
+  cache.set(key, debouncedFunc);
   return debouncedFunc;
 }
 
@@ -196,5 +205,7 @@ export function createCancelableDelay(ms: number): { promise: Promise<void>; can
  * 清理防抖函数缓存
  */
 export function clearDebounceCache(): void {
-  debouncedFunctionsCache.clear();
+  if (debouncedFunctionsCache) {
+    debouncedFunctionsCache.clear();
+  }
 }

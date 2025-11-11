@@ -27,6 +27,7 @@ import {
 import { SwitchConfigService } from '../../switch-header-source/config-manager';
 import { ClangFormatEditorCoordinator } from '../../visual-editor';
 import { ClangFormatGuideService } from '../../visual-editor/clang-format/guide-service';
+import { FileSystemService } from '../utils/file-system-service';
 
 // ===============================
 // Service Map Definition
@@ -37,6 +38,9 @@ import { ClangFormatGuideService } from '../../visual-editor/clang-format/guide-
  * This is the single source of truth for service types.
  */
 export interface ServiceMap {
+  // File System Service
+  fileSystemService: FileSystemService;
+
   // Pairing Rule Manager
   pairingRuleService: PairingRuleService;
   pairingRuleUI: PairingRuleUI;
@@ -116,6 +120,9 @@ class ServiceMapExtractor {
    * This is populated at build time to avoid hardcoding.
    */
   private static readonly allServiceNames: ServiceName[] = [
+    // File System Service
+    'fileSystemService',
+
     // Pairing Rule Manager
     'pairingRuleService',
     'pairingRuleUI',

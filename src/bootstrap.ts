@@ -36,6 +36,7 @@ import { ClangFormatEditorCoordinator } from './visual-editor/clang-format/coord
 
 import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
 import { ClangFormatPreviewProvider } from './visual-editor/clang-format/preview-provider';
+import { FileSystemService } from './common/utils/file-system-service';
 
 export let serviceContainer: ServiceContainer;
 
@@ -104,6 +105,12 @@ export async function bootstrap(
  * Dependencies are resolved by calling `container.get()` for the required services.
  */
 function registerServices(context: vscode.ExtensionContext): void {
+  // File System Service (singleton - shared across all services)
+  serviceContainer.register(
+    'fileSystemService',
+    () => FileSystemService.getInstance(),
+  );
+
   // Pairing Rule Manager
   serviceContainer.register(
     'pairingRuleService',
@@ -124,7 +131,10 @@ function registerServices(context: vscode.ExtensionContext): void {
   // Create Source/Header Pair
   serviceContainer.register(
     'pairCreatorService',
-    (container) => new PairCreatorService(container.get('pairingRuleService')),
+    (container) => new PairCreatorService(
+      container.get('pairingRuleService'),
+      container.get('fileSystemService'),
+    ),
   );
   serviceContainer.register(
     'pairCreatorUI',
@@ -159,7 +169,10 @@ function registerServices(context: vscode.ExtensionContext): void {
     () => new SwitchConfigService());
 
   serviceContainer.register('switchService',
-    (container) => new SwitchService(container.get('switchConfigService')));
+    (container) => new SwitchService(
+      container.get('switchConfigService'),
+      container.get('fileSystemService'),
+    ));
 
   serviceContainer.register('switchUI',
     () => new SwitchUI());

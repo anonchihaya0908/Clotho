@@ -21,6 +21,9 @@ export * from './path';
 // File system utilities
 export * from './file-system';
 
+// File system service (unified file operations)
+export * from './file-system-service';
+
 // Configuration utilities
 export * from './config';
 

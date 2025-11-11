@@ -16,9 +16,10 @@ import {
 import { errorHandler } from '../common/error-handler';
 import { createModuleLogger } from '../common/logger/unified-logger';
 import { SearchResult } from '../common/types/core';
+import { SimpleCache as LRUCache } from '../common/utils/security';
 import {
-  LRUCache,
   isHeaderFile,
+  FileSystemService,
 } from '../common/utils';
 
 import { SwitchConfigService } from './config-manager';
@@ -39,22 +40,43 @@ export class SwitchService {
   // Performance Optimization Caches (Shared across all instances)
   // ===============================
 
-  private static readonly regexCache = new LRUCache<string, RegExp>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
-  private static readonly fileExistsCache = new LRUCache<string, boolean>(PERFORMANCE.LRU_CACHE_MAX_SIZE * 2);
-  private static readonly searchResultsCache = new LRUCache<string, SearchResult>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
-  private static readonly pathNormalizeCache = new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+  // Lazy initialization to avoid module loading issues
+  private static _regexCache: LRUCache<string, RegExp> | undefined;
+  private static _searchResultsCache: LRUCache<string, SearchResult> | undefined;
+  private static _pathNormalizeCache: LRUCache<string, string> | undefined;
+
+  private static get regexCache(): LRUCache<string, RegExp> {
+    if (!this._regexCache) {
+      this._regexCache = new LRUCache<string, RegExp>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+    }
+    return this._regexCache;
+  }
+
+  private static get searchResultsCache(): LRUCache<string, SearchResult> {
+    if (!this._searchResultsCache) {
+      this._searchResultsCache = new LRUCache<string, SearchResult>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+    }
+    return this._searchResultsCache;
+  }
+
+  private static get pathNormalizeCache(): LRUCache<string, string> {
+    if (!this._pathNormalizeCache) {
+      this._pathNormalizeCache = new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+    }
+    return this._pathNormalizeCache;
+  }
 
   private readonly logger = createModuleLogger('SwitchService');
   private configService: SwitchConfigService;
+  private fileSystemService: FileSystemService;
 
-  // Cache configuration constants
-  // File cache TTL removed as it's not currently used
-  // Search cache TTL removed as it's not currently used
-
-  constructor(configService?: SwitchConfigService) {
+  constructor(
+    configService?: SwitchConfigService,
+    fileSystemService?: FileSystemService,
+  ) {
     // Allow dependency injection for testing
     this.configService = configService ?? new SwitchConfigService();
-
+    this.fileSystemService = fileSystemService ?? FileSystemService.getInstance();
   }
 
   /**
@@ -71,26 +93,6 @@ export class SwitchService {
     return regex;
   }
 
-  /**
-   * 缓存文件存在性检查，避免重复的文件系统调用
-   */
-  private async checkFileExistsCached(uri: vscode.Uri): Promise<boolean> {
-    const key = uri.fsPath;
-    const cached = SwitchService.fileExistsCache.get(key);
-
-    if (cached !== undefined) {
-      return cached;
-    }
-
-    try {
-      await vscode.workspace.fs.stat(uri);
-      SwitchService.fileExistsCache.set(key, true);
-      return true;
-    } catch {
-      SwitchService.fileExistsCache.set(key, false);
-      return false;
-    }
-  }
 
   /**
    * 生成搜索缓存键
@@ -114,19 +116,6 @@ export class SwitchService {
   }
 
   /**
-   *  批量文件存在性检查，优化多文件并发检查
-   */
-  private async checkMultipleFilesExist(uris: vscode.Uri[]): Promise<vscode.Uri[]> {
-    const promises = uris.map(async (uri) => {
-      const exists = await this.checkFileExistsCached(uri);
-      return exists ? uri : null;
-    });
-
-    const results = await Promise.all(promises);
-    return results.filter((uri): uri is vscode.Uri => uri !== null);
-  }
-
-  /**
    *  生成候选文件路径，避免重复的路径构建
    */
   private generateCandidatePaths(directory: string, baseName: string, extensions: string[]): vscode.Uri[] {
@@ -137,10 +126,16 @@ export class SwitchService {
    * 清除所有缓存 - 用于强制刷新
    */
   public clearCache(): void {
-    SwitchService.regexCache.clear();
-    SwitchService.fileExistsCache.clear();
-    SwitchService.searchResultsCache.clear();
-    SwitchService.pathNormalizeCache.clear();
+    if (SwitchService._regexCache) {
+      SwitchService._regexCache.clear();
+    }
+    if (SwitchService._searchResultsCache) {
+      SwitchService._searchResultsCache.clear();
+    }
+    if (SwitchService._pathNormalizeCache) {
+      SwitchService._pathNormalizeCache.clear();
+    }
+    this.fileSystemService.clearCache();
   }
 
   // ===============================
@@ -411,7 +406,7 @@ export class SwitchService {
     const candidateUris = this.generateCandidatePaths(directory, baseName, targetExtensions);
 
     // 并行检查所有文件存在性
-    const existingFiles = await this.checkMultipleFilesExist(candidateUris);
+    const existingFiles = await this.fileSystemService.checkMultipleFiles(candidateUris);
 
     return { files: existingFiles, method: 'same-directory' };
   }
@@ -580,8 +575,8 @@ export class SwitchService {
           );
           const candidateUri = vscode.Uri.file(candidatePath);
 
-          //  使用缓存的文件存在性检查
-          const exists = await this.checkFileExistsCached(candidateUri);
+          //  使用统一的文件系统服务检查
+          const exists = await this.fileSystemService.fileExists(candidateUri);
           if (exists) {
             files.push(candidateUri);
           }

@@ -12,9 +12,9 @@ import * as vscode from 'vscode';
 
 import { PairingRule, PairingRuleService } from '../pairing-rule-manager';
 import { errorHandler } from '../common/error-handler';
-import { toHeaderGuardCase, LRUCache } from '../common/utils';
+import { toHeaderGuardCase, FileSystemService } from '../common/utils';
 import { Language } from '../common/types';
-import { DEFAULT_PLACEHOLDERS, PERFORMANCE } from '../common/constants';
+import { DEFAULT_PLACEHOLDERS } from '../common/constants';
 
 import {
   FILE_TEMPLATES,
@@ -25,18 +25,16 @@ import {
 
 // Service Layer - Core business logic
 export class PairCreatorService {
-  // Use LRU cache to optimize file status checks and avoid memory leaks.
-
-  private static readonly fileStatCache = new LRUCache<string, boolean>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
-  // Cache TTL removed as it's not currently used
-
   // Definitive file extensions for fast lookup
   private static readonly DEFINITIVE_EXTENSIONS = {
     c: new Set(['.c']),
     cpp: new Set(['.cpp', '.cc', '.cxx', '.hh', '.hpp', '.hxx']),
   } as const;
 
-  constructor(private readonly pairingRuleService: PairingRuleService) { }
+  constructor(
+    private readonly pairingRuleService: PairingRuleService,
+    private readonly fileSystemService: FileSystemService,
+  ) { }
 
   /**
    * Creates file paths for header and source files
@@ -60,25 +58,6 @@ export class PairCreatorService {
     };
   }
 
-  // Optimized file existence checks, using LRU cache to avoid repeated file system calls.
-
-  private static async fileExists(filePath: string): Promise<boolean> {
-    // 检查LRU缓存
-    const cached = this.fileStatCache.get(filePath);
-    if (cached !== undefined) {
-      return cached;
-    }
-
-    try {
-      // 执行文件系统调用
-      await vscode.workspace.fs.stat(vscode.Uri.file(filePath));
-      this.fileStatCache.set(filePath, true);
-      return true;
-    } catch {
-      this.fileStatCache.set(filePath, false);
-      return false;
-    }
-  }
 
   // Detects programming language from VS Code editor context
   // ARCHITECTURE NOTE: This method accesses VS Code APIs but belongs in service
@@ -169,18 +148,18 @@ export class PairCreatorService {
     // Check for C companion file first (less common, check first for early
     // exit)
     const cFile = path.join(dirPath, `${baseName}.c`);
-    if (await PairCreatorService.fileExists(cFile)) {
+    if (await this.fileSystemService.fileExists(vscode.Uri.file(cFile))) {
       return { language: 'c', uncertain: false };
     }
 
     // Check for C++ companion files in parallel
     const cppExtensions = ['.cpp', '.cc', '.cxx'];
-    const cppChecks = cppExtensions.map((ext) =>
-      PairCreatorService.fileExists(path.join(dirPath, `${baseName}${ext}`)),
+    const cppFiles = cppExtensions.map((ext) =>
+      vscode.Uri.file(path.join(dirPath, `${baseName}${ext}`))
     );
+    const existingCppFiles = await this.fileSystemService.checkMultipleFiles(cppFiles);
 
-    const results = await Promise.all(cppChecks);
-    if (results.some((exists: boolean) => exists)) {
+    if (existingCppFiles.length > 0) {
       return { language: 'cpp', uncertain: false };
     }
 
@@ -411,13 +390,13 @@ export class PairCreatorService {
     const baseName = path.basename(filePath, path.extname(filePath));
     const extensions = language === 'c' ? ['.c'] : ['.cpp', '.cc', '.cxx'];
 
-    const checks = extensions.map((ext) =>
-      PairCreatorService.fileExists(path.join(dirPath, `${baseName}${ext}`)),
+    const files = extensions.map((ext) =>
+      vscode.Uri.file(path.join(dirPath, `${baseName}${ext}`))
     );
 
     try {
-      const results = await Promise.all(checks);
-      return !results.some((exists: boolean) => exists); // Show warning if NO corresponding files found
+      const existingFiles = await this.fileSystemService.checkMultipleFiles(files);
+      return existingFiles.length === 0; // Show warning if NO corresponding files found
     } catch {
       return true; // Show warning if can't check
     }
