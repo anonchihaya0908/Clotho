@@ -17,7 +17,8 @@ export type SearchMethod =
     | 'same-directory'
     | 'src-include'
     | 'parallel-tests'
-    | 'global-search';
+    | 'global-search'
+    | 'none'; // No strategy found files
 
 // ===============================
 // Base Configuration Interface

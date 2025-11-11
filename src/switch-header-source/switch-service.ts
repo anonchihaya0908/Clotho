@@ -1,8 +1,13 @@
 /**
- * Switch Service Layer
+ * Switch Service Layer (Refactored with Strategy Pattern)
  *
  * This module provides the core switching logic without any UI dependencies.
- * It implements the hybrid clangd + heuristic approach for finding partner files.
+ * It implements a hybrid clangd + heuristic approach using the Strategy Pattern.
+ * 
+ * Architecture:
+ * - SearchStrategyManager: Manages and executes search strategies
+ * - PerformanceMonitor: Tracks metrics and performance
+ * - Strategies: Individual search algorithms (same-dir, src/include, tests, global)
  */
 
 import * as path from 'path';
@@ -13,7 +18,6 @@ import {
   SOURCE_EXTENSIONS,
   TEST_PATTERNS,
 } from '../common/constants';
-import { errorHandler } from '../common/error-handler';
 import { createModuleLogger } from '../common/logger/unified-logger';
 import { SearchResult } from '../common/types/core';
 import { SimpleCache as LRUCache } from '../common/utils/security';
@@ -25,36 +29,27 @@ import { ISwitchService, IFileSystemService } from '../common/interfaces/service
 import { getCacheManager, CacheCategory } from '../common/cache';
 
 import { SwitchConfigService } from './config-manager';
-
-// ===============================
-// Interfaces and Type Definitions
-// ===============================
-
-// SearchResult and SearchMethod are now imported from core types
+import { 
+  SearchStrategyManager,
+  SearchContext,
+  SameDirectoryStrategy,
+  SrcIncludeStrategy,
+  TestsStrategy,
+  GlobalSearchStrategy,
+} from './strategies';
+import { PerformanceMonitor } from './performance-monitor';
 
 /**
  * Core service class for switch header/source functionality.
- * Provides pure logic without any UI dependencies.
- * Uses instance-based pattern for consistency with other modules and better testability.
+ * Refactored to use Strategy Pattern for cleaner, more maintainable code.
  */
 export class SwitchService implements ISwitchService {
   // ===============================
-  // Performance Optimization Caches (Shared across all instances)
+  // Static Caches (Shared across all instances)
   // ===============================
 
-  // Lazy initialization to avoid module loading issues
-  private static _regexCache: LRUCache<string, RegExp> | undefined;
   private static _searchResultsCache: LRUCache<string, SearchResult> | undefined;
-  private static _pathNormalizeCache: LRUCache<string, string> | undefined;
   private static _cachesRegistered = false;
-
-  private static get regexCache(): LRUCache<string, RegExp> {
-    if (!this._regexCache) {
-      this._regexCache = new LRUCache<string, RegExp>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
-      this.registerStaticCaches();
-    }
-    return this._regexCache;
-  }
 
   private static get searchResultsCache(): LRUCache<string, SearchResult> {
     if (!this._searchResultsCache) {
@@ -62,14 +57,6 @@ export class SwitchService implements ISwitchService {
       this.registerStaticCaches();
     }
     return this._searchResultsCache;
-  }
-
-  private static get pathNormalizeCache(): LRUCache<string, string> {
-    if (!this._pathNormalizeCache) {
-      this._pathNormalizeCache = new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
-      this.registerStaticCaches();
-    }
-    return this._pathNormalizeCache;
   }
 
   /**
@@ -82,15 +69,6 @@ export class SwitchService implements ISwitchService {
 
     const cacheManager = getCacheManager();
 
-    if (this._regexCache) {
-      cacheManager.registerCache(
-        'switch:regex',
-        this._regexCache,
-        CacheCategory.Regex,
-        'Regex pattern cache for file switching'
-      );
-    }
-
     if (this._searchResultsCache) {
       cacheManager.registerCache(
         'switch:searchResults',
@@ -100,21 +78,18 @@ export class SwitchService implements ISwitchService {
       );
     }
 
-    if (this._pathNormalizeCache) {
-      cacheManager.registerCache(
-        'switch:pathNormalize',
-        this._pathNormalizeCache,
-        CacheCategory.Path,
-        'Path normalization cache'
-      );
-    }
-
     this._cachesRegistered = true;
   }
 
+  // ===============================
+  // Instance Properties
+  // ===============================
+
   private readonly logger = createModuleLogger('SwitchService');
-  private configService: SwitchConfigService;
-  private fileSystemService: IFileSystemService;
+  private readonly configService: SwitchConfigService;
+  private readonly fileSystemService: IFileSystemService;
+  private readonly strategyManager: SearchStrategyManager;
+  private readonly performanceMonitor: PerformanceMonitor;
 
   constructor(
     configService?: SwitchConfigService,
@@ -123,65 +98,62 @@ export class SwitchService implements ISwitchService {
     // Allow dependency injection for testing
     this.configService = configService ?? new SwitchConfigService();
     this.fileSystemService = fileSystemService ?? FileSystemService.getInstance();
+    
+    // Initialize strategy manager
+    this.strategyManager = new SearchStrategyManager();
+    this.registerStrategies();
+    
+    // Initialize performance monitor
+    this.performanceMonitor = new PerformanceMonitor();
+    
+    this.logger.info('SwitchService initialized with Strategy Pattern', {
+      module: 'SwitchService',
+      operation: 'constructor',
+    });
   }
 
   /**
-   * Gets a cached regex or creates and caches a new one.
+   * Registers all search strategies in priority order
    */
-  private getCachedRegex(pattern: string): RegExp {
-    const cached = SwitchService.regexCache.get(pattern);
-    if (cached) {
-      return cached;
-    }
-
-    const regex = new RegExp(pattern);
-    SwitchService.regexCache.set(pattern, regex);
-    return regex;
+  private registerStrategies(): void {
+    this.strategyManager.registerStrategies([
+      new SameDirectoryStrategy(),
+      new SrcIncludeStrategy(),
+      new TestsStrategy(),
+      new GlobalSearchStrategy(),
+    ]);
+    
+    this.logger.debug('Registered all search strategies', {
+      module: 'SwitchService',
+      operation: 'registerStrategies',
+      count: this.strategyManager.getStrategies().length,
+    });
   }
 
+  // ===============================
+  // Cache Management
+  // ===============================
 
   /**
-   * 生成搜索缓存键
+   * Generates search cache key
    */
   private generateSearchCacheKey(currentFile: vscode.Uri, baseName: string, isHeader: boolean): string {
     return `${currentFile.fsPath}:${baseName}:${isHeader}`;
   }
 
   /**
-   *  优化的路径规范化，使用缓存避免重复计算
-   */
-  private getNormalizedPath(filePath: string): string {
-    const cached = SwitchService.pathNormalizeCache.get(filePath);
-    if (cached !== undefined) {
-      return cached;
-    }
-
-    const normalized = path.normalize(filePath).replace(/\\/g, '/');
-    SwitchService.pathNormalizeCache.set(filePath, normalized);
-    return normalized;
-  }
-
-  /**
-   *  生成候选文件路径，避免重复的路径构建
-   */
-  private generateCandidatePaths(directory: string, baseName: string, extensions: string[]): vscode.Uri[] {
-    return extensions.map(ext => vscode.Uri.file(path.join(directory, `${baseName}${ext}`)));
-  }
-
-  /**
-   * 清除所有缓存 - 用于强制刷新
+   * Clears all caches - used for manual refresh
    */
   public clearCache(): void {
-    if (SwitchService._regexCache) {
-      SwitchService._regexCache.clear();
-    }
     if (SwitchService._searchResultsCache) {
       SwitchService._searchResultsCache.clear();
     }
-    if (SwitchService._pathNormalizeCache) {
-      SwitchService._pathNormalizeCache.clear();
-    }
     this.fileSystemService.clearCache();
+    
+    this.logger.info('All caches cleared', {
+      module: 'SwitchService',
+      operation: 'clearCache',
+    });
   }
 
   // ===============================
@@ -190,41 +162,102 @@ export class SwitchService implements ISwitchService {
 
   /**
    * Finds partner files for the given file.
-   *  性能优化：添加搜索结果缓存，避免重复搜索
-   * Returns null if no files found, array of URIs if found.
+   * Uses caching and strategy pattern for optimal performance.
+   * 
+   * @param currentFile Current file URI
+   * @returns SearchResult with found files and method used, or null if not found
    */
   public async findPartnerFile(
     currentFile: vscode.Uri,
   ): Promise<SearchResult | null> {
+    const startTime = Date.now();
     const currentPath = currentFile.fsPath;
     const baseName = path.basename(currentPath, path.extname(currentPath));
     const isHeader = isHeaderFile(currentPath);
 
-    // 检查缓存的搜索结果
+    // Check cache first
     const cacheKey = this.generateSearchCacheKey(currentFile, baseName, isHeader);
     const cachedResult = SwitchService.searchResultsCache.get(cacheKey);
     if (cachedResult) {
+      const duration = Date.now() - startTime;
+      this.performanceMonitor.recordSearch(
+        cachedResult.method,
+        duration,
+        cachedResult.files.length > 0,
+        true // from cache
+      );
+      
+      this.logger.debug('Returned cached search result', {
+        module: 'SwitchService',
+        operation: 'findPartnerFile',
+        metadata: {
+          method: cachedResult.method,
+          filesFound: cachedResult.files.length,
+          duration: duration,
+          fromCache: true,
+        }
+      });
+      
       return cachedResult;
     }
 
     // Step 1: Try clangd LSP first (the "omniscient" mode)
     const clangdResult = await this.tryClangdSwitch(currentFile);
     if (clangdResult.files.length > 0) {
+      const duration = Date.now() - startTime;
       SwitchService.searchResultsCache.set(cacheKey, clangdResult);
+      this.performanceMonitor.recordSearch('clangd', duration, true, false);
       return clangdResult;
     }
 
-    // Step 2: Fallback to explorer mode (heuristic search)
-    const explorerResult = await this.tryExplorerMode(currentFile, baseName, isHeader);
-    if (explorerResult) {
-      SwitchService.searchResultsCache.set(cacheKey, explorerResult);
+    // Step 2: Use strategy manager for heuristic search
+    const targetExtensions = isHeader
+      ? [...SOURCE_EXTENSIONS]
+      : [...HEADER_EXTENSIONS];
+
+    const cleanedBaseName = this.cleanTestBaseName(baseName);
+
+    const context: SearchContext = {
+      currentFile,
+      baseName,
+      cleanedBaseName,
+      isHeader,
+      targetExtensions,
+      config: this.configService.getConfig(),
+      fileSystemService: this.fileSystemService,
+    };
+
+    const result = await this.strategyManager.search(context);
+    const duration = Date.now() - startTime;
+    
+    // Record performance metrics
+    this.performanceMonitor.recordSearch(
+      result.method,
+      duration,
+      result.files.length > 0,
+      false
+    );
+
+    // Cache the result
+    if (result.files.length > 0) {
+      SwitchService.searchResultsCache.set(cacheKey, result);
     }
-    return explorerResult;
+
+    this.logger.info('Search completed', {
+      module: 'SwitchService',
+      operation: 'findPartnerFile',
+      metadata: {
+        method: result.method,
+        filesFound: result.files.length,
+        duration: duration,
+      }
+    });
+
+    return result.files.length > 0 ? result : null;
   }
 
   /**
    * Checks if clangd extension is available and ready.
-   * This can be used by UI components to show status information.
    */
   public isClangdAvailable(): boolean {
     const clangdExtension = vscode.extensions.getExtension(
@@ -247,30 +280,50 @@ export class SwitchService implements ISwitchService {
    * Cleans test file basename (removes test prefixes/suffixes).
    */
   public cleanTestBaseName(baseName: string): string {
-    // Use centralized test patterns from constants
     for (const pattern of TEST_PATTERNS) {
       const match = baseName.match(pattern);
       if (match) {
-        return match[1] ?? ''; // Handle potential undefined
+        return match[1] ?? '';
       }
     }
-
     return baseName;
   }
 
+  /**
+   * Gets performance metrics
+   */
+  public getPerformanceMetrics() {
+    return this.performanceMonitor.getMetrics();
+  }
+
+  /**
+   * Gets performance report
+   */
+  public getPerformanceReport(): string {
+    return this.performanceMonitor.getReport();
+  }
+
+  /**
+   * Logs performance report
+   */
+  public logPerformanceReport(): void {
+    this.performanceMonitor.logReport();
+  }
+
+  /**
+   * Resets performance metrics
+   */
+  public resetPerformanceMetrics(): void {
+    this.performanceMonitor.reset();
+  }
+
   // ===============================
-  // Search Strategy: Clangd LSP
+  // clangd LSP Integration
   // ===============================
 
   /**
-   * Step 1: Attempts to use clangd LSP for precise file switching.
-   * Uses a safe approach that gracefully falls back to heuristics if clangd is unavailable.
-   *
-   * This implementation:
-   * - Checks if clangd extension is available and activated
-   * - Uses the official API instead of internal methods
-   * - Has comprehensive error handling
-   * - Never blocks or crashes the extension
+   * Attempts to use clangd LSP for precise file switching.
+   * This is the preferred method when available.
    */
   private async tryClangdSwitch(
     currentFile: vscode.Uri,
@@ -281,7 +334,7 @@ export class SwitchService implements ISwitchService {
         'llvm-vs-code-extensions.vscode-clangd',
       );
       if (!clangdExtension) {
-        this.logger.debug('clangd extension not found, using heuristic search', {
+        this.logger.debug('clangd extension not found', {
           module: 'SwitchService',
           operation: 'tryClangdSwitch',
         });
@@ -297,7 +350,7 @@ export class SwitchService implements ISwitchService {
             operation: 'tryClangdSwitch',
           });
         } catch {
-          this.logger.debug('Failed to activate clangd extension, using heuristic search', {
+          this.logger.debug('Failed to activate clangd extension', {
             module: 'SwitchService',
             operation: 'tryClangdSwitch',
           });
@@ -308,7 +361,7 @@ export class SwitchService implements ISwitchService {
       // Step 3: Check if the API is available
       const api = clangdExtension.exports;
       if (!api?.getClient) {
-        this.logger.debug('clangd API not available, using heuristic search', {
+        this.logger.debug('clangd API not available', {
           module: 'SwitchService',
           operation: 'tryClangdSwitch',
         });
@@ -318,8 +371,7 @@ export class SwitchService implements ISwitchService {
       // Step 4: Get the language client
       const client = api.getClient();
       if (!client || client.state !== 2) {
-        // 2 = Running state
-        this.logger.debug('clangd client not running, using heuristic search', {
+        this.logger.debug('clangd client not running', {
           module: 'SwitchService',
           operation: 'tryClangdSwitch',
         });
@@ -339,21 +391,18 @@ export class SwitchService implements ISwitchService {
 
       if (result && typeof result === 'string') {
         const targetUri = vscode.Uri.parse(result);
-        this.logger.debug(`clangd found partner file: ${targetUri.fsPath}`, {
-          module: 'SwitchService',
-          operation: 'tryClangdSwitch',
-        });
-
+        
         // Verify the file exists
         try {
           await vscode.workspace.fs.stat(targetUri);
-          this.logger.info('Successfully used clangd for precise file switching', {
+          this.logger.info('clangd found partner file', {
             module: 'SwitchService',
             operation: 'tryClangdSwitch',
+            targetFile: targetUri.fsPath,
           });
           return { files: [targetUri], method: 'clangd' };
         } catch {
-          this.logger.debug('clangd result file does not exist, using heuristic search', {
+          this.logger.debug('clangd result file does not exist', {
             module: 'SwitchService',
             operation: 'tryClangdSwitch',
           });
@@ -361,275 +410,18 @@ export class SwitchService implements ISwitchService {
         }
       }
 
-      this.logger.debug('clangd returned no result, using heuristic search', {
+      this.logger.debug('clangd returned no result', {
         module: 'SwitchService',
         operation: 'tryClangdSwitch',
       });
       return { files: [], method: 'clangd' };
     } catch (error) {
-      this.logger.debug('clangd integration failed, using heuristic search', {
+      this.logger.debug('clangd integration failed', {
         module: 'SwitchService',
         operation: 'tryClangdSwitch',
-        error,
+        error: error instanceof Error ? error.message : String(error),
       });
       return { files: [], method: 'clangd' };
     }
-  }
-
-  // ===============================
-  // Search Strategy: Heuristics (Explorer Mode)
-  // ===============================
-
-  /**
-   * Step 2: Tries multiple heuristic search strategies in order of priority.
-   */
-  private async tryExplorerMode(
-    currentFile: vscode.Uri,
-    baseName: string,
-    isHeader: boolean,
-  ): Promise<SearchResult> {
-    const currentPath = currentFile.fsPath;
-    const directory = path.dirname(currentPath);
-    const targetExtensions = isHeader
-      ? [...SOURCE_EXTENSIONS]
-      : [...HEADER_EXTENSIONS];
-
-    // Also try with cleaned basename for test files
-    const cleanedBaseName = this.cleanTestBaseName(baseName);
-    const baseNames =
-      baseName === cleanedBaseName ? [baseName] : [baseName, cleanedBaseName];
-
-    //  优化策略：并行执行搜索，返回第一个成功的结果
-    for (const name of baseNames) {
-      // 并行启动快速搜索策略，避免序列化延迟
-      const searchPromises = [
-        // Strategy 1: 同目录搜索 (最快，优先级最高)
-        this.searchSameDirectoryOptimized(directory, name, targetExtensions),
-
-        // Strategy 2: src/include结构搜索
-        this.searchSrcIncludeStructureOptimized(currentPath, name, targetExtensions),
-
-        // Strategy 3: 并行测试结构搜索
-        this.searchParallelTestsStructureOptimized(currentPath, name, targetExtensions),
-      ];
-
-      // 等待任意一个搜索成功
-      for (const searchPromise of searchPromises) {
-        const result = await searchPromise;
-        if (result.files.length > 0) {
-          return result;
-        }
-      }
-    }
-
-    // Strategy 4: Global workspace search (the last resort)
-    for (const name of baseNames) {
-      const globalSearchResult = await this.searchGlobal(
-        name,
-        targetExtensions,
-      );
-      if (globalSearchResult.files.length > 0) {
-        return globalSearchResult;
-      }
-    }
-
-    return { files: [], method: 'global-search' };
-  }
-
-  // ===============================
-  // Individual Search Strategies
-  // ===============================
-
-  /**
-   *  优化版本：同目录搜索，使用批量文件检查和路径生成优化
-   */
-  private async searchSameDirectoryOptimized(
-    directory: string,
-    baseName: string,
-    targetExtensions: string[],
-  ): Promise<SearchResult> {
-    // 批量生成候选路径
-    const candidateUris = this.generateCandidatePaths(directory, baseName, targetExtensions);
-
-    // 并行检查所有文件存在性
-    const existingFiles = await this.fileSystemService.checkMultipleFiles(candidateUris);
-
-    return { files: existingFiles, method: 'same-directory' };
-  }
-
-  /**
-   *  优化版本：src/include结构搜索，使用缓存的路径规范化
-   */
-  private async searchSrcIncludeStructureOptimized(
-    currentPath: string,
-    baseName: string,
-    targetExtensions: string[],
-  ): Promise<SearchResult> {
-    const files: vscode.Uri[] = [];
-    //  使用缓存的路径规范化
-    const normalizedPath = this.getNormalizedPath(currentPath);
-
-    const config = this.configService.getConfig();
-    const { sourceDirs, headerDirs } = config;
-
-    const patterns: Array<{
-      rootPath: string;
-      subPath: string;
-      targetDirs: string[];
-    }> = [];
-
-    // Check if current path contains any source directory
-    const sourceDirPattern = `(${sourceDirs.join('|')})`;
-    const srcRegex = this.getCachedRegex(
-      `^(.+?)\\/${sourceDirPattern}\\/(.*)$`,
-    );
-    const srcMatch = normalizedPath.match(srcRegex);
-    if (srcMatch) {
-      patterns.push({
-        rootPath: srcMatch[1] ?? '',
-        subPath: path.dirname(srcMatch[3] ?? ''),
-        targetDirs: headerDirs,
-      });
-    }
-
-    // Check if current path contains any header directory
-    const headerDirPattern = `(${headerDirs.join('|')})`;
-    const headerRegex = this.getCachedRegex(
-      `^(.+?)\\/${headerDirPattern}\\/(.*)$`,
-    );
-    const includeMatch = normalizedPath.match(headerRegex);
-    if (includeMatch) {
-      patterns.push({
-        rootPath: includeMatch[1] ?? '',
-        subPath: path.dirname(includeMatch[3] ?? ''),
-        targetDirs: sourceDirs,
-      });
-    }
-
-    // Use the extracted common search logic
-    const foundFiles = await this.findFilesAcrossDirs(
-      patterns,
-      baseName,
-      targetExtensions,
-    );
-    files.push(...foundFiles);
-
-    return { files, method: 'src-include' };
-  }
-
-  /**
-   *  优化版本：并行测试结构搜索，使用缓存的路径规范化
-   */
-  private async searchParallelTestsStructureOptimized(
-    currentPath: string,
-    baseName: string,
-    targetExtensions: string[],
-  ): Promise<SearchResult> {
-    const files: vscode.Uri[] = [];
-    //  使用缓存的路径规范化
-    const normalizedPath = this.getNormalizedPath(currentPath);
-
-    const config = this.configService.getConfig();
-    const { sourceDirs, headerDirs, testDirs } = config;
-
-    const patterns: Array<{
-      rootPath: string;
-      subPath: string;
-      targetDirs: string[];
-    }> = [];
-
-    // Check if current path is in a test directory
-    const testDirPattern = `(${testDirs.join('|')})`;
-    const testRegex = this.getCachedRegex(`^(.+?)\\/${testDirPattern}\\/(.*)$`);
-    const testsMatch = normalizedPath.match(testRegex);
-
-    if (testsMatch) {
-      patterns.push({
-        rootPath: testsMatch[1] ?? '',
-        subPath: path.dirname(testsMatch[3] ?? ''),
-        targetDirs: [...sourceDirs, ...headerDirs],
-      });
-
-      // Use the extracted common search logic
-      const foundFiles = await this.findFilesAcrossDirs(
-        patterns,
-        baseName,
-        targetExtensions,
-      );
-      files.push(...foundFiles);
-    }
-
-    return { files, method: 'parallel-tests' };
-  }
-
-  /**
-   * Strategy 4: Global workspace search - the last resort.
-   */
-  private async searchGlobal(
-    baseName: string,
-    targetExtensions: string[],
-  ): Promise<SearchResult> {
-    const config = this.configService.getConfig();
-    const extensionPattern = `{${targetExtensions.map((ext) => ext.substring(1)).join(',')}}`;
-    const searchPattern = `**/${baseName}.${extensionPattern}`;
-
-    try {
-      const foundFiles = await vscode.workspace.findFiles(
-        searchPattern,
-        `{${(config.excludePaths || []).join(',')}}`, //  防止undefined
-        20,
-      );
-      return { files: foundFiles, method: 'global-search' };
-    } catch (error) {
-      errorHandler.handle(error, {
-        module: 'SwitchService',
-        operation: 'searchGlobal',
-        showToUser: false, // This is a background search, so don't bother the user
-      });
-      return { files: [], method: 'global-search' };
-    }
-  }
-
-  // ===============================
-  // Helper Methods
-  // ===============================
-
-  /**
-   * Common logic for finding files across multiple directory patterns.
-   *  性能优化：使用缓存的文件存在性检查，减少重复的文件系统调用
-   * Reduces code duplication between different search strategies.
-   */
-  private async findFilesAcrossDirs(
-    patterns: Array<{
-      rootPath: string;
-      subPath: string;
-      targetDirs: string[];
-    }>,
-    baseName: string,
-    targetExtensions: string[],
-  ): Promise<vscode.Uri[]> {
-    const files: vscode.Uri[] = [];
-
-    for (const pattern of patterns) {
-      for (const targetDir of pattern.targetDirs) {
-        for (const ext of targetExtensions) {
-          const candidatePath = path.join(
-            pattern.rootPath,
-            targetDir,
-            pattern.subPath,
-            `${baseName}${ext}`,
-          );
-          const candidateUri = vscode.Uri.file(candidatePath);
-
-          //  使用统一的文件系统服务检查
-          const exists = await this.fileSystemService.fileExists(candidateUri);
-          if (exists) {
-            files.push(candidateUri);
-          }
-        }
-      }
-    }
-
-    return files;
   }
 }

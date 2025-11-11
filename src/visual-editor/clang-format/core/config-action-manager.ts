@@ -156,21 +156,27 @@ export class ConfigActionManager implements BaseManager {
         );
       }
     } catch (error: unknown) {
+      // Unified error handling through errorRecovery
       if (this.context.errorRecovery) {
         await this.context.errorRecovery.handleError(
           'config-load-failed',
           error as Error,
-          { file: fileUri.toString() },
-        );
-      }
-
-      if (!silent) {
-        // 只有非静默模式下才显示错误弹窗
-        vscode.window.showErrorMessage(
-          `Failed to read or parse configuration file: ${(error as Error).message || 'Unknown error'}`,
+          { 
+            file: fileUri.toString(),
+            silent: silent // Pass silent flag to control user notification
+          },
         );
       } else {
-        // 自动加载失败时仅记录日志，不打扰用户
+        // Fallback: only show error if errorRecovery is unavailable
+        if (!silent) {
+          vscode.window.showErrorMessage(
+            `Failed to read or parse configuration file: ${(error as Error).message || 'Unknown error'}`,
+          );
+        }
+      }
+      
+      // Always log for debugging, even in silent mode
+      if (silent) {
         this.logger.warn('Auto-load failed, using default configuration', {
           module: 'ConfigActionManager',
           operation: 'loadConfigFromFile',
@@ -201,16 +207,19 @@ export class ConfigActionManager implements BaseManager {
         `Configuration saved to ${vscode.workspace.asRelativePath(fileUri)}.`,
       );
     } catch (error: unknown) {
+      // Unified error handling through errorRecovery
       if (this.context.errorRecovery) {
         await this.context.errorRecovery.handleError(
           'config-save-failed',
           error as Error,
           { file: fileUri.toString() },
         );
+      } else {
+        // Fallback: only show error if errorRecovery is unavailable
+        vscode.window.showErrorMessage(
+          `Failed to save configuration file: ${(error as Error).message || 'Unknown error'}`,
+        );
       }
-      vscode.window.showErrorMessage(
-        `Failed to save configuration file: ${(error as Error).message || 'Unknown error'}`,
-      );
     }
   }
 
