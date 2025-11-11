@@ -19,6 +19,7 @@ import { SimpleCache as LRUCache } from './security';
 import { PERFORMANCE } from '../constants';
 import { IFileSystemService } from '../interfaces/services';
 import { getCacheManager, CacheCategory } from '../cache';
+import { normalizePathForCache } from './path';
 
 /**
  * Unified File System Service implementation
@@ -277,12 +278,12 @@ export class FileSystemService implements IFileSystemService {
 
   /**
    * Normalize file path for cache key
-   * Ensures consistent cache keys across different path formats
+   * Delegates to unified path utility
+   * 
+   * @deprecated Use normalizePathForCache from utils/path.ts directly
    */
   private normalizePathForCache(filePath: string): string {
-    // Convert to lowercase for case-insensitive file systems (Windows)
-    // Replace backslashes with forward slashes for consistency
-    return filePath.toLowerCase().replace(/\\/g, '/');
+    return normalizePathForCache(filePath);
   }
 
   /**
