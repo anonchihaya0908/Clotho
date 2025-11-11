@@ -25,7 +25,7 @@ export class PreviewEditorManager implements BaseManager {
 
   // Prevent concurrent creation - use Promise instead of boolean lock
   private creationPromise: Promise<vscode.TextEditor> | null = null;
-  
+
   // Disposables tracking for proper cleanup
   private readonly disposables: vscode.Disposable[] = [];
 
@@ -496,7 +496,7 @@ ${configEntries || '//   (using base style defaults)'}
             state.isVisible &&
             state.isInitialized &&
             state.previewMode === 'open';
-            
+
           this.logger.debug('是否应创建占位符', {
             module: 'PreviewManager',
             operation: 'onTabClosed',

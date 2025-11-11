@@ -1,10 +1,10 @@
 /**
  * Base Coordinator Abstract Class
  * ===============================
- * 
+ *
  * Provides common functionality for all coordinator classes:
  * - Disposable pattern implementation
- * - Dependency injection support  
+ * - Dependency injection support
  * - Integrated error handling
  * - Unified logging support
  * - Performance tracking

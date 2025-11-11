@@ -1,15 +1,15 @@
 /**
  * Service Interfaces
  * ==================
- * 
+ *
  * 定义所有核心服务的接口契约
- * 
+ *
  * 优点：
  * - 提高类型安全性
  * - 便于单元测试（可以创建 mock 实现）
  * - 明确服务的公共 API
  * - 支持依赖注入的接口编程
- * 
+ *
  * 设计原则：
  * - 接口只包含公共方法，不包含私有实现
  * - 参数和返回值类型明确
@@ -76,6 +76,25 @@ export interface IFileSystemService {
     fileExists: { size: number; maxSize: number; hitRate?: number };
     fileContent: { size: number; maxSize: number };
   };
+
+  /**
+   * 记录当前缓存统计信息到日志
+   * 用于监控缓存性能
+   */
+  logCacheStats(): void;
+
+  /**
+   * 使特定文件的缓存失效
+   * 当检测到外部文件变更时使用
+   * @param uri 文件 URI
+   */
+  invalidateFile(uri: vscode.Uri): void;
+
+  /**
+   * 清理服务资源
+   * 释放文件监听器和缓存
+   */
+  dispose(): void;
 }
 
 // ===============================

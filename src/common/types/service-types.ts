@@ -1,7 +1,7 @@
 /**
  * Service Type Definitions
  * ========================
- * 
+ *
  * Provides compile-time type safety for service registration and validation.
  * This eliminates the need for hardcoded service name lists by using
  * TypeScript's advanced type system.
@@ -134,7 +134,7 @@ class ServiceMapExtractor {
     'pairCoordinator',
     'headerGuardCoordinator',
 
-    // Switch Header/Source  
+    // Switch Header/Source
     'switchConfigService',
     'switchService',
     'switchUI',
@@ -277,21 +277,21 @@ export function createServiceGetter<T extends ServiceMap>(services: T) {
 export function generateServiceReport(registeredServices: string[]): string {
   const validation = validateServiceRegistration(registeredServices);
 
-  let report = `Service Registration Report\n`;
-  report += `============================\n`;
+  let report = 'Service Registration Report\n';
+  report += '============================\n';
   report += `Total Expected: ${validation.totalServices}\n`;
   report += `Registered: ${validation.registeredCount}\n`;
   report += `Status: ${validation.isValid ? 'VALID' : 'INVALID'}\n\n`;
 
   if (validation.missingServices.length > 0) {
-    report += `Missing Services:\n`;
+    report += 'Missing Services:\n';
     validation.missingServices.forEach(service => {
       report += `  - ${service}\n`;
     });
     report += '\n';
   }
 
-  report += `Registered Services:\n`;
+  report += 'Registered Services:\n';
   validation.registeredServices.forEach(service => {
     report += `  ✓ ${service}\n`;
   });

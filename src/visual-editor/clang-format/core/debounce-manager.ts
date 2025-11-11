@@ -299,7 +299,7 @@ export class DebounceManager {
     activeTimers: string[];
     activeLocks: string[];
     pendingQueues: string[];
-  } {
+    } {
     return {
       activeTimers: Array.from(this.timers.keys()),
       activeLocks: Array.from(this.locks),

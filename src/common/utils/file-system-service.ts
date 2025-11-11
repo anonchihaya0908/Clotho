@@ -1,10 +1,10 @@
 /**
  * Unified File System Service
  * ===========================
- * 
+ *
  * Centralized file system operations with caching and batch processing.
  * Consolidates file existence checks and file operations from multiple services.
- * 
+ *
  * Benefits:
  * - Reduces code duplication across PairCreatorService and SwitchService
  * - Provides consistent caching strategy
@@ -25,7 +25,7 @@ import { normalizePathForCache } from './path';
  * Unified File System Service implementation
  * Singleton pattern for consistent cache management
  */
-export class FileSystemService implements IFileSystemService {
+export class FileSystemService implements IFileSystemService, vscode.Disposable {
   private static instance: FileSystemService | null = null;
 
   // Cache for file existence checks
@@ -40,6 +40,10 @@ export class FileSystemService implements IFileSystemService {
   // Cache hit tracking
   private fileExistsCacheHits = 0;
   private fileExistsCacheMisses = 0;
+
+  // File system watcher for automatic cache invalidation
+  private fileWatcher: vscode.FileSystemWatcher | null = null;
+  private disposables: vscode.Disposable[] = [];
 
   /**
    * Private constructor for singleton pattern
@@ -66,11 +70,104 @@ export class FileSystemService implements IFileSystemService {
       'File content cache'
     );
 
+    // Set up file system watcher for automatic cache invalidation
+    this.setupFileWatcher();
+
     this.logger.info('FileSystemService initialized', {
       module: 'FileSystemService',
       operation: 'constructor',
       cacheSize: PERFORMANCE.LRU_CACHE_MAX_SIZE,
     });
+  }
+
+  /**
+   * Set up file system watcher for automatic cache invalidation
+   * Monitors file changes and updates cache accordingly
+   */
+  private setupFileWatcher(): void {
+    try {
+      // Watch all files in workspace
+      this.fileWatcher = vscode.workspace.createFileSystemWatcher('**/*');
+
+      // File created: mark as existing in cache
+      this.fileWatcher.onDidCreate((uri) => {
+        const key = this.normalizePathForCache(uri.fsPath);
+        this.fileExistsCache.set(key, true);
+        this.logger.debug('File created, updating cache', {
+          module: 'FileSystemService',
+          operation: 'onDidCreate',
+          path: uri.fsPath,
+        });
+      });
+
+      // File deleted: mark as non-existing in cache
+      this.fileWatcher.onDidDelete((uri) => {
+        const key = this.normalizePathForCache(uri.fsPath);
+        this.fileExistsCache.set(key, false);
+        this.fileContentCache.delete(key);
+        this.logger.debug('File deleted, invalidating cache', {
+          module: 'FileSystemService',
+          operation: 'onDidDelete',
+          path: uri.fsPath,
+        });
+      });
+
+      // File changed: invalidate content cache but keep existence
+      this.fileWatcher.onDidChange((uri) => {
+        const key = this.normalizePathForCache(uri.fsPath);
+        this.fileContentCache.delete(key);
+        this.logger.debug('File changed, invalidating content cache', {
+          module: 'FileSystemService',
+          operation: 'onDidChange',
+          path: uri.fsPath,
+        });
+      });
+
+      this.disposables.push(this.fileWatcher);
+
+      this.logger.info('File system watcher initialized successfully', {
+        module: 'FileSystemService',
+        operation: 'setupFileWatcher',
+      });
+    } catch (error) {
+      errorHandler.handle(error, {
+        module: 'FileSystemService',
+        operation: 'setupFileWatcher',
+        showToUser: false,
+        logLevel: 'warn',
+      });
+    }
+  }
+
+  /**
+   * Dispose of the service and clean up resources
+   * Implements vscode.Disposable interface
+   */
+  public dispose(): void {
+    this.logger.info('Disposing FileSystemService', {
+      module: 'FileSystemService',
+      operation: 'dispose',
+      disposableCount: this.disposables.length,
+    });
+
+    // Dispose all tracked resources
+    this.disposables.forEach((disposable) => {
+      try {
+        disposable.dispose();
+      } catch (error) {
+        this.logger.warn('Error disposing resource', {
+          module: 'FileSystemService',
+          operation: 'dispose',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
+
+    this.disposables = [];
+    this.fileWatcher = null;
+
+    // Clear caches
+    this.clearCache();
   }
 
   /**
@@ -85,10 +182,11 @@ export class FileSystemService implements IFileSystemService {
 
   /**
    * Reset singleton instance (useful for testing)
+   * Properly disposes of resources before resetting
    */
   public static resetInstance(): void {
     if (FileSystemService.instance) {
-      FileSystemService.instance.clearCache();
+      FileSystemService.instance.dispose();
       FileSystemService.instance = null;
     }
   }
@@ -239,6 +337,8 @@ export class FileSystemService implements IFileSystemService {
    * Clear all caches
    */
   public clearCache(): void {
+    const stats = this.getCacheStats();
+
     this.fileExistsCache.clear();
     this.fileContentCache.clear();
     this.fileExistsCacheHits = 0;
@@ -247,6 +347,38 @@ export class FileSystemService implements IFileSystemService {
     this.logger.info('Cleared all file system caches', {
       module: 'FileSystemService',
       operation: 'clearCache',
+      previousStats: {
+        fileExistsSize: stats.fileExists.size,
+        fileContentSize: stats.fileContent.size,
+        hitRate: stats.fileExists.hitRate,
+      },
+    });
+  }
+
+  /**
+   * Log current cache statistics
+   * Useful for monitoring cache performance
+   */
+  public logCacheStats(): void {
+    const stats = this.getCacheStats();
+    const detailedStats = this.getDetailedCacheInfo();
+
+    this.logger.info('File System Cache Statistics', {
+      module: 'FileSystemService',
+      operation: 'logCacheStats',
+      metadata: {
+        fileExists: {
+          size: stats.fileExists.size,
+          maxSize: stats.fileExists.maxSize,
+          hitRate: `${((stats.fileExists.hitRate || 0) * 100).toFixed(2)}%`,
+          hits: detailedStats.fileExists.hits,
+          misses: detailedStats.fileExists.misses,
+        },
+        fileContent: {
+          size: stats.fileContent.size,
+          maxSize: stats.fileContent.maxSize,
+        },
+      },
     });
   }
 
@@ -256,7 +388,7 @@ export class FileSystemService implements IFileSystemService {
   public getCacheStats(): {
     fileExists: { size: number; maxSize: number; hitRate?: number };
     fileContent: { size: number; maxSize: number };
-  } {
+    } {
     const totalRequests = this.fileExistsCacheHits + this.fileExistsCacheMisses;
     const hitRate = totalRequests > 0 ? this.fileExistsCacheHits / totalRequests : 0;
 
@@ -279,7 +411,7 @@ export class FileSystemService implements IFileSystemService {
   /**
    * Normalize file path for cache key
    * Delegates to unified path utility
-   * 
+   *
    * @deprecated Use normalizePathForCache from utils/path.ts directly
    */
   private normalizePathForCache(filePath: string): string {
@@ -302,7 +434,7 @@ export class FileSystemService implements IFileSystemService {
   public getDetailedCacheInfo(): {
     fileExists: { size: number; maxSize: number; hitRate?: number; hits: number; misses: number };
     fileContent: { size: number; maxSize: number };
-  } {
+    } {
     const stats = this.getCacheStats();
     return {
       fileExists: {

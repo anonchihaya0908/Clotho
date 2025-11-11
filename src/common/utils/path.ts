@@ -1,10 +1,10 @@
 /**
  * Path Utilities
  * ===============
- * 
+ *
  * 统一的路径处理工具集
  * 提供跨平台一致的路径操作
- * 
+ *
  * 重构记录：
  * - Phase 5: 统一了 FileSystemService 和 SwitchService 的路径规范化逻辑
  */
@@ -24,7 +24,7 @@ export function normalizePath(filePath: string): string {
 /**
  * 标准化路径用于缓存键
  * Windows 下转小写以支持不区分大小写的文件系统
- * 
+ *
  * @param filePath 文件路径
  * @param caseInsensitive 是否不区分大小写（默认 Windows 上为 true）
  */

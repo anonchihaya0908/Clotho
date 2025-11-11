@@ -31,7 +31,7 @@ let cachesRegistered = false;
 function getDebouncedFunctionsCache(): LRUCache<string, unknown> {
   if (!debouncedFunctionsCache) {
     debouncedFunctionsCache = new LRUCache<string, unknown>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
-    
+
     // Register with CacheManager
     if (!cachesRegistered) {
       const cacheManager = getCacheManager();

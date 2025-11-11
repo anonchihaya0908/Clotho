@@ -1,11 +1,11 @@
 /**
  * Cache Manager
  * =============
- * 
+ *
  * 统一管理所有缓存实例，提供集中的清理、统计和监控功能
- * 
+ *
  * 设计模式：单例 + 注册表模式
- * 
+ *
  * 优点：
  * - 集中管理所有缓存
  * - 统一清理接口
@@ -153,7 +153,7 @@ export class CacheManager {
    */
   public unregisterCache(name: string): boolean {
     const existed = this.caches.delete(name);
-    
+
     if (existed) {
       this.logger.debug(`Unregistered cache: ${name}`, {
         module: 'CacheManager',
@@ -161,7 +161,7 @@ export class CacheManager {
         name,
       });
     }
-    
+
     return existed;
   }
 
@@ -198,7 +198,7 @@ export class CacheManager {
    */
   public clearCachesByCategory(category: CacheCategory): number {
     let clearedCount = 0;
-    
+
     for (const registration of this.caches.values()) {
       if (registration.category === category) {
         registration.cache.clear();
@@ -221,7 +221,7 @@ export class CacheManager {
    */
   public clearAllCaches(): number {
     let clearedCount = 0;
-    
+
     for (const registration of this.caches.values()) {
       registration.cache.clear();
       clearedCount++;
@@ -247,7 +247,7 @@ export class CacheManager {
     }
 
     const stats = registration.cache.getStats();
-    
+
     return {
       name: registration.name,
       category: registration.category,
@@ -282,7 +282,7 @@ export class CacheManager {
    */
   public getGlobalStats(): GlobalCacheStats {
     const cacheStats = this.getAllCacheStats();
-    
+
     // 初始化按类别统计
     const byCategory: GlobalCacheStats['byCategory'] = {
       [CacheCategory.FileSystem]: { count: 0, entries: 0, capacity: 0 },
@@ -302,7 +302,7 @@ export class CacheManager {
       categoryStats.count++;
       categoryStats.entries += stats.size;
       categoryStats.capacity += stats.capacity;
-      
+
       totalEntries += stats.size;
       totalCapacity += stats.capacity;
     }
@@ -324,10 +324,10 @@ export class CacheManager {
     current: number;  // 当前使用（字节）
     maximum: number;  // 最大容量（字节）
     percentage: number;  // 使用百分比
-  } {
+    } {
     const stats = this.getGlobalStats();
     const AVG_ENTRY_SIZE = 1024; // 1KB per entry (rough estimate)
-    
+
     const current = stats.totalEntries * AVG_ENTRY_SIZE;
     const maximum = stats.totalCapacity * AVG_ENTRY_SIZE;
     const percentage = maximum > 0 ? (current / maximum) * 100 : 0;
@@ -371,11 +371,11 @@ export class CacheManager {
 
     // 详细缓存列表
     for (const cacheStats of globalStats.caches) {
-      const usage = cacheStats.capacity > 0 
+      const usage = cacheStats.capacity > 0
         ? ((cacheStats.size / cacheStats.capacity) * 100).toFixed(1)
         : '0.0';
-      
-      const hitRateStr = cacheStats.hitRate !== undefined 
+
+      const hitRateStr = cacheStats.hitRate !== undefined
         ? ` | Hit Rate: ${(cacheStats.hitRate * 100).toFixed(1)}%`
         : '';
 

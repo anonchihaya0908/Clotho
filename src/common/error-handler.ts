@@ -186,7 +186,7 @@ export class ErrorHandler {
     totalErrors: number;
     recentErrors: number;
     isRateLimited: boolean;
-  } {
+    } {
     return {
       totalErrors: ErrorHandler.errorCount,
       recentErrors: ErrorHandler.errorTimestamps.length,

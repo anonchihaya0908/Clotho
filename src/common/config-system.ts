@@ -1,7 +1,7 @@
 /**
  *  配置系统
  * 提供标准化的配置接口
- * 
+ *
  * 注意：本文件已清理未使用的接口和类
  * - 已删除：ConfigurableModule, TimerConfig, MonitorConfig（为已删除的 SimpleClangdMonitor 准备的）
  * - 已删除：ConfigValidator, ConfigFactory（从未被调用）
@@ -32,7 +32,7 @@ export interface EnhancedBaseConfig {
 /**
  *  UI配置接口
  * 为UI相关模块提供标准配置
- * 
+ *
  * 使用场景：
  * - Visual Editor (ClangFormat可视化编辑器)
  */
@@ -50,7 +50,7 @@ export interface UIConfig extends EnhancedBaseConfig {
 /**
  *  路径配置接口
  * 为需要文件/目录路径的模块提供标准配置
- * 
+ *
  * 使用场景：
  * - Switch Header/Source 配置
  * - 其他需要路径配置的功能
@@ -70,20 +70,20 @@ export interface PathConfig extends EnhancedBaseConfig {
 
 /**
  * 历史遗留说明：
- * 
+ *
  * 本文件曾包含以下已删除的组件：
- * 
+ *
  * 1. ConfigurableModule<TConfig> - 模块配置接口（从未被实现）
  * 2. TimerConfig - 定时器配置（为已删除的监控器准备的）
  * 3. MonitorConfig - 监控配置（为已删除的 SimpleClangdMonitor 准备的）
  * 4. ConfigValidator - 配置验证器类（从未被调用）
  * 5. ConfigFactory - 配置工厂类（从未被调用）
- * 
+ *
  * 如果将来需要配置验证功能，建议：
  * - 使用 Zod 或 Joi 等成熟的验证库
  * - 只在实际需要时添加验证逻辑
  * - 避免过度设计未使用的抽象层
- * 
+ *
  * 如果需要工厂模式创建配置，建议：
  * - 在实际使用的地方直接创建默认配置对象
  * - 使用 TypeScript 的默认参数语法

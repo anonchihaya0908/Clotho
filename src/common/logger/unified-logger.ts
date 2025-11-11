@@ -1,7 +1,7 @@
 /**
  * Unified Logger System
  * =====================
- * 
+ *
  * Combines the functionality of LoggerService and StructuredLogger
  * into a single, comprehensive logging solution that supports:
  * - Structured logging with metadata
@@ -144,7 +144,7 @@ export class UnifiedLogger {
    * Write log to VS Code output channel
    */
   private writeToOutputChannel(logObj: Record<string, unknown>): void {
-    if (!this.outputChannel) return;
+    if (!this.outputChannel) {return;}
 
     const timestamp = new Date().toISOString();
     const level = ((logObj['_meta'] as { logLevelName?: string })?.logLevelName || 'INFO').toUpperCase();
@@ -352,7 +352,7 @@ export class UnifiedLogger {
     fastestOperation: string;
     topErrors: { error: string; count: number }[];
     operationStats: PerformanceStats[];
-  } {
+    } {
     const stats = this.getPerformanceStats();
     const totalOperations = stats.reduce((sum, stat) => sum + stat.totalCalls, 0);
     const avgDuration = stats.reduce((sum, stat) => sum + stat.averageDuration, 0) / (stats.length || 1);

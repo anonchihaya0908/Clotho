@@ -43,7 +43,7 @@ class LRUNode<K, V> {
     public prev: LRUNode<K, V> | null = null,
     public next: LRUNode<K, V> | null = null
   ) { }
-  
+
   /**
    * 检查是否为哨兵节点
    */

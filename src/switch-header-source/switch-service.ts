@@ -81,7 +81,7 @@ export class SwitchService implements ISwitchService {
     }
 
     const cacheManager = getCacheManager();
-    
+
     if (this._regexCache) {
       cacheManager.registerCache(
         'switch:regex',
@@ -90,7 +90,7 @@ export class SwitchService implements ISwitchService {
         'Regex pattern cache for file switching'
       );
     }
-    
+
     if (this._searchResultsCache) {
       cacheManager.registerCache(
         'switch:searchResults',
@@ -99,7 +99,7 @@ export class SwitchService implements ISwitchService {
         'Search results cache for file switching'
       );
     }
-    
+
     if (this._pathNormalizeCache) {
       cacheManager.registerCache(
         'switch:pathNormalize',

@@ -221,8 +221,25 @@ export function cleanup(): void {
     operation: 'cleanup'
   });
 
+  // Clean up service container (disposes all registered services)
   if (serviceContainer) {
     serviceContainer.dispose();
+  }
+
+  // Clean up FileSystemService singleton
+  // This ensures file watchers and caches are properly disposed
+  try {
+    const fileSystemService = serviceContainer?.get('fileSystemService');
+    if (fileSystemService) {
+      fileSystemService.logCacheStats(); // Log final cache statistics
+      fileSystemService.dispose();
+    }
+  } catch (error) {
+    logger.warn('Error disposing FileSystemService', {
+      module: 'Bootstrap',
+      operation: 'cleanup',
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 
   // Logger cleanup is handled automatically by unified logger

@@ -80,7 +80,7 @@ export interface PanelManager {
  * ClangFormat面板管理器实现
  */
 export class ClangFormatPanelManager
-  implements PanelManager, vscode.Disposable {
+implements PanelManager, vscode.Disposable {
   private panels = new Map<string, vscode.WebviewPanel>();
   private panelStates = new Map<string, PanelState>();
   private disposables: vscode.Disposable[] = [];
@@ -354,7 +354,7 @@ export class ClangFormatPanelManager
     activePanels: number;
     visiblePanels: number;
     oldestPanel?: { id: string; age: number };
-  } {
+    } {
     const allPanels = this.getAllPanels();
     const totalPanels = allPanels.size;
     let activePanels = 0;
