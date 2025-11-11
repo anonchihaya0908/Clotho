@@ -10,24 +10,26 @@
 // SimpleClangdMonitor has been removed
 import {
   PairCoordinator,
-  PairCreatorService,
   PairCreatorUI,
 } from '../../create-source-header-pair';
 import { HeaderGuardCoordinator } from '../../create-source-header-pair/header-guard-coordinator';
 import {
   PairingRuleCoordinator,
-  PairingRuleService,
   PairingRuleUI,
 } from '../../pairing-rule-manager';
 import {
   SwitchCoordinator,
-  SwitchService,
   SwitchUI,
 } from '../../switch-header-source';
 import { SwitchConfigService } from '../../switch-header-source/config-manager';
 import { ClangFormatEditorCoordinator } from '../../visual-editor';
 import { ClangFormatGuideService } from '../../visual-editor/clang-format/guide-service';
-import { FileSystemService } from '../utils/file-system-service';
+import type {
+  IFileSystemService,
+  IPairCreatorService,
+  ISwitchService,
+  IPairingRuleService,
+} from '../interfaces/services';
 
 // ===============================
 // Service Map Definition
@@ -38,27 +40,25 @@ import { FileSystemService } from '../utils/file-system-service';
  * This is the single source of truth for service types.
  */
 export interface ServiceMap {
-  // File System Service
-  fileSystemService: FileSystemService;
+  // File System Service (using interface for better type safety)
+  fileSystemService: IFileSystemService;
 
-  // Pairing Rule Manager
-  pairingRuleService: PairingRuleService;
+  // Pairing Rule Manager (using interface for service, concrete types for UI/Coordinator)
+  pairingRuleService: IPairingRuleService;
   pairingRuleUI: PairingRuleUI;
   pairingRuleCoordinator: PairingRuleCoordinator;
 
-  // Create Source/Header Pair
-  pairCreatorService: PairCreatorService;
+  // Create Source/Header Pair (using interface for service, concrete types for UI/Coordinator)
+  pairCreatorService: IPairCreatorService;
   pairCreatorUI: PairCreatorUI;
   pairCoordinator: PairCoordinator;
   headerGuardCoordinator: HeaderGuardCoordinator;
 
-  // Switch Header/Source
+  // Switch Header/Source (using interface for service, concrete types for others)
   switchConfigService: SwitchConfigService;
-  switchService: SwitchService;
+  switchService: ISwitchService;
   switchUI: SwitchUI;
   switchCoordinator: SwitchCoordinator;
-
-  // Clangd Monitor (removed)
 
   // Clang-Format Visual Editor
   clangFormatEditorCoordinator: ClangFormatEditorCoordinator;

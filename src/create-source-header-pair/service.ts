@@ -15,6 +15,7 @@ import { errorHandler } from '../common/error-handler';
 import { toHeaderGuardCase, FileSystemService } from '../common/utils';
 import { Language } from '../common/types';
 import { DEFAULT_PLACEHOLDERS } from '../common/constants';
+import { IPairCreatorService } from '../common/interfaces/services';
 
 import {
   FILE_TEMPLATES,
@@ -24,7 +25,7 @@ import {
 } from './templates';
 
 // Service Layer - Core business logic
-export class PairCreatorService {
+export class PairCreatorService implements IPairCreatorService {
   // Definitive file extensions for fast lookup
   private static readonly DEFINITIVE_EXTENSIONS = {
     c: new Set(['.c']),

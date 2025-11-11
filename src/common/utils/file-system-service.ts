@@ -17,64 +17,7 @@ import { createModuleLogger } from '../logger/unified-logger';
 import { errorHandler } from '../error-handler';
 import { SimpleCache as LRUCache } from './security';
 import { PERFORMANCE } from '../constants';
-
-/**
- * Cache statistics interface
- */
-export interface CacheStats {
-  size: number;
-  maxSize: number;
-  hitRate?: number;
-}
-
-/**
- * File system service interface
- */
-export interface IFileSystemService {
-  /**
-   * Check if a file exists (with caching)
-   * @param uri File URI to check
-   * @returns Promise resolving to true if file exists
-   */
-  fileExists(uri: vscode.Uri): Promise<boolean>;
-
-  /**
-   * Check multiple files in parallel
-   * @param uris Array of file URIs to check
-   * @returns Promise resolving to array of existing file URIs
-   */
-  checkMultipleFiles(uris: vscode.Uri[]): Promise<vscode.Uri[]>;
-
-  /**
-   * Read file content (with optional caching)
-   * @param uri File URI to read
-   * @returns Promise resolving to file content as string
-   */
-  readFile(uri: vscode.Uri): Promise<string>;
-
-  /**
-   * Write file content
-   * @param uri File URI to write
-   * @param content Content to write
-   */
-  writeFile(uri: vscode.Uri, content: string): Promise<void>;
-
-  /**
-   * Write multiple files in parallel
-   * @param files Array of file URI and content pairs
-   */
-  writeMultipleFiles(files: Array<{ uri: vscode.Uri; content: string }>): Promise<void>;
-
-  /**
-   * Clear all caches
-   */
-  clearCache(): void;
-
-  /**
-   * Get cache statistics
-   */
-  getCacheStats(): { fileExists: CacheStats; fileContent: CacheStats };
-}
+import { IFileSystemService } from '../interfaces/services';
 
 /**
  * Unified File System Service implementation
@@ -293,7 +236,10 @@ export class FileSystemService implements IFileSystemService {
   /**
    * Get cache statistics
    */
-  public getCacheStats(): { fileExists: CacheStats; fileContent: CacheStats } {
+  public getCacheStats(): {
+    fileExists: { size: number; maxSize: number; hitRate?: number };
+    fileContent: { size: number; maxSize: number };
+  } {
     const totalRequests = this.fileExistsCacheHits + this.fileExistsCacheMisses;
     const hitRate = totalRequests > 0 ? this.fileExistsCacheHits / totalRequests : 0;
 
@@ -337,8 +283,8 @@ export class FileSystemService implements IFileSystemService {
    * Get detailed cache information for debugging
    */
   public getDetailedCacheInfo(): {
-    fileExists: CacheStats & { hits: number; misses: number };
-    fileContent: CacheStats;
+    fileExists: { size: number; maxSize: number; hitRate?: number; hits: number; misses: number };
+    fileContent: { size: number; maxSize: number };
   } {
     const stats = this.getCacheStats();
     return {

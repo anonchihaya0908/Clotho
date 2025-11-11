@@ -21,6 +21,7 @@ import {
   isHeaderFile,
   FileSystemService,
 } from '../common/utils';
+import { ISwitchService } from '../common/interfaces/services';
 
 import { SwitchConfigService } from './config-manager';
 
@@ -35,7 +36,7 @@ import { SwitchConfigService } from './config-manager';
  * Provides pure logic without any UI dependencies.
  * Uses instance-based pattern for consistency with other modules and better testability.
  */
-export class SwitchService {
+export class SwitchService implements ISwitchService {
   // ===============================
   // Performance Optimization Caches (Shared across all instances)
   // ===============================

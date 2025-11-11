@@ -7,12 +7,13 @@ import * as vscode from 'vscode';
 import { errorHandler } from '../common/error-handler';
 import { CONFIG_KEYS } from '../common/constants';
 import { PairingRule } from '../common/types';
+import { IPairingRuleService } from '../common/interfaces/services';
 
 /**
  * Service class for managing pairing rules configuration
  * Handles all interactions with VS Code configuration system
  */
-export class PairingRuleService {
+export class PairingRuleService implements IPairingRuleService {
   /**
    * Validate a single pairing rule to ensure it has all required fields
    */
