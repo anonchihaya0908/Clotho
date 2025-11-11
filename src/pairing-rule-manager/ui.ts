@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import { errorHandler } from '../common/error-handler';
 import { PairingRule } from '../common/types';
 import { delay } from '../common/utils/performance';
-import { PairingRuleService } from './service';
+import { IPairingRuleService } from '../common/interfaces/services';
 
 // Type aliases for QuickPick items
 type RuleQuickPickItem = vscode.QuickPickItem & { rule: PairingRule };
@@ -54,7 +54,7 @@ export class PairingRuleUI {
     },
   ];
 
-  constructor(private readonly service: PairingRuleService) { }
+  constructor(private readonly service: IPairingRuleService) { }
 
   /**
    * Create rule choices from extension options for QuickPick display

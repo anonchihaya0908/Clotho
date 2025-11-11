@@ -174,6 +174,59 @@ export interface IPairCreatorService {
     headerPath: vscode.Uri,
     sourcePath: vscode.Uri,
   ): Promise<void>;
+
+  /**
+   * 获取默认占位符内容
+   * @param rule 配对规则
+   * @returns 默认占位符字符串
+   */
+  getDefaultPlaceholder(rule: PairingRule): string;
+
+  /**
+   * 判断是否应该显示语言不匹配警告
+   * @param language 当前语言
+   * @param result 选中的配对规则
+   * @param currentDir 当前目录
+   * @param activeFilePath 活动文件路径
+   * @returns 是否应该显示警告
+   */
+  shouldShowLanguageMismatchWarning(
+    language: Language,
+    result: PairingRule,
+    currentDir?: string,
+    activeFilePath?: string,
+  ): Promise<boolean>;
+
+  /**
+   * 获取自定义 C++ 扩展名配置
+   * @returns 自定义扩展名对象，如果没有则返回 null
+   */
+  getCustomCppExtensions(): { headerExt: string; sourceExt: string } | null;
+
+  /**
+   * 获取现有的配置规则
+   * @param language 编程语言
+   * @returns 现有规则，如果没有则返回 undefined
+   */
+  getExistingConfigRule(language: 'c' | 'cpp'): PairingRule | undefined;
+
+  /**
+   * 获取目标目录
+   * @param activeDocumentPath 活动文档路径
+   * @param workspaceFolders 工作区文件夹
+   * @returns 目标目录 URI
+   */
+  getTargetDirectory(
+    activeDocumentPath?: string,
+    workspaceFolders?: readonly vscode.WorkspaceFolder[],
+  ): Promise<vscode.Uri | undefined>;
+
+  /**
+   * 保存完整配置规则到工作区
+   * @param rule 配对规则
+   * @param pairingRuleService 配对规则服务
+   */
+  saveCompleteConfigToWorkspace(rule: PairingRule, pairingRuleService: IPairingRuleService): Promise<void>;
 }
 
 // ===============================

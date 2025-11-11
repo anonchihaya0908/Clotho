@@ -10,12 +10,12 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { PairingRule, PairingRuleService } from '../pairing-rule-manager';
+import { PairingRule } from '../pairing-rule-manager';
 import { errorHandler } from '../common/error-handler';
-import { toHeaderGuardCase, FileSystemService } from '../common/utils';
+import { toHeaderGuardCase } from '../common/utils';
 import { Language } from '../common/types';
 import { DEFAULT_PLACEHOLDERS } from '../common/constants';
-import { IPairCreatorService } from '../common/interfaces/services';
+import { IPairCreatorService, IPairingRuleService, IFileSystemService } from '../common/interfaces/services';
 
 import {
   FILE_TEMPLATES,
@@ -33,8 +33,8 @@ export class PairCreatorService implements IPairCreatorService {
   } as const;
 
   constructor(
-    private readonly pairingRuleService: PairingRuleService,
-    private readonly fileSystemService: FileSystemService,
+    private readonly pairingRuleService: IPairingRuleService,
+    private readonly fileSystemService: IFileSystemService,
   ) { }
 
   /**
@@ -581,7 +581,7 @@ export class PairCreatorService implements IPairCreatorService {
    * Save a complete configuration rule to workspace settings
    * Utilizes existing PairingRuleService methods instead of reimplementing
    */
-  public async saveCompleteConfigToWorkspace(rule: PairingRule, pairingRuleService: PairingRuleService): Promise<void> {
+  public async saveCompleteConfigToWorkspace(rule: PairingRule, pairingRuleService: IPairingRuleService): Promise<void> {
     // Create a clean rule for saving with complete configuration
     const workspaceRule: PairingRule = {
       key: `workspace_default_${Date.now()}`,

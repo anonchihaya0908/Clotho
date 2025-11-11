@@ -11,7 +11,7 @@ import {
 } from '../common';
 import { BaseCoordinator } from '../common/base-coordinator';
 import { SwitchConfigService } from './config-manager';
-import { SwitchService } from './switch-service';
+import { ISwitchService } from '../common/interfaces/services';
 import { SwitchUI } from './switch-ui';
 
 /**
@@ -19,12 +19,12 @@ import { SwitchUI } from './switch-ui';
  * Uses dependency injection and comprehensive error handling.
  */
 export class SwitchCoordinator extends BaseCoordinator {
-  private readonly service: SwitchService;
+  private readonly service: ISwitchService;
   private readonly ui: SwitchUI;
   private readonly configService: SwitchConfigService;
 
   constructor(
-    service: SwitchService,
+    service: ISwitchService,
     ui: SwitchUI,
     configService?: SwitchConfigService
   ) {

@@ -9,8 +9,7 @@
 import * as vscode from 'vscode';
 import { BaseCoordinator } from '../common/base-coordinator';
 import { PairCreatorUI } from './ui';
-import { PairCreatorService } from './service';
-import { PairingRuleService } from '../pairing-rule-manager';
+import { IPairCreatorService, IPairingRuleService } from '../common/interfaces/services';
 import { HeaderGuardStyle, PairingRule } from '../common/types';
 
 /**
@@ -20,8 +19,8 @@ import { HeaderGuardStyle, PairingRule } from '../common/types';
 export class HeaderGuardCoordinator extends BaseCoordinator {
   constructor(
     private readonly ui: PairCreatorUI,
-    private readonly service: PairCreatorService,
-    private readonly pairingRuleService: PairingRuleService,
+    private readonly service: IPairCreatorService,
+    private readonly pairingRuleService: IPairingRuleService,
   ) {
     super();
     this.validateDependencies({ ui, service, pairingRuleService });

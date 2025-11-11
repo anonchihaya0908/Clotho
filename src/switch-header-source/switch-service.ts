@@ -21,7 +21,7 @@ import {
   isHeaderFile,
   FileSystemService,
 } from '../common/utils';
-import { ISwitchService } from '../common/interfaces/services';
+import { ISwitchService, IFileSystemService } from '../common/interfaces/services';
 import { getCacheManager, CacheCategory } from '../common/cache';
 
 import { SwitchConfigService } from './config-manager';
@@ -114,11 +114,11 @@ export class SwitchService implements ISwitchService {
 
   private readonly logger = createModuleLogger('SwitchService');
   private configService: SwitchConfigService;
-  private fileSystemService: FileSystemService;
+  private fileSystemService: IFileSystemService;
 
   constructor(
     configService?: SwitchConfigService,
-    fileSystemService?: FileSystemService,
+    fileSystemService?: IFileSystemService,
   ) {
     // Allow dependency injection for testing
     this.configService = configService ?? new SwitchConfigService();

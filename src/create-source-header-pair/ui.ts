@@ -12,15 +12,14 @@ import * as vscode from 'vscode';
 
 import {
   PairingRule,
-  PairingRuleService,
   PairingRuleUI,
 } from '../pairing-rule-manager';
 import { errorHandler } from '../common/error-handler';
 import { toPascalCase } from '../common/utils';
 import { VALIDATION_PATTERNS } from '../common/constants';
-import { PairCreatorService } from './service';
 import { Language, TEMPLATE_RULES } from './templates';
 import { HeaderGuardStyle } from '../common/types';
+import { IPairCreatorService, IPairingRuleService } from '../common/interfaces/services';
 
 // Type to clearly express user intent when selecting custom rules
 type CustomRuleSelection =
@@ -38,13 +37,13 @@ type CustomRuleSelection =
 // PairCreatorUI handles all user interface interactions for file pair creation.
 // It manages dialogs, input validation, and user choices.
 export class PairCreatorUI {
-  private readonly service: PairCreatorService;
-  private readonly pairingRuleService: PairingRuleService;
+  private readonly service: IPairCreatorService;
+  private readonly pairingRuleService: IPairingRuleService;
   private readonly pairingRuleUI: PairingRuleUI;
 
   constructor(
-    service: PairCreatorService,
-    pairingRuleService: PairingRuleService,
+    service: IPairCreatorService,
+    pairingRuleService: IPairingRuleService,
     pairingRuleUI: PairingRuleUI,
   ) {
     this.service = service;
@@ -851,7 +850,7 @@ export class PairCreatorUI {
     rule: PairingRule,
     headerPath: vscode.Uri,
     sourcePath: vscode.Uri,
-    pairingRuleService: PairingRuleService
+    pairingRuleService: IPairingRuleService
   ): Promise<void> {
     // Check if this rule came from existing config (has existing key format)
     const isExistingConfig = rule.key.includes('workspace_default') || rule.key.includes('custom_');
@@ -872,7 +871,7 @@ export class PairCreatorUI {
   /**
    * Save complete pairing rule to workspace settings (for first-time configuration)
    */
-  private async saveRuleToWorkspace(rule: PairingRule, pairingRuleService: PairingRuleService): Promise<void> {
+  private async saveRuleToWorkspace(rule: PairingRule, pairingRuleService: IPairingRuleService): Promise<void> {
     try {
       // Create a clean rule for saving
       const workspaceRule: PairingRule = {
@@ -904,7 +903,7 @@ export class PairCreatorUI {
   /**
    * Offer to save complete configuration when user fills in missing fields
    */
-  public async offerToSaveCompleteConfig(rule: PairingRule, service: PairCreatorService, pairingRuleService: PairingRuleService): Promise<void> {
+  public async offerToSaveCompleteConfig(rule: PairingRule, service: IPairCreatorService, pairingRuleService: IPairingRuleService): Promise<void> {
     const guardText = rule.headerGuardStyle === 'pragma_once' ? '#pragma once' : 'traditional header guards';
 
     const choice = await vscode.window.showInformationMessage(

@@ -11,9 +11,8 @@ import * as vscode from 'vscode';
 import { BaseCoordinator } from '../common/base-coordinator';
 import { ERROR_MESSAGES } from '../common/constants';
 import { PairingRule } from '../common/types';
-import { PairingRuleService } from '../pairing-rule-manager';
+import { IPairCreatorService, IPairingRuleService } from '../common/interfaces/services';
 
-import { PairCreatorService } from './service';
 import { PairCreatorUI } from './ui';
 
 // PairCoordinator orchestrates the workflow between UI and Service layers.
@@ -21,9 +20,9 @@ import { PairCreatorUI } from './ui';
 export class PairCoordinator extends BaseCoordinator {
   // Constructor with dependency injection - receives pre-configured instances
   constructor(
-    private readonly service: PairCreatorService,
+    private readonly service: IPairCreatorService,
     private readonly ui: PairCreatorUI,
-    private readonly pairingRuleService: PairingRuleService,
+    private readonly pairingRuleService: IPairingRuleService,
   ) {
     super(); // Initialize BaseCoordinator
 
