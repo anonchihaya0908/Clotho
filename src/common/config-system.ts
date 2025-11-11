@@ -1,12 +1,15 @@
 /**
- *  统一配置管理系统
- * 提供标准化的配置接口、验证和管理机制
+ *  配置系统
+ * 提供标准化的配置接口
+ * 
+ * 注意：本文件已清理未使用的接口和类
+ * - 已删除：ConfigurableModule, TimerConfig, MonitorConfig（为已删除的 SimpleClangdMonitor 准备的）
+ * - 已删除：ConfigValidator, ConfigFactory（从未被调用）
+ * - 保留：EnhancedBaseConfig, UIConfig（Visual Editor 使用）, PathConfig
  */
 
-import { ConfigValidationResult } from './types/core';
-
 // ===============================
-// 基础配置接口系统
+// 核心配置接口（正在使用）
 // ===============================
 
 /**
@@ -27,36 +30,11 @@ export interface EnhancedBaseConfig {
 }
 
 /**
- *  可配置的模块接口
- * 为需要定期配置的模块提供标准接口
- */
-export interface ConfigurableModule<TConfig extends EnhancedBaseConfig> {
-  /** 获取当前配置 */
-  getConfig(): TConfig;
-  /** 更新配置 */
-  updateConfig(config: Partial<TConfig>): Promise<void>;
-  /** 重置为默认配置 */
-  resetConfig(): Promise<void>;
-  /** 验证配置 */
-  validateConfig(config: Partial<TConfig>): ConfigValidationResult;
-}
-
-/**
- * 定时器配置接口
- * 为需要定期更新的模块提供标准配置
- */
-export interface TimerConfig extends EnhancedBaseConfig {
-  /** 更新间隔（毫秒） */
-  updateInterval?: number;
-  /** 是否自动启动 */
-  autoStart?: boolean;
-  /** 最大重试次数 */
-  maxRetries?: number;
-}
-
-/**
  *  UI配置接口
  * 为UI相关模块提供标准配置
+ * 
+ * 使用场景：
+ * - Visual Editor (ClangFormat可视化编辑器)
  */
 export interface UIConfig extends EnhancedBaseConfig {
   /** 主题模式 */
@@ -70,21 +48,12 @@ export interface UIConfig extends EnhancedBaseConfig {
 }
 
 /**
- *  监控配置接口
- * 为监控模块提供标准配置
- */
-export interface MonitorConfig extends TimerConfig {
-  /** 警告阈值 */
-  warningThreshold?: number;
-  /** 错误阈值 */
-  errorThreshold?: number;
-  /** 显示详细信息 */
-  showDetails?: boolean;
-}
-
-/**
  *  路径配置接口
  * 为需要文件/目录路径的模块提供标准配置
+ * 
+ * 使用场景：
+ * - Switch Header/Source 配置
+ * - 其他需要路径配置的功能
  */
 export interface PathConfig extends EnhancedBaseConfig {
   /** 包含路径 */
@@ -96,182 +65,27 @@ export interface PathConfig extends EnhancedBaseConfig {
 }
 
 // ===============================
-// 配置验证系统
-// ===============================
-
-
-/**
- *  配置验证器
- * 提供标准的配置验证逻辑
- */
-export class ConfigValidator {
-  /**
-   * 验证基础配置
-   */
-  static validateBaseConfig(config: EnhancedBaseConfig): ConfigValidationResult {
-    const result: ConfigValidationResult = {
-      isValid: true,
-      errors: [],
-      warnings: [],
-    };
-
-    // 验证版本格式
-    if (config.version && !/^\d+\.\d+\.\d+$/.test(config.version)) {
-      result.warnings.push('Invalid version format, expected semantic version (x.y.z)');
-    }
-
-    // 验证时间戳
-    if (config.lastModified && config.lastModified > Date.now()) {
-      result.warnings.push('lastModified timestamp is in the future');
-    }
-
-    // 验证作用域
-    if (config.scope && !['workspace', 'user', 'global'].includes(config.scope)) {
-      result.errors.push('Invalid scope, must be one of: workspace, user, global');
-      result.isValid = false;
-    }
-
-    return result;
-  }
-
-  /**
-   * 验证定时器配置
-   */
-  static validateTimerConfig(config: TimerConfig): ConfigValidationResult {
-    const result = this.validateBaseConfig(config);
-
-    // 验证更新间隔
-    if (config.updateInterval !== undefined) {
-      if (config.updateInterval < 100) {
-        result.errors.push('updateInterval must be at least 100ms');
-        result.isValid = false;
-      } else if (config.updateInterval > 300000) { // 5 minutes
-        result.warnings.push('updateInterval is very high (>5 minutes), may affect responsiveness');
-      }
-    }
-
-    // 验证重试次数
-    if (config.maxRetries !== undefined && config.maxRetries < 0) {
-      result.errors.push('maxRetries cannot be negative');
-      result.isValid = false;
-    }
-
-    return result;
-  }
-
-  /**
-   * 验证监控配置
-   */
-  static validateMonitorConfig(config: MonitorConfig): ConfigValidationResult {
-    const result = this.validateTimerConfig(config);
-
-    // 验证阈值逻辑
-    if (config.warningThreshold !== undefined && config.errorThreshold !== undefined) {
-      if (config.warningThreshold >= config.errorThreshold) {
-        result.errors.push('warningThreshold must be less than errorThreshold');
-        result.isValid = false;
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * 验证路径配置
-   */
-  static validatePathConfig(config: PathConfig): ConfigValidationResult {
-    const result = this.validateBaseConfig(config);
-
-    // 验证路径存在性（异步操作，这里只做基本检查）
-    const allPaths = [
-      ...(config.includePaths || []),
-      ...(config.excludePaths || []),
-      ...(config.workingDirectory ? [config.workingDirectory] : []),
-    ];
-
-    for (const path of allPaths) {
-      if (!path || typeof path !== 'string') {
-        result.errors.push(`Invalid path: ${path}`);
-        result.isValid = false;
-      }
-    }
-
-    return result;
-  }
-}
-
-// ===============================
-// 配置管理器
-// ===============================
-
-// ConfigurationManager 类已被移除，因为当前未被使用
-// 如果将来需要统一配置管理，可以重新实现
-
-// ===============================
-// 便捷工厂函数
+// 注意事项
 // ===============================
 
 /**
- *  配置工厂函数
- * 为不同类型的配置提供便捷的创建方法
+ * 历史遗留说明：
+ * 
+ * 本文件曾包含以下已删除的组件：
+ * 
+ * 1. ConfigurableModule<TConfig> - 模块配置接口（从未被实现）
+ * 2. TimerConfig - 定时器配置（为已删除的监控器准备的）
+ * 3. MonitorConfig - 监控配置（为已删除的 SimpleClangdMonitor 准备的）
+ * 4. ConfigValidator - 配置验证器类（从未被调用）
+ * 5. ConfigFactory - 配置工厂类（从未被调用）
+ * 
+ * 如果将来需要配置验证功能，建议：
+ * - 使用 Zod 或 Joi 等成熟的验证库
+ * - 只在实际需要时添加验证逻辑
+ * - 避免过度设计未使用的抽象层
+ * 
+ * 如果需要工厂模式创建配置，建议：
+ * - 在实际使用的地方直接创建默认配置对象
+ * - 使用 TypeScript 的默认参数语法
+ * - 避免为简单对象创建专门的工厂类
  */
-export class ConfigFactory {
-  /**
-   * 创建定时器配置
-   */
-  static createTimerConfig(overrides: Partial<TimerConfig> = {}): TimerConfig {
-    return {
-      enabled: true,
-      version: '1.0.0',
-      updateInterval: 3000,
-      autoStart: true,
-      maxRetries: 3,
-      ...overrides,
-    };
-  }
-
-  /**
-   * 创建UI配置
-   */
-  static createUIConfig(overrides: Partial<UIConfig> = {}): UIConfig {
-    return {
-      enabled: true,
-      version: '1.0.0',
-      theme: 'auto',
-      animations: true,
-      showNotifications: true,
-      autoSave: false,
-      ...overrides,
-    };
-  }
-
-  /**
-   * 创建监控配置
-   */
-  static createMonitorConfig(overrides: Partial<MonitorConfig> = {}): MonitorConfig {
-    return {
-      enabled: true,
-      version: '1.0.0',
-      updateInterval: 3000,
-      autoStart: true,
-      maxRetries: 3,
-      warningThreshold: 80,
-      errorThreshold: 95,
-      showDetails: false,
-      ...overrides,
-    };
-  }
-
-  /**
-   * 创建路径配置
-   */
-  static createPathConfig(overrides: Partial<PathConfig> = {}): PathConfig {
-    return {
-      enabled: true,
-      version: '1.0.0',
-      includePaths: [],
-      excludePaths: [],
-      ...overrides,
-    };
-  }
-}
