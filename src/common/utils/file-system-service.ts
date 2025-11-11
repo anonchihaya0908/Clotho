@@ -388,7 +388,7 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
   public getCacheStats(): {
     fileExists: { size: number; maxSize: number; hitRate?: number };
     fileContent: { size: number; maxSize: number };
-    } {
+  } {
     const totalRequests = this.fileExistsCacheHits + this.fileExistsCacheMisses;
     const hitRate = totalRequests > 0 ? this.fileExistsCacheHits / totalRequests : 0;
 
@@ -434,7 +434,7 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
   public getDetailedCacheInfo(): {
     fileExists: { size: number; maxSize: number; hitRate?: number; hits: number; misses: number };
     fileContent: { size: number; maxSize: number };
-    } {
+  } {
     const stats = this.getCacheStats();
     return {
       fileExists: {

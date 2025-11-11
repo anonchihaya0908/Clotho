@@ -894,9 +894,12 @@ export class PairCreatorUI {
         `Configuration saved to workspace! Future file pairs will use ${rule.headerExt}/${rule.sourceExt} with ${guardText}.`
       );
     } catch (error) {
-      vscode.window.showErrorMessage(
-        `Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      errorHandler.handle(error, {
+        module: 'PairCreatorUI',
+        operation: 'offerToSaveExtensionConfig',
+        showToUser: true,
+        logLevel: 'error',
+      });
     }
   }
 
@@ -922,9 +925,12 @@ export class PairCreatorUI {
           `Complete configuration saved to workspace! Future file pairs will use ${rule.headerExt}/${rule.sourceExt} with ${guardText}.`
         );
       } catch (error) {
-        vscode.window.showErrorMessage(
-          `Failed to save configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
-        );
+        errorHandler.handle(error, {
+          module: 'PairCreatorUI',
+          operation: 'offerToSaveCompleteConfig',
+          showToUser: true,
+          logLevel: 'error',
+        });
       }
     }
   }

@@ -92,7 +92,7 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
   async showEditor(
     source: EditorOpenSource = EditorOpenSource.DIRECT,
   ): Promise<void> {
-    try {
+    return this.executeOperation('showEditor', async () => {
       // 确保只初始化一次
       if (!this.isInitialized) {
         await this.initializeOnce();
@@ -100,14 +100,12 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
 
       // Ensure EditorManager is created and initialized
       const editorManager = await this.managerRegistry.getOrCreateInstance<ClangFormatEditorManager>('editorManager');
-      if (editorManager) {
-        await editorManager.createOrShowEditor(source);
-      } else {
+      if (!editorManager) {
         throw new Error('Failed to create EditorManager');
       }
-    } catch (error: unknown) {
-      await this.errorRecovery.handleError('coordinator-startup-failed', error);
-    }
+
+      await editorManager.createOrShowEditor(source);
+    });
   }
 
   /**

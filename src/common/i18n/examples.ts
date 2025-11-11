@@ -2,6 +2,8 @@
  * i18n 使用示例
  *
  * 演示如何在代码中使用 Localization 工具类
+ * 
+ * Note: This file contains examples using outdated API and needs updating
  */
 
 import * as vscode from 'vscode';
@@ -55,7 +57,8 @@ export function example3_ClangFormatOptions() {
   // 英文: "The base coding style to inherit from..."
   // 中文: "继承的基础风格..."
 
-  console.log(`${optionName}: ${optionDescription}`);
+  // Note: In production code, use unified logger instead of console.log
+  // console.log(`${optionName}: ${optionDescription}`);
 }
 
 /**

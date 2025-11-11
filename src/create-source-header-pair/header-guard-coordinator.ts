@@ -77,26 +77,19 @@ export class HeaderGuardCoordinator extends BaseCoordinator {
     newHeaderGuardStyle: HeaderGuardStyle,
     language: 'c' | 'cpp'
   ): Promise<void> {
-    try {
-      // Create updated rule with new header guard style
-      const updatedRule: PairingRule = {
-        ...existingRule,
-        headerGuardStyle: newHeaderGuardStyle,
-      };
+    // Create updated rule with new header guard style
+    const updatedRule: PairingRule = {
+      ...existingRule,
+      headerGuardStyle: newHeaderGuardStyle,
+    };
 
-      // Use service layer to save the configuration
-      await this.service.saveCompleteConfigToWorkspace(updatedRule, this.pairingRuleService);
+    // Use service layer to save the configuration
+    await this.service.saveCompleteConfigToWorkspace(updatedRule, this.pairingRuleService);
 
-      const newText = newHeaderGuardStyle === 'pragma_once' ? '#pragma once' : '#ifndef/#define/#endif';
-      vscode.window.showInformationMessage(
-        `Header guard style updated to ${newText} for ${language.toUpperCase()} files.`
-      );
-
-    } catch (error) {
-      vscode.window.showErrorMessage(
-        `Failed to update header guard configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
+    const newText = newHeaderGuardStyle === 'pragma_once' ? '#pragma once' : '#ifndef/#define/#endif';
+    vscode.window.showInformationMessage(
+      `Header guard style updated to ${newText} for ${language.toUpperCase()} files.`
+    );
   }
 
   /**
