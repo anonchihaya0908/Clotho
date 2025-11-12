@@ -13,7 +13,7 @@ import { ConfigValue } from '../../../common/types/clang-format-shared';
  */
 export interface ConfigChangeContext {
   key: string;
-  value: unknown;
+  value: ConfigValue;
   oldConfig: Record<string, unknown>;
   newConfig: Record<string, unknown>;
 }
@@ -52,7 +52,7 @@ export class ConfigChangeService {
      */
   async handleConfigChange(payload: {
     key: string;
-    value: unknown;
+    value: ConfigValue;
   }): Promise<ConfigChangeResult> {
     const startTime = Date.now();
 

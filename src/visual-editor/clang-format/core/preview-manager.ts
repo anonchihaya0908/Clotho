@@ -5,6 +5,8 @@ import { MACRO_PREVIEW_CODE } from '../data/clang-format-options-database';
 import { ClangFormatService } from '../format-service';
 import { ClangFormatPreviewProvider } from '../preview-provider';
 import { getStateOrDefault } from '../types/state';
+import { EventBus } from '../messaging/event-bus';
+import { onTyped, emitTyped } from '../messaging/typed-event-bus';
 
 /**
  * 预览编辑器管理器
@@ -401,15 +403,11 @@ ${configEntries || '//   (using base style defaults)'}
       this.closePreview(),
     ); // 程序关闭，不创建占位符
 
-    this.context.eventBus?.on(
-      'config-updated-for-preview',
-      ((payload: unknown) => {
-        const { newConfig } = payload as { newConfig: Record<string, unknown> };
-        // 这里可以添加基于新配置更新预览的逻辑
-        // 目前先简单地重新应用宏观预览代码，未来可以集成clang-format格式化
+    if (this.context.eventBus) {
+      onTyped(this.context.eventBus as unknown as EventBus, 'config-updated-for-preview', ({ newConfig }) => {
         this.updatePreviewWithConfig(newConfig);
-      }),
-    );
+      });
+    }
 
     // Listen for main editor close events - close preview accordingly
     this.context.eventBus?.on('editor-closed', async () => {
@@ -434,8 +432,8 @@ ${configEntries || '//   (using base style defaults)'}
     });
 
     // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
-    this.context.eventBus?.on('editor-visibility-changed', async (payload: unknown) => {
-      const { isVisible } = payload as { isVisible: boolean };
+    if (this.context.eventBus) {
+      onTyped(this.context.eventBus as unknown as EventBus, 'editor-visibility-changed', async ({ isVisible }) => {
       const state = getStateOrDefault(this.context.stateManager?.getState());
       const { previewMode } = state;
       if (previewMode !== 'open') {
@@ -454,12 +452,11 @@ ${configEntries || '//   (using base style defaults)'}
 
           // 【关键】阻止占位符显示
           // 通过发送特殊事件告诉占位符管理器不要创建占位符
-          this.context.eventBus?.emit('preview-hidden-by-visibility', {
-            reason: 'editor-not-visible'
-          });
+          emitTyped(this.context.eventBus as unknown as EventBus, 'preview-hidden-by-visibility');
         }
       }
     });
+    }
 
     // Listen for editor tab close events - distinguish manual vs programmatic close
     const tabChangeListener = vscode.window.tabGroups.onDidChangeTabs(async (event: vscode.TabChangeEvent) => {

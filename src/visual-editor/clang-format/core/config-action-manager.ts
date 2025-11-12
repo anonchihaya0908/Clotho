@@ -8,6 +8,8 @@ import {
 } from '../../../common/types';
 import { WebviewMessageType } from '../../../common/types/clang-format-shared';
 import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-database';
+import { EventBus } from '../messaging/event-bus';
+import { onTyped, emitTyped } from '../messaging/typed-event-bus';
 import { ClangFormatService } from '../format-service';
 
 /**
@@ -57,25 +59,21 @@ export class ConfigActionManager implements BaseManager {
    * 在事件总线上注册所有动作处理器
    */
   private setupEventListeners(): void {
-    const eventBus = this.context.eventBus;
+    const eventBus = this.context.eventBus as unknown as EventBus | undefined;
     if (!eventBus) {
       return;
     }
 
     // 监听UI的动作请求
-    eventBus.on('load-workspace-config-requested', () =>
-      this.handleLoadWorkspaceConfig(),
-    );
-    eventBus.on('save-config-requested', () => this.handleSaveConfig());
-    eventBus.on('import-config-requested', () => this.handleImportConfig());
-    eventBus.on('export-config-requested', () => this.handleExportConfig());
-    eventBus.on('reset-config-requested', () => this.handleResetConfig());
-    eventBus.on('open-clang-format-file-requested', () =>
-      this.handleOpenClangFormatFile(),
-    );
+    onTyped(eventBus, 'load-workspace-config-requested', () => { void this.handleLoadWorkspaceConfig(); });
+    onTyped(eventBus, 'save-config-requested', () => { void this.handleSaveConfig(); });
+    onTyped(eventBus, 'import-config-requested', () => { void this.handleImportConfig(); });
+    onTyped(eventBus, 'export-config-requested', () => { void this.handleExportConfig(); });
+    onTyped(eventBus, 'reset-config-requested', () => { void this.handleResetConfig(); });
+    onTyped(eventBus, 'open-clang-format-file-requested', () => { void this.handleOpenClangFormatFile(); });
 
     // 监听生命周期事件以触发自动加载
-    eventBus.on('editor-fully-ready', () => this.autoLoadWorkspaceConfig());
+    onTyped(eventBus, 'editor-fully-ready', () => { void this.autoLoadWorkspaceConfig(); });
   }
 
   // --- 配置操作处理方法 ---
@@ -304,7 +302,7 @@ export class ConfigActionManager implements BaseManager {
       );
     }
     if (this.context.eventBus) {
-      this.context.eventBus.emit('post-message-to-webview', {
+      emitTyped(this.context.eventBus as unknown as EventBus, 'post-message-to-webview', {
         type: WebviewMessageType.CONFIG_LOADED,
         payload: { config: newConfig },
       });

@@ -124,7 +124,7 @@ export class DebounceIntegration implements BaseManager {
           const previewEditorVal = state?.['previewEditor'];
           const isEditorOpen = (() => {
             if (!previewEditorVal || typeof previewEditorVal !== 'object') { return false; }
-            const doc = (previewEditorVal as { document?: { isClosed?: unknown } }).document;
+            const doc = (previewEditorVal as { document?: { isClosed?: boolean } }).document;
             return !!(doc && doc.isClosed === false);
           })();
           if (previewMode === 'open' && isEditorOpen) {
@@ -149,12 +149,7 @@ export class DebounceIntegration implements BaseManager {
           this.placeholderManager.disposePanel();
 
           try {
-            await this.transitionManager.switchToPreview(async () => {
-              await this.previewManager.openPreview();
-              const s = this.context?.stateManager?.getState();
-              const editor = s && typeof s === 'object' ? (s as { previewEditor?: unknown }).previewEditor : undefined;
-              return (editor as unknown as import('vscode').TextEditor) || null;
-            });
+            await this.transitionManager.switchToPreview(() => this.previewManager.openPreview());
           } catch (error) {
             this.logger.error('Transition manager failed, using fallback', error as Error, {
               module: 'DebounceIntegration',

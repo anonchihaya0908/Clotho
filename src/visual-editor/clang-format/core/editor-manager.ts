@@ -7,10 +7,7 @@ import {
   EditorOpenSource,
   ManagerContext,
 } from '../../../common/types';
-import {
-  WebviewMessage,
-  WebviewMessageType,
-} from '../../../common/types/clang-format-shared';
+import { WebviewMessage, WebviewMessageType, WebviewLogPayload } from '../../../common/types/clang-format-shared';
 import { getNonce } from '../../../common/utils';
 import { getStateOrDefault } from '../types/state';
 import { ClangFormatConfig } from '../../../common/types/clang-format-shared';
@@ -186,23 +183,14 @@ export class ClangFormatEditorManager implements BaseManager {
     this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
       // 处理来自 webview 的日志消息
       if (message.type === WebviewMessageType.WEBVIEW_LOG) {
-        const payload = message.payload as { level?: string; message?: string; meta?: unknown };
-        const { level, message: logMessage, meta } = payload;
+        const payload = message.payload as WebviewLogPayload;
+        const { level, message: logMessage, meta } = payload ?? {};
+        const ctx = meta ? { metadata: { data: meta } } : undefined;
         switch (level) {
-          case 'debug':
-            this.logger.debug(`[Webview] ${logMessage}`, { metadata: { data: meta } });
-            break;
-          case 'info':
-            this.logger.info(`[Webview] ${logMessage}`, { metadata: { data: meta } });
-            break;
-          case 'warn':
-            this.logger.warn(`[Webview] ${logMessage}`, { metadata: { data: meta } });
-            break;
-          case 'error':
-            this.logger.error(`[Webview] ${logMessage}`, undefined, { metadata: { data: meta } });
-            break;
-          default:
-            this.logger.info(`[Webview] ${logMessage}`, { metadata: { data: meta } });
+          case 'debug': this.logger.debug(`[Webview] ${logMessage ?? ''}`, ctx); break;
+          case 'warn': this.logger.warn(`[Webview] ${logMessage ?? ''}`, ctx); break;
+          case 'error': this.logger.error(`[Webview] ${logMessage ?? ''}`, undefined, ctx); break;
+          default: this.logger.info(`[Webview] ${logMessage ?? ''}`, ctx);
         }
         return; // 不需要进一步处理日志消息
       }

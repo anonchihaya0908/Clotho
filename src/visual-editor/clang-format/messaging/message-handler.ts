@@ -1,6 +1,6 @@
 import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { BaseManager, ManagerContext } from '../../../common/types';
-import { WebviewMessage, WebviewMessageType } from '../../../common/types/clang-format-shared';
+import { WebviewMessage, WebviewMessageType, GetOptionsByCategoryRequest, SearchOptionsRequest, ConfigValue } from '../../../common/types/clang-format-shared';
 import { UI_CONSTANTS } from '../../../common/constants';
 
 // Type guards for common payloads
@@ -63,7 +63,12 @@ export class MessageHandler implements BaseManager {
           break;
         }
         case WebviewMessageType.CONFIG_CHANGED: {
-          this.context.eventBus?.emit('config-change-requested', message.payload as Record<string, unknown>);
+          const p = message.payload as { key?: unknown; value?: unknown };
+          if (typeof p?.key === 'string') {
+            this.context.eventBus?.emit('config-change-requested', { key: p.key, value: p.value as ConfigValue });
+          } else {
+            this.logger.warn('CONFIG_CHANGED payload missing key', { payload: p });
+          }
           break;
         }
         case WebviewMessageType.LOAD_WORKSPACE_CONFIG: {
@@ -118,13 +123,25 @@ export class MessageHandler implements BaseManager {
           break;
         }
         case WebviewMessageType.CLEAR_HIGHLIGHTS: {
-          this.context.eventBus?.emit('clear-highlights', message.payload);
+      this.context.eventBus?.emit('clear-highlights', message.payload);
+      break;
+    }
+        case WebviewMessageType.GET_OPTIONS_BY_CATEGORY: {
+          this.context.eventBus?.emit('get-options-by-category', message.payload as GetOptionsByCategoryRequest);
           break;
         }
-        default: {
-          this.logger.warn(`Unhandled webview message: ${message.type}`);
+        case WebviewMessageType.SEARCH_OPTIONS: {
+          this.context.eventBus?.emit('search-options', message.payload as SearchOptionsRequest);
+          break;
         }
-      }
+    case WebviewMessageType.GET_ALL_OPTIONS: {
+      this.context.eventBus?.emit('get-all-options');
+      break;
+    }
+    default: {
+      this.logger.warn(`Unhandled webview message: ${message.type}`);
+    }
+  }
     } catch (error: unknown) {
       if (this.context.errorRecovery) {
         await this.context.errorRecovery.handleError('message-handling-failed', error as Error, {

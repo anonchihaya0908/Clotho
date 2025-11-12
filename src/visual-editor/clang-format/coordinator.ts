@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import { BaseCoordinator } from '../../common/base-coordinator';
 import { EditorOpenSource, ManagerContext } from '../../common/types';
-import { GenericEventHandler } from '../../common/types/event-types';
-import { WebviewMessageType, WebviewMessage } from '../../common/types/clang-format-shared';
+import { WebviewMessageType, WebviewMessage, WebviewPayloadMap, ConfigValue } from '../../common/types/clang-format-shared';
 import { ConfigActionManager } from './core/config-action-manager';
 import { ConfigChangeService } from './core/config-change-service';
 import { DebounceIntegration } from './core/debounce-integration';
@@ -13,6 +12,8 @@ import { PreviewEditorManager } from './core/preview-manager';
 import { ErrorRecoveryManager } from './error/error-recovery-manager';
 import { ClangFormatService } from './format-service';
 import { EventBus } from './messaging/event-bus';
+import { GenericEventBus } from './messaging/typed-event-bus';
+import type { VisualEditorEventMap } from './types/events';
 import { MessageHandler } from './messaging/message-handler';
 import { EditorStateManager } from './state/editor-state-manager';
 
@@ -21,7 +22,7 @@ import { EditorStateManager } from './state/editor-state-manager';
  * 负责初始化和协调各个管理器
  */
 export class ClangFormatEditorCoordinator extends BaseCoordinator {
-  private eventBus: EventBus;
+  private eventBus: GenericEventBus<VisualEditorEventMap>;
   private stateManager: EditorStateManager;
   private errorRecovery: ErrorRecoveryManager;
   private configChangeService: ConfigChangeService;
@@ -32,18 +33,18 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
 
   constructor(private extensionUri: vscode.Uri) {
     super(); // Initialize BaseCoordinator
-    // 1. 初始化核心服务
-    this.eventBus = new EventBus();
-    this.stateManager = new EditorStateManager(this.eventBus);
+    // 1. 初始化核心服务（使用强类型事件总线封装，不破坏现有形状）
+    this.eventBus = new GenericEventBus<VisualEditorEventMap>(new EventBus());
+    this.stateManager = new EditorStateManager(this.eventBus.raw);
     this.errorRecovery = new ErrorRecoveryManager(
       this.stateManager,
-      this.eventBus,
+      this.eventBus.raw,
     );
 
     // 2. 初始化配置变化服务
     this.configChangeService = new ConfigChangeService(
       this.stateManager,
-      this.eventBus,
+      this.eventBus.raw,
       this.errorRecovery,
     );
 
@@ -120,7 +121,7 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
       extensionUri: this.extensionUri,
       stateManager: this.stateManager,
       errorRecovery: this.errorRecovery,
-      eventBus: this.eventBus,
+      eventBus: this.eventBus.raw,
     };
 
     // 先初始化所有管理器
@@ -149,7 +150,7 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
    */
   private setupEventListeners(): void {
     // 监听重新打开预览的请求
-    this.eventBus.on('open-preview-requested', async () => {
+    this.eventBus.on('open-preview-requested', async (_payload) => {
       try {
         const debounceIntegration = await this.managerRegistry.getOrCreateInstance<DebounceIntegration>('debounceIntegration');
         const handler = debounceIntegration?.createDebouncedPreviewReopenHandler();
@@ -199,26 +200,23 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
     });
 
     // 监听配置变化请求 - 使用新的配置变化服务
-    this.eventBus.on(
-      'config-change-requested',
-      (async (payload: { key: string; value: unknown }) => {
-        if (process.env['CLOTHO_DEBUG'] === 'true') {
-          this.logger.debug('Configuration change request received', { payload });
-        }
-        await this.configChangeService.handleConfigChange(payload);
-      }) as GenericEventHandler,
-    );
+    this.eventBus.on('config-change-requested', async (payload) => {
+      if (process.env['CLOTHO_DEBUG'] === 'true') {
+        this.logger.debug('Configuration change request received', { payload });
+      }
+      await this.configChangeService.handleConfigChange(payload as { key: string; value: ConfigValue });
+    });
 
     // 监听主编辑器关闭事件，联动关闭所有
     this.eventBus.on('editor-closed', () => {
-      this.eventBus.emit('close-preview-requested');
+      // No explicit close-preview-requested event; individual managers handle editor-closed
     });
 
     // 主编辑器可见性变化事件会自动传播到所有监听器，无需在此处理
 
     // 监听 webview 完全准备就绪事件，自动打开预览
     this.eventBus.on('editor-fully-ready', async () => {
-      this.eventBus.emit('open-preview-requested');
+      this.eventBus.emit('open-preview-requested', { source: 'editor-fully-ready', forceReopen: true });
     });
 
     // Listen for editor creation retry requests from error recovery
@@ -254,27 +252,24 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
     });
 
     // Listen for configuration updates to refresh preview
-    this.eventBus.on(
-      'config-updated-for-preview',
-      (({ newConfig }: { newConfig: Record<string, unknown> }) => {
-        // 通过注册表获取 previewManager 实例（懒加载）
-        this.managerRegistry.getOrCreateInstance<PreviewEditorManager>('previewManager').then(previewManager => {
-          if (previewManager) {
-            previewManager.updatePreviewWithConfig(newConfig);
-          } else {
-            this.logger.warn('Preview manager not found', {
-              module: 'ClangFormatEditorCoordinator',
-              operation: 'config-updated-for-preview',
-            });
-          }
-        }).catch(error => {
-          this.logger.error('Failed to get PreviewManager for config update', error as Error, {
+    this.eventBus.on('config-updated-for-preview', ({ newConfig }) => {
+      // 通过注册表获取 previewManager 实例（懒加载）
+      this.managerRegistry.getOrCreateInstance<PreviewEditorManager>('previewManager').then(previewManager => {
+        if (previewManager) {
+          previewManager.updatePreviewWithConfig(newConfig);
+        } else {
+          this.logger.warn('Preview manager not found', {
             module: 'ClangFormatEditorCoordinator',
             operation: 'config-updated-for-preview',
           });
+        }
+      }).catch(error => {
+        this.logger.error('Failed to get PreviewManager for config update', error as Error, {
+          module: 'ClangFormatEditorCoordinator',
+          operation: 'config-updated-for-preview',
         });
-      }) as GenericEventHandler,
-    );
+      });
+    });
 
     // Handle micro preview requests
     this.eventBus.on(
@@ -292,14 +287,17 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
           const formatResult = await formatService.format(previewSnippet, config);
 
           // 通过事件总线发送结果，让 placeholderManager 处理
+          const basePayload: WebviewPayloadMap[WebviewMessageType.UPDATE_MICRO_PREVIEW] = {
+            optionName,
+            formattedCode: formatResult.formattedCode,
+            success: formatResult.success,
+          };
+          if (typeof formatResult.error === 'string') {
+            basePayload.error = formatResult.error;
+          }
           this.eventBus.emit('post-message-to-webview', {
             type: WebviewMessageType.UPDATE_MICRO_PREVIEW,
-            payload: {
-              optionName,
-              formattedCode: formatResult.formattedCode,
-              success: formatResult.success,
-              error: formatResult.error
-            }
+            payload: basePayload,
           });
         } catch (error) {
           this.logger.error('Micro preview processing failed', error instanceof Error ? error : new Error(String(error)), {
@@ -317,7 +315,7 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
             }
           });
         }
-      }) as GenericEventHandler,
+      })
     );
   }
 
