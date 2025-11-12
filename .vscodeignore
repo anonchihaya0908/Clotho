@@ -118,3 +118,6 @@ ehthumbs.db
 *.bak
 *.backup
 
+.windsurf
+openspec
+*.backup

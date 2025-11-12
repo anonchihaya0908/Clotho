@@ -36,6 +36,7 @@ import { ClangFormatEditorCoordinator } from './visual-editor/clang-format/coord
 
 import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
 import { ClangFormatPreviewProvider } from './visual-editor/clang-format/preview-provider';
+import { SwitchStatusBar } from './switch-header-source/status-bar';
 import { FileSystemService } from './common/utils/file-system-service';
 
 export let serviceContainer: ServiceContainer;
@@ -179,7 +180,7 @@ function registerServices(context: vscode.ExtensionContext): void {
 
   // Status bar for switch
   serviceContainer.register('switchStatusBar',
-    () => new (require('./switch-header-source/status-bar').SwitchStatusBar)());
+    () => new SwitchStatusBar());
 
   serviceContainer.register('switchCoordinator',
     (container) => new SwitchCoordinator(
@@ -325,7 +326,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
     'clotho.debug.selfTest.strategies',
     async () => {
       const { runStrategySelfTests } = await import('./dev-tools/self-tests');
-      const report = await runStrategySelfTests();
+      await runStrategySelfTests();
       vscode.window.showInformationMessage('Clotho: Strategy self-tests complete. See logs for details.');
     }
   );
