@@ -2,7 +2,7 @@
     "name": "clotho",
     "displayName": "%displayName%",
     "description": "%description%",
-    "version": "1.0.17",
+    "version": "1.0.18",
     "publisher": "Togawa-Sakiko",
     "private": true,
     "l10n": "./l10n",
@@ -152,7 +152,9 @@
                 "clotho.fs.watchGlobs": {
                     "type": "array",
                     "default": [],
-                    "items": { "type": "string" },
+                    "items": {
+                        "type": "string"
+                    },
                     "description": "%config.fs.watchGlobs.description%"
                 },
                 "clotho.switch.cacheTTLms": {
@@ -163,7 +165,15 @@
                 },
                 "clotho.logLevel": {
                     "type": "string",
-                    "enum": ["silly", "trace", "debug", "info", "warn", "error", "fatal"],
+                    "enum": [
+                        "silly",
+                        "trace",
+                        "debug",
+                        "info",
+                        "warn",
+                        "error",
+                        "fatal"
+                    ],
                     "default": "info",
                     "description": "%config.logLevel.description%"
                 },
