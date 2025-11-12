@@ -151,19 +151,15 @@ export class ClangFormatEditorManager implements BaseManager {
   }
 
   private setupEventListeners() {
-    this.context.eventBus?.on(
-      'create-editor-requested',
-      ((source: EditorOpenSource) => {
-        this.createOrShowEditor(source);
-      }) as any,
-    );
+    this.context.eventBus?.on('create-editor-requested', (...args: readonly unknown[]) => {
+      const source = args[0] as EditorOpenSource;
+      void this.createOrShowEditor(source);
+    });
 
-    this.context.eventBus?.on(
-      'post-message-to-webview',
-      ((message: WebviewMessage) => {
-        this.postMessage(message);
-      }) as any
-    );
+    this.context.eventBus?.on('post-message-to-webview', (...args: readonly unknown[]) => {
+      const message = args[0] as WebviewMessage;
+      void this.postMessage(message);
+    });
   }
 
   private setupPanelEventListeners() {
@@ -187,19 +183,19 @@ export class ClangFormatEditorManager implements BaseManager {
         const { level, message: logMessage, meta } = payload;
         switch (level) {
           case 'debug':
-            this.logger.debug(`[Webview] ${logMessage}`, meta as any);
+            this.logger.debug(`[Webview] ${logMessage}`, { metadata: { data: meta } });
             break;
           case 'info':
-            this.logger.info(`[Webview] ${logMessage}`, meta as any);
+            this.logger.info(`[Webview] ${logMessage}`, { metadata: { data: meta } });
             break;
           case 'warn':
-            this.logger.warn(`[Webview] ${logMessage}`, meta as any);
+            this.logger.warn(`[Webview] ${logMessage}`, { metadata: { data: meta } });
             break;
           case 'error':
-            this.logger.error(`[Webview] ${logMessage}`, meta as any);
+            this.logger.error(`[Webview] ${logMessage}`, undefined, { metadata: { data: meta } });
             break;
           default:
-            this.logger.info(`[Webview] ${logMessage}`, meta as any);
+            this.logger.info(`[Webview] ${logMessage}`, { metadata: { data: meta } });
         }
         return; // 不需要进一步处理日志消息
       }

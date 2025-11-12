@@ -202,8 +202,9 @@ export class PlaceholderWebviewManager implements BaseManager {
     });
 
     // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
-    this.context.eventBus?.on('editor-visibility-changed', (async ({ isVisible }: { isVisible: boolean }) => {
-      if (isVisible) {
+    this.context.eventBus?.on('editor-visibility-changed', (...args: readonly unknown[]) => {
+      const payload = (args[0] as { isVisible: boolean } | undefined) ?? { isVisible: false };
+      if (payload.isVisible) {
         // 主编辑器变为可见，请求恢复代码预览（而不是显示占位符）
         this.context.eventBus?.emit('open-preview-requested', {
           source: 'editor-visibility-restored',
@@ -213,7 +214,7 @@ export class PlaceholderWebviewManager implements BaseManager {
         // 主编辑器变为不可见，销毁占位符
         this.hidePlaceholder();
       }
-    }) as any);
+    });
 
     // Listen for preview hidden due to visibility settings
     this.context.eventBus?.on('preview-hidden-by-visibility', () => {

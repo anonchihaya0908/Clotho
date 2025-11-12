@@ -120,11 +120,18 @@ export class DebounceIntegration implements BaseManager {
         async () => {
           // Check if preview already exists to avoid duplication
           const state = this.context?.stateManager?.getState();
-          if (state?.['previewMode'] === 'open' && state?.['previewEditor'] && !(state['previewEditor'] as any)?.document?.isClosed) {
+          const previewMode = state?.['previewMode'];
+          const previewEditorVal = state?.['previewEditor'];
+          const isEditorOpen = (() => {
+            if (!previewEditorVal || typeof previewEditorVal !== 'object') { return false; }
+            const doc = (previewEditorVal as { document?: { isClosed?: unknown } }).document;
+            return !!(doc && doc.isClosed === false);
+          })();
+          if (previewMode === 'open' && isEditorOpen) {
             this.logger.debug('Preview already exists and is open, skipping creation', {
               module: 'DebounceIntegration',
               operation: 'createDebouncedPreviewReopenHandler',
-              previewMode: state['previewMode'],
+              previewMode: previewMode,
             });
             return;
           }
@@ -144,8 +151,9 @@ export class DebounceIntegration implements BaseManager {
           try {
             await this.transitionManager.switchToPreview(async () => {
               await this.previewManager.openPreview();
-              const state = this.context?.stateManager?.getState();
-              return (state?.['previewEditor'] as any) || null;
+              const s = this.context?.stateManager?.getState();
+              const editor = s && typeof s === 'object' ? (s as { previewEditor?: unknown }).previewEditor : undefined;
+              return (editor as unknown as import('vscode').TextEditor) || null;
             });
           } catch (error) {
             this.logger.error('Transition manager failed, using fallback', error as Error, {

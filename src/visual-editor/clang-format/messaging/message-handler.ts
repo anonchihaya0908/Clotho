@@ -235,7 +235,9 @@ export class MessageHandler implements BaseManager {
    * 验证消息基本格式
    */
   private validateMessage(message: unknown): message is WebviewMessage {
-    return Boolean(message && typeof message === 'object' && message !== null && typeof (message as any).type === 'string');
+    if (!message || typeof message !== 'object') { return false; }
+    const m = message as { type?: unknown };
+    return typeof m.type === 'string';
   }
 
   dispose(): void {

@@ -187,7 +187,7 @@ export class PreviewEditorManager implements BaseManager {
    * 【优化】隐藏预览编辑器（真正关闭标签页但保留内容）
    */
   async hidePreview(): Promise<void> {
-    const state = this.context.stateManager?.getState() || {};
+    const state = getStateOrDefault(this.context.stateManager?.getState());
     const { previewEditor, previewUri } = state;
     if (!previewEditor || !previewUri || this.isHidden) {
       return;
@@ -195,13 +195,13 @@ export class PreviewEditorManager implements BaseManager {
 
     try {
       // 记录当前的ViewColumn以便恢复
-      this.hiddenViewColumn = (previewEditor as any)?.viewColumn;
+      this.hiddenViewColumn = previewEditor.viewColumn;
 
       // 查找并关闭预览标签页（但不清理内容）
       for (const tabGroup of vscode.window.tabGroups.all) {
         for (const tab of tabGroup.tabs) {
           const tabInput = tab.input as { uri?: vscode.Uri };
-          if (tabInput?.uri?.toString() === (previewUri as any)?.toString()) {
+          if (tabInput?.uri?.toString() === previewUri.toString()) {
             // Set hidden state before closing tab
             // 这样 tabGroups.onDidChangeTabs 事件处理器就能正确识别这是程序隐藏
             this.isHidden = true;
