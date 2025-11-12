@@ -38,7 +38,7 @@ export class IndexingStrategy implements SearchStrategy {
     if (!this.index) { return []; }
 
     const names = new Set([context.baseName]);
-    if (context.cleanedBaseName !== context.baseName) names.add(context.cleanedBaseName);
+    if (context.cleanedBaseName !== context.baseName) {names.add(context.cleanedBaseName);}
 
     const out: vscode.Uri[] = [];
     for (const name of names) {
@@ -87,7 +87,7 @@ export class IndexingStrategy implements SearchStrategy {
 
   /** Link to FS change events (if available) to mark index dirty */
   private attachFsDirtyLink(context: SearchContext): void {
-    if (this.fsLinked) return;
+    if (this.fsLinked) {return;}
     const fsAny = context.fileSystemService as unknown as { onDidAnyChange?: vscode.Event<vscode.Uri> };
     this.fileExistsFn = (u: vscode.Uri) => context.fileSystemService.fileExists(u);
     fsAny.onDidAnyChange?.(async (uri: vscode.Uri) => {

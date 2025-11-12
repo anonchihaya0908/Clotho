@@ -15,8 +15,20 @@ export * from './string';
 // Validation utilities
 export * from './validation';
 
-// Path handling utilities
-export * from './path';
+// Path handling utilities (avoid name clash with getFileExtension from file-type)
+export {
+  normalizePath,
+  normalizePathForCache,
+  getFileBaseName,
+  getDirectoryPath,
+  isHeaderExtension,
+  isSourceExtension,
+  getRelativePath,
+  getWorkspaceFolder,
+  createFileUri,
+  joinPaths,
+  isAbsolutePath,
+} from './path';
 
 // File system utilities
 export * from './file-system';

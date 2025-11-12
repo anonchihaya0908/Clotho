@@ -1,6 +1,6 @@
 /**
  * Directory Pattern Matcher
- * 
+ *
  * Unified logic for matching file paths against directory patterns.
  * Eliminates code duplication between src/include and tests strategies.
  */
@@ -15,13 +15,13 @@ import { PERFORMANCE } from '../../common/constants';
 export interface DirectoryPattern {
   /** Root path before the matched directory */
   rootPath: string;
-  
+
   /** Sub-path after the matched directory */
   subPath: string;
-  
+
   /** The directory that was matched */
   matchedDir: string;
-  
+
   /** Target directories to search in */
   targetDirs: string[];
 }
@@ -30,16 +30,16 @@ export interface DirectoryPattern {
  * Helper class for matching and extracting directory patterns from file paths
  */
 export class DirectoryPatternMatcher {
-  private static regexCache: LRUCache<string, RegExp> = 
+  private static regexCache: LRUCache<string, RegExp> =
     new LRUCache<string, RegExp>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
-    
-  private static pathNormalizeCache: LRUCache<string, string> = 
+
+  private static pathNormalizeCache: LRUCache<string, string> =
     new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
 
   /**
    * Matches a file path against a set of source directories
    * and returns information about the match
-   * 
+   *
    * @param filePath File path to match
    * @param sourceDirs Source directory patterns to match against
    * @param targetDirs Target directories to search in when matched
@@ -51,13 +51,13 @@ export class DirectoryPatternMatcher {
     targetDirs: string[]
   ): DirectoryPattern | null {
     const normalized = this.getNormalizedPath(filePath);
-    
+
     // Try to match each source directory pattern
     for (const sourceDir of sourceDirs) {
       const pattern = `^(.+?)\\/${this.escapeRegex(sourceDir)}\\/(.*)$`;
       const regex = this.getCachedRegex(pattern);
       const match = normalized.match(regex);
-      
+
       if (match) {
         return {
           rootPath: match[1] ?? '',
@@ -67,7 +67,7 @@ export class DirectoryPatternMatcher {
         };
       }
     }
-    
+
     return null;
   }
 
@@ -79,7 +79,7 @@ export class DirectoryPatternMatcher {
     if (cached) {
       return cached;
     }
-    
+
     const regex = new RegExp(pattern);
     DirectoryPatternMatcher.regexCache.set(pattern, regex);
     return regex;
@@ -93,7 +93,7 @@ export class DirectoryPatternMatcher {
     if (cached !== undefined) {
       return cached;
     }
-    
+
     const normalized = path.normalize(filePath).replace(/\\/g, '/');
     DirectoryPatternMatcher.pathNormalizeCache.set(filePath, normalized);
     return normalized;

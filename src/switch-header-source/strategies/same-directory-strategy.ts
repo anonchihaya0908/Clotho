@@ -1,9 +1,9 @@
 /**
  * Same Directory Search Strategy
- * 
+ *
  * Searches for partner files in the same directory as the current file.
  * This is the fastest and most common case.
- * 
+ *
  * Example:
  *   /path/to/MyClass.h → /path/to/MyClass.cpp
  */
@@ -23,17 +23,17 @@ export class SameDirectoryStrategy implements SearchStrategy {
 
   async search(context: SearchContext): Promise<vscode.Uri[]> {
     const directory = path.dirname(context.currentFile.fsPath);
-    
+
     // Generate candidate file paths
     const candidateUris = this.generateCandidatePaths(
       directory,
       context.baseName,
       context.targetExtensions
     );
-    
+
     // Check all files in parallel
     const existingFiles = await context.fileSystemService.checkMultipleFiles(candidateUris);
-    
+
     return existingFiles;
   }
 
@@ -45,7 +45,7 @@ export class SameDirectoryStrategy implements SearchStrategy {
     baseName: string,
     extensions: string[]
   ): vscode.Uri[] {
-    return extensions.map(ext => 
+    return extensions.map(ext =>
       vscode.Uri.file(path.join(directory, `${baseName}${ext}`))
     );
   }

@@ -121,3 +121,4 @@ ehthumbs.db
 .windsurf
 openspec
 *.backup
+.vscode-test

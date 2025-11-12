@@ -32,7 +32,6 @@
     "node_modules",
     "out",
     "webviews",
-    "**/*.test.ts",
-    "**/*.spec.ts"
+    "src/common/i18n/examples.ts"
   ]
 }

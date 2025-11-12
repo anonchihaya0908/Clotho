@@ -16,7 +16,7 @@ export class MockFileSystemService implements IFileSystemService {
   addFile(filePath: string, content: string = ''): void {
     const key = normalizePathForCache(filePath);
     this.files.add(key);
-    if (content) this.contents.set(key, content);
+    if (content) {this.contents.set(key, content);}
   }
 
   // IFileSystemService implementation
@@ -28,7 +28,7 @@ export class MockFileSystemService implements IFileSystemService {
   async checkMultipleFiles(uris: vscode.Uri[]): Promise<vscode.Uri[]> {
     const out: vscode.Uri[] = [];
     for (const uri of uris) {
-      if (await this.fileExists(uri)) out.push(uri);
+      if (await this.fileExists(uri)) {out.push(uri);}
     }
     return out;
   }

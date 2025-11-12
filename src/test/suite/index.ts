@@ -1,31 +1,23 @@
 import * as path from 'path';
-import * as Mocha from 'mocha';
-import * as glob from 'glob';
+import Mocha from 'mocha';
+import { glob } from 'glob';
 
-export function run(): Promise<void> {
+export async function run(): Promise<void> {
   const mocha = new Mocha({ ui: 'tdd', color: true, timeout: 20000 });
   const testsRoot = path.resolve(__dirname);
 
-  return new Promise((resolve, reject) => {
-    glob('**/*.test.js', { cwd: testsRoot }, (err, files) => {
-      if (err) {
-        return reject(err);
-      }
-      try {
-        files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
-        mocha.run(failures => {
-          if (failures > 0) {
-            reject(new Error(`${failures} tests failed.`));
-          } else {
-            resolve();
-          }
-        });
-      } catch (e) {
-        reject(e);
+  const files = await glob('**/*.test.js', { cwd: testsRoot });
+  files.forEach((f: string) => mocha.addFile(path.resolve(testsRoot, f)));
+
+  await new Promise<void>((resolve, reject) => {
+    mocha.run((failures: number) => {
+      if (failures > 0) {
+        reject(new Error(`${failures} tests failed.`));
+      } else {
+        resolve();
       }
     });
   });
 }
 
 export function configure() { /* noop */ }
-

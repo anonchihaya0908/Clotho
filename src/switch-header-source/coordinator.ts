@@ -24,7 +24,7 @@ export class SwitchCoordinator extends BaseCoordinator {
   private readonly service: ISwitchService;
   private readonly ui: SwitchUI;
   private readonly configService: SwitchConfigService;
-  private readonly statusBar?: SwitchStatusBar;
+  private readonly statusBar: SwitchStatusBar | undefined;
 
   constructor(
     service: ISwitchService,
@@ -91,8 +91,7 @@ export class SwitchCoordinator extends BaseCoordinator {
         const cancelLabel = L.ui.button.cancel();
         const choice = await vscode.window.showInformationMessage(offer, createLabel, cancelLabel);
         if (choice === createLabel) {
-          const pairCoordinator = serviceContainer.get('pairCoordinator');
-          await pairCoordinator.create();
+          await vscode.commands.executeCommand('clotho.newSourcePair');
         }
         return;
       }
@@ -102,8 +101,11 @@ export class SwitchCoordinator extends BaseCoordinator {
       const isHeader = getFileType(currentPath) === 'header';
       let opened: vscode.Uri | undefined;
       if (result.files.length === 1) {
-        opened = result.files[0];
-        await this.ui.openFile(opened);
+        const only = result.files[0];
+        if (only) {
+          opened = only;
+          await this.ui.openFile(only);
+        }
       } else {
         opened = await this.ui.showFileSelectionDialog(result.files, baseName, isHeader);
         if (opened) {

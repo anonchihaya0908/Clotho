@@ -3,7 +3,7 @@
  *
  * This module provides the core switching logic without any UI dependencies.
  * It implements a hybrid clangd + heuristic approach using the Strategy Pattern.
- * 
+ *
  * Architecture:
  * - SearchStrategyManager: Manages and executes search strategies
  * - PerformanceMonitor: Tracks metrics and performance
@@ -29,7 +29,7 @@ import { ISwitchService, IFileSystemService } from '../common/interfaces/service
 import { getCacheManager, CacheCategory } from '../common/cache';
 
 import { SwitchConfigService } from './config-manager';
-import { 
+import {
   SearchStrategyManager,
   SearchContext,
   SameDirectoryStrategy,
@@ -101,11 +101,11 @@ export class SwitchService implements ISwitchService {
     // Allow dependency injection for testing
     this.configService = configService ?? new SwitchConfigService();
     this.fileSystemService = fileSystemService ?? FileSystemService.getInstance();
-    
+
     // Initialize strategy manager
     this.strategyManager = new SearchStrategyManager();
     this.registerStrategies();
-    
+
     // Initialize performance monitor
     this.performanceMonitor = new PerformanceMonitor();
     // Read cache TTL from settings
@@ -125,7 +125,7 @@ export class SwitchService implements ISwitchService {
         }
       });
     } catch { /* noop */ }
-    
+
     this.logger.info('SwitchService initialized with Strategy Pattern', {
       module: 'SwitchService',
       operation: 'constructor',
@@ -143,7 +143,7 @@ export class SwitchService implements ISwitchService {
       new IndexingStrategy(),
       new GlobalSearchStrategy(),
     ]);
-    
+
     this.logger.debug('Registered all search strategies', {
       module: 'SwitchService',
       operation: 'registerStrategies',
@@ -170,7 +170,7 @@ export class SwitchService implements ISwitchService {
       SwitchService._searchResultsCache.clear();
     }
     this.fileSystemService.clearCache();
-    
+
     this.logger.info('All caches cleared', {
       module: 'SwitchService',
       operation: 'clearCache',
@@ -184,7 +184,7 @@ export class SwitchService implements ISwitchService {
   /**
    * Finds partner files for the given file.
    * Uses caching and strategy pattern for optimal performance.
-   * 
+   *
    * @param currentFile Current file URI
    * @returns SearchResult with found files and method used, or null if not found
    */
@@ -204,26 +204,26 @@ export class SwitchService implements ISwitchService {
         // Expired entry
         SwitchService.searchResultsCache.delete(cacheKey);
       } else {
-      const duration = Date.now() - startTime;
-      this.performanceMonitor.recordSearch(
-        cachedEntry.result.method,
-        duration,
-        cachedEntry.result.files.length > 0,
-        true // from cache
-      );
-      
-      this.logger.debug('Returned cached search result', {
-        module: 'SwitchService',
-        operation: 'findPartnerFile',
-        metadata: {
-          method: cachedEntry.result.method,
-          filesFound: cachedEntry.result.files.length,
-          duration: duration,
-          fromCache: true,
-        }
-      });
-      
-      return cachedEntry.result;
+        const duration = Date.now() - startTime;
+        this.performanceMonitor.recordSearch(
+          cachedEntry.result.method,
+          duration,
+          cachedEntry.result.files.length > 0,
+          true // from cache
+        );
+
+        this.logger.debug('Returned cached search result', {
+          module: 'SwitchService',
+          operation: 'findPartnerFile',
+          metadata: {
+            method: cachedEntry.result.method,
+            filesFound: cachedEntry.result.files.length,
+            duration: duration,
+            fromCache: true,
+          }
+        });
+
+        return cachedEntry.result;
       }
     }
 
@@ -255,7 +255,7 @@ export class SwitchService implements ISwitchService {
 
     const result = await this.strategyManager.search(context);
     const duration = Date.now() - startTime;
-    
+
     // Record performance metrics
     this.performanceMonitor.recordSearch(
       result.method,

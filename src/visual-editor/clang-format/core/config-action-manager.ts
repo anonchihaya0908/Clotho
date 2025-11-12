@@ -161,7 +161,7 @@ export class ConfigActionManager implements BaseManager {
         await this.context.errorRecovery.handleError(
           'config-load-failed',
           error as Error,
-          { 
+          {
             file: fileUri.toString(),
             silent: silent // Pass silent flag to control user notification
           },
@@ -174,7 +174,7 @@ export class ConfigActionManager implements BaseManager {
           );
         }
       }
-      
+
       // Always log for debugging, even in silent mode
       if (silent) {
         this.logger.warn('Auto-load failed, using default configuration', {

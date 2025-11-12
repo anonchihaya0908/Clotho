@@ -281,6 +281,11 @@ export interface ISwitchService {
    * 清除所有缓存
    */
   clearCache(): void;
+
+  /**
+   * 输出性能报告到日志
+   */
+  logPerformanceReport(): void;
 }
 
 // ===============================

@@ -1,6 +1,6 @@
 /**
  * Search Strategy Interface
- * 
+ *
  * Defines the contract for all file search strategies.
  * Each strategy represents a different approach to finding partner files.
  */
@@ -16,22 +16,22 @@ import { IFileSystemService } from '../../common/interfaces/services';
 export interface SearchContext {
   /** Current file URI */
   currentFile: vscode.Uri;
-  
+
   /** Base filename without extension */
   baseName: string;
-  
+
   /** Cleaned base filename (test prefixes/suffixes removed) */
   cleanedBaseName: string;
-  
+
   /** Whether the current file is a header file */
   isHeader: boolean;
-  
+
   /** Target file extensions to search for */
   targetExtensions: string[];
-  
+
   /** Current switch configuration */
   config: SwitchConfig;
-  
+
   /** File system service for checking file existence */
   fileSystemService: IFileSystemService;
 }
@@ -42,17 +42,17 @@ export interface SearchContext {
 export interface SearchStrategy {
   /** Strategy name for logging and debugging */
   readonly name: string;
-  
+
   /** Priority (higher = executed first) */
   readonly priority: number;
-  
+
   /**
    * Determines if this strategy can be applied to the current context
    * @param context Search context
    * @returns true if strategy is applicable
    */
   canApply(context: SearchContext): boolean;
-  
+
   /**
    * Performs the search using this strategy
    * @param context Search context

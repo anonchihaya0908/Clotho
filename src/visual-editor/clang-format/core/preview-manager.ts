@@ -226,7 +226,7 @@ export class PreviewEditorManager implements BaseManager {
    * 【优化】显示之前隐藏的预览编辑器（智能恢复策略）
    */
   async showPreview(): Promise<void> {
-    const state = this.context.stateManager?.getState() || {};
+    const state = getStateOrDefault(this.context.stateManager?.getState());
     const { previewUri } = state;
     if (!previewUri || !this.isHidden) {
       return;

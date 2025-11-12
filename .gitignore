@@ -75,3 +75,4 @@ cursor.md
 .windsurf
 openspec
 *.backup
+.vscode-test

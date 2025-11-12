@@ -33,7 +33,7 @@ export function isClangdAvailable(): boolean {
 export async function trySwitchSourceHeader(currentFile: vscode.Uri): Promise<vscode.Uri | null> {
   const start = Date.now();
   try {
-    let clangdExtension = vscode.extensions.getExtension(EXTERNAL_EXTENSIONS.CLANGD);
+    const clangdExtension = vscode.extensions.getExtension(EXTERNAL_EXTENSIONS.CLANGD);
     if (!clangdExtension) {
       logger.debug('clangd extension not found', { operation: 'trySwitchSourceHeader' });
       return null;

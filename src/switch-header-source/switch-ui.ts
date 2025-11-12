@@ -103,7 +103,7 @@ export class SwitchUI {
 
     const selected = await vscode.window.showQuickPick(items, {
       placeHolder: L.ui.switch.multipleFilesFound(baseName, fileType),
-      title: L.ui.quickPick.selectCorrespondingFile(),
+      title: L.ui.quickPick.selectCorrespondingFile(baseName, fileType),
       matchOnDescription: true,
       matchOnDetail: true,
     });

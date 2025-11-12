@@ -1,6 +1,6 @@
 /**
  * Search Strategy Manager
- * 
+ *
  * Manages and coordinates all search strategies.
  * Executes strategies in priority order and returns the first successful result.
  */
@@ -23,7 +23,7 @@ export class SearchStrategyManager {
   registerStrategy(strategy: SearchStrategy): void {
     this.strategies.push(strategy);
     this.strategies.sort((a, b) => b.priority - a.priority);
-    
+
     this.logger.debug(`Registered strategy: ${strategy.name} (priority: ${strategy.priority})`, {
       module: 'SearchStrategyManager',
       operation: 'registerStrategy',
@@ -39,7 +39,7 @@ export class SearchStrategyManager {
 
   /**
    * Executes strategies in priority order until one succeeds
-   * 
+   *
    * @param context Search context
    * @returns SearchResult with found files and the strategy that found them
    */
@@ -64,11 +64,11 @@ export class SearchStrategyManager {
 
       // Execute strategy
       const startTime = Date.now();
-      
+
       try {
         const files = await strategy.search(context);
         const duration = Date.now() - startTime;
-        
+
         if (files.length > 0) {
           this.logger.info(`Strategy ${strategy.name} found ${files.length} file(s)`, {
             module: 'SearchStrategyManager',
@@ -79,13 +79,13 @@ export class SearchStrategyManager {
               duration: duration,
             }
           });
-          
+
           return {
             files,
             method: strategy.name as SearchMethod,
           };
         }
-        
+
         this.logger.debug(`Strategy ${strategy.name} found no files (${duration}ms)`, {
           module: 'SearchStrategyManager',
           operation: 'search',

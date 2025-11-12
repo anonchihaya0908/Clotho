@@ -1,6 +1,6 @@
 /**
  * Performance Monitor
- * 
+ *
  * Tracks and reports performance metrics for the switch service.
  * Provides insights into strategy effectiveness and search performance.
  */
@@ -14,31 +14,31 @@ import { createModuleLogger } from '../common/logger/unified-logger';
 export interface PerformanceMetrics {
   /** Total number of searches performed */
   totalSearches: number;
-  
+
   /** Number of successful searches */
   successfulSearches: number;
-  
+
   /** Number of clangd successes */
   clangdSuccesses: number;
-  
+
   /** Number of clangd failures */
   clangdFailures: number;
-  
+
   /** Success count per strategy */
   strategySuccesses: Map<SearchMethod, number>;
-  
+
   /** Total search time per strategy (ms) */
   strategyTotalTime: Map<SearchMethod, number>;
-  
+
   /** Average search time across all searches (ms) */
   averageSearchTime: number;
-  
+
   /** Cache hit rate (0-1) */
   cacheHitRate: number;
-  
+
   /** Number of cache hits */
   cacheHits: number;
-  
+
   /** Number of cache misses */
   cacheMisses: number;
 }
@@ -48,7 +48,7 @@ export interface PerformanceMetrics {
  */
 export class PerformanceMonitor {
   private logger = createModuleLogger('PerformanceMonitor');
-  
+
   private metrics: PerformanceMetrics = {
     totalSearches: 0,
     successfulSearches: 0,
@@ -64,7 +64,7 @@ export class PerformanceMonitor {
 
   /**
    * Records a search operation
-   * 
+   *
    * @param method Search method used
    * @param duration Search duration in milliseconds
    * @param success Whether files were found
@@ -77,20 +77,20 @@ export class PerformanceMonitor {
     fromCache: boolean = false
   ): void {
     this.metrics.totalSearches++;
-    
+
     // Update cache statistics
     if (fromCache) {
       this.metrics.cacheHits++;
     } else {
       this.metrics.cacheMisses++;
     }
-    
+
     // Update cache hit rate
     const totalCacheAttempts = this.metrics.cacheHits + this.metrics.cacheMisses;
-    this.metrics.cacheHitRate = totalCacheAttempts > 0 
-      ? this.metrics.cacheHits / totalCacheAttempts 
+    this.metrics.cacheHitRate = totalCacheAttempts > 0
+      ? this.metrics.cacheHits / totalCacheAttempts
       : 0;
-    
+
     // Don't count cached results in strategy statistics
     if (!fromCache) {
       // Update clangd statistics
@@ -101,19 +101,19 @@ export class PerformanceMonitor {
           this.metrics.clangdFailures++;
         }
       }
-      
+
       // Update strategy-specific statistics
       if (success) {
         this.metrics.successfulSearches++;
-        
+
         const currentCount = this.metrics.strategySuccesses.get(method) || 0;
         this.metrics.strategySuccesses.set(method, currentCount + 1);
       }
-      
+
       // Update timing statistics
       const currentTime = this.metrics.strategyTotalTime.get(method) || 0;
       this.metrics.strategyTotalTime.set(method, currentTime + duration);
-      
+
       // Update average search time
       const totalTime = Array.from(this.metrics.strategyTotalTime.values())
         .reduce((sum, time) => sum + time, 0);
@@ -133,16 +133,16 @@ export class PerformanceMonitor {
    */
   getReport(): string {
     const { metrics } = this;
-    
+
     const clangdTotal = metrics.clangdSuccesses + metrics.clangdFailures;
     const clangdSuccessRate = clangdTotal > 0
       ? ((metrics.clangdSuccesses / clangdTotal) * 100).toFixed(1)
       : 'N/A';
-    
+
     const overallSuccessRate = metrics.totalSearches > 0
       ? ((metrics.successfulSearches / metrics.totalSearches) * 100).toFixed(1)
       : 'N/A';
-    
+
     const lines: string[] = [
       '='.repeat(60),
       'Switch Service Performance Report',
@@ -161,25 +161,25 @@ export class PerformanceMonitor {
       '',
       'Strategy Statistics:',
     ];
-    
+
     // Sort strategies by success count
     const sortedStrategies = Array.from(metrics.strategySuccesses.entries())
       .sort((a, b) => b[1] - a[1]);
-    
+
     for (const [method, count] of sortedStrategies) {
       const totalTime = metrics.strategyTotalTime.get(method) || 0;
       const avgTime = count > 0 ? (totalTime / count).toFixed(0) : '0';
       const percentage = metrics.successfulSearches > 0
         ? ((count / metrics.successfulSearches) * 100).toFixed(1)
         : '0.0';
-      
+
       lines.push(
         `  ${method.padEnd(20)} - ${count} successes (${percentage}%), avg ${avgTime}ms`
       );
     }
-    
+
     lines.push('='.repeat(60));
-    
+
     return lines.join('\n');
   }
 
@@ -199,7 +199,7 @@ export class PerformanceMonitor {
       cacheHits: 0,
       cacheMisses: 0,
     };
-    
+
     this.logger.info('Performance metrics reset', {
       module: 'PerformanceMonitor',
       operation: 'reset',

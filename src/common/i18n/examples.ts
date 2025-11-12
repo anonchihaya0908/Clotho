@@ -2,7 +2,7 @@
  * i18n 使用示例
  *
  * 演示如何在代码中使用 Localization 工具类
- * 
+ *
  * Note: This file contains examples using outdated API and needs updating
  */
 

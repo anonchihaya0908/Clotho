@@ -1,6 +1,6 @@
 /**
  * Search Strategies Export
- * 
+ *
  * Central export point for all search strategies and related components.
  */
 
