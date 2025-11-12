@@ -44,6 +44,9 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
   // File system watcher for automatic cache invalidation
   private fileWatcher: vscode.FileSystemWatcher | null = null;
   private disposables: vscode.Disposable[] = [];
+  private watchInitialized = false;
+  private readonly anyChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
+  public readonly onDidAnyChange: vscode.Event<vscode.Uri> = this.anyChangeEmitter.event;
 
   /**
    * Private constructor for singleton pattern
@@ -70,8 +73,7 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
       'File content cache'
     );
 
-    // Set up file system watcher for automatic cache invalidation
-    this.setupFileWatcher();
+    // Defer watcher setup until first use (lazy init)
 
     this.logger.info('FileSystemService initialized', {
       module: 'FileSystemService',
@@ -85,15 +87,28 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
    * Monitors file changes and updates cache accordingly
    */
   private setupFileWatcher(): void {
+    if (this.watchInitialized) { return; }
+    const enable = vscode.workspace.getConfiguration('clotho').get<boolean>('fs.enableWatcher', true);
+    if (!enable) { return; }
     try {
-      // Watch only relevant files to reduce overhead
-      const patterns = [
+      // Watch only relevant files per workspace root to reduce overhead
+      const globs = [
         '**/*.{c,cc,cpp,cxx,h,hh,hpp,hxx}',
         '**/.clang-format',
         '**/_clang-format',
       ];
-
-      const watchers = patterns.map((p) => vscode.workspace.createFileSystemWatcher(p));
+      const folders = vscode.workspace.workspaceFolders || [];
+      const watchers: vscode.FileSystemWatcher[] = [];
+      for (const folder of folders) {
+        for (const g of globs) {
+          const pattern = new vscode.RelativePattern(folder, g);
+          watchers.push(vscode.workspace.createFileSystemWatcher(pattern));
+        }
+      }
+      if (watchers.length === 0) {
+        // Fallback to workspace-wide patterns if no folders
+        globs.forEach(g => watchers.push(vscode.workspace.createFileSystemWatcher(g)));
+      }
 
       // Aggregate into a composite disposable
       this.fileWatcher = {
@@ -119,6 +134,7 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
       this.fileWatcher.onDidCreate((uri) => {
         const key = this.normalizePathForCache(uri.fsPath);
         this.fileExistsCache.set(key, true);
+        this.anyChangeEmitter.fire(uri);
         this.logger.debug('File created, updating cache', {
           module: 'FileSystemService',
           operation: 'onDidCreate',
@@ -131,6 +147,7 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
         const key = this.normalizePathForCache(uri.fsPath);
         this.fileExistsCache.set(key, false);
         this.fileContentCache.delete(key);
+        this.anyChangeEmitter.fire(uri);
         this.logger.debug('File deleted, invalidating cache', {
           module: 'FileSystemService',
           operation: 'onDidDelete',
@@ -142,6 +159,7 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
       this.fileWatcher.onDidChange((uri) => {
         const key = this.normalizePathForCache(uri.fsPath);
         this.fileContentCache.delete(key);
+        this.anyChangeEmitter.fire(uri);
         this.logger.debug('File changed, invalidating content cache', {
           module: 'FileSystemService',
           operation: 'onDidChange',
@@ -150,6 +168,7 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
       });
 
       this.disposables.push(this.fileWatcher);
+      this.watchInitialized = true;
 
       this.logger.info('File system watcher initialized successfully', {
         module: 'FileSystemService',
@@ -162,6 +181,13 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
         showToUser: false,
         logLevel: 'warn',
       });
+    }
+  }
+
+  /** Ensure file watcher is set up (lazy) */
+  private ensureWatcher(): void {
+    if (!this.watchInitialized) {
+      this.setupFileWatcher();
     }
   }
 
@@ -221,6 +247,7 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
    * Check if a file exists (with caching)
    */
   public async fileExists(uri: vscode.Uri): Promise<boolean> {
+    this.ensureWatcher();
     const key = this.normalizePathForCache(uri.fsPath);
 
     // Check cache first
@@ -248,6 +275,7 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
    * Returns only the URIs of files that exist
    */
   public async checkMultipleFiles(uris: vscode.Uri[]): Promise<vscode.Uri[]> {
+    this.ensureWatcher();
     if (uris.length === 0) {
       return [];
     }
@@ -282,6 +310,7 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
    * Note: Content caching is optional and should be used carefully
    */
   public async readFile(uri: vscode.Uri): Promise<string> {
+    this.ensureWatcher();
     const key = this.normalizePathForCache(uri.fsPath);
 
     // Check cache (optional, can be disabled for always-fresh reads)
@@ -313,6 +342,7 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
    * Write file content
    */
   public async writeFile(uri: vscode.Uri, content: string): Promise<void> {
+    this.ensureWatcher();
     const writeOperation = errorHandler.wrapAsync(
       async () => {
         await vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf8'));

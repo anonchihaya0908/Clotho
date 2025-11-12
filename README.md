@@ -97,6 +97,10 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 - Right-click in the editor
 - Select "Switch Between Header/Source"
 
+#### Developer Tools
+- "Clotho: Dump Switch Performance Metrics" — prints a performance report to the Clotho output channel
+- "Clotho: Run Strategy Self-Tests" — runs internal tests for matcher/strategies and logs a pass/fail summary
+
 ### Configuration
 
 #### Method 1: Command Palette
@@ -235,3 +239,13 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ---
 
 **Enjoy weaving your C/C++ code with Clotho!** 🧵✨
+### Performance and Diagnostics
+
+```json
+{
+  "clotho.logLevel": "info",                      // silly|trace|debug|info|warn|error|fatal
+  "clotho.performance.slowOperationThreshold": 1000, // ms; used for slow-op categorization
+  "clotho.fs.enableWatcher": true,                  // enable file watcher for cache invalidation
+  "clotho.switch.cacheTTLms": 60000                 // TTL for switch result cache (0 disables)
+}
+```

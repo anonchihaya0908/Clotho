@@ -36,6 +36,7 @@ import {
   SrcIncludeStrategy,
   TestsStrategy,
   GlobalSearchStrategy,
+  IndexingStrategy,
 } from './strategies';
 import { PerformanceMonitor } from './performance-monitor';
 import { isClangdAvailable as helperIsClangdAvailable, trySwitchSourceHeader as helperTrySwitch } from '../common/utils/clangd-client-helper';
@@ -49,12 +50,12 @@ export class SwitchService implements ISwitchService {
   // Static Caches (Shared across all instances)
   // ===============================
 
-  private static _searchResultsCache: LRUCache<string, SearchResult> | undefined;
+  private static _searchResultsCache: LRUCache<string, { result: SearchResult; ts: number }> | undefined;
   private static _cachesRegistered = false;
 
-  private static get searchResultsCache(): LRUCache<string, SearchResult> {
+  private static get searchResultsCache(): LRUCache<string, { result: SearchResult; ts: number }> {
     if (!this._searchResultsCache) {
-      this._searchResultsCache = new LRUCache<string, SearchResult>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+      this._searchResultsCache = new LRUCache<string, { result: SearchResult; ts: number }>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
       this.registerStaticCaches();
     }
     return this._searchResultsCache;
@@ -73,7 +74,7 @@ export class SwitchService implements ISwitchService {
     if (this._searchResultsCache) {
       cacheManager.registerCache(
         'switch:searchResults',
-        this._searchResultsCache,
+        this._searchResultsCache as unknown as LRUCache<string, any>,
         CacheCategory.Search,
         'Search results cache for file switching'
       );
@@ -91,6 +92,7 @@ export class SwitchService implements ISwitchService {
   private readonly fileSystemService: IFileSystemService;
   private readonly strategyManager: SearchStrategyManager;
   private readonly performanceMonitor: PerformanceMonitor;
+  private cacheTTLms: number;
 
   constructor(
     configService?: SwitchConfigService,
@@ -106,6 +108,23 @@ export class SwitchService implements ISwitchService {
     
     // Initialize performance monitor
     this.performanceMonitor = new PerformanceMonitor();
+    // Read cache TTL from settings
+    this.cacheTTLms = vscode.workspace.getConfiguration('clotho').get<number>('switch.cacheTTLms', 60000);
+    vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('clotho.switch.cacheTTLms')) {
+        this.cacheTTLms = vscode.workspace.getConfiguration('clotho').get<number>('switch.cacheTTLms', 60000);
+        this.logger.info('Updated switch cache TTL', { module: 'SwitchService', operation: 'configChange', ttl: this.cacheTTLms });
+      }
+    });
+    // Invalidate search cache on any file change
+    try {
+      const fsAny = this.fileSystemService as unknown as { onDidAnyChange?: vscode.Event<vscode.Uri> };
+      fsAny.onDidAnyChange?.(() => {
+        if (SwitchService._searchResultsCache) {
+          SwitchService._searchResultsCache.clear();
+        }
+      });
+    } catch { /* noop */ }
     
     this.logger.info('SwitchService initialized with Strategy Pattern', {
       module: 'SwitchService',
@@ -121,6 +140,7 @@ export class SwitchService implements ISwitchService {
       new SameDirectoryStrategy(),
       new SrcIncludeStrategy(),
       new TestsStrategy(),
+      new IndexingStrategy(),
       new GlobalSearchStrategy(),
     ]);
     
@@ -178,13 +198,17 @@ export class SwitchService implements ISwitchService {
 
     // Check cache first
     const cacheKey = this.generateSearchCacheKey(currentFile, baseName, isHeader);
-    const cachedResult = SwitchService.searchResultsCache.get(cacheKey);
-    if (cachedResult) {
+    const cachedEntry = SwitchService.searchResultsCache.get(cacheKey);
+    if (cachedEntry) {
+      if (this.cacheTTLms > 0 && (Date.now() - cachedEntry.ts) > this.cacheTTLms) {
+        // Expired entry
+        SwitchService.searchResultsCache.delete(cacheKey);
+      } else {
       const duration = Date.now() - startTime;
       this.performanceMonitor.recordSearch(
-        cachedResult.method,
+        cachedEntry.result.method,
         duration,
-        cachedResult.files.length > 0,
+        cachedEntry.result.files.length > 0,
         true // from cache
       );
       
@@ -192,21 +216,22 @@ export class SwitchService implements ISwitchService {
         module: 'SwitchService',
         operation: 'findPartnerFile',
         metadata: {
-          method: cachedResult.method,
-          filesFound: cachedResult.files.length,
+          method: cachedEntry.result.method,
+          filesFound: cachedEntry.result.files.length,
           duration: duration,
           fromCache: true,
         }
       });
       
-      return cachedResult;
+      return cachedEntry.result;
+      }
     }
 
     // Step 1: Try clangd LSP first (the "omniscient" mode)
     const clangdResult = await this.tryClangdSwitch(currentFile);
     if (clangdResult.files.length > 0) {
       const duration = Date.now() - startTime;
-      SwitchService.searchResultsCache.set(cacheKey, clangdResult);
+      SwitchService.searchResultsCache.set(cacheKey, { result: clangdResult, ts: Date.now() });
       this.performanceMonitor.recordSearch('clangd', duration, true, false);
       return clangdResult;
     }
@@ -241,7 +266,7 @@ export class SwitchService implements ISwitchService {
 
     // Cache the result
     if (result.files.length > 0) {
-      SwitchService.searchResultsCache.set(cacheKey, result);
+      SwitchService.searchResultsCache.set(cacheKey, { result, ts: Date.now() });
     }
 
     this.logger.info('Search completed', {

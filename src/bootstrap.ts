@@ -177,11 +177,16 @@ function registerServices(context: vscode.ExtensionContext): void {
   serviceContainer.register('switchUI',
     () => new SwitchUI());
 
+  // Status bar for switch
+  serviceContainer.register('switchStatusBar',
+    () => new (require('./switch-header-source/status-bar').SwitchStatusBar)());
+
   serviceContainer.register('switchCoordinator',
     (container) => new SwitchCoordinator(
       container.get('switchService'),
       container.get('switchUI'),
-      container.get('switchConfigService')
+      container.get('switchConfigService'),
+      container.get('switchStatusBar')
     ));
 
 

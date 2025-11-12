@@ -11,6 +11,7 @@ import {
 } from '../common';
 import { BaseCoordinator } from '../common/base-coordinator';
 import { SwitchConfigService } from './config-manager';
+import { SwitchStatusBar } from './status-bar';
 import { ISwitchService } from '../common/interfaces/services';
 import { SwitchUI } from './switch-ui';
 
@@ -22,11 +23,13 @@ export class SwitchCoordinator extends BaseCoordinator {
   private readonly service: ISwitchService;
   private readonly ui: SwitchUI;
   private readonly configService: SwitchConfigService;
+  private readonly statusBar?: SwitchStatusBar;
 
   constructor(
     service: ISwitchService,
     ui: SwitchUI,
-    configService?: SwitchConfigService
+    configService?: SwitchConfigService,
+    statusBar?: SwitchStatusBar
   ) {
     super(); // Initialize BaseCoordinator
 
@@ -34,6 +37,7 @@ export class SwitchCoordinator extends BaseCoordinator {
     this.service = service;
     this.ui = ui;
     this.configService = configService ?? new SwitchConfigService();
+    this.statusBar = statusBar;
 
     // Validate dependencies
     this.validateDependencies({
@@ -57,6 +61,7 @@ export class SwitchCoordinator extends BaseCoordinator {
    */
   public async switchHeaderSource(): Promise<void> {
     return this.executeOperation('switchHeaderSource', async () => {
+      const t0 = Date.now();
       // Validate preconditions
       const activeEditor = this.validateActiveEditor();
       if (!activeEditor) { return; }
@@ -73,16 +78,30 @@ export class SwitchCoordinator extends BaseCoordinator {
 
       // Perform the search
       const result = await this.service.findPartnerFile(currentFile);
+      const duration = Date.now() - t0;
 
       if (!result || result.files.length === 0) {
         const baseName = path.basename(currentPath, path.extname(currentPath));
         const fileType = getFileType(currentPath);
         this.ui.showNoFilesFoundMessage(baseName, fileType === 'header');
+        // Offer to create pair when nothing found
+        const choice = await vscode.window.showInformationMessage(
+          `No corresponding ${fileType === 'header' ? 'source' : 'header'} file found for '${baseName}'. Create a new pair?`,
+          'Create Pair',
+          'Cancel'
+        );
+        if (choice === 'Create Pair') {
+          const pairCoordinator = serviceContainer.get('pairCoordinator');
+          await pairCoordinator.create();
+        }
         return;
       }
 
       // Handle the results
       const baseName = path.basename(currentPath, path.extname(currentPath));
+      if (result) {
+        this.statusBar?.update(result.method, duration, result.files.length);
+      }
       const isHeader = getFileType(currentPath) === 'header';
       await this.ui.handleSearchResult(
         result.files,

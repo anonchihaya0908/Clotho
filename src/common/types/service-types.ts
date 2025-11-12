@@ -24,6 +24,7 @@ import {
 import { SwitchConfigService } from '../../switch-header-source/config-manager';
 import { ClangFormatEditorCoordinator } from '../../visual-editor';
 import { ClangFormatGuideService } from '../../visual-editor/clang-format/guide-service';
+import { SwitchStatusBar } from '../../switch-header-source/status-bar';
 import type {
   IFileSystemService,
   IPairCreatorService,
@@ -59,6 +60,7 @@ export interface ServiceMap {
   switchService: ISwitchService;
   switchUI: SwitchUI;
   switchCoordinator: SwitchCoordinator;
+  switchStatusBar: SwitchStatusBar;
 
   // Clang-Format Visual Editor
   clangFormatEditorCoordinator: ClangFormatEditorCoordinator;

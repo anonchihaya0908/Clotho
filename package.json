@@ -144,6 +144,17 @@
                     "minimum": 1,
                     "description": "Threshold in milliseconds beyond which operations are considered slow"
                 },
+                "clotho.fs.enableWatcher": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable file system watchers for cache invalidation"
+                },
+                "clotho.switch.cacheTTLms": {
+                    "type": "number",
+                    "default": 60000,
+                    "minimum": 0,
+                    "description": "TTL in ms for switch result cache entries (0 disables TTL)"
+                },
                 "clotho.logLevel": {
                     "type": "string",
                     "enum": ["silly", "trace", "debug", "info", "warn", "error", "fatal"],

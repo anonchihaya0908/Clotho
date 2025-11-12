@@ -32,7 +32,7 @@ export class GlobalSearchStrategy implements SearchStrategy {
     for (const name of baseNames) {
       const files = await this.searchWorkspace(name, targetExtensions, config.excludePaths || []);
       if (files.length > 0) {
-        return files;
+        return this.rankResults(context, files);
       }
     }
     
@@ -72,5 +72,37 @@ export class GlobalSearchStrategy implements SearchStrategy {
       
       return [];
     }
+  }
+
+  /**
+   * Rank found files by proximity and directory semantics
+   */
+  private rankResults(context: SearchContext, files: vscode.Uri[]): vscode.Uri[] {
+    const currentDir = vscode.Uri.file((require('path') as typeof import('path')).dirname(context.currentFile.fsPath)).fsPath.replace(/\\/g, '/');
+    const srcDirs = new Set((context.config.sourceDirs || []).map(s => s.toLowerCase()));
+    const hdrDirs = new Set((context.config.headerDirs || []).map(s => s.toLowerCase()));
+    const path = require('path') as typeof import('path');
+
+    function score(candidate: vscode.Uri): number {
+      const candPath = candidate.fsPath.replace(/\\/g, '/');
+      const candDir = path.dirname(candPath);
+      // Base similarity by common prefix length (in segments)
+      const fromSeg = currentDir.split('/').filter(Boolean);
+      const toSeg = candDir.split('/').filter(Boolean);
+      let i = 0; while (i < fromSeg.length && i < toSeg.length && fromSeg[i] === toSeg[i]) i++;
+      let s = i; // more shared segments → higher score
+      // Same directory boost
+      if (candDir === currentDir) s += 10;
+      // Header↔Source directory preference
+      const lower = candDir.toLowerCase();
+      const containsAny = (dirs: Set<string>) => Array.from(dirs).some(d => lower.includes(`/${d}/`));
+      if (context.isHeader && containsAny(srcDirs)) s += 5;
+      if (!context.isHeader && containsAny(hdrDirs)) s += 5;
+      // Shorter path (closer) slight bonus
+      s += Math.max(0, 3 - Math.abs(fromSeg.length - toSeg.length));
+      return s;
+    }
+
+    return files.slice().sort((a, b) => score(b) - score(a));
   }
 }

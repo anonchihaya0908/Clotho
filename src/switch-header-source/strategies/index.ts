@@ -18,3 +18,4 @@ export { SameDirectoryStrategy } from './same-directory-strategy';
 export { SrcIncludeStrategy } from './src-include-strategy';
 export { TestsStrategy } from './tests-strategy';
 export { GlobalSearchStrategy } from './global-search-strategy';
+export { IndexingStrategy } from './indexing-strategy';
