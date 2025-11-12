@@ -352,7 +352,7 @@ export interface IPairingRuleService {
  * 提取接口的方法名类型
  */
 export type MethodNames<T> = {
-  [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
+  [K in keyof T]: T[K] extends (...args: unknown[]) => unknown ? K : never;
 }[keyof T];
 
 /**

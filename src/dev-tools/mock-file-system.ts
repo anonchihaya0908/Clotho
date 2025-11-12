@@ -61,8 +61,7 @@ export class MockFileSystemService implements IFileSystemService {
 
   logCacheStats(): void { /* noop */ }
 
-  invalidateFile(_uri: vscode.Uri): void { /* noop */ }
+  invalidateFile(_uri: vscode.Uri): void { void _uri; /* noop */ }
 
   dispose(): void { /* noop */ }
 }
-

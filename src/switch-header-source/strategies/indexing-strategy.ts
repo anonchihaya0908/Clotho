@@ -20,6 +20,7 @@ export class IndexingStrategy implements SearchStrategy {
   private building: Promise<void> | null = null;
   private fsLinked = false;
   private fileExistsFn: ((u: vscode.Uri) => Promise<boolean>) | null = null;
+  private fsDisposable: vscode.Disposable | null = null;
 
   constructor() {
     // Mark dirty on configuration changes that affect excludes (best-effort)
@@ -29,6 +30,7 @@ export class IndexingStrategy implements SearchStrategy {
   }
 
   canApply(_context: SearchContext): boolean {
+    void _context; // unused
     return true;
   }
 
@@ -90,12 +92,13 @@ export class IndexingStrategy implements SearchStrategy {
     if (this.fsLinked) {return;}
     const fsAny = context.fileSystemService as unknown as { onDidAnyChange?: vscode.Event<vscode.Uri> };
     this.fileExistsFn = (u: vscode.Uri) => context.fileSystemService.fileExists(u);
-    fsAny.onDidAnyChange?.(async (uri: vscode.Uri) => {
-      // If no index ready, just mark dirty
-      if (!this.index || this.building) { this.dirty = true; return; }
-      const ext = uri.fsPath.toLowerCase().split('.').pop() || '';
-      const allowed = new Set(['c', 'cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']);
-      if (!allowed.has(ext)) { return; }
+    if (fsAny.onDidAnyChange) {
+      this.fsDisposable = fsAny.onDidAnyChange(async (uri: vscode.Uri) => {
+        // If no index ready, just mark dirty
+        if (!this.index || this.building) { this.dirty = true; return; }
+        const ext = uri.fsPath.toLowerCase().split('.').pop() || '';
+        const allowed = new Set(['c', 'cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']);
+        if (!allowed.has(ext)) { return; }
       try {
         const exists = await (this.fileExistsFn ? this.fileExistsFn(uri) : vscode.workspace.fs.stat(uri).then(() => true, () => false));
         const base = path.basename(uri.fsPath, path.extname(uri.fsPath));
@@ -109,7 +112,19 @@ export class IndexingStrategy implements SearchStrategy {
       } catch {
         this.dirty = true; // fall back to rebuild later
       }
-    });
+      });
+    } else {
+      this.fsDisposable = null;
+    }
     this.fsLinked = true;
+  }
+
+  /** Dispose FS subscription if any */
+  public dispose(): void {
+    try {
+      this.fsDisposable?.dispose();
+    } catch { /* ignore */ }
+    this.fsDisposable = null;
+    this.fsLinked = false;
   }
 }

@@ -141,7 +141,7 @@ export abstract class BaseCoordinator implements vscode.Disposable {
   /**
    * Validate dependencies at construction time
    */
-  protected validateDependencies(dependencies: Record<string, any>): void {
+  protected validateDependencies(dependencies: Record<string, unknown>): void {
     const missing: string[] = [];
 
     for (const [name, dependency] of Object.entries(dependencies)) {

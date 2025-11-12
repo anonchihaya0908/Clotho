@@ -57,7 +57,7 @@ export interface CacheStats {
 /**
  * 缓存注册信息
  */
-interface CacheRegistration<K = any, V = any> {
+interface CacheRegistration<K = unknown, V = unknown> {
   name: string;
   category: CacheCategory;
   cache: LRUCache<K, V>;

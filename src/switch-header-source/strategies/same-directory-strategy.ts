@@ -17,6 +17,7 @@ export class SameDirectoryStrategy implements SearchStrategy {
   readonly priority = 100; // Highest priority - fastest and most common
 
   canApply(_context: SearchContext): boolean {
+    void _context;
     // Always applicable - every file has a directory
     return true;
   }

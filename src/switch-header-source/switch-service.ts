@@ -74,7 +74,7 @@ export class SwitchService implements ISwitchService {
     if (this._searchResultsCache) {
       cacheManager.registerCache(
         'switch:searchResults',
-        this._searchResultsCache as unknown as LRUCache<string, any>,
+        this._searchResultsCache as unknown as LRUCache<string, { result: SearchResult; ts: number }>,
         CacheCategory.Search,
         'Search results cache for file switching'
       );
@@ -93,6 +93,8 @@ export class SwitchService implements ISwitchService {
   private readonly strategyManager: SearchStrategyManager;
   private readonly performanceMonitor: PerformanceMonitor;
   private cacheTTLms: number;
+  private disposables: vscode.Disposable[] = [];
+  private fsChangeDisposable: vscode.Disposable | null = null;
 
   constructor(
     configService?: SwitchConfigService,
@@ -110,20 +112,24 @@ export class SwitchService implements ISwitchService {
     this.performanceMonitor = new PerformanceMonitor();
     // Read cache TTL from settings
     this.cacheTTLms = vscode.workspace.getConfiguration('clotho').get<number>('switch.cacheTTLms', 60000);
-    vscode.workspace.onDidChangeConfiguration(e => {
+    const cfgDisp = vscode.workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('clotho.switch.cacheTTLms')) {
         this.cacheTTLms = vscode.workspace.getConfiguration('clotho').get<number>('switch.cacheTTLms', 60000);
         this.logger.info('Updated switch cache TTL', { module: 'SwitchService', operation: 'configChange', ttl: this.cacheTTLms });
       }
     });
+    this.disposables.push(cfgDisp);
     // Invalidate search cache on any file change
     try {
       const fsAny = this.fileSystemService as unknown as { onDidAnyChange?: vscode.Event<vscode.Uri> };
-      fsAny.onDidAnyChange?.(() => {
-        if (SwitchService._searchResultsCache) {
-          SwitchService._searchResultsCache.clear();
-        }
-      });
+      if (fsAny.onDidAnyChange) {
+        this.fsChangeDisposable = fsAny.onDidAnyChange(() => {
+          if (SwitchService._searchResultsCache) {
+            SwitchService._searchResultsCache.clear();
+          }
+        });
+        if (this.fsChangeDisposable) { this.disposables.push(this.fsChangeDisposable); }
+      }
     } catch { /* noop */ }
 
     this.logger.info('SwitchService initialized with Strategy Pattern', {
@@ -328,6 +334,30 @@ export class SwitchService implements ISwitchService {
    */
   public resetPerformanceMetrics(): void {
     this.performanceMonitor.reset();
+  }
+
+  /**
+   * Dispose resources and event subscriptions
+   */
+  public dispose(): void {
+    try {
+      for (const d of this.disposables) {
+        try { d.dispose(); } catch { /* ignore */ }
+      }
+    } finally {
+      this.disposables = [];
+      this.fsChangeDisposable = null;
+    }
+
+    try {
+      this.clearCache();
+    } catch { /* ignore */ }
+
+    try {
+      this.strategyManager.dispose();
+    } catch { /* ignore */ }
+
+    this.logger.info('SwitchService disposed', { module: 'SwitchService', operation: 'dispose' });
   }
 
   // ===============================

@@ -98,3 +98,4 @@ export function example6_StatusBar() {
   // 英文: "Formatted successfully"
   // 中文: "格式化成功"
 }
+/* eslint-disable @typescript-eslint/no-unused-vars */

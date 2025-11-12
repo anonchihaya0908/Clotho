@@ -19,7 +19,9 @@ export class PairingRuleService implements IPairingRuleService {
    */
   validateRule(rule: PairingRule): void {
     if (!rule.key || !rule.language || !rule.headerExt || !rule.sourceExt) {
-      throw errorHandler.handle(
+      // Log via error handler for consistency, then throw a synchronous error
+      // Note: errorHandler.handle is async; do not throw its Promise
+      void errorHandler.handle(
         new Error(`Invalid rule: ${JSON.stringify(rule)}`),
         {
           operation: 'validateRule',
@@ -27,6 +29,7 @@ export class PairingRuleService implements IPairingRuleService {
           showToUser: true,
         },
       );
+      throw new Error(`Invalid rule: ${JSON.stringify(rule)}`);
     }
   }
 

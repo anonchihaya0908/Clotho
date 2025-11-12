@@ -18,7 +18,9 @@ export function isClangdAvailable(): boolean {
     if (!clangdExtension?.isActive) {
       return false;
     }
-    const api: any = clangdExtension.exports;
+    interface ClangdClient { state: number; sendRequest: (method: string, params: unknown) => Promise<unknown>; }
+    interface ClangdApi { getClient?: () => ClangdClient | undefined; }
+    const api = clangdExtension.exports as Partial<ClangdApi>;
     const client = api?.getClient ? api.getClient() : undefined;
     return Boolean(client && client.state === LSP_CLIENT_STATE.RUNNING);
   } catch {
@@ -49,7 +51,9 @@ export async function trySwitchSourceHeader(currentFile: vscode.Uri): Promise<vs
       }
     }
 
-    const api: any = clangdExtension.exports;
+    interface ClangdClient { state: number; sendRequest: (method: string, params: unknown) => Promise<unknown>; }
+    interface ClangdApi { getClient?: () => ClangdClient | undefined; }
+    const api = clangdExtension.exports as Partial<ClangdApi>;
     if (!api?.getClient) {
       logger.debug('clangd API not available', { operation: 'trySwitchSourceHeader' });
       return null;

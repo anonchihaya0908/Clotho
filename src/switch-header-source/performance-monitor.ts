@@ -31,7 +31,9 @@ export interface PerformanceMetrics {
   strategyTotalTime: Map<SearchMethod, number>;
 
   /** Average search time across all searches (ms) */
-  averageSearchTime: number;
+  averageSearchTime: number; // non-cached average
+  /** Number of non-cached searches used for average */
+  nonCachedSearches: number;
 
   /** Cache hit rate (0-1) */
   cacheHitRate: number;
@@ -57,6 +59,7 @@ export class PerformanceMonitor {
     strategySuccesses: new Map(),
     strategyTotalTime: new Map(),
     averageSearchTime: 0,
+    nonCachedSearches: 0,
     cacheHitRate: 0,
     cacheHits: 0,
     cacheMisses: 0,
@@ -91,8 +94,9 @@ export class PerformanceMonitor {
       ? this.metrics.cacheHits / totalCacheAttempts
       : 0;
 
-    // Don't count cached results in strategy statistics
+    // Don't count cached results in strategy timing/statistics
     if (!fromCache) {
+      this.metrics.nonCachedSearches++;
       // Update clangd statistics
       if (method === 'clangd') {
         if (success) {
@@ -114,10 +118,12 @@ export class PerformanceMonitor {
       const currentTime = this.metrics.strategyTotalTime.get(method) || 0;
       this.metrics.strategyTotalTime.set(method, currentTime + duration);
 
-      // Update average search time
+      // Update average search time (non-cached only)
       const totalTime = Array.from(this.metrics.strategyTotalTime.values())
         .reduce((sum, time) => sum + time, 0);
-      this.metrics.averageSearchTime = totalTime / this.metrics.totalSearches;
+      this.metrics.averageSearchTime = this.metrics.nonCachedSearches > 0
+        ? totalTime / this.metrics.nonCachedSearches
+        : 0;
     }
   }
 
@@ -151,7 +157,7 @@ export class PerformanceMonitor {
       'Overall Statistics:',
       `  Total Searches:        ${metrics.totalSearches}`,
       `  Successful Searches:   ${metrics.successfulSearches} (${overallSuccessRate}%)`,
-      `  Average Search Time:   ${metrics.averageSearchTime.toFixed(0)}ms`,
+      `  Average Search Time:   ${metrics.averageSearchTime.toFixed(0)}ms (non-cached over ${metrics.nonCachedSearches})`,
       `  Cache Hit Rate:        ${(metrics.cacheHitRate * 100).toFixed(1)}% (${metrics.cacheHits}/${metrics.cacheHits + metrics.cacheMisses})`,
       '',
       'clangd LSP Statistics:',
@@ -195,6 +201,7 @@ export class PerformanceMonitor {
       strategySuccesses: new Map(),
       strategyTotalTime: new Map(),
       averageSearchTime: 0,
+      nonCachedSearches: 0,
       cacheHitRate: 0,
       cacheHits: 0,
       cacheMisses: 0,

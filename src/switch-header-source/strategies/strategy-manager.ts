@@ -135,4 +135,14 @@ export class SearchStrategyManager {
       operation: 'clearStrategies',
     });
   }
+
+  /** Dispose strategies that expose a dispose() */
+  dispose(): void {
+    for (const s of this.strategies) {
+      try {
+        (s as unknown as { dispose?: () => void }).dispose?.();
+      } catch { /* ignore */ }
+    }
+    this.clearStrategies();
+  }
 }

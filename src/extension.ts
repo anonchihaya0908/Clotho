@@ -125,8 +125,8 @@ export async function deactivate(): Promise<void> {
       operation: 'deactivate'
     });
 
-    // Note: Service cleanup is handled by bootstrap/coordinators
-    // No explicit service container cleanup needed here
+    // Cleanup: logger and other disposables
+    try { unifiedLogger.dispose(); } catch { /* ignore */ }
 
     const deactivationTime = Date.now() - startTime;
     logger.info('Clotho extension deactivated successfully', {

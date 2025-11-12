@@ -17,19 +17,20 @@ import { Language } from '../common/types';
 import { DEFAULT_PLACEHOLDERS } from '../common/constants';
 import { IPairCreatorService, IPairingRuleService, IFileSystemService } from '../common/interfaces/services';
 
-import {
-  FILE_TEMPLATES,
-  TemplateKey,
-  generateHeaderGuardOpen,
-  generateHeaderGuardClose
-} from './templates';
+import { FILE_TEMPLATES, TemplateKey, generateHeaderGuardOpen, generateHeaderGuardClose } from './templates';
+import { HEADER_EXTENSIONS } from '../common/constants';
+import { detectLanguage as detectLanguageUnified } from '../common/utils/language';
 
 // Service Layer - Core business logic
 export class PairCreatorService implements IPairCreatorService {
   // Definitive file extensions for fast lookup
   private static readonly DEFINITIVE_EXTENSIONS = {
-    c: new Set(['.c']),
-    cpp: new Set(['.cpp', '.cc', '.cxx', '.hh', '.hpp', '.hxx']),
+    c: new Set<string>(['.c']),
+    cpp: new Set<string>([
+      ...['.cpp', '.cc', '.cxx'],
+      // Treat non-.h headers as definitive C++
+      ...HEADER_EXTENSIONS.filter(ext => ext !== '.h'),
+    ]),
   } as const;
 
   constructor(
@@ -65,10 +66,7 @@ export class PairCreatorService implements IPairCreatorService {
   // layer because it contains the business logic for determining language
   // context. UI layer should only handle user interactions, not business
   // decisions.
-  public async detectLanguageFromEditor(): Promise<{
-    language: Language;
-    uncertain: boolean;
-  }> {
+  public async detectLanguageFromEditor(): Promise<{ language: Language; uncertain: boolean; }> {
     const activeEditor = vscode.window.activeTextEditor;
     const languageId = activeEditor?.document?.languageId;
     const filePath =
@@ -76,7 +74,7 @@ export class PairCreatorService implements IPairCreatorService {
         ? activeEditor.document.uri.fsPath
         : undefined;
 
-    return this.detectLanguage(languageId, filePath);
+    return detectLanguageUnified(languageId, filePath, this.fileSystemService);
   }
 
   // Detects programming language from file info (pure business logic)
@@ -92,34 +90,8 @@ export class PairCreatorService implements IPairCreatorService {
   //    - Based on file content analysis or user settings
   // 4. Default: When all else fails, assume C++ (more common in modern
   // development)
-  public async detectLanguage(
-    languageId?: string,
-    filePath?: string,
-  ): Promise<{ language: Language; uncertain: boolean }> {
-    if (!languageId || !filePath) {
-      return { language: 'cpp', uncertain: true };
-    }
-
-    const ext = path.extname(filePath);
-
-    // Fast path for definitive extensions
-    if (PairCreatorService.DEFINITIVE_EXTENSIONS.c.has(ext)) {
-      return { language: 'c', uncertain: false };
-    }
-    if (PairCreatorService.DEFINITIVE_EXTENSIONS.cpp.has(ext)) {
-      return { language: 'cpp', uncertain: false };
-    }
-
-    // Special handling for .h files with companion file detection
-    if (ext === '.h') {
-      const result = await this.detectLanguageForHeaderFile(filePath);
-      if (result) {
-        return result;
-      }
-    }
-
-    // Fallback to language ID
-    return { language: languageId === 'c' ? 'c' : 'cpp', uncertain: true };
+  public async detectLanguage(languageId?: string, filePath?: string): Promise<{ language: Language; uncertain: boolean }> {
+    return detectLanguageUnified(languageId, filePath, this.fileSystemService);
   }
 
   // Optimized header file language detection by checking companion files
@@ -140,32 +112,7 @@ export class PairCreatorService implements IPairCreatorService {
   // - math.h + math.c exists → Detected as C language
   // - Vector.h + Vector.cpp exists → Detected as C++ language
   // - standalone.h (no companions) → Default to C++ (uncertain=true)
-  private async detectLanguageForHeaderFile(
-    filePath: string,
-  ): Promise<{ language: Language; uncertain: boolean } | null> {
-    const baseName = path.basename(filePath, '.h');
-    const dirPath = path.dirname(filePath);
-
-    // Check for C companion file first (less common, check first for early
-    // exit)
-    const cFile = path.join(dirPath, `${baseName}.c`);
-    if (await this.fileSystemService.fileExists(vscode.Uri.file(cFile))) {
-      return { language: 'c', uncertain: false };
-    }
-
-    // Check for C++ companion files in parallel
-    const cppExtensions = ['.cpp', '.cc', '.cxx'];
-    const cppFiles = cppExtensions.map((ext) =>
-      vscode.Uri.file(path.join(dirPath, `${baseName}${ext}`))
-    );
-    const existingCppFiles = await this.fileSystemService.checkMultipleFiles(cppFiles);
-
-    if (existingCppFiles.length > 0) {
-      return { language: 'cpp', uncertain: false };
-    }
-
-    return { language: 'cpp', uncertain: true };
-  }
+  // Note: header companion detection moved to common/utils/language.ts
 
   // Gets all available pairing rules (custom + workspace + user)
   public getAllPairingRules(): PairingRule[] {

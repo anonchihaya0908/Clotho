@@ -224,7 +224,7 @@ export class ErrorHandler {
     const { operation, module, logLevel = 'error' } = error.context;
     const message = `${operation} failed`;
 
-    const logMethod = this.logger[logLevel as keyof typeof this.logger] as (message: string, error?: Error, context?: any) => void;
+    const logMethod = this.logger[logLevel as keyof typeof this.logger] as (message: string, error?: Error, context?: Record<string, unknown>) => void;
     if (typeof logMethod === 'function') {
       logMethod.call(this.logger, message, error, {
         module,

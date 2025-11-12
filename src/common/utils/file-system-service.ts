@@ -114,17 +114,17 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
 
       // Aggregate into a composite disposable
       this.fileWatcher = {
-        onDidCreate: (listener: (e: vscode.Uri) => any) => {
+        onDidCreate: (listener: (e: vscode.Uri) => void) => {
           const subs = watchers.map((w) => w.onDidCreate(listener));
           subs.forEach((d) => this.disposables.push(d));
           return { dispose: () => subs.forEach((d) => d.dispose()) } as vscode.Disposable;
         },
-        onDidChange: (listener: (e: vscode.Uri) => any) => {
+        onDidChange: (listener: (e: vscode.Uri) => void) => {
           const subs = watchers.map((w) => w.onDidChange(listener));
           subs.forEach((d) => this.disposables.push(d));
           return { dispose: () => subs.forEach((d) => d.dispose()) } as vscode.Disposable;
         },
-        onDidDelete: (listener: (e: vscode.Uri) => any) => {
+        onDidDelete: (listener: (e: vscode.Uri) => void) => {
           const subs = watchers.map((w) => w.onDidDelete(listener));
           subs.forEach((d) => this.disposables.push(d));
           return { dispose: () => subs.forEach((d) => d.dispose()) } as vscode.Disposable;

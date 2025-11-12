@@ -17,6 +17,7 @@ export class GlobalSearchStrategy implements SearchStrategy {
   readonly priority = 10; // Lowest priority - last resort
 
   canApply(_context: SearchContext): boolean {
+    void _context; // avoid unused param warning
     // Always applicable as a fallback
     return true;
   }
