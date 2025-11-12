@@ -72,27 +72,45 @@ export class MessageHandler implements BaseManager {
           break;
         }
         case WebviewMessageType.LOAD_WORKSPACE_CONFIG: {
-          this.context.eventBus?.emit('load-workspace-config-requested');
+          this.context.eventBus?.emit('ensure-config-manager-ready');
+          setTimeout(() => {
+            this.context.eventBus?.emit('load-workspace-config-requested');
+          }, UI_CONSTANTS.MESSAGE_HANDLER_DELAY);
           break;
         }
         case WebviewMessageType.SAVE_CONFIG: {
-          this.context.eventBus?.emit('save-config-requested');
+          this.context.eventBus?.emit('ensure-config-manager-ready');
+          setTimeout(() => {
+            this.context.eventBus?.emit('save-config-requested');
+          }, UI_CONSTANTS.MESSAGE_HANDLER_DELAY);
           break;
         }
         case WebviewMessageType.EXPORT_CONFIG: {
-          this.context.eventBus?.emit('export-config-requested');
+          this.context.eventBus?.emit('ensure-config-manager-ready');
+          setTimeout(() => {
+            this.context.eventBus?.emit('export-config-requested');
+          }, UI_CONSTANTS.MESSAGE_HANDLER_DELAY);
           break;
         }
         case WebviewMessageType.IMPORT_CONFIG: {
-          this.context.eventBus?.emit('import-config-requested', message.payload);
+          this.context.eventBus?.emit('ensure-config-manager-ready');
+          setTimeout(() => {
+            this.context.eventBus?.emit('import-config-requested');
+          }, UI_CONSTANTS.MESSAGE_HANDLER_DELAY);
           break;
         }
         case WebviewMessageType.RESET_CONFIG: {
-          this.context.eventBus?.emit('reset-config-requested');
+          this.context.eventBus?.emit('ensure-config-manager-ready');
+          setTimeout(() => {
+            this.context.eventBus?.emit('reset-config-requested');
+          }, UI_CONSTANTS.MESSAGE_HANDLER_DELAY);
           break;
         }
         case WebviewMessageType.OPEN_CLANG_FORMAT_FILE: {
-          this.context.eventBus?.emit('open-clang-format-file-requested');
+          this.context.eventBus?.emit('ensure-config-manager-ready');
+          setTimeout(() => {
+            this.context.eventBus?.emit('open-clang-format-file-requested');
+          }, UI_CONSTANTS.MESSAGE_HANDLER_DELAY);
           break;
         }
         case WebviewMessageType.REOPEN_PREVIEW: {
