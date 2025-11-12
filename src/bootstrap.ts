@@ -306,6 +306,16 @@ function registerCommands(context: vscode.ExtensionContext): void {
     },
   );
 
+  // Developer/Debug commands
+  const dumpSwitchMetricsCommand = register(
+    'clotho.debug.dumpSwitchMetrics',
+    () => {
+      const svc = serviceContainer.get('switchService');
+      svc.logPerformanceReport();
+      vscode.window.showInformationMessage('Clotho: Switch performance report written to output logs.');
+    }
+  );
+
   // Register all commands with the extension context for proper cleanup
   context.subscriptions.push(
     configureRulesCommand,
@@ -313,5 +323,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
     configureHeaderGuardCommand,
     switchHeaderSourceCommand,
     openClangFormatEditorCommand,
+    dumpSwitchMetricsCommand,
   );
 }

@@ -66,6 +66,11 @@
                 "title": "%command.openClangFormatEditor.title%",
                 "category": "%command.openClangFormatEditor.category%",
                 "icon": "$(edit)"
+            },
+            {
+                "command": "clotho.debug.dumpSwitchMetrics",
+                "title": "Clotho: Dump Switch Performance Metrics",
+                "category": "Clotho"
             }
         ],
         "menus": {
@@ -104,6 +109,9 @@
                 },
                 {
                     "command": "clotho.openClangFormatEditor"
+                },
+                {
+                    "command": "clotho.debug.dumpSwitchMetrics"
                 }
             ]
         },
@@ -122,6 +130,12 @@
         "configuration": {
             "title": "Clotho",
             "properties": {
+                "clotho.logLevel": {
+                    "type": "string",
+                    "enum": ["silly", "trace", "debug", "info", "warn", "error", "fatal"],
+                    "default": "info",
+                    "description": "Minimum log level for Clotho logs"
+                },
                 "clotho.createPair.rules": {
                     "type": "array",
                     "default": [],

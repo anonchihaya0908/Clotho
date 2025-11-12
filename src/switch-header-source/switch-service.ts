@@ -17,9 +17,6 @@ import {
   PERFORMANCE,
   SOURCE_EXTENSIONS,
   TEST_PATTERNS,
-  LSP_REQUESTS,
-  LSP_CLIENT_STATE,
-  EXTERNAL_EXTENSIONS,
 } from '../common/constants';
 import { createModuleLogger } from '../common/logger/unified-logger';
 import { SearchResult } from '../common/types/core';
@@ -41,6 +38,7 @@ import {
   GlobalSearchStrategy,
 } from './strategies';
 import { PerformanceMonitor } from './performance-monitor';
+import { isClangdAvailable as helperIsClangdAvailable, trySwitchSourceHeader as helperTrySwitch } from '../common/utils/clangd-client-helper';
 
 /**
  * Core service class for switch header/source functionality.
@@ -263,20 +261,7 @@ export class SwitchService implements ISwitchService {
    * Checks if clangd extension is available and ready.
    */
   public isClangdAvailable(): boolean {
-    const clangdExtension = vscode.extensions.getExtension(
-      EXTERNAL_EXTENSIONS.CLANGD,
-    );
-    if (!clangdExtension?.isActive) {
-      return false;
-    }
-
-    const api = clangdExtension.exports;
-    if (!api?.getClient) {
-      return false;
-    }
-
-    const client = api.getClient();
-    return client && client.state === LSP_CLIENT_STATE.RUNNING;
+    return helperIsClangdAvailable();
   }
 
   /**
@@ -331,100 +316,15 @@ export class SwitchService implements ISwitchService {
   private async tryClangdSwitch(
     currentFile: vscode.Uri,
   ): Promise<SearchResult> {
-    try {
-      // Step 1: Check if clangd extension is available
-      const clangdExtension = vscode.extensions.getExtension(
-        EXTERNAL_EXTENSIONS.CLANGD,
-      );
-      if (!clangdExtension) {
-        this.logger.debug('clangd extension not found', {
-          module: 'SwitchService',
-          operation: 'tryClangdSwitch',
-        });
-        return { files: [], method: 'clangd' };
-      }
-
-      // Step 2: Ensure the extension is activated
-      if (!clangdExtension.isActive) {
-        try {
-          await clangdExtension.activate();
-          this.logger.debug('clangd extension activated', {
-            module: 'SwitchService',
-            operation: 'tryClangdSwitch',
-          });
-        } catch {
-          this.logger.debug('Failed to activate clangd extension', {
-            module: 'SwitchService',
-            operation: 'tryClangdSwitch',
-          });
-          return { files: [], method: 'clangd' };
-        }
-      }
-
-      // Step 3: Check if the API is available
-      const api = clangdExtension.exports;
-      if (!api?.getClient) {
-        this.logger.debug('clangd API not available', {
-          module: 'SwitchService',
-          operation: 'tryClangdSwitch',
-        });
-        return { files: [], method: 'clangd' };
-      }
-
-      // Step 4: Get the language client
-      const client = api.getClient();
-      if (!client || client.state !== 2) {
-        this.logger.debug('clangd client not running', {
-          module: 'SwitchService',
-          operation: 'tryClangdSwitch',
-        });
-        return { files: [], method: 'clangd' };
-      }
-
-      // Step 5: Send the switch request with timeout
-      const textDocument = { uri: currentFile.toString() };
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('clangd request timeout')), PERFORMANCE.CLANGD_REQUEST_TIMEOUT),
-      );
-
-      const result = await Promise.race([
-        client.sendRequest(LSP_REQUESTS.SWITCH_SOURCE_HEADER, textDocument),
-        timeoutPromise,
-      ]);
-
-      if (result && typeof result === 'string') {
-        const targetUri = vscode.Uri.parse(result);
-        
-        // Verify the file exists
-        try {
-          await vscode.workspace.fs.stat(targetUri);
-          this.logger.info('clangd found partner file', {
-            module: 'SwitchService',
-            operation: 'tryClangdSwitch',
-            targetFile: targetUri.fsPath,
-          });
-          return { files: [targetUri], method: 'clangd' };
-        } catch {
-          this.logger.debug('clangd result file does not exist', {
-            module: 'SwitchService',
-            operation: 'tryClangdSwitch',
-          });
-          return { files: [], method: 'clangd' };
-        }
-      }
-
-      this.logger.debug('clangd returned no result', {
+    const target = await helperTrySwitch(currentFile);
+    if (target) {
+      this.logger.info('clangd found partner file', {
         module: 'SwitchService',
         operation: 'tryClangdSwitch',
+        targetFile: target.fsPath,
       });
-      return { files: [], method: 'clangd' };
-    } catch (error) {
-      this.logger.debug('clangd integration failed', {
-        module: 'SwitchService',
-        operation: 'tryClangdSwitch',
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return { files: [], method: 'clangd' };
+      return { files: [target], method: 'clangd' };
     }
+    return { files: [], method: 'clangd' };
   }
 }

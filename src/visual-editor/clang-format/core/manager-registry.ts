@@ -26,8 +26,16 @@ export type ManagerFactory<T extends ManagedComponent = ManagedComponent> = () =
 /**
  * Manager registration info (supports lazy loading)
  */
+export type ManagerKey =
+  | 'messageHandler'
+  | 'editorManager'
+  | 'previewManager'
+  | 'configActionManager'
+  | 'placeholderManager'
+  | 'debounceIntegration';
+
 export interface ManagerRegistration {
-  name: string;
+  name: ManagerKey;
   instance?: ManagedComponent; // Optional for lazy loading
   factory?: ManagerFactory; // Factory for lazy creation
   initialized: boolean;
@@ -57,7 +65,7 @@ export interface InitializationResult {
 export class ManagerRegistry implements vscode.Disposable {
   private readonly logger = createModuleLogger('ManagerRegistry');
 
-  private registrations = new Map<string, ManagerRegistration>();
+  private registrations = new Map<ManagerKey, ManagerRegistration>();
   private isInitialized = false;
   private disposables: vscode.Disposable[] = [];
   private context?: ManagerContext; // Cache context for lazy initialization
@@ -65,7 +73,7 @@ export class ManagerRegistry implements vscode.Disposable {
   /**
      * Register manager instance (simplified)
      */
-  register(name: string, instance: ManagedComponent): void {
+  register(name: ManagerKey, instance: ManagedComponent): void {
     if (this.registrations.has(name)) {
       this.logger.warn(`Manager ${name} is already registered, replacing...`, {
         module: 'ManagerRegistry',
@@ -83,7 +91,7 @@ export class ManagerRegistry implements vscode.Disposable {
   /**
      * Register manager factory for lazy loading
      */
-  registerFactory<T extends ManagedComponent>(name: string, factory: ManagerFactory<T>): void {
+  registerFactory<T extends ManagedComponent>(name: ManagerKey, factory: ManagerFactory<T>): void {
     if (this.registrations.has(name)) {
       this.logger.warn(`Manager ${name} is already registered, replacing...`, {
         module: 'ManagerRegistry',
@@ -106,7 +114,7 @@ export class ManagerRegistry implements vscode.Disposable {
   /**
      * 取消注册管理器
      */
-  unregister(name: string): boolean {
+  unregister(name: ManagerKey): boolean {
     const registration = this.registrations.get(name);
     if (!registration) {
       return false;
@@ -131,21 +139,21 @@ export class ManagerRegistry implements vscode.Disposable {
   /**
      * 获取已注册的管理器
      */
-  getRegistered(): string[] {
+  getRegistered(): ManagerKey[] {
     return Array.from(this.registrations.keys());
   }
 
   /**
      * 检查管理器是否已注册
      */
-  isRegistered(name: string): boolean {
+  isRegistered(name: ManagerKey): boolean {
     return this.registrations.has(name);
   }
 
   /**
      * 获取管理器实例（支持懒加载）
      */
-  getInstance<T extends ManagedComponent>(name: string): T | undefined {
+  getInstance<T extends ManagedComponent>(name: ManagerKey): T | undefined {
     const registration = this.registrations.get(name);
     if (!registration) {
       return undefined;
@@ -185,7 +193,7 @@ export class ManagerRegistry implements vscode.Disposable {
   /**
      * 获取或创建管理器实例（确保初始化）
      */
-  async getOrCreateInstance<T extends ManagedComponent>(name: string): Promise<T | undefined> {
+  async getOrCreateInstance<T extends ManagedComponent>(name: ManagerKey): Promise<T | undefined> {
     const instance = this.getInstance<T>(name);
     if (!instance) {
       return undefined;

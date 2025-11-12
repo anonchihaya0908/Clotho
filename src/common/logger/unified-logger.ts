@@ -89,11 +89,14 @@ export class UnifiedLogger {
   private outputChannel?: vscode.OutputChannel;
   private performanceStats = new Map<string, PerformanceStats>();
   private config: Required<UnifiedLoggerConfig>;
+  private configChangeDisposable?: vscode.Disposable;
 
   private constructor(config: UnifiedLoggerConfig = {}) {
+    const configuredLevel = this.getLogLevelFromSettings();
+    const envDefault = process.env['NODE_ENV'] === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
     this.config = {
       name: config.name || 'Clotho',
-      minLevel: config.minLevel || LogLevel.INFO,
+      minLevel: config.minLevel ?? configuredLevel ?? envDefault,
       enablePerformanceTracking: config.enablePerformanceTracking ?? true,
       enableOutputChannel: config.enableOutputChannel ?? true,
       slowOperationThreshold: config.slowOperationThreshold || 1000,
@@ -114,6 +117,41 @@ export class UnifiedLogger {
     // Initialize output channel if enabled
     if (this.config.enableOutputChannel) {
       this.initializeOutputChannel();
+    }
+
+    // Listen for configuration changes to support live log level updates
+    this.configChangeDisposable = vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('clotho.logLevel')) {
+        const newLevel = this.getLogLevelFromSettings();
+        if (typeof newLevel === 'number' && newLevel !== this.config.minLevel) {
+          this.setMinLevel(newLevel);
+          this.info(`Updated log level to: ${LogLevel[newLevel]}`, {
+            module: 'UnifiedLogger',
+            operation: 'setMinLevel',
+          });
+        }
+      }
+    });
+  }
+
+  /**
+   * Read log level from user settings (clotho.logLevel)
+   */
+  private getLogLevelFromSettings(): LogLevel | undefined {
+    try {
+      const value = vscode.workspace.getConfiguration('clotho').get<string>('logLevel');
+      switch ((value || '').toLowerCase()) {
+        case 'silly': return LogLevel.SILLY;
+        case 'trace': return LogLevel.TRACE;
+        case 'debug': return LogLevel.DEBUG;
+        case 'info': return LogLevel.INFO;
+        case 'warn': return LogLevel.WARN;
+        case 'error': return LogLevel.ERROR;
+        case 'fatal': return LogLevel.FATAL;
+        default: return undefined;
+      }
+    } catch {
+      return undefined;
     }
   }
 
@@ -157,6 +195,29 @@ export class UnifiedLogger {
     const logLine = `${timestamp} ${level} ${module}${operation}${correlationId}${duration} ${this.config.name}: ${message}`;
 
     this.outputChannel.appendLine(logLine);
+  }
+
+  /**
+   * Update minimum log level at runtime
+   */
+  public setMinLevel(level: LogLevel): void {
+    if (this.config.minLevel === level) { return; }
+    this.config.minLevel = level;
+
+    // Recreate logger with new settings and reattach transport
+    const loggerConfig: ISettingsParam<LogContext> = {
+      name: this.config.name,
+      minLevel: this.config.minLevel,
+      type: 'pretty',
+      prettyLogTemplate:
+        '{{yyyy}}.{{mm}}.{{dd}} {{hh}}:{{MM}}:{{ss}}:{{ms}}\t{{logLevelName}}\t[{{name}}]\t{{filePathWithLine}}{{nameWithDelimiterPrefix}}\t',
+    };
+    this.logger = new TsLogger<LogContext>(loggerConfig);
+    if (this.outputChannel) {
+      this.logger.attachTransport((logObj) => {
+        this.writeToOutputChannel(logObj);
+      });
+    }
   }
 
   // ===============================
@@ -416,6 +477,7 @@ export class UnifiedLogger {
   public dispose(): void {
     this.outputChannel?.dispose();
     this.performanceStats.clear();
+    this.configChangeDisposable?.dispose();
   }
 
   // ===============================
