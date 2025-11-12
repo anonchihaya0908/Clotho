@@ -71,6 +71,11 @@
                 "command": "clotho.debug.dumpSwitchMetrics",
                 "title": "Clotho: Dump Switch Performance Metrics",
                 "category": "Clotho"
+            },
+            {
+                "command": "clotho.debug.selfTest.strategies",
+                "title": "Clotho: Run Strategy Self-Tests",
+                "category": "Clotho"
             }
         ],
         "menus": {
@@ -112,6 +117,9 @@
                 },
                 {
                     "command": "clotho.debug.dumpSwitchMetrics"
+                },
+                {
+                    "command": "clotho.debug.selfTest.strategies"
                 }
             ]
         },
@@ -130,6 +138,12 @@
         "configuration": {
             "title": "Clotho",
             "properties": {
+                "clotho.performance.slowOperationThreshold": {
+                    "type": "number",
+                    "default": 1000,
+                    "minimum": 1,
+                    "description": "Threshold in milliseconds beyond which operations are considered slow"
+                },
                 "clotho.logLevel": {
                     "type": "string",
                     "enum": ["silly", "trace", "debug", "info", "warn", "error", "fatal"],

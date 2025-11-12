@@ -99,7 +99,7 @@ export class UnifiedLogger {
       minLevel: config.minLevel ?? configuredLevel ?? envDefault,
       enablePerformanceTracking: config.enablePerformanceTracking ?? true,
       enableOutputChannel: config.enableOutputChannel ?? true,
-      slowOperationThreshold: config.slowOperationThreshold || 1000,
+      slowOperationThreshold: config.slowOperationThreshold ?? this.getSlowThresholdFromSettings() ?? 1000,
       maxRecentErrors: config.maxRecentErrors || 10,
     };
 
@@ -131,6 +131,16 @@ export class UnifiedLogger {
           });
         }
       }
+      if (e.affectsConfiguration('clotho.performance.slowOperationThreshold')) {
+        const newThreshold = this.getSlowThresholdFromSettings();
+        if (typeof newThreshold === 'number' && newThreshold > 0) {
+          this.config.slowOperationThreshold = newThreshold;
+          this.info(`Updated slow operation threshold to: ${newThreshold}ms`, {
+            module: 'UnifiedLogger',
+            operation: 'setSlowThreshold',
+          });
+        }
+      }
     });
   }
 
@@ -150,6 +160,19 @@ export class UnifiedLogger {
         case 'fatal': return LogLevel.FATAL;
         default: return undefined;
       }
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Read slow operation threshold from settings (ms)
+   */
+  private getSlowThresholdFromSettings(): number | undefined {
+    try {
+      const value = vscode.workspace.getConfiguration('clotho').get<number>('performance.slowOperationThreshold');
+      if (typeof value === 'number' && value > 0) { return value; }
+      return undefined;
     } catch {
       return undefined;
     }

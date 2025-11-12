@@ -316,6 +316,15 @@ function registerCommands(context: vscode.ExtensionContext): void {
     }
   );
 
+  const runStrategySelfTests = register(
+    'clotho.debug.selfTest.strategies',
+    async () => {
+      const { runStrategySelfTests } = await import('./dev-tools/self-tests');
+      const report = await runStrategySelfTests();
+      vscode.window.showInformationMessage('Clotho: Strategy self-tests complete. See logs for details.');
+    }
+  );
+
   // Register all commands with the extension context for proper cleanup
   context.subscriptions.push(
     configureRulesCommand,
@@ -324,5 +333,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
     switchHeaderSourceCommand,
     openClangFormatEditorCommand,
     dumpSwitchMetricsCommand,
+    runStrategySelfTests,
   );
 }

@@ -31,32 +31,33 @@ export function isClangdAvailable(): boolean {
  * Returns the target URI if found and exists, otherwise null.
  */
 export async function trySwitchSourceHeader(currentFile: vscode.Uri): Promise<vscode.Uri | null> {
+  const start = Date.now();
   try {
     let clangdExtension = vscode.extensions.getExtension(EXTERNAL_EXTENSIONS.CLANGD);
     if (!clangdExtension) {
-      logger.debug('clangd extension not found');
+      logger.debug('clangd extension not found', { operation: 'trySwitchSourceHeader' });
       return null;
     }
 
     if (!clangdExtension.isActive) {
       try {
         await clangdExtension.activate();
-        logger.debug('clangd extension activated');
+        logger.debug('clangd extension activated', { operation: 'trySwitchSourceHeader' });
       } catch {
-        logger.debug('Failed to activate clangd extension');
+        logger.debug('Failed to activate clangd extension', { operation: 'trySwitchSourceHeader' });
         return null;
       }
     }
 
     const api: any = clangdExtension.exports;
     if (!api?.getClient) {
-      logger.debug('clangd API not available');
+      logger.debug('clangd API not available', { operation: 'trySwitchSourceHeader' });
       return null;
     }
 
     const client = api.getClient();
     if (!client || client.state !== LSP_CLIENT_STATE.RUNNING) {
-      logger.debug('clangd client not running');
+      logger.debug('clangd client not running', { operation: 'trySwitchSourceHeader' });
       return null;
     }
 
@@ -74,20 +75,25 @@ export async function trySwitchSourceHeader(currentFile: vscode.Uri): Promise<vs
       const targetUri = vscode.Uri.parse(result);
       try {
         await vscode.workspace.fs.stat(targetUri);
+        const duration = Date.now() - start;
+        logger.debug('clangd switch succeeded', { operation: 'trySwitchSourceHeader', duration });
         return targetUri;
       } catch {
-        logger.debug('clangd result file does not exist');
+        logger.debug('clangd result file does not exist', { operation: 'trySwitchSourceHeader' });
         return null;
       }
     }
 
-    logger.debug('clangd returned no result');
+    const duration = Date.now() - start;
+    logger.debug('clangd returned no result', { operation: 'trySwitchSourceHeader', duration });
     return null;
   } catch (error) {
+    const duration = Date.now() - start;
     logger.debug('clangd integration failed', {
+      operation: 'trySwitchSourceHeader',
+      duration,
       error: error instanceof Error ? error.message : String(error),
     });
     return null;
   }
 }
-
