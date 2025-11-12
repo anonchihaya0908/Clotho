@@ -78,10 +78,12 @@ export class GlobalSearchStrategy implements SearchStrategy {
    * Rank found files by proximity and directory semantics
    */
   private rankResults(context: SearchContext, files: vscode.Uri[]): vscode.Uri[] {
-    const currentDir = vscode.Uri.file((require('path') as typeof import('path')).dirname(context.currentFile.fsPath)).fsPath.replace(/\\/g, '/');
+    const path = require('path') as typeof import('path');
+    const currentDir = vscode.Uri.file(path.dirname(context.currentFile.fsPath)).fsPath.replace(/\\/g, '/');
     const srcDirs = new Set((context.config.sourceDirs || []).map(s => s.toLowerCase()));
     const hdrDirs = new Set((context.config.headerDirs || []).map(s => s.toLowerCase()));
-    const path = require('path') as typeof import('path');
+    const targetOrder = context.targetExtensions || [];
+    const currentFolder = vscode.workspace.getWorkspaceFolder(context.currentFile)?.uri.fsPath.replace(/\\/g, '/');
 
     function score(candidate: vscode.Uri): number {
       const candPath = candidate.fsPath.replace(/\\/g, '/');
@@ -98,6 +100,16 @@ export class GlobalSearchStrategy implements SearchStrategy {
       const containsAny = (dirs: Set<string>) => Array.from(dirs).some(d => lower.includes(`/${d}/`));
       if (context.isHeader && containsAny(srcDirs)) s += 5;
       if (!context.isHeader && containsAny(hdrDirs)) s += 5;
+      // Explicit include<->src mapping bonus
+      const isIncludeDir = containsAny(hdrDirs);
+      const isSrcDir = containsAny(srcDirs);
+      if ((context.isHeader && isSrcDir) || (!context.isHeader && isIncludeDir)) s += 3;
+      // Workspace folder priority
+      if (currentFolder && candPath.startsWith(currentFolder)) s += 2;
+      // Extension preference by target order
+      const ext = path.extname(candPath);
+      const idx = targetOrder.indexOf(ext);
+      if (idx >= 0) s += Math.max(0, 3 - idx);
       // Shorter path (closer) slight bonus
       s += Math.max(0, 3 - Math.abs(fromSeg.length - toSeg.length));
       return s;

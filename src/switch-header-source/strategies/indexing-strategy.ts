@@ -18,6 +18,7 @@ export class IndexingStrategy implements SearchStrategy {
   private index: Map<string, vscode.Uri[]> | null = null;
   private dirty = true;
   private building: Promise<void> | null = null;
+  private fsLinked = false;
 
   constructor() {
     // Mark dirty on configuration changes that affect excludes (best-effort)
@@ -31,6 +32,7 @@ export class IndexingStrategy implements SearchStrategy {
   }
 
   async search(context: SearchContext): Promise<vscode.Uri[]> {
+    this.attachFsDirtyLink(context);
     await this.ensureIndexBuilt(context);
     if (!this.index) { return []; }
 
@@ -81,5 +83,12 @@ export class IndexingStrategy implements SearchStrategy {
 
     return this.building;
   }
-}
 
+  /** Link to FS change events (if available) to mark index dirty */
+  private attachFsDirtyLink(context: SearchContext): void {
+    if (this.fsLinked) return;
+    const fsAny = context.fileSystemService as unknown as { onDidAnyChange?: vscode.Event<vscode.Uri> };
+    fsAny.onDidAnyChange?.(() => { this.dirty = true; });
+    this.fsLinked = true;
+  }
+}
