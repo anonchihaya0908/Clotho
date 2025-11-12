@@ -76,6 +76,16 @@
                 "command": "clotho.debug.selfTest.strategies",
                 "title": "%command.debug.selfTest.strategies.title%",
                 "category": "Clotho"
+            },
+            {
+                "command": "clotho.debug.clearAllCaches",
+                "title": "Clotho: Clear All Caches",
+                "category": "Clotho"
+            },
+            {
+                "command": "clotho.debug.dumpSwitchReport",
+                "title": "Clotho: Dump Switch Performance Report",
+                "category": "Clotho"
             }
         ],
         "menus": {
@@ -138,6 +148,29 @@
         "configuration": {
             "title": "Clotho",
             "properties": {
+                "clotho.webview.allowUnsafeEval": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Allow 'unsafe-eval' in webview CSP (set false to harden CSP; may break some libraries)."
+                },
+                "clotho.switch.indexMaxFiles": {
+                    "type": "number",
+                    "default": 20000,
+                    "minimum": 100,
+                    "description": "Maximum number of files to scan when building search index."
+                },
+                "clotho.cache.fileExistsMax": {
+                    "type": "number",
+                    "default": 100,
+                    "minimum": 10,
+                    "description": "Capacity of FileSystemService file-exists cache."
+                },
+                "clotho.cache.fileContentMax": {
+                    "type": "number",
+                    "default": 50,
+                    "minimum": 10,
+                    "description": "Capacity of FileSystemService file-content cache."
+                },
                 "clotho.switch.ranking.sameDirBoost": {
                     "type": "number",
                     "default": 10,

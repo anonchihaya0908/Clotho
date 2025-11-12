@@ -10,6 +10,8 @@ import {
 } from '../../../common/types';
 import { WebviewMessage, WebviewMessageType } from '../../../common/types/clang-format-shared';
 import { getNonce } from '../../../common/utils';
+import { EventBus } from '../messaging/event-bus';
+import { onTyped, emitTyped } from '../messaging/typed-event-bus';
 
 /**
  * 占位符 Webview 管理器
@@ -202,19 +204,18 @@ export class PlaceholderWebviewManager implements BaseManager {
     });
 
     // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
-    this.context.eventBus?.on('editor-visibility-changed', (...args: readonly unknown[]) => {
-      const payload = (args[0] as { isVisible: boolean } | undefined) ?? { isVisible: false };
-      if (payload.isVisible) {
-        // 主编辑器变为可见，请求恢复代码预览（而不是显示占位符）
-        this.context.eventBus?.emit('open-preview-requested', {
-          source: 'editor-visibility-restored',
-          forceReopen: true,
-        });
-      } else {
-        // 主编辑器变为不可见，销毁占位符
-        this.hidePlaceholder();
-      }
-    });
+    if (this.context.eventBus) {
+      onTyped(this.context.eventBus as unknown as EventBus, 'editor-visibility-changed', ({ isVisible }) => {
+        if (isVisible) {
+          emitTyped(this.context.eventBus as unknown as EventBus, 'open-preview-requested', {
+            source: 'editor-visibility-restored',
+            forceReopen: true,
+          });
+        } else {
+          this.hidePlaceholder();
+        }
+      });
+    }
 
     // Listen for preview hidden due to visibility settings
     this.context.eventBus?.on('preview-hidden-by-visibility', () => {

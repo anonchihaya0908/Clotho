@@ -322,6 +322,26 @@ function registerCommands(context: vscode.ExtensionContext): void {
     }
   );
 
+  const clearAllCachesCommand = register(
+    'clotho.debug.clearAllCaches',
+    () => {
+      const switchSvc = serviceContainer.get('switchService');
+      const fsSvc = serviceContainer.get('fileSystemService');
+      try { switchSvc.clearCache(); } catch { /* noop */ }
+      try { fsSvc.clearCache(); } catch { /* noop */ }
+      vscode.window.showInformationMessage('Clotho: All caches cleared.');
+    }
+  );
+
+  const dumpSwitchReportCommand = register(
+    'clotho.debug.dumpSwitchReport',
+    () => {
+      const svc = serviceContainer.get('switchService');
+      svc.logPerformanceReport();
+      vscode.window.showInformationMessage('Clotho: Switch performance report dumped to logs.');
+    }
+  );
+
   const runStrategySelfTests = register(
     'clotho.debug.selfTest.strategies',
     async () => {
@@ -353,6 +373,8 @@ function registerCommands(context: vscode.ExtensionContext): void {
     switchHeaderSourceCommand,
     openClangFormatEditorCommand,
     dumpSwitchMetricsCommand,
+    clearAllCachesCommand,
+    dumpSwitchReportCommand,
     runStrategySelfTests,
     openLastSwitchTarget,
   );

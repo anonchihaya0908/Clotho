@@ -52,11 +52,15 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
    * Private constructor for singleton pattern
    */
   private constructor() {
+    const cfg = vscode.workspace.getConfiguration('clotho');
+    const existsCap = cfg.get<number>('cache.fileExistsMax', PERFORMANCE.LRU_CACHE_MAX_SIZE * 2);
+    const contentCap = cfg.get<number>('cache.fileContentMax', PERFORMANCE.LRU_CACHE_MAX_SIZE);
+
     // Larger cache for file existence (frequently checked)
-    this.fileExistsCache = new LRUCache<string, boolean>(PERFORMANCE.LRU_CACHE_MAX_SIZE * 2);
+    this.fileExistsCache = new LRUCache<string, boolean>(Math.max(10, existsCap));
 
     // Smaller cache for file content (less frequently needed)
-    this.fileContentCache = new LRUCache<string, string>(PERFORMANCE.LRU_CACHE_MAX_SIZE);
+    this.fileContentCache = new LRUCache<string, string>(Math.max(10, contentCap));
 
     // Register caches with CacheManager
     const cacheManager = getCacheManager();

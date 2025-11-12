@@ -12,6 +12,10 @@ import {
   WebviewMessageType,
 } from '../../../common/types/clang-format-shared';
 import { getNonce } from '../../../common/utils';
+import { getStateOrDefault } from '../types/state';
+import { ClangFormatConfig } from '../../../common/types/clang-format-shared';
+import { EventBus } from '../messaging/event-bus';
+import { onTyped } from '../messaging/typed-event-bus';
 
 /**
  * 编辑器管理器
@@ -99,19 +103,20 @@ export class ClangFormatEditorManager implements BaseManager {
         '../../../common/types/clang-format-shared'
       );
 
-      const currentState = this.context.stateManager?.getState() || {};
+      const currentState = getStateOrDefault(this.context.stateManager?.getState());
 
       // 获取设置
       const config = vscode.workspace.getConfiguration('clotho.clangFormat');
       const showGuideButton = config.get<boolean>('showGuideButton', true);
+
+      const currentConfig: ClangFormatConfig = (currentState.currentConfig as unknown as ClangFormatConfig) || DEFAULT_CLANG_FORMAT_CONFIG;
 
       const initMessage: WebviewMessage = {
         type: WebviewMessageType.INITIALIZE,
         payload: {
           options: CLANG_FORMAT_OPTIONS,
           categories: Object.values(ConfigCategories),
-          currentConfig:
-            currentState['currentConfig'] || DEFAULT_CLANG_FORMAT_CONFIG,
+          currentConfig,
           settings: { showGuideButton },
         },
       };
@@ -151,15 +156,17 @@ export class ClangFormatEditorManager implements BaseManager {
   }
 
   private setupEventListeners() {
-    this.context.eventBus?.on('create-editor-requested', (...args: readonly unknown[]) => {
-      const source = args[0] as EditorOpenSource;
-      void this.createOrShowEditor(source);
-    });
+    if (this.context.eventBus) {
+      onTyped(this.context.eventBus as unknown as EventBus, 'create-editor-requested', (source) => {
+        void this.createOrShowEditor(source);
+      });
+    }
 
-    this.context.eventBus?.on('post-message-to-webview', (...args: readonly unknown[]) => {
-      const message = args[0] as WebviewMessage;
-      void this.postMessage(message);
-    });
+    if (this.context.eventBus) {
+      onTyped(this.context.eventBus as unknown as EventBus, 'post-message-to-webview', (message) => {
+        void this.postMessage(message);
+      });
+    }
   }
 
   private setupPanelEventListeners() {
@@ -292,6 +299,8 @@ export class ClangFormatEditorManager implements BaseManager {
     });
 
     const nonce = getNonce();
+    const cfg = vscode.workspace.getConfiguration('clotho');
+    const allowUnsafeEval = cfg.get<boolean>('webview.allowUnsafeEval', true);
 
     // 2. 【核心】构建一个更完善的、允许动态加载的内容安全策略
     return `<!DOCTYPE html>
@@ -307,7 +316,7 @@ export class ClangFormatEditorManager implements BaseManager {
             <meta http-equiv="Content-Security-Policy" content="
                 default-src 'none';
                 style-src   ${webview.cspSource} 'nonce-${nonce}';
-                script-src  'nonce-${nonce}' 'unsafe-eval';
+                script-src  'nonce-${nonce}'${allowUnsafeEval ? " 'unsafe-eval'" : ''};
                 img-src     ${webview.cspSource} https: data:;
                 font-src    ${webview.cspSource};
                 worker-src  ${webview.cspSource};

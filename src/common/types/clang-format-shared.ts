@@ -110,10 +110,50 @@ export interface AppState {
 }
 
 // Message interface
-export interface WebviewMessage {
-  type: WebviewMessageType;
-  payload: unknown;
+// Log message payload
+export interface WebviewLogPayload {
+  level?: 'debug' | 'info' | 'warn' | 'error';
+  message?: string;
+  meta?: Record<string, unknown>;
 }
+
+// Discriminated union payload map
+export type WebviewPayloadMap = {
+  [WebviewMessageType.INITIALIZE]: InitializePayload;
+  [WebviewMessageType.CONFIG_CHANGED]: { key?: string; value?: ConfigValue } | Record<string, unknown>;
+  [WebviewMessageType.CONFIG_LOADED]: Record<string, unknown>;
+  [WebviewMessageType.MICRO_PREVIEW_UPDATE]: Record<string, unknown>;
+  [WebviewMessageType.VALIDATION_RESULT]: { isValid: boolean; errors?: string[] };
+  [WebviewMessageType.GET_MICRO_PREVIEW]: { optionName: string; config: Record<string, unknown>; previewSnippet: string };
+  [WebviewMessageType.GET_MACRO_PREVIEW]: Record<string, unknown> | undefined;
+  [WebviewMessageType.LOAD_WORKSPACE_CONFIG]: undefined;
+  [WebviewMessageType.SAVE_CONFIG]: undefined;
+  [WebviewMessageType.EXPORT_CONFIG]: undefined;
+  [WebviewMessageType.IMPORT_CONFIG]: { content?: string } | undefined;
+  [WebviewMessageType.RESET_CONFIG]: undefined;
+  [WebviewMessageType.UPDATE_SETTINGS]: Record<string, unknown>;
+  [WebviewMessageType.CONFIG_OPTION_HOVER]: Record<string, unknown>;
+  [WebviewMessageType.CONFIG_OPTION_FOCUS]: Record<string, unknown>;
+  [WebviewMessageType.CLEAR_HIGHLIGHTS]: Record<string, unknown> | undefined;
+  [WebviewMessageType.OPEN_CLANG_FORMAT_FILE]: undefined;
+  [WebviewMessageType.VALIDATION_ERROR]: { message: string } | undefined;
+  [WebviewMessageType.SETTINGS_UPDATED]: Record<string, unknown>;
+  [WebviewMessageType.UPDATE_MICRO_PREVIEW]: { optionName: string; formattedCode: string; success: boolean; error?: string };
+  [WebviewMessageType.PREVIEW_OPENED]: undefined;
+  [WebviewMessageType.PREVIEW_CLOSED]: undefined;
+  [WebviewMessageType.PREVIEW_REOPENED]: undefined;
+  [WebviewMessageType.PREVIEW_REOPEN_FAILED]: { reason?: string } | undefined;
+  [WebviewMessageType.WEBVIEW_READY]: undefined;
+  [WebviewMessageType.WEBVIEW_LOG]: WebviewLogPayload;
+  [WebviewMessageType.REOPEN_PREVIEW]: { source?: string; forceReopen?: boolean } | undefined;
+  [WebviewMessageType.GET_OPTIONS_BY_CATEGORY]: GetOptionsByCategoryRequest;
+  [WebviewMessageType.SEARCH_OPTIONS]: SearchOptionsRequest;
+  [WebviewMessageType.GET_ALL_OPTIONS]: undefined;
+};
+
+export type WebviewMessage = {
+  [K in WebviewMessageType]: { type: K; payload: WebviewPayloadMap[K] }
+}[WebviewMessageType];
 
 // Search request interface
 export interface SearchOptionsRequest {

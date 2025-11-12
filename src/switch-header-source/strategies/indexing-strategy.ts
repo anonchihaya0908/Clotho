@@ -64,7 +64,8 @@ export class IndexingStrategy implements SearchStrategy {
         const ex = (context.config.excludePaths || []);
         const exclude = ex.length > 0 ? `{${ex.join(',')}}` : undefined;
         const pattern = '**/*.{c,cc,cpp,cxx,h,hh,hpp,hxx}';
-        const files = await vscode.workspace.findFiles(pattern, exclude, 20000);
+        const max = vscode.workspace.getConfiguration('clotho').get<number>('switch.indexMaxFiles', 20000);
+        const files = await vscode.workspace.findFiles(pattern, exclude, Math.max(100, max));
         const map = new Map<string, vscode.Uri[]>();
         for (const uri of files) {
           const base = path.basename(uri.fsPath, path.extname(uri.fsPath));

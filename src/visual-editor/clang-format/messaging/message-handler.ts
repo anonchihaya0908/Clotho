@@ -1,10 +1,12 @@
 import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { BaseManager, ManagerContext } from '../../../common/types';
-import {
-  WebviewMessage,
-  WebviewMessageType,
-} from '../../../common/types/clang-format-shared';
+import { WebviewMessage, WebviewMessageType } from '../../../common/types/clang-format-shared';
 import { UI_CONSTANTS } from '../../../common/constants';
+
+// Type guards for common payloads
+function isSettingsPayload(p: unknown): p is Record<string, unknown> {
+  return !!p && typeof p === 'object';
+}
 
 type MessageHandlerFunction = (
   payload: unknown,
@@ -19,7 +21,7 @@ export class MessageHandler implements BaseManager {
   readonly name = 'MessageHandler';
 
   private context!: ManagerContext;
-  private messageHandlers = new Map<string, MessageHandlerFunction>();
+  private messageHandlers = new Map<string, MessageHandlerFunction>(); // kept for backward compatibility (not used in new switch-based handler)
   private readonly logger = createModuleLogger('MessageHandler');
 
   constructor() {
@@ -39,40 +41,96 @@ export class MessageHandler implements BaseManager {
   async handleMessage(message: WebviewMessage): Promise<void> {
     this.logger.debug('Processing message:', { type: message.type, payload: message.payload });
 
-    if (!this.validateMessage(message)) {
-      const error = new Error(
-        `Invalid message format: ${JSON.stringify(message)}`,
-      );
-      if (this.context.errorRecovery) {
-        await this.context.errorRecovery.handleError(
-          'message-validation-failed',
-          error,
-          { message },
-        );
-      }
-      return;
-    }
-
-    const handler = this.messageHandlers.get(message.type);
-    if (!handler) {
-      this.logger.warn(`No handler found for message type: ${message.type}`);
-      this.logger.debug('Available handlers:', { handlers: Array.from(this.messageHandlers.keys()) });
-      return;
-    }
-
     try {
-      this.logger.debug(`Handling message: ${message.type}`);
-      await handler(message.payload, this.context);
+      switch (message.type) {
+        case WebviewMessageType.WEBVIEW_READY: {
+          this.logger.info('Webview is ready, triggering editor initialization sequence', {
+            module: 'MessageHandler',
+            operation: 'webview-ready',
+          });
+          this.context.eventBus?.emit('editor-fully-ready', message.payload);
+          break;
+        }
+        case WebviewMessageType.WEBVIEW_LOG: {
+          const { level, message: logMessage, meta } = message.payload ?? {};
+          const ctx = { metadata: meta ? { data: meta } : undefined } as Record<string, unknown>;
+          switch (level) {
+            case 'debug': this.logger.debug(`[Webview] ${logMessage || ''}`, ctx); break;
+            case 'warn': this.logger.warn(`[Webview] ${logMessage || ''}`, ctx); break;
+            case 'error': this.logger.error(`[Webview] ${logMessage || ''}`, undefined, ctx); break;
+            default: this.logger.info(`[Webview] ${logMessage || ''}`, ctx);
+          }
+          break;
+        }
+        case WebviewMessageType.CONFIG_CHANGED: {
+          this.context.eventBus?.emit('config-change-requested', message.payload as Record<string, unknown>);
+          break;
+        }
+        case WebviewMessageType.LOAD_WORKSPACE_CONFIG: {
+          this.context.eventBus?.emit('load-workspace-config-requested');
+          break;
+        }
+        case WebviewMessageType.SAVE_CONFIG: {
+          this.context.eventBus?.emit('save-config-requested');
+          break;
+        }
+        case WebviewMessageType.EXPORT_CONFIG: {
+          this.context.eventBus?.emit('export-config-requested');
+          break;
+        }
+        case WebviewMessageType.IMPORT_CONFIG: {
+          this.context.eventBus?.emit('import-config-requested', message.payload);
+          break;
+        }
+        case WebviewMessageType.RESET_CONFIG: {
+          this.context.eventBus?.emit('reset-config-requested');
+          break;
+        }
+        case WebviewMessageType.OPEN_CLANG_FORMAT_FILE: {
+          this.context.eventBus?.emit('open-clang-format-file-requested');
+          break;
+        }
+        case WebviewMessageType.REOPEN_PREVIEW: {
+          this.context.eventBus?.emit('open-preview-requested', message.payload ?? { source: 'webview' });
+          break;
+        }
+        case WebviewMessageType.GET_MICRO_PREVIEW: {
+          this.logger.debug('Micro preview requested:', { payload: message.payload });
+          this.context.eventBus?.emit('micro-preview-requested', message.payload);
+          break;
+        }
+        case WebviewMessageType.GET_MACRO_PREVIEW: {
+          this.logger.debug('Macro preview requested:', { payload: message.payload });
+          this.context.eventBus?.emit('macro-preview-requested', message.payload ?? {});
+          break;
+        }
+        case WebviewMessageType.UPDATE_SETTINGS: {
+          this.logger.debug('Settings updated:', { payload: message.payload });
+          this.context.eventBus?.emit('settings-updated', message.payload);
+          break;
+        }
+        case WebviewMessageType.CONFIG_OPTION_HOVER: {
+          this.context.eventBus?.emit('config-option-hover', message.payload);
+          break;
+        }
+        case WebviewMessageType.CONFIG_OPTION_FOCUS: {
+          this.context.eventBus?.emit('config-option-focus', message.payload);
+          break;
+        }
+        case WebviewMessageType.CLEAR_HIGHLIGHTS: {
+          this.context.eventBus?.emit('clear-highlights', message.payload);
+          break;
+        }
+        default: {
+          this.logger.warn(`Unhandled webview message: ${message.type}`);
+        }
+      }
     } catch (error: unknown) {
       if (this.context.errorRecovery) {
-        await this.context.errorRecovery.handleError(
-          'message-handling-failed',
-          error as Error,
-          {
-            messageType: message.type,
-            payload: message.payload,
-          },
-        );
+        await this.context.errorRecovery.handleError('message-handling-failed', error as Error, {
+          messageType: message.type,
+          payload: message.payload,
+        });
       }
     }
   }
@@ -180,7 +238,11 @@ export class MessageHandler implements BaseManager {
     this.messageHandlers.set(
       WebviewMessageType.UPDATE_SETTINGS,
       async (payload, context) => {
-        this.logger.debug('Settings updated:', { payload });
+        if (isSettingsPayload(payload)) {
+          this.logger.debug('Settings updated:', { payload });
+        } else {
+          this.logger.warn('Settings payload malformed', { payload });
+        }
         // 这里可以处理应用程序设置的更新
         // 比如显示/隐藏指南按钮等
         context.eventBus?.emit('settings-updated', payload);
@@ -229,15 +291,6 @@ export class MessageHandler implements BaseManager {
         context.eventBus?.emit('editor-fully-ready', payload);
       },
     );
-  }
-
-  /**
-   * 验证消息基本格式
-   */
-  private validateMessage(message: unknown): message is WebviewMessage {
-    if (!message || typeof message !== 'object') { return false; }
-    const m = message as { type?: unknown };
-    return typeof m.type === 'string';
   }
 
   dispose(): void {
