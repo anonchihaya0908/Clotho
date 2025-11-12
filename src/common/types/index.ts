@@ -8,3 +8,6 @@ export * from './core';
 
 // Export shared clang-format types
 export * from './clang-format-shared';
+
+// Export shared switch types
+export * from './switch';

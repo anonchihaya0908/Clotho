@@ -52,9 +52,12 @@ export class GlobalSearchStrategy implements SearchStrategy {
     const searchPattern = `**/${baseName}.${extensionPattern}`;
     
     try {
+      const excludeGlob = excludePaths && excludePaths.length > 0
+        ? `{${excludePaths.join(',')}}`
+        : undefined;
       const foundFiles = await vscode.workspace.findFiles(
         searchPattern,
-        `{${excludePaths.join(',')}}`,
+        excludeGlob,
         20 // Limit results to prevent performance issues
       );
       

@@ -48,7 +48,7 @@ export interface PairingRule {
 }
 
 // Module-specific configurations now in their respective modules
-// SwitchConfig is in switch-header-source/types.ts
+// SwitchConfig is defined in common/types/switch.ts
 
 export interface ExtensionConfig {
   createPair: {

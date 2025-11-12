@@ -17,6 +17,9 @@ import {
   PERFORMANCE,
   SOURCE_EXTENSIONS,
   TEST_PATTERNS,
+  LSP_REQUESTS,
+  LSP_CLIENT_STATE,
+  EXTERNAL_EXTENSIONS,
 } from '../common/constants';
 import { createModuleLogger } from '../common/logger/unified-logger';
 import { SearchResult } from '../common/types/core';
@@ -261,7 +264,7 @@ export class SwitchService implements ISwitchService {
    */
   public isClangdAvailable(): boolean {
     const clangdExtension = vscode.extensions.getExtension(
-      'llvm-vs-code-extensions.vscode-clangd',
+      EXTERNAL_EXTENSIONS.CLANGD,
     );
     if (!clangdExtension?.isActive) {
       return false;
@@ -273,7 +276,7 @@ export class SwitchService implements ISwitchService {
     }
 
     const client = api.getClient();
-    return client && client.state === 2; // 2 = Running state
+    return client && client.state === LSP_CLIENT_STATE.RUNNING;
   }
 
   /**
@@ -331,7 +334,7 @@ export class SwitchService implements ISwitchService {
     try {
       // Step 1: Check if clangd extension is available
       const clangdExtension = vscode.extensions.getExtension(
-        'llvm-vs-code-extensions.vscode-clangd',
+        EXTERNAL_EXTENSIONS.CLANGD,
       );
       if (!clangdExtension) {
         this.logger.debug('clangd extension not found', {
@@ -385,7 +388,7 @@ export class SwitchService implements ISwitchService {
       );
 
       const result = await Promise.race([
-        client.sendRequest('textDocument/switchSourceHeader', textDocument),
+        client.sendRequest(LSP_REQUESTS.SWITCH_SOURCE_HEADER, textDocument),
         timeoutPromise,
       ]);
 

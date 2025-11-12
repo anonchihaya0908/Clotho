@@ -3,7 +3,7 @@
  */
 
 import { SearchResult as CoreSearchResult } from '../common/types/core';
-import { PathConfig } from '../common/config-system';
+import { SwitchConfig as CommonSwitchConfig } from '../common/types/switch';
 
 // ===============================
 // Switch Module Configuration
@@ -13,17 +13,7 @@ import { PathConfig } from '../common/config-system';
  *  Switch Module Configuration
  * 继承自PathConfig，获得统一的路径配置管理能力
  */
-export interface SwitchConfig extends PathConfig {
-    /** 源文件目录 */
-    sourceDirs: string[];
-    /** 头文件目录 */
-    headerDirs: string[];
-    /** 测试文件目录 */
-    testDirs: string[];
-    /** 搜索路径 */
-    searchPaths: string[];
-    // excludePatterns 改为 excludePaths (通过 PathConfig 继承)
-}
+export type SwitchConfig = CommonSwitchConfig;
 
 // ===============================
 // Search Pattern Interface

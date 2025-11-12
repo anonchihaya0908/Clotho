@@ -86,8 +86,34 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
    */
   private setupFileWatcher(): void {
     try {
-      // Watch all files in workspace
-      this.fileWatcher = vscode.workspace.createFileSystemWatcher('**/*');
+      // Watch only relevant files to reduce overhead
+      const patterns = [
+        '**/*.{c,cc,cpp,cxx,h,hh,hpp,hxx}',
+        '**/.clang-format',
+        '**/_clang-format',
+      ];
+
+      const watchers = patterns.map((p) => vscode.workspace.createFileSystemWatcher(p));
+
+      // Aggregate into a composite disposable
+      this.fileWatcher = {
+        onDidCreate: (listener: (e: vscode.Uri) => any) => {
+          const subs = watchers.map((w) => w.onDidCreate(listener));
+          subs.forEach((d) => this.disposables.push(d));
+          return { dispose: () => subs.forEach((d) => d.dispose()) } as vscode.Disposable;
+        },
+        onDidChange: (listener: (e: vscode.Uri) => any) => {
+          const subs = watchers.map((w) => w.onDidChange(listener));
+          subs.forEach((d) => this.disposables.push(d));
+          return { dispose: () => subs.forEach((d) => d.dispose()) } as vscode.Disposable;
+        },
+        onDidDelete: (listener: (e: vscode.Uri) => any) => {
+          const subs = watchers.map((w) => w.onDidDelete(listener));
+          subs.forEach((d) => this.disposables.push(d));
+          return { dispose: () => subs.forEach((d) => d.dispose()) } as vscode.Disposable;
+        },
+        dispose: () => watchers.forEach((w) => w.dispose()),
+      } as unknown as vscode.FileSystemWatcher;
 
       // File created: mark as existing in cache
       this.fileWatcher.onDidCreate((uri) => {

@@ -4,7 +4,7 @@
  */
 
 // Constants
-import { SwitchConfig } from '../switch-header-source/types';
+import { SwitchConfig } from './types/switch';
 import { TemplateContext } from './types';
 
 // Re-export types for convenience
@@ -155,6 +155,14 @@ export const SUCCESS_MESSAGES = {
 
 export const LSP_REQUESTS = {
   SWITCH_SOURCE_HEADER: 'textDocument/switchSourceHeader',
+} as const;
+
+/**
+ * Language Client state constants (subset)
+ * Avoid magic numbers when checking LanguageClient state
+ */
+export const LSP_CLIENT_STATE = {
+  RUNNING: 2,
 } as const;
 
 // ===============================
