@@ -138,6 +138,36 @@
         "configuration": {
             "title": "Clotho",
             "properties": {
+                "clotho.switch.ranking.sameDirBoost": {
+                    "type": "number",
+                    "default": 10,
+                    "minimum": 0,
+                    "description": "%config.switch.ranking.sameDirBoost.description%"
+                },
+                "clotho.switch.ranking.includeSrcBoost": {
+                    "type": "number",
+                    "default": 5,
+                    "minimum": 0,
+                    "description": "%config.switch.ranking.includeSrcBoost.description%"
+                },
+                "clotho.switch.ranking.workspaceRootBoost": {
+                    "type": "number",
+                    "default": 2,
+                    "minimum": 0,
+                    "description": "%config.switch.ranking.workspaceRootBoost.description%"
+                },
+                "clotho.switch.ranking.extOrderBase": {
+                    "type": "number",
+                    "default": 3,
+                    "minimum": 0,
+                    "description": "%config.switch.ranking.extOrderBase.description%"
+                },
+                "clotho.switch.ranking.depthBonusBase": {
+                    "type": "number",
+                    "default": 3,
+                    "minimum": 0,
+                    "description": "%config.switch.ranking.depthBonusBase.description%"
+                },
                 "clotho.performance.slowOperationThreshold": {
                     "type": "number",
                     "default": 1000,

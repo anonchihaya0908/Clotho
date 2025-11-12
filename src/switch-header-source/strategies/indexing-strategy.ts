@@ -19,6 +19,7 @@ export class IndexingStrategy implements SearchStrategy {
   private dirty = true;
   private building: Promise<void> | null = null;
   private fsLinked = false;
+  private fileExistsFn: ((u: vscode.Uri) => Promise<boolean>) | null = null;
 
   constructor() {
     // Mark dirty on configuration changes that affect excludes (best-effort)
@@ -88,7 +89,27 @@ export class IndexingStrategy implements SearchStrategy {
   private attachFsDirtyLink(context: SearchContext): void {
     if (this.fsLinked) return;
     const fsAny = context.fileSystemService as unknown as { onDidAnyChange?: vscode.Event<vscode.Uri> };
-    fsAny.onDidAnyChange?.(() => { this.dirty = true; });
+    this.fileExistsFn = (u: vscode.Uri) => context.fileSystemService.fileExists(u);
+    fsAny.onDidAnyChange?.(async (uri: vscode.Uri) => {
+      // If no index ready, just mark dirty
+      if (!this.index || this.building) { this.dirty = true; return; }
+      const ext = uri.fsPath.toLowerCase().split('.').pop() || '';
+      const allowed = new Set(['c', 'cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']);
+      if (!allowed.has(ext)) { return; }
+      try {
+        const exists = await (this.fileExistsFn ? this.fileExistsFn(uri) : vscode.workspace.fs.stat(uri).then(() => true, () => false));
+        const base = path.basename(uri.fsPath, path.extname(uri.fsPath));
+        const arr = this.index.get(base) || [];
+        const idx = arr.findIndex(u => u.fsPath === uri.fsPath);
+        if (exists) {
+          if (idx === -1) { arr.push(uri); this.index.set(base, arr); }
+        } else {
+          if (idx >= 0) { arr.splice(idx, 1); this.index.set(base, arr); }
+        }
+      } catch {
+        this.dirty = true; // fall back to rebuild later
+      }
+    });
     this.fsLinked = true;
   }
 }

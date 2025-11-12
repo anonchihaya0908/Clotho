@@ -85,6 +85,14 @@ export class GlobalSearchStrategy implements SearchStrategy {
     const targetOrder = context.targetExtensions || [];
     const currentFolder = vscode.workspace.getWorkspaceFolder(context.currentFile)?.uri.fsPath.replace(/\\/g, '/');
 
+    // Ranking weights (configurable)
+    const cfg = vscode.workspace.getConfiguration('clotho');
+    const sameDirBoost = cfg.get<number>('switch.ranking.sameDirBoost', 10);
+    const includeSrcBoost = cfg.get<number>('switch.ranking.includeSrcBoost', 5);
+    const workspaceRootBoost = cfg.get<number>('switch.ranking.workspaceRootBoost', 2);
+    const extOrderBase = cfg.get<number>('switch.ranking.extOrderBase', 3);
+    const depthBonusBase = cfg.get<number>('switch.ranking.depthBonusBase', 3);
+
     function score(candidate: vscode.Uri): number {
       const candPath = candidate.fsPath.replace(/\\/g, '/');
       const candDir = path.dirname(candPath);
@@ -94,24 +102,24 @@ export class GlobalSearchStrategy implements SearchStrategy {
       let i = 0; while (i < fromSeg.length && i < toSeg.length && fromSeg[i] === toSeg[i]) i++;
       let s = i; // more shared segments → higher score
       // Same directory boost
-      if (candDir === currentDir) s += 10;
+      if (candDir === currentDir) s += sameDirBoost;
       // Header↔Source directory preference
       const lower = candDir.toLowerCase();
       const containsAny = (dirs: Set<string>) => Array.from(dirs).some(d => lower.includes(`/${d}/`));
-      if (context.isHeader && containsAny(srcDirs)) s += 5;
-      if (!context.isHeader && containsAny(hdrDirs)) s += 5;
+      if (context.isHeader && containsAny(srcDirs)) s += includeSrcBoost;
+      if (!context.isHeader && containsAny(hdrDirs)) s += includeSrcBoost;
       // Explicit include<->src mapping bonus
       const isIncludeDir = containsAny(hdrDirs);
       const isSrcDir = containsAny(srcDirs);
       if ((context.isHeader && isSrcDir) || (!context.isHeader && isIncludeDir)) s += 3;
       // Workspace folder priority
-      if (currentFolder && candPath.startsWith(currentFolder)) s += 2;
+      if (currentFolder && candPath.startsWith(currentFolder)) s += workspaceRootBoost;
       // Extension preference by target order
       const ext = path.extname(candPath);
       const idx = targetOrder.indexOf(ext);
-      if (idx >= 0) s += Math.max(0, 3 - idx);
+      if (idx >= 0) s += Math.max(0, extOrderBase - idx);
       // Shorter path (closer) slight bonus
-      s += Math.max(0, 3 - Math.abs(fromSeg.length - toSeg.length));
+      s += Math.max(0, depthBonusBase - Math.abs(fromSeg.length - toSeg.length));
       return s;
     }
 

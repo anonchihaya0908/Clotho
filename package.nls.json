@@ -30,5 +30,10 @@
     "config.fs.enableWatcher.description": "Enable file system watchers for cache invalidation",
     "config.fs.watchGlobs.description": "Additional watch globs (RelativePattern) used by the file watcher; leave empty to use defaults",
     "config.switch.cacheTTLms.description": "TTL in ms for switch result cache entries (0 disables TTL)",
-    "config.logLevel.description": "Minimum log level for Clotho logs"
+    "config.logLevel.description": "Minimum log level for Clotho logs",
+    "config.switch.ranking.sameDirBoost.description": "Ranking weight for candidates in the same directory",
+    "config.switch.ranking.includeSrcBoost.description": "Ranking weight for include↔src semantics",
+    "config.switch.ranking.workspaceRootBoost.description": "Ranking weight for candidates in the same workspace folder",
+    "config.switch.ranking.extOrderBase.description": "Base bonus for preferred extensions based on target order",
+    "config.switch.ranking.depthBonusBase.description": "Base bonus for path depth proximity"
 }

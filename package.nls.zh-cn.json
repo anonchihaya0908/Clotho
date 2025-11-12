@@ -30,5 +30,10 @@
     "config.fs.enableWatcher.description": "启用文件系统监听以便缓存失效",
     "config.fs.watchGlobs.description": "额外的监听通配符（RelativePattern），为空则使用默认值",
     "config.switch.cacheTTLms.description": "切换结果缓存的 TTL（毫秒，0 表示关闭）",
-    "config.logLevel.description": "Clotho 日志的最低级别"
+    "config.logLevel.description": "Clotho 日志的最低级别",
+    "config.switch.ranking.sameDirBoost.description": "同目录候选的排序权重",
+    "config.switch.ranking.includeSrcBoost.description": "include↔src 语义的排序权重",
+    "config.switch.ranking.workspaceRootBoost.description": "同一工作区根目录候选的排序权重",
+    "config.switch.ranking.extOrderBase.description": "按目标扩展顺序的基础加分",
+    "config.switch.ranking.depthBonusBase.description": "路径层级距离的基础加分"
 }
