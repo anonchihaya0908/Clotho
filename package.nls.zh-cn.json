@@ -23,5 +23,12 @@
     "config.headerGuard.format.title": "头文件保护符格式",
     "config.headerGuard.format.description": "生成头文件保护符名称的格式字符串。可用占位符: {FILE_NAME}, {FILE_NAME_UPPER}, {FILE_PATH}, {PROJECT_NAME}",
     "config.clangFormat.title": "Clang-Format",
-    "config.clangFormat.description": "clang-format 可视化编辑器配置。"
+    "config.clangFormat.description": "clang-format 可视化编辑器配置。",
+    "command.debug.dumpSwitchMetrics.title": "Clotho：输出切换性能指标",
+    "command.debug.selfTest.strategies.title": "Clotho：运行策略自测",
+    "config.performance.slowOperationThreshold.description": "超过该毫秒阈值的操作会视为耗时较长",
+    "config.fs.enableWatcher.description": "启用文件系统监听以便缓存失效",
+    "config.fs.watchGlobs.description": "额外的监听通配符（RelativePattern），为空则使用默认值",
+    "config.switch.cacheTTLms.description": "切换结果缓存的 TTL（毫秒，0 表示关闭）",
+    "config.logLevel.description": "Clotho 日志的最低级别"
 }

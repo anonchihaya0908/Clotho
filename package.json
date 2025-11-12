@@ -69,12 +69,12 @@
             },
             {
                 "command": "clotho.debug.dumpSwitchMetrics",
-                "title": "Clotho: Dump Switch Performance Metrics",
+                "title": "%command.debug.dumpSwitchMetrics.title%",
                 "category": "Clotho"
             },
             {
                 "command": "clotho.debug.selfTest.strategies",
-                "title": "Clotho: Run Strategy Self-Tests",
+                "title": "%command.debug.selfTest.strategies.title%",
                 "category": "Clotho"
             }
         ],
@@ -142,24 +142,30 @@
                     "type": "number",
                     "default": 1000,
                     "minimum": 1,
-                    "description": "Threshold in milliseconds beyond which operations are considered slow"
+                    "description": "%config.performance.slowOperationThreshold.description%"
                 },
                 "clotho.fs.enableWatcher": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Enable file system watchers for cache invalidation"
+                    "description": "%config.fs.enableWatcher.description%"
+                },
+                "clotho.fs.watchGlobs": {
+                    "type": "array",
+                    "default": [],
+                    "items": { "type": "string" },
+                    "description": "%config.fs.watchGlobs.description%"
                 },
                 "clotho.switch.cacheTTLms": {
                     "type": "number",
                     "default": 60000,
                     "minimum": 0,
-                    "description": "TTL in ms for switch result cache entries (0 disables TTL)"
+                    "description": "%config.switch.cacheTTLms.description%"
                 },
                 "clotho.logLevel": {
                     "type": "string",
                     "enum": ["silly", "trace", "debug", "info", "warn", "error", "fatal"],
                     "default": "info",
-                    "description": "Minimum log level for Clotho logs"
+                    "description": "%config.logLevel.description%"
                 },
                 "clotho.createPair.rules": {
                     "type": "array",

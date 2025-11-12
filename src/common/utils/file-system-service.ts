@@ -92,11 +92,13 @@ export class FileSystemService implements IFileSystemService, vscode.Disposable 
     if (!enable) { return; }
     try {
       // Watch only relevant files per workspace root to reduce overhead
-      const globs = [
+      const defaultGlobs = [
         '**/*.{c,cc,cpp,cxx,h,hh,hpp,hxx}',
         '**/.clang-format',
         '**/_clang-format',
       ];
+      const cfgGlobs = vscode.workspace.getConfiguration('clotho').get<string[]>('fs.watchGlobs', []);
+      const globs = (cfgGlobs && cfgGlobs.length > 0) ? cfgGlobs : defaultGlobs;
       const folders = vscode.workspace.workspaceFolders || [];
       const watchers: vscode.FileSystemWatcher[] = [];
       for (const folder of folders) {

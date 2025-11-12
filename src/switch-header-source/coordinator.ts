@@ -12,6 +12,7 @@ import {
 import { BaseCoordinator } from '../common/base-coordinator';
 import { SwitchConfigService } from './config-manager';
 import { SwitchStatusBar } from './status-bar';
+import { L } from '../common/i18n';
 import { ISwitchService } from '../common/interfaces/services';
 import { SwitchUI } from './switch-ui';
 
@@ -85,12 +86,11 @@ export class SwitchCoordinator extends BaseCoordinator {
         const fileType = getFileType(currentPath);
         this.ui.showNoFilesFoundMessage(baseName, fileType === 'header');
         // Offer to create pair when nothing found
-        const choice = await vscode.window.showInformationMessage(
-          `No corresponding ${fileType === 'header' ? 'source' : 'header'} file found for '${baseName}'. Create a new pair?`,
-          'Create Pair',
-          'Cancel'
-        );
-        if (choice === 'Create Pair') {
+        const offer = L.ui.switch.noFilesFound(baseName, fileType === 'header' ? 'source' : 'header');
+        const createLabel = L.ui.button.create();
+        const cancelLabel = L.ui.button.cancel();
+        const choice = await vscode.window.showInformationMessage(offer, createLabel, cancelLabel);
+        if (choice === createLabel) {
           const pairCoordinator = serviceContainer.get('pairCoordinator');
           await pairCoordinator.create();
         }
@@ -99,16 +99,18 @@ export class SwitchCoordinator extends BaseCoordinator {
 
       // Handle the results
       const baseName = path.basename(currentPath, path.extname(currentPath));
-      if (result) {
-        this.statusBar?.update(result.method, duration, result.files.length);
-      }
       const isHeader = getFileType(currentPath) === 'header';
-      await this.ui.handleSearchResult(
-        result.files,
-        baseName,
-        isHeader,
-        result.method,
-      );
+      let opened: vscode.Uri | undefined;
+      if (result.files.length === 1) {
+        opened = result.files[0];
+        await this.ui.openFile(opened);
+      } else {
+        opened = await this.ui.showFileSelectionDialog(result.files, baseName, isHeader);
+        if (opened) {
+          await this.ui.openFile(opened);
+        }
+      }
+      this.statusBar?.update(result.method, duration, result.files.length, opened ?? null);
     });
   }
 

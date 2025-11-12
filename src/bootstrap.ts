@@ -330,6 +330,20 @@ function registerCommands(context: vscode.ExtensionContext): void {
     }
   );
 
+  const openLastSwitchTarget = register(
+    'clotho.switch.openLastTarget',
+    async () => {
+      const status = serviceContainer.get('switchStatusBar');
+      const uri = status.getLastUri();
+      if (uri) {
+        const doc = await vscode.workspace.openTextDocument(uri);
+        await vscode.window.showTextDocument(doc);
+      } else {
+        vscode.window.showInformationMessage('No previous switch target available.');
+      }
+    }
+  );
+
   // Register all commands with the extension context for proper cleanup
   context.subscriptions.push(
     configureRulesCommand,
@@ -339,5 +353,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
     openClangFormatEditorCommand,
     dumpSwitchMetricsCommand,
     runStrategySelfTests,
+    openLastSwitchTarget,
   );
 }

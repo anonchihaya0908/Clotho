@@ -8,6 +8,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { errorHandler } from '../common/error-handler';
+import { L } from '../common/i18n';
 import { createModuleLogger } from '../common/logger/unified-logger';
 
 /**
@@ -30,8 +31,9 @@ export class SwitchUI {
     isHeader: boolean,
   ): void {
     const fileType = isHeader ? 'source' : 'header';
-    const message = `No corresponding ${fileType} file found for '${currentFileName}'. You may need to create it manually.`;
-    vscode.window.showInformationMessage(message);
+    vscode.window.showInformationMessage(
+      L.ui.switch.noFilesFound(currentFileName, fileType)
+    );
   }
 
   /**
@@ -100,8 +102,8 @@ export class SwitchUI {
     });
 
     const selected = await vscode.window.showQuickPick(items, {
-      placeHolder: `Found multiple possible ${fileType} files for '${baseName}'. Please choose one.`,
-      title: 'Select Corresponding File',
+      placeHolder: L.ui.switch.multipleFilesFound(baseName, fileType),
+      title: L.ui.quickPick.selectCorrespondingFile(),
       matchOnDescription: true,
       matchOnDetail: true,
     });
