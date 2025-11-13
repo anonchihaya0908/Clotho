@@ -13,6 +13,9 @@ import { createModuleLogger } from '../../common/logger/unified-logger';
 import { getLineEnding } from '../../common/platform-utils';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { SimpleCache } from '../../common/utils/security';
+import { CACHE_CONFIG, PERFORMANCE } from '../../common/constants';
+import { DebounceManager } from './core/debounce-manager';
 
 const execAsync = promisify(exec);
 import { ConfigValidationResult, FormatResult } from '../../common/types/core';
@@ -23,6 +26,17 @@ import {
 export class ClangFormatService {
   private static instance: ClangFormatService | undefined;
   private readonly logger = createModuleLogger('ClangFormatService');
+
+  // Detection & state
+  private detectedPath: string | null = null;
+  private detectedVersion: string | null = null;
+  private detectionInFlight: Promise<void> | null = null;
+  private warnedNotFound = false;
+
+  // Caching and concurrency
+  private readonly previewCache = new SimpleCache<string, { ts: number; result: FormatResult }>(PERFORMANCE.SIMPLE_CACHE_MAX_SIZE);
+  private readonly cacheTtlMs = CACHE_CONFIG.TEMPLATE_CACHE_TTL;
+  private readonly formatLocks = new DebounceManager();
 
   private constructor() { }
 
@@ -94,28 +108,27 @@ export class ClangFormatService {
     code: string,
     config: Record<string, unknown>,
   ): Promise<FormatResult> {
-    return new Promise(async (resolve) => {
+    // Cache fast-path
+    const cacheKey = this.computeCacheKey(code, config);
+    const cached = this.previewCache.get(cacheKey);
+    const now = Date.now();
+    if (cached && now - cached.ts <= this.cacheTtlMs) {
+      return cached.result;
+    }
+
+    return this.formatLocks.withLock('clang-format-exec', async () => new Promise<FormatResult>(async (resolve) => {
       try {
-        // Check if clang-format exists in PATH
-        try {
-          const checkCommand = process.platform === 'win32' ? 'where clang-format' : 'which clang-format';
-          await execAsync(checkCommand);
-        } catch {
-          return resolve({
-            success: false,
-            formattedCode: code,
-            error: 'clang-format executable not found in PATH.',
-          });
+        const ok = await this.ensureDetection();
+        if (!ok) {
+          const res: FormatResult = { success: false, formattedCode: code, error: 'clang-format executable not found in PATH.' };
+          this.previewCache.set(cacheKey, { ts: now, result: res });
+          return resolve(res);
         }
 
-        // 1. 使用我们的"母语翻译官"
         const styleString = ClangFormatService._serializeConfigToYaml(config);
         const args = [`-style=${styleString}`];
-
-        // 2. 使用无shell的spawn，直接与clang-format.exe对话
-        const clangFormatProcess = spawn('clang-format', args, {
-          stdio: ['pipe', 'pipe', 'pipe'],
-        });
+        const executable = this.detectedPath ?? 'clang-format';
+        const clangFormatProcess = spawn(executable, args, { stdio: ['pipe', 'pipe', 'pipe'] });
 
         let formattedCode = '';
         let errorOutput = '';
@@ -125,43 +138,33 @@ export class ClangFormatService {
 
         clangFormatProcess.on('close', (exitCode) => {
           if (exitCode === 0 && !errorOutput) {
-            resolve({ success: true, formattedCode });
+            const res: FormatResult = { success: true, formattedCode };
+            this.previewCache.set(cacheKey, { ts: Date.now(), result: res });
+            resolve(res);
           } else {
             const fullError = `clang-format exited with code ${exitCode}.\n--- Config Sent ---\n${styleString}\n--- Error Details ---\n${errorOutput}`;
-            resolve({ success: false, formattedCode: code, error: fullError });
+            const res: FormatResult = { success: false, formattedCode: code, error: fullError };
+            this.previewCache.set(cacheKey, { ts: Date.now(), result: res });
+            resolve(res);
           }
         });
 
         clangFormatProcess.on('error', (err) =>
-          resolve({
-            success: false,
-            formattedCode: code,
-            error: `Failed to start clang-format: ${err.message}`,
-          }),
+          resolve({ success: false, formattedCode: code, error: `Failed to start clang-format: ${err.message}` }),
         );
 
         clangFormatProcess.stdin.on('error', (err) =>
-          resolve({
-            success: false,
-            formattedCode: code,
-            error: `Failed to write to clang-format stdin: ${err.message}`,
-          }),
+          resolve({ success: false, formattedCode: code, error: `Failed to write to clang-format stdin: ${err.message}` }),
         );
 
-        // 3. 将代码流入stdin
         clangFormatProcess.stdin.write(code, 'utf8');
         clangFormatProcess.stdin.end();
       } catch (error) {
-        resolve({
-          success: false,
-          formattedCode: code,
-          error:
-            error instanceof Error
-              ? error.message
-              : 'Unknown error during format execution',
-        });
+        const res: FormatResult = { success: false, formattedCode: code, error: error instanceof Error ? error.message : 'Unknown error during format execution' };
+        this.previewCache.set(cacheKey, { ts: Date.now(), result: res });
+        resolve(res);
       }
-    });
+    }));
   }
 
   /**
@@ -444,5 +447,53 @@ export class ClangFormatService {
     });
 
     return config;
+  }
+
+  // ===== Detection & helpers =====
+  private async ensureDetection(): Promise<boolean> {
+    if (this.detectedPath && this.detectedVersion) { return true; }
+    if (this.detectionInFlight) { await this.detectionInFlight; return !!this.detectedPath; }
+
+    this.detectionInFlight = (async () => {
+      try {
+        const checkCommand = process.platform === 'win32' ? 'where clang-format' : 'which clang-format';
+        const { stdout } = await execAsync(checkCommand);
+        const pathLine = (stdout || '').split(/\r?\n/).find((l) => l.trim().length > 0) ?? '';
+        this.detectedPath = pathLine.trim() || 'clang-format';
+        try {
+          const { stdout: vout } = await execAsync(`"${this.detectedPath}" --version`);
+          const m = /(\d+)\.(\d+)\.(\d+)/.exec(vout);
+          this.detectedVersion = m ? `${m[1]}.${m[2]}.${m[3]}` : vout.trim();
+        } catch (verErr) {
+          this.logger.warn('Failed to detect clang-format version', { metadata: { error: String(verErr) } });
+          this.detectedVersion = null;
+        }
+      } catch {
+        this.detectedPath = null;
+        this.detectedVersion = null;
+        if (!this.warnedNotFound) {
+          this.warnedNotFound = true;
+          void vscode.window.showWarningMessage('Clang-Format not found in PATH. Previews may be unavailable.');
+        }
+      }
+    })();
+
+    await this.detectionInFlight;
+    this.detectionInFlight = null;
+    return !!this.detectedPath;
+  }
+
+  private computeCacheKey(code: string, config: Record<string, unknown>): string {
+    const codeHash = this.simpleChecksum(code);
+    const entries = Object.entries(config).sort(([a],[b]) => a.localeCompare(b));
+    const cfgStr = entries.map(([k,v]) => `${k}:${typeof v === 'object' ? JSON.stringify(v) : String(v)}`).join('|');
+    const cfgHash = this.simpleChecksum(cfgStr);
+    return `${code.length}:${codeHash}|${cfgHash}`;
+  }
+
+  private simpleChecksum(s: string): number {
+    let sum = 0;
+    for (let i = 0; i < s.length; i++) { sum = (sum + s.charCodeAt(i)) >>> 0; }
+    return sum >>> 0;
   }
 }

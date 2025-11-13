@@ -42,9 +42,7 @@ export interface ClangFormatOption {
 }
 
 // Clang-Format configuration interface
-export interface ClangFormatConfig {
-  [key: string]: ConfigValue;
-}
+export interface ClangFormatConfig { [key: string]: ConfigValue }
 
 // WebView message types
 export enum WebviewMessageType {
@@ -120,24 +118,24 @@ export interface WebviewLogPayload {
 // Discriminated union payload map
 export type WebviewPayloadMap = {
   [WebviewMessageType.INITIALIZE]: InitializePayload;
-  [WebviewMessageType.CONFIG_CHANGED]: { key?: string; value?: ConfigValue } | Record<string, unknown>;
-  [WebviewMessageType.CONFIG_LOADED]: Record<string, unknown>;
-  [WebviewMessageType.MICRO_PREVIEW_UPDATE]: Record<string, unknown>;
+  [WebviewMessageType.CONFIG_CHANGED]: { key: string; value: ConfigValue } | ClangFormatConfig;
+  [WebviewMessageType.CONFIG_LOADED]: { config: ClangFormatConfig; source?: 'workspace' | 'file' | 'import' };
+  [WebviewMessageType.MICRO_PREVIEW_UPDATE]: { optionName: string; formattedCode: string; success: boolean; error?: string };
   [WebviewMessageType.VALIDATION_RESULT]: { isValid: boolean; errors?: string[] };
-  [WebviewMessageType.GET_MICRO_PREVIEW]: { optionName: string; config: Record<string, unknown>; previewSnippet: string };
-  [WebviewMessageType.GET_MACRO_PREVIEW]: Record<string, unknown> | undefined;
+  [WebviewMessageType.GET_MICRO_PREVIEW]: { optionName: string; config: ClangFormatConfig; previewSnippet: string };
+  [WebviewMessageType.GET_MACRO_PREVIEW]: { source: 'demoSnippet' | 'activeFile'; code?: string } | undefined;
   [WebviewMessageType.LOAD_WORKSPACE_CONFIG]: undefined;
   [WebviewMessageType.SAVE_CONFIG]: undefined;
   [WebviewMessageType.EXPORT_CONFIG]: undefined;
   [WebviewMessageType.IMPORT_CONFIG]: { content?: string } | undefined;
   [WebviewMessageType.RESET_CONFIG]: undefined;
-  [WebviewMessageType.UPDATE_SETTINGS]: Record<string, unknown>;
-  [WebviewMessageType.CONFIG_OPTION_HOVER]: Record<string, unknown>;
-  [WebviewMessageType.CONFIG_OPTION_FOCUS]: Record<string, unknown>;
-  [WebviewMessageType.CLEAR_HIGHLIGHTS]: Record<string, unknown> | undefined;
+  [WebviewMessageType.UPDATE_SETTINGS]: { showGuideButton?: boolean };
+  [WebviewMessageType.CONFIG_OPTION_HOVER]: { key: string };
+  [WebviewMessageType.CONFIG_OPTION_FOCUS]: { key: string };
+  [WebviewMessageType.CLEAR_HIGHLIGHTS]: undefined;
   [WebviewMessageType.OPEN_CLANG_FORMAT_FILE]: undefined;
   [WebviewMessageType.VALIDATION_ERROR]: { message: string } | undefined;
-  [WebviewMessageType.SETTINGS_UPDATED]: Record<string, unknown>;
+  [WebviewMessageType.SETTINGS_UPDATED]: { showGuideButton: boolean };
   [WebviewMessageType.UPDATE_MICRO_PREVIEW]: { optionName: string; formattedCode: string; success: boolean; error?: string };
   [WebviewMessageType.PREVIEW_OPENED]: undefined;
   [WebviewMessageType.PREVIEW_CLOSED]: undefined;
@@ -158,7 +156,7 @@ export type WebviewMessage = {
 // Search request interface
 export interface SearchOptionsRequest {
   query: string;
-  category?: string;
+  category?: ConfigCategories;
   type?: ClangFormatOption['type'];
 }
 

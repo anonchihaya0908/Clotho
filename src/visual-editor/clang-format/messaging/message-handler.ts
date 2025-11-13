@@ -1,11 +1,25 @@
 import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { BaseManager, ManagerContext } from '../../../common/types';
-import { WebviewMessage, WebviewMessageType, GetOptionsByCategoryRequest, SearchOptionsRequest, ConfigValue } from '../../../common/types/clang-format-shared';
+import { WebviewMessage, WebviewMessageType, GetOptionsByCategoryRequest, SearchOptionsRequest, ConfigValue, ClangFormatConfig } from '../../../common/types/clang-format-shared';
 import { UI_CONSTANTS } from '../../../common/constants';
 
 // Type guards for common payloads
 function isSettingsPayload(p: unknown): p is Record<string, unknown> {
   return !!p && typeof p === 'object';
+}
+
+function isMicroPreviewReq(p: unknown): p is { optionName: string; config: ClangFormatConfig; previewSnippet: string } {
+  if (!p || typeof p !== 'object') { return false; }
+  const obj = p as Record<string, unknown>;
+  return typeof obj['optionName'] === 'string'
+    && typeof obj['previewSnippet'] === 'string'
+    && typeof obj['config'] === 'object' && obj['config'] !== null;
+}
+
+function isMacroPreviewReq(p: unknown): p is { source: 'demoSnippet' | 'activeFile'; code?: string } {
+  if (!p || typeof p !== 'object') { return false; }
+  const src = (p as { source?: unknown }).source;
+  return src === 'demoSnippet' || src === 'activeFile' || typeof src === 'undefined';
 }
 
 type MessageHandlerFunction = (
@@ -63,11 +77,17 @@ export class MessageHandler implements BaseManager {
           break;
         }
         case WebviewMessageType.CONFIG_CHANGED: {
-          const p = message.payload as { key?: unknown; value?: unknown };
-          if (typeof p?.key === 'string') {
-            this.context.eventBus?.emit('config-change-requested', { key: p.key, value: p.value as ConfigValue });
+          const p = message.payload as { key?: unknown; value?: unknown } | ClangFormatConfig;
+          if (p && typeof p === 'object' && 'key' in p) {
+            const k = (p as { key: unknown }).key;
+            if (typeof k === 'string') {
+              this.context.eventBus?.emit('config-change-requested', { key: k, value: (p as { value?: unknown }).value as ConfigValue });
+            } else {
+              this.logger.warn('CONFIG_CHANGED payload missing key', { payload: p });
+            }
           } else {
-            this.logger.warn('CONFIG_CHANGED payload missing key', { payload: p });
+            // Full config replace pathway (not yet implemented end-to-end)
+            this.logger.info('CONFIG_CHANGED received full config replace (ignored for now)', { payload: p as unknown });
           }
           break;
         }
@@ -118,32 +138,59 @@ export class MessageHandler implements BaseManager {
           break;
         }
         case WebviewMessageType.GET_MICRO_PREVIEW: {
-          this.logger.debug('Micro preview requested:', { payload: message.payload });
-          this.context.eventBus?.emit('micro-preview-requested', message.payload);
+          const p = message.payload;
+          if (isMicroPreviewReq(p)) {
+            this.logger.debug('Micro preview requested:', { payload: p });
+            this.context.eventBus?.emit('micro-preview-requested', p);
+          } else {
+            this.logger.warn('GET_MICRO_PREVIEW payload malformed', { payload: message.payload });
+          }
           break;
         }
         case WebviewMessageType.GET_MACRO_PREVIEW: {
-          this.logger.debug('Macro preview requested:', { payload: message.payload });
-          this.context.eventBus?.emit('macro-preview-requested', message.payload ?? {});
+          const p = message.payload;
+          if (!p) {
+            this.context.eventBus?.emit('macro-preview-requested', { source: 'demoSnippet' });
+          } else if (isMacroPreviewReq(p)) {
+            const payload = (p as { source?: 'demoSnippet'|'activeFile'; code?: string });
+            this.context.eventBus?.emit('macro-preview-requested', { source: payload.source ?? 'demoSnippet', code: payload.code });
+          } else {
+            this.logger.warn('GET_MACRO_PREVIEW payload malformed', { payload: message.payload });
+          }
           break;
         }
         case WebviewMessageType.UPDATE_SETTINGS: {
-          this.logger.debug('Settings updated:', { payload: message.payload });
-          this.context.eventBus?.emit('settings-updated', message.payload);
+          const p = message.payload as { showGuideButton?: unknown };
+          if (!p || typeof p !== 'object') {
+            this.logger.warn('UPDATE_SETTINGS payload malformed', { payload: message.payload });
+          } else {
+            this.logger.debug('Settings updated:', { payload: p });
+          }
+          this.context.eventBus?.emit('settings-updated', p as { showGuideButton?: boolean });
           break;
         }
         case WebviewMessageType.CONFIG_OPTION_HOVER: {
-          this.context.eventBus?.emit('config-option-hover', message.payload);
+          const p = message.payload as { key?: unknown };
+          if (p && typeof p === 'object' && typeof (p as { key?: unknown }).key === 'string') {
+            this.context.eventBus?.emit('config-option-hover', p as { key: string });
+          } else {
+            this.logger.warn('CONFIG_OPTION_HOVER payload malformed', { payload: message.payload });
+          }
           break;
         }
         case WebviewMessageType.CONFIG_OPTION_FOCUS: {
-          this.context.eventBus?.emit('config-option-focus', message.payload);
+          const p = message.payload as { key?: unknown };
+          if (p && typeof p === 'object' && typeof (p as { key?: unknown }).key === 'string') {
+            this.context.eventBus?.emit('config-option-focus', p as { key: string });
+          } else {
+            this.logger.warn('CONFIG_OPTION_FOCUS payload malformed', { payload: message.payload });
+          }
           break;
         }
         case WebviewMessageType.CLEAR_HIGHLIGHTS: {
-      this.context.eventBus?.emit('clear-highlights', message.payload);
-      break;
-    }
+          this.context.eventBus?.emit('clear-highlights');
+          break;
+        }
         case WebviewMessageType.GET_OPTIONS_BY_CATEGORY: {
           this.context.eventBus?.emit('get-options-by-category', message.payload as GetOptionsByCategoryRequest);
           break;
@@ -152,14 +199,14 @@ export class MessageHandler implements BaseManager {
           this.context.eventBus?.emit('search-options', message.payload as SearchOptionsRequest);
           break;
         }
-    case WebviewMessageType.GET_ALL_OPTIONS: {
-      this.context.eventBus?.emit('get-all-options');
-      break;
-    }
-    default: {
-      this.logger.warn(`Unhandled webview message: ${message.type}`);
-    }
-  }
+        case WebviewMessageType.GET_ALL_OPTIONS: {
+          this.context.eventBus?.emit('get-all-options');
+          break;
+        }
+        default: {
+          this.logger.warn(`Unhandled webview message: ${message.type}`);
+        }
+      }
     } catch (error: unknown) {
       if (this.context.errorRecovery) {
         await this.context.errorRecovery.handleError('message-handling-failed', error as Error, {

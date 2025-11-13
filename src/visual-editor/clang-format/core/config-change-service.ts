@@ -6,7 +6,7 @@
 import { ErrorRecoveryManager } from '../error/error-recovery-manager';
 import { EventBus } from '../messaging/event-bus';
 import { EditorStateManager } from '../state/editor-state-manager';
-import { ConfigValue } from '../../../common/types/clang-format-shared';
+import { ConfigValue, ClangFormatConfig } from '../../../common/types/clang-format-shared';
 
 /**
  * Configuration change context (simplified)
@@ -14,8 +14,8 @@ import { ConfigValue } from '../../../common/types/clang-format-shared';
 export interface ConfigChangeContext {
   key: string;
   value: ConfigValue;
-  oldConfig: Record<string, unknown>;
-  newConfig: Record<string, unknown>;
+  oldConfig: ClangFormatConfig;
+  newConfig: ClangFormatConfig;
 }
 
 /**
@@ -61,8 +61,8 @@ export class ConfigChangeService {
 
       // Get current configuration
       const currentState = this.stateManager.getState();
-      const oldConfig = { ...currentState.currentConfig };
-      const newConfig = { ...oldConfig };
+      const oldConfig: ClangFormatConfig = { ...(currentState.currentConfig as ClangFormatConfig) };
+      const newConfig: ClangFormatConfig = { ...oldConfig };
 
       // Update configuration
       if (value === 'inherit' || value === undefined || value === null) {

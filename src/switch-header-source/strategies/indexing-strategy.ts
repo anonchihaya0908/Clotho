@@ -100,19 +100,19 @@ export class IndexingStrategy implements SearchStrategy {
         const ext = uri.fsPath.toLowerCase().split('.').pop() || '';
         const allowed = new Set(['c', 'cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']);
         if (!allowed.has(ext)) { return; }
-      try {
-        const exists = await (this.fileExistsFn ? this.fileExistsFn(uri) : vscode.workspace.fs.stat(uri).then(() => true, () => false));
-        const base = path.basename(uri.fsPath, path.extname(uri.fsPath));
-        const arr = this.index.get(base) || [];
-        const idx = arr.findIndex(u => u.fsPath === uri.fsPath);
-        if (exists) {
-          if (idx === -1) { arr.push(uri); this.index.set(base, arr); }
-        } else {
-          if (idx >= 0) { arr.splice(idx, 1); this.index.set(base, arr); }
+        try {
+          const exists = await (this.fileExistsFn ? this.fileExistsFn(uri) : vscode.workspace.fs.stat(uri).then(() => true, () => false));
+          const base = path.basename(uri.fsPath, path.extname(uri.fsPath));
+          const arr = this.index.get(base) || [];
+          const idx = arr.findIndex(u => u.fsPath === uri.fsPath);
+          if (exists) {
+            if (idx === -1) { arr.push(uri); this.index.set(base, arr); }
+          } else {
+            if (idx >= 0) { arr.splice(idx, 1); this.index.set(base, arr); }
+          }
+        } catch {
+          this.dirty = true; // fall back to rebuild later
         }
-      } catch {
-        this.dirty = true; // fall back to rebuild later
-      }
       });
     } else {
       this.fsDisposable = null;

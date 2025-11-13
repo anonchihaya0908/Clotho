@@ -1,4 +1,4 @@
-import { WebviewMessage, GetOptionsByCategoryRequest, SearchOptionsRequest, ConfigValue } from '../../../common/types/clang-format-shared';
+import { WebviewMessage, GetOptionsByCategoryRequest, SearchOptionsRequest, ConfigValue, ClangFormatConfig } from '../../../common/types/clang-format-shared';
 import { EditorOpenSource } from '../../../common/types';
 
 // Visual Editor Event Map with typed payload tuples
@@ -17,14 +17,14 @@ export interface VisualEditorEventMap extends Record<string, readonly unknown[]>
   'ensure-config-manager-ready': [];
   // Config change always carries explicit key/value
   'config-change-requested': [{ key: string; value: ConfigValue }];
-  'config-updated-for-preview': [{ newConfig: Record<string, unknown> }];
+  'config-updated-for-preview': [{ newConfig: ClangFormatConfig }];
   'webview-message-received': [WebviewMessage];
-  'micro-preview-requested': [{ optionName: string; config: Record<string, unknown>; previewSnippet: string }];
-  'macro-preview-requested': [Record<string, unknown>];
-  'settings-updated': [Record<string, unknown>];
-  'config-option-hover': [Record<string, unknown>];
-  'config-option-focus': [Record<string, unknown>];
-  'clear-highlights': [Record<string, unknown>?];
+  'micro-preview-requested': [{ optionName: string; config: ClangFormatConfig; previewSnippet: string }];
+  'macro-preview-requested': [{ source: 'demoSnippet'|'activeFile'; code?: string }];
+  'settings-updated': [{ showGuideButton?: boolean }];
+  'config-option-hover': [{ key: string }];
+  'config-option-focus': [{ key: string }];
+  'clear-highlights': [];
   'get-options-by-category': [GetOptionsByCategoryRequest];
   'search-options': [SearchOptionsRequest];
   'get-all-options': [];

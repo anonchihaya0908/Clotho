@@ -137,7 +137,7 @@ export class ConfigActionManager implements BaseManager {
     try {
       const fileContentBytes = await vscode.workspace.fs.readFile(fileUri);
       const fileContent = Buffer.from(fileContentBytes).toString('utf-8');
-      const newConfig = this.formatService.parse(fileContent);
+      const newConfig = this.formatService.parse(fileContent) as unknown as import('../../../common/types/clang-format-shared').ClangFormatConfig;
       await this.updateConfigState(newConfig, 'config-loaded-from-file');
 
       if (!silent) {
@@ -263,7 +263,10 @@ export class ConfigActionManager implements BaseManager {
   }
 
   private async handleResetConfig(): Promise<void> {
-    await this.updateConfigState(DEFAULT_CLANG_FORMAT_CONFIG, 'config-reset');
+    await this.updateConfigState(
+      DEFAULT_CLANG_FORMAT_CONFIG as unknown as import('../../../common/types/clang-format-shared').ClangFormatConfig,
+      'config-reset'
+    );
     vscode.window.showInformationMessage(
       'Configuration has been reset to default.',
     );
@@ -292,7 +295,7 @@ export class ConfigActionManager implements BaseManager {
   }
 
   private async updateConfigState(
-    newConfig: Record<string, unknown>,
+    newConfig: import('../../../common/types/clang-format-shared').ClangFormatConfig,
     source: string,
   ): Promise<void> {
     if (this.context.stateManager) {

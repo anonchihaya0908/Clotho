@@ -15,6 +15,7 @@ import { EventBus } from './messaging/event-bus';
 import { GenericEventBus } from './messaging/typed-event-bus';
 import type { VisualEditorEventMap } from './types/events';
 import { MessageHandler } from './messaging/message-handler';
+import { DebounceManager } from './core/debounce-manager';
 import { EditorStateManager } from './state/editor-state-manager';
 
 /**
@@ -27,6 +28,7 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
   private errorRecovery: ErrorRecoveryManager;
   private configChangeService: ConfigChangeService;
   private managerRegistry: ManagerRegistry;
+  private microPreviewDebounce = new DebounceManager();
 
   private disposables: vscode.Disposable[] = [];
   private isInitialized = false;
@@ -150,7 +152,7 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
    */
   private setupEventListeners(): void {
     // 监听重新打开预览的请求
-    this.eventBus.on('open-preview-requested', async (_payload) => {
+    this.eventBus.on('open-preview-requested', async () => {
       try {
         const debounceIntegration = await this.managerRegistry.getOrCreateInstance<DebounceIntegration>('debounceIntegration');
         const handler = debounceIntegration?.createDebouncedPreviewReopenHandler();
@@ -272,51 +274,25 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
     });
 
     // Handle micro preview requests
-    this.eventBus.on(
-      'micro-preview-requested',
-      (async ({ optionName, config, previewSnippet }: {
-        optionName: string;
-        config: Record<string, unknown>;
-        previewSnippet: string;
-      }) => {
+    this.eventBus.on('micro-preview-requested', async ({ optionName, config, previewSnippet }) => {
+      const debounced = this.microPreviewDebounce.debounce('micro-preview', async () => {
         try {
-          // 获取格式化服务
           const formatService = ClangFormatService.getInstance();
-
-          // 格式化微观预览代码
           const formatResult = await formatService.format(previewSnippet, config);
-
-          // 通过事件总线发送结果，让 placeholderManager 处理
           const basePayload: WebviewPayloadMap[WebviewMessageType.UPDATE_MICRO_PREVIEW] = {
             optionName,
             formattedCode: formatResult.formattedCode,
             success: formatResult.success,
           };
-          if (typeof formatResult.error === 'string') {
-            basePayload.error = formatResult.error;
-          }
-          this.eventBus.emit('post-message-to-webview', {
-            type: WebviewMessageType.UPDATE_MICRO_PREVIEW,
-            payload: basePayload,
-          });
+          if (typeof formatResult.error === 'string') { basePayload.error = formatResult.error; }
+          this.eventBus.emit('post-message-to-webview', { type: WebviewMessageType.UPDATE_MICRO_PREVIEW, payload: basePayload });
         } catch (error) {
-          this.logger.error('Micro preview processing failed', error instanceof Error ? error : new Error(String(error)), {
-            module: 'ClangFormatEditorCoordinator',
-            operation: 'handleMicroPreview',
-          });
-          // 发送错误结果
-          this.eventBus.emit('post-message-to-webview', {
-            type: WebviewMessageType.UPDATE_MICRO_PREVIEW,
-            payload: {
-              optionName,
-              formattedCode: previewSnippet,
-              success: false,
-              error: error instanceof Error ? error.message : '未知错误'
-            }
-          });
+          this.logger.error('Micro preview processing failed', error instanceof Error ? error : new Error(String(error)), { module: 'ClangFormatEditorCoordinator', operation: 'handleMicroPreview' });
+          this.eventBus.emit('post-message-to-webview', { type: WebviewMessageType.UPDATE_MICRO_PREVIEW, payload: { optionName, formattedCode: previewSnippet, success: false, error: error instanceof Error ? error.message : '未知错误' } });
         }
-      })
-    );
+      }, { delay: 120, leading: false, trailing: true });
+      await debounced();
+    });
   }
 
 }

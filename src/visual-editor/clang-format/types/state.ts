@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode';
+import { ClangFormatConfig } from '../../../common/types/clang-format-shared';
 
 /**
  * 预览模式枚举
@@ -24,7 +25,7 @@ export interface VisualEditorState {
   previewEditor?: vscode.TextEditor;
 
   // 配置状态
-  currentConfig: Record<string, unknown>;
+  currentConfig: ClangFormatConfig;
 
   // 错误状态
   lastError?: {

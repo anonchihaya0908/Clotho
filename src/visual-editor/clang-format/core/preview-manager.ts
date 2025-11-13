@@ -332,7 +332,7 @@ export class PreviewEditorManager implements BaseManager {
    * 集成 clang-format 实时格式化功能
    */
   public async updatePreviewWithConfig(
-    newConfig: Record<string, unknown>,
+    newConfig: import('../../../common/types/clang-format-shared').ClangFormatConfig,
   ): Promise<void> {
     const state = getStateOrDefault(this.context.stateManager?.getState());
     const { previewUri } = state;
@@ -434,28 +434,25 @@ ${configEntries || '//   (using base style defaults)'}
     // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
     if (this.context.eventBus) {
       onTyped(this.context.eventBus as unknown as EventBus, 'editor-visibility-changed', async ({ isVisible }) => {
-      const state = getStateOrDefault(this.context.stateManager?.getState());
-      const { previewMode } = state;
-      if (previewMode !== 'open') {
-        return; // 只有在预览打开时才处理可见性变化
-      }
+        const state = getStateOrDefault(this.context.stateManager?.getState());
+        const { previewMode } = state;
+        if (previewMode !== 'open') { return; }
 
-      if (isVisible) {
-        // 主编辑器变为可见，恢复预览
-        if (this.isHidden) {
-          await this.showPreview();
+        if (isVisible) {
+          // 主编辑器变为可见，恢复预览
+          if (this.isHidden) {
+            await this.showPreview();
+          }
+        } else {
+          // 主编辑器变为不可见，真正隐藏预览（不显示占位符）
+          if (!this.isHidden) {
+            await this.hidePreview();
+            // 【关键】阻止占位符显示
+            // 通过发送特殊事件告诉占位符管理器不要创建占位符
+            emitTyped(this.context.eventBus as unknown as EventBus, 'preview-hidden-by-visibility');
+          }
         }
-      } else {
-        // 主编辑器变为不可见，真正隐藏预览（不显示占位符）
-        if (!this.isHidden) {
-          await this.hidePreview();
-
-          // 【关键】阻止占位符显示
-          // 通过发送特殊事件告诉占位符管理器不要创建占位符
-          emitTyped(this.context.eventBus as unknown as EventBus, 'preview-hidden-by-visibility');
-        }
-      }
-    });
+      });
     }
 
     // Listen for editor tab close events - distinguish manual vs programmatic close

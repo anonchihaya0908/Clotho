@@ -106,7 +106,7 @@ export class ClangFormatEditorManager implements BaseManager {
       const config = vscode.workspace.getConfiguration('clotho.clangFormat');
       const showGuideButton = config.get<boolean>('showGuideButton', true);
 
-      const currentConfig: ClangFormatConfig = (currentState.currentConfig as unknown as ClangFormatConfig) || DEFAULT_CLANG_FORMAT_CONFIG;
+      const currentConfig: ClangFormatConfig = currentState.currentConfig || (DEFAULT_CLANG_FORMAT_CONFIG as unknown as ClangFormatConfig);
 
       const initMessage: WebviewMessage = {
         type: WebviewMessageType.INITIALIZE,
@@ -180,7 +180,13 @@ export class ClangFormatEditorManager implements BaseManager {
       this.context.eventBus?.emit('editor-closed'); // 通知其他管理器
     });
 
-    this.panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
+    this.panel.webview.onDidReceiveMessage(async (message: unknown) => {
+      const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object';
+      const isWebviewMessage = (m: unknown): m is WebviewMessage => isObject(m) && typeof (m as { type?: unknown }).type === 'string';
+      if (!isWebviewMessage(message)) {
+        this.logger.warn('Dropped malformed webview message', { module: this.name, operation: 'onDidReceiveMessage' });
+        return;
+      }
       // 处理来自 webview 的日志消息
       if (message.type === WebviewMessageType.WEBVIEW_LOG) {
         const payload = message.payload as WebviewLogPayload;
@@ -304,7 +310,7 @@ export class ClangFormatEditorManager implements BaseManager {
             <meta http-equiv="Content-Security-Policy" content="
                 default-src 'none';
                 style-src   ${webview.cspSource} 'nonce-${nonce}';
-                script-src  'nonce-${nonce}'${allowUnsafeEval ? " 'unsafe-eval'" : ''};
+                script-src  'nonce-${nonce}'${allowUnsafeEval ? ' \'unsafe-eval\'' : ''};
                 img-src     ${webview.cspSource} https: data:;
                 font-src    ${webview.cspSource};
                 worker-src  ${webview.cspSource};
