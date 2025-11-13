@@ -107,6 +107,7 @@ export class ClangFormatService {
   public async format(
     code: string,
     config: Record<string, unknown>,
+    range?: { startLine: number; endLine: number },
   ): Promise<FormatResult> {
     // Cache fast-path
     const cacheKey = this.computeCacheKey(code, config);
@@ -126,7 +127,10 @@ export class ClangFormatService {
         }
 
         const styleString = ClangFormatService._serializeConfigToYaml(config);
-        const args = [`-style=${styleString}`];
+        const args = [`-style=${styleString}`, '-assume-filename=macro.cpp'];
+        if (range && range.startLine > 0 && range.endLine >= range.startLine) {
+          args.push(`-lines=${range.startLine}:${range.endLine}`);
+        }
         const executable = this.detectedPath ?? 'clang-format';
         const clangFormatProcess = spawn(executable, args, { stdio: ['pipe', 'pipe', 'pipe'] });
 
@@ -497,3 +501,4 @@ export class ClangFormatService {
     return sum >>> 0;
   }
 }
+

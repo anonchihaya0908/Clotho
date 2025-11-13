@@ -115,6 +115,23 @@ export interface WebviewLogPayload {
   meta?: Record<string, unknown>;
 }
 
+// Preview and highlight metadata (M2 scaffolding)
+export type MacroPreviewSource = 'demoSnippet' | 'activeFile';
+
+export interface HighlightAnchor {
+  id: string; // stable id for a region or token
+  startLine: number; // 1-based lines in the macro preview snippet
+  endLine?: number; // optional end line if range
+  token?: string; // optional token marker when line range is not stable
+}
+
+export interface OptionPreviewSnippet {
+  optionKey: string; // e.g., 'BasedOnStyle'
+  snippetId: string; // unique id for caching
+  code: string; // code used for micro preview
+  anchors?: HighlightAnchor[]; // where to highlight in macro view
+}
+
 // Discriminated union payload map
 export type WebviewPayloadMap = {
   [WebviewMessageType.INITIALIZE]: InitializePayload;

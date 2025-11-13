@@ -61,6 +61,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onAction }) => {
                     Edit as Text
                 </button>
             </div>
+
+            <div className="toolbar-group">
+                <button
+                    className="toolbar-button"
+                    onClick={() => onAction('previewSourceDemo')}
+                    title="Use built-in demo snippet for macro preview"
+                >
+                    Demo Snippet
+                </button>
+                <button
+                    className="toolbar-button"
+                    onClick={() => onAction('previewSourceActive')}
+                    title="Use active editor file as macro preview source"
+                >
+                    Active File
+                </button>
+            </div>
         </div>
     );
 };

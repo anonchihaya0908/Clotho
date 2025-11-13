@@ -7,6 +7,7 @@ import { ClangFormatPreviewProvider } from '../preview-provider';
 import { getStateOrDefault } from '../types/state';
 import { EventBus } from '../messaging/event-bus';
 import { onTyped, emitTyped } from '../messaging/typed-event-bus';
+import { getOptionSnippet } from '../data/snippets-metadata';
 
 /**
  * 预览编辑器管理器
@@ -30,10 +31,27 @@ export class PreviewEditorManager implements BaseManager {
 
   // Disposables tracking for proper cleanup
   private readonly disposables: vscode.Disposable[] = [];
+  private hoverDecorationType: vscode.TextEditorDecorationType;
+  private focusDecorationType: vscode.TextEditorDecorationType;
+  private lastHighlightRange: { startLine: number; endLine: number } | null = null;
 
   constructor() {
     this.previewProvider = ClangFormatPreviewProvider.getInstance();
     this.formatService = ClangFormatService.getInstance();
+    this.hoverDecorationType = vscode.window.createTextEditorDecorationType({
+      isWholeLine: true,
+      backgroundColor: new vscode.ThemeColor('editor.wordHighlightBackground'),
+      overviewRulerColor: new vscode.ThemeColor('editor.wordHighlightBackground'),
+      overviewRulerLane: vscode.OverviewRulerLane.Center,
+    });
+    this.focusDecorationType = vscode.window.createTextEditorDecorationType({
+      isWholeLine: true,
+      backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
+      border: '1px solid',
+      borderColor: new vscode.ThemeColor('editor.findMatchBorder'),
+      overviewRulerColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
+      overviewRulerLane: vscode.OverviewRulerLane.Full,
+    });
   }
 
   async initialize(context: ManagerContext): Promise<void> {
@@ -344,7 +362,8 @@ export class PreviewEditorManager implements BaseManager {
       // 使用 clang-format 格式化预览代码
       const formatResult = await this.formatService.format(
         MACRO_PREVIEW_CODE,
-        newConfig,
+        newConfig as unknown as Record<string, unknown>,
+        this.lastHighlightRange ?? undefined,
       );
 
       if (formatResult.success) {
@@ -387,152 +406,163 @@ ${configEntries || '//   (using base style defaults)'}
 // ==========================================`;
   }
 
+  private applyHighlightsForOption(optionKey: string, kind: 'hover' | 'focus' = 'hover'): void {
+    const state = getStateOrDefault(this.context.stateManager?.getState());
+    const editor = state.previewEditor;
+    if (!editor) { return; }
+
+    const doc = editor.document;
+    const text = doc.getText();
+    const lines = text.split(/\r?\n/);
+    const snippet = getOptionSnippet(optionKey);
+    const ranges: vscode.Range[] = [];
+    if (snippet?.anchors && snippet.anchors.length > 0) {
+      for (const a of snippet.anchors) {
+        let lineIdx = (a.startLine ?? 1) - 1;
+        if (a.token) {
+          const found = lines.findIndex(l => l.includes(a.token!));
+          if (found >= 0) { lineIdx = found; }
+        }
+        const safeLine = Math.max(0, Math.min(lines.length - 1, lineIdx));
+        const endLine = a.endLine ? Math.min(lines.length - 1, a.endLine - 1) : safeLine;
+        ranges.push(new vscode.Range(new vscode.Position(safeLine, 0), new vscode.Position(endLine, lines[endLine]?.length ?? 0)));
+      }
+    } else {
+      const endLine = Math.min(3, lines.length - 1);
+      ranges.push(new vscode.Range(new vscode.Position(0, 0), new vscode.Position(endLine, lines[endLine]?.length ?? 0)));
+    }
+
+    // hover 使用弱高亮，focus 使用强高亮。两者互斥显示
+    editor.setDecorations(this.hoverDecorationType, kind === 'hover' ? ranges : []);
+    editor.setDecorations(this.focusDecorationType, kind === 'focus' ? ranges : []);
+
+    // 记录最近的高亮范围（首个 range），用于局部格式化试点
+    if (ranges.length > 0) {
+      const r = ranges[0]!;
+      this.lastHighlightRange = { startLine: r.start.line + 1, endLine: r.end.line + 1 };
+    }
+  }
+
+  private clearHighlights(): void {
+    const state = getStateOrDefault(this.context.stateManager?.getState());
+    const editor = state.previewEditor;
+    if (!editor) { return; }
+    editor.setDecorations(this.hoverDecorationType, []);
+    editor.setDecorations(this.focusDecorationType, []);
+  }
+
   dispose(): void {
     // Clean up all disposables
     this.disposables.forEach(d => d.dispose());
     this.disposables.length = 0;
+    this.hoverDecorationType.dispose();
+    this.focusDecorationType.dispose();
     this.closePreview();
   }
 
   private setupEventListeners() {
-    // 注意：不再直接监听 'open-preview-requested' 事件
-    // 该事件现在由 Coordinator 统一处理，通过防抖集成调用 openPreview()
-    // 这样避免了重复执行的问题
+    // 不再直接监听 open-preview-requested（由 Coordinator 统一处理）
+    this.context.eventBus?.on('close-preview-requested', () => this.closePreview());
 
-    this.context.eventBus?.on('close-preview-requested', () =>
-      this.closePreview(),
-    ); // 程序关闭，不创建占位符
-
+    // 预览配置更新
     if (this.context.eventBus) {
       onTyped(this.context.eventBus as unknown as EventBus, 'config-updated-for-preview', ({ newConfig }) => {
         this.updatePreviewWithConfig(newConfig);
       });
     }
 
-    // Listen for main editor close events - close preview accordingly
+    // 主编辑器关闭 → 关闭预览并清理状态
     this.context.eventBus?.on('editor-closed', async () => {
       await this.closePreview();
-
-      // 清理预览内容和犹态
       const state = getStateOrDefault(this.context.stateManager?.getState());
       const { previewUri } = state;
       if (previewUri) {
         this.previewProvider.clearContent(previewUri);
         if (this.context.stateManager) {
-          await this.context.stateManager.updateState(
-            {
-              previewMode: 'closed',
-              previewUri: undefined,
-              previewEditor: undefined,
-            },
-            'preview-closed-by-editor',
-          );
+          await this.context.stateManager.updateState({
+            previewMode: 'closed',
+            previewUri: undefined,
+            previewEditor: undefined,
+          }, 'preview-closed-by-editor');
         }
       }
     });
 
-    // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
+    // 可见性变化 → 真正隐藏/恢复预览（不显示占位符）
     if (this.context.eventBus) {
       onTyped(this.context.eventBus as unknown as EventBus, 'editor-visibility-changed', async ({ isVisible }) => {
         const state = getStateOrDefault(this.context.stateManager?.getState());
         const { previewMode } = state;
         if (previewMode !== 'open') { return; }
-
         if (isVisible) {
-          // 主编辑器变为可见，恢复预览
-          if (this.isHidden) {
-            await this.showPreview();
-          }
+          if (this.isHidden) { await this.showPreview(); }
         } else {
-          // 主编辑器变为不可见，真正隐藏预览（不显示占位符）
           if (!this.isHidden) {
             await this.hidePreview();
-            // 【关键】阻止占位符显示
-            // 通过发送特殊事件告诉占位符管理器不要创建占位符
             emitTyped(this.context.eventBus as unknown as EventBus, 'preview-hidden-by-visibility');
           }
         }
       });
     }
 
-    // Listen for editor tab close events - distinguish manual vs programmatic close
+    // 悬停/聚焦高亮 & 清除
+    if (this.context.eventBus) {
+      onTyped(this.context.eventBus as unknown as EventBus, 'config-option-hover', ({ key }) => { this.applyHighlightsForOption(String(key), 'hover'); });
+      onTyped(this.context.eventBus as unknown as EventBus, 'config-option-focus', ({ key }) => { this.applyHighlightsForOption(String(key), 'focus'); });
+      onTyped(this.context.eventBus as unknown as EventBus, 'clear-highlights', () => { this.clearHighlights(); });
+    }
+
+    // 宏预览源切换（demoSnippet / activeFile）
+    if (this.context.eventBus) {
+      onTyped(this.context.eventBus as unknown as EventBus, 'macro-preview-requested', async ({ source }) => {
+        const state = getStateOrDefault(this.context.stateManager?.getState());
+        const { previewUri, currentConfig } = state;
+        if (!previewUri) { return; }
+        try {
+          let baseContent = MACRO_PREVIEW_CODE;
+          if (source === 'activeFile') {
+            const active = vscode.window.activeTextEditor;
+            if (active && active.document && !active.document.isClosed) { baseContent = active.document.getText(); }
+          }
+          const formatResult = await this.formatService.format(baseContent, currentConfig as unknown as Record<string, unknown>);
+          const header = this.generateConfigComment(currentConfig as unknown as Record<string, unknown>);
+          const updatedContent = `${header}\n\n${formatResult.success ? formatResult.formattedCode : baseContent}`;
+          this.previewProvider.updateContent(previewUri, updatedContent);
+        } catch (error) {
+          this.logger.error('Macro preview update failed', error as Error, { module: 'PreviewManager', operation: 'macro-preview-requested' });
+        }
+      });
+    }
+
+    // 监听标签页关闭，区分手动/程序关闭
     const tabChangeListener = vscode.window.tabGroups.onDidChangeTabs(async (event: vscode.TabChangeEvent) => {
       const state = getStateOrDefault(this.context.stateManager?.getState());
-      if (!state.previewUri) {
-        return;
-      }
-
-      // 检查是否有预览标签被关闭
+      if (!state.previewUri) { return; }
       for (const tab of event.closed) {
         const tabInput = tab.input as { uri?: vscode.Uri };
         if (tabInput?.uri?.toString() === state.previewUri?.toString()) {
-          this.logger.debug('预览标签被关闭', {
-            module: 'PreviewManager',
-            operation: 'onTabClosed'
-          });
-
-          // If close is due to programmatic hiding, don't clear state
+          this.logger.debug('预览标签被关闭', { module: 'PreviewManager', operation: 'onTabClosed' });
           if (this.isHidden) {
-            this.logger.debug('这是程序隐藏导致的关闭，保持状态', {
-              module: 'PreviewManager',
-              operation: 'onTabClosed'
-            });
-            return; // 不处理程序隐藏导致的标签关闭
+            this.logger.debug('这是程序隐藏导致的关闭，保持状态', { module: 'PreviewManager', operation: 'onTabClosed' });
+            return;
           }
-
-          this.logger.debug('这是用户手动关闭', {
-            module: 'PreviewManager',
-            operation: 'onTabClosed'
-          });
-
-          // 检查主编辑器是否仍然活跃
-          const shouldCreatePlaceholder =
-            state.isVisible &&
-            state.isInitialized &&
-            state.previewMode === 'open';
-
-          this.logger.debug('是否应创建占位符', {
-            module: 'PreviewManager',
-            operation: 'onTabClosed',
-            metadata: { shouldCreatePlaceholder }
-          });
-
-          // 清理预览内容（只有用户手动关闭时才清理）
-          if (state.previewUri) {
-            this.previewProvider.clearContent(state.previewUri);
-          }
-
-          // 更新状态 - 无论如何都要确保状态被设置为closed
+          this.logger.debug('这是用户手动关闭', { module: 'PreviewManager', operation: 'onTabClosed' });
+          const shouldCreatePlaceholder = state.isVisible && state.isInitialized && state.previewMode === 'open';
+          this.logger.debug('是否应创建占位符', { module: 'PreviewManager', operation: 'onTabClosed', metadata: { shouldCreatePlaceholder } });
+          if (state.previewUri) { this.previewProvider.clearContent(state.previewUri); }
           if (this.context.stateManager) {
-            await this.context.stateManager.updateState(
-              {
-                previewMode: 'closed',
-                previewUri: undefined,
-                previewEditor: undefined,
-              },
-              'preview-tab-closed',
-            );
-
-            // 重置隐藏状态
-            this.isHidden = false;
-            this.hiddenViewColumn = undefined;
-
+            await this.context.stateManager.updateState({ previewMode: 'closed', previewUri: undefined, previewEditor: undefined }, 'preview-tab-closed');
+            this.isHidden = false; this.hiddenViewColumn = undefined;
             if (shouldCreatePlaceholder) {
-              this.logger.debug('发送预览关闭事件，以创建占位符', {
-                module: 'PreviewManager',
-                operation: 'onTabClosed'
-              });
               this.context.eventBus?.emit('preview-closed');
             }
-            break;
           }
+          break;
         }
       }
     });
-    // Track the disposable
     this.disposables.push(tabChangeListener);
   }
-
   getStatus() {
     return {
       isInitialized: !!this.context,

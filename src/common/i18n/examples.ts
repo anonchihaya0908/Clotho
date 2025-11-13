@@ -57,8 +57,8 @@ export function example3_ClangFormatOptions() {
   // 英文: "The base coding style to inherit from..."
   // 中文: "继承的基础风格..."
 
-  // Note: In production code, use unified logger instead of console.log
-  // console.log(`${optionName}: ${optionDescription}`);
+  // 在示例中展示名称与描述，避免未使用变量告警
+  void vscode.window.showInformationMessage(`${optionName}: ${optionDescription}`);
 }
 
 /**
@@ -98,4 +98,4 @@ export function example6_StatusBar() {
   // 英文: "Formatted successfully"
   // 中文: "格式化成功"
 }
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// 移除无效的 eslint 禁用指令（示例代码已无未使用变量）

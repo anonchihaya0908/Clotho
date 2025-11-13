@@ -151,6 +151,12 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                 case 'openClangFormatFile':
                     sendMessage(WebviewMessageType.OPEN_CLANG_FORMAT_FILE);
                     break;
+                case 'previewSourceDemo':
+                    sendMessage(WebviewMessageType.GET_MACRO_PREVIEW, { source: 'demoSnippet' });
+                    break;
+                case 'previewSourceActive':
+                    sendMessage(WebviewMessageType.GET_MACRO_PREVIEW, { source: 'activeFile' });
+                    break;
                 default:
                     webviewLog.warn('Unknown toolbar action', { action });
             }
@@ -403,3 +409,5 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         </ErrorBoundary>
     );
 };
+
+
