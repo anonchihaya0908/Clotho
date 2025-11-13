@@ -9,6 +9,7 @@ import { SearchConfig } from '../SearchConfig';
 import DynamicMicroPreview from '../DynamicMicroPreview';
 import { ClangFormatOption, ConfigPanelProps } from '../../types';
 import './style.css';
+import { getAffectedAreaLabel } from '../../utils/affected-area';
 
 // 使用共享的ConfigPanelProps类型
 
@@ -80,6 +81,7 @@ const ConfigPanelComponent: React.FC<ConfigPanelProps> = ({
 
                 <div className="option-description">
                     {option.description}
+                    <span className="affected-area-badge">影响区域：{getAffectedAreaLabel(option.key)}</span>
                 </div>
 
                 {/* 预览始终显示 */}

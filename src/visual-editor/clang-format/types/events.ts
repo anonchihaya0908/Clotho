@@ -1,4 +1,4 @@
-import { WebviewMessage, GetOptionsByCategoryRequest, SearchOptionsRequest, ConfigValue, ClangFormatConfig } from '../../../common/types/clang-format-shared';
+import { WebviewMessage, GetOptionsByCategoryRequest, SearchOptionsRequest, ConfigValue, ClangFormatConfig, MacroPreviewSource } from '../../../common/types/clang-format-shared';
 import { EditorOpenSource } from '../../../common/types';
 
 // Visual Editor Event Map with typed payload tuples
@@ -21,7 +21,7 @@ export interface VisualEditorEventMap extends Record<string, readonly unknown[]>
   'webview-message-received': [WebviewMessage];
   'micro-preview-requested': [{ optionName: string; config: ClangFormatConfig; previewSnippet: string }];
   'macro-preview-requested': [{ source: 'demoSnippet'|'activeFile'; code?: string }];
-  'settings-updated': [{ showGuideButton?: boolean }];
+  'settings-updated': [{ showGuideButton?: boolean; macroSource?: MacroPreviewSource }];
   'config-option-hover': [{ key: string }];
   'config-option-focus': [{ key: string }];
   'clear-highlights': [];

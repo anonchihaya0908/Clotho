@@ -360,10 +360,13 @@ export class PreviewEditorManager implements BaseManager {
 
     try {
       // 使用 clang-format 格式化预览代码
+      const effectiveRange = this.lastHighlightRange
+        ? this.expandRangeToBoundaries(this.lastHighlightRange, MACRO_PREVIEW_CODE)
+        : undefined;
       const formatResult = await this.formatService.format(
         MACRO_PREVIEW_CODE,
         newConfig as unknown as Record<string, unknown>,
-        this.lastHighlightRange ?? undefined,
+        effectiveRange,
       );
 
       if (formatResult.success) {
@@ -416,20 +419,30 @@ ${configEntries || '//   (using base style defaults)'}
     const lines = text.split(/\r?\n/);
     const snippet = getOptionSnippet(optionKey);
     const ranges: vscode.Range[] = [];
+    let matched = false;
     if (snippet?.anchors && snippet.anchors.length > 0) {
       for (const a of snippet.anchors) {
         let lineIdx = (a.startLine ?? 1) - 1;
-        if (a.token) {
-          const found = lines.findIndex(l => l.includes(a.token!));
-          if (found >= 0) { lineIdx = found; }
+        if (typeof a.token === 'string') {
+          const found = lines.findIndex(l => l.includes(a.token as string));
+          if (found >= 0) { lineIdx = found; matched = true; }
         }
         const safeLine = Math.max(0, Math.min(lines.length - 1, lineIdx));
         const endLine = a.endLine ? Math.min(lines.length - 1, a.endLine - 1) : safeLine;
         ranges.push(new vscode.Range(new vscode.Position(safeLine, 0), new vscode.Position(endLine, lines[endLine]?.length ?? 0)));
       }
-    } else {
-      const endLine = Math.min(3, lines.length - 1);
-      ranges.push(new vscode.Range(new vscode.Position(0, 0), new vscode.Position(endLine, lines[endLine]?.length ?? 0)));
+    }
+
+    // 如果 anchors 未命中，尝试启发式定位（activeFile 常见结构）
+    if (!matched && ranges.length === 0) {
+      const hx = this.computeHeuristicRange(text, optionKey);
+      if (hx) {
+        const endCol = (lines[hx.endLine] ?? '').length;
+        ranges.push(new vscode.Range(new vscode.Position(hx.startLine, 0), new vscode.Position(hx.endLine, endCol)));
+      } else {
+        const endLine = Math.min(3, lines.length - 1);
+        ranges.push(new vscode.Range(new vscode.Position(0, 0), new vscode.Position(endLine, lines[endLine]?.length ?? 0)));
+      }
     }
 
     // hover 使用弱高亮，focus 使用强高亮。两者互斥显示
@@ -443,12 +456,105 @@ ${configEntries || '//   (using base style defaults)'}
     }
   }
 
+  // 简易启发式：根据 optionKey 扫描常见结构，返回 0-based 行范围
+  private computeHeuristicRange(text: string, optionKey: string): { startLine: number; endLine: number } | null {
+    const lines = text.split(/\r?\n/);
+    const findFirst = (re: RegExp) => {
+      for (let i = 0; i < lines.length; i++) if (re.test(String(lines[i]))) return i; return -1;
+    };
+
+    const key = optionKey;
+    // 类与结构体相关：class/struct 位置
+    if (key.includes('Brace') || key === 'BreakBeforeBraces' || key === 'AlignConsecutiveDeclarations' || key === 'AccessModifierOffset' || key === 'UseTab' || key === 'IndentWidth') {
+      const i = findFirst(/^\s*(class|struct)\s+/);
+      if (i >= 0) return { startLine: Math.max(0, i - 1), endLine: Math.min(lines.length - 1, i + 5) };
+    }
+    // 函数声明：返回类型 + 名称 + (...) ;
+    if (key === 'BreakAfterReturnType' || key === 'BinPackParameters' || key.includes('ReturnType')) {
+      const i = findFirst(/^\s*[\w:<>\*&\s]+\s+[A-Za-z_][\w:]*\s*\(.*\)\s*;?\s*$/);
+      if (i >= 0) return { startLine: i, endLine: Math.min(lines.length - 1, i + 2) };
+    }
+    // 函数调用：存在逗号的调用行
+    if (key === 'BinPackArguments' || key === 'AlignAfterOpenBracket' || key === 'SpacesInParentheses' || key === 'ColumnLimit') {
+      const i = findFirst(/\w+\s*\(.*,.+\)/);
+      if (i >= 0) return { startLine: Math.max(0, i - 1), endLine: Math.min(lines.length - 1, i + 1) };
+    }
+    // 指针/运算符：包含 * 或复杂二元运算
+    if (key === 'PointerAlignment' || key === 'BreakBeforeBinaryOperators' || key === 'SpaceBeforeAssignmentOperators') {
+      const i = findFirst(/\*\s*\w|\w\s*=[^=]|\w\s*[+\-*]\s*\w/);
+      if (i >= 0) return { startLine: i, endLine: Math.min(lines.length - 1, i + 1) };
+    }
+    // 控制流：if/for/while/switch
+    if (key === 'AllowShortIfStatementsOnASingleLine' || key === 'IndentCaseBlocks' || key === 'IndentCaseLabels' || key === 'SpaceBeforeParens') {
+      const i = findFirst(/^(\s*)(if|for|while|switch)\b/);
+      if (i >= 0) return { startLine: i, endLine: Math.min(lines.length - 1, i + 3) };
+    }
+    // Include：#include 开头
+    if (key.startsWith('Include') || key === 'SortIncludes' || key === 'IncludeBlocks') {
+      const i = findFirst(/^\s*#\s*include\b/);
+      if (i >= 0) return { startLine: i, endLine: Math.min(lines.length - 1, i + 6) };
+    }
+    return null;
+  }
+
   private clearHighlights(): void {
     const state = getStateOrDefault(this.context.stateManager?.getState());
     const editor = state.previewEditor;
     if (!editor) { return; }
     editor.setDecorations(this.hoverDecorationType, []);
     editor.setDecorations(this.focusDecorationType, []);
+  }
+
+  // 将最近高亮范围扩展到语义边界（函数/类体），以改进 Active File 的 -lines 体验
+  // 输入/输出使用 1-based 行号的区间
+  private expandRangeToBoundaries(range: { startLine: number; endLine: number }, text: string): { startLine: number; endLine: number } {
+    try {
+      const lines = text.split(/\r?\n/);
+      const maxSpan = 400; // 上限，防止过大范围影响性能
+      let startIdx = Math.max(0, Math.min(lines.length - 1, range.startLine - 1));
+      let endIdx = Math.max(0, Math.min(lines.length - 1, range.endLine - 1));
+      if (endIdx < startIdx) { [startIdx, endIdx] = [endIdx, startIdx]; }
+
+      // 在附近寻找最近的 '{' 并向前扩展到它
+      const searchUpLimit = Math.max(0, startIdx - 50);
+      let openIdx = -1;
+      for (let i = startIdx; i >= searchUpLimit; i--) {
+        if (/{\s*$/.test(lines[i] ?? '')) { openIdx = i; break; }
+        // 也尝试匹配常见函数/类声明后的一行 '{'
+        if (/\b(class|struct|namespace)\b/.test(lines[i] ?? '')) { openIdx = Math.min(i + 1, lines.length - 1); break; }
+        if (/\)\s*\{\s*$/.test(lines[i] ?? '')) { openIdx = i; break; }
+      }
+      if (openIdx >= 0) {
+        // 自 openIdx 向下匹配对应的 '}'
+        let depth = 0; let closeIdx = -1;
+        for (let j = openIdx; j < lines.length; j++) {
+          const line = lines[j] ?? '';
+          // 简易括号计数（忽略字符串/注释，仅近似）
+          for (const ch of line) {
+            if (ch === '{') depth++;
+            else if (ch === '}') {
+              depth--;
+              if (depth === 0) { closeIdx = j; break; }
+            }
+          }
+          if (closeIdx >= 0) break;
+          if (j - openIdx > maxSpan) break; // 安全上限
+        }
+        if (closeIdx >= 0) {
+          startIdx = Math.min(startIdx, openIdx);
+          endIdx = Math.max(endIdx, closeIdx);
+        }
+      }
+
+      // 再次应用 maxSpan 限制
+      if (endIdx - startIdx > maxSpan) {
+        endIdx = startIdx + maxSpan;
+      }
+
+      return { startLine: startIdx + 1, endLine: endIdx + 1 };
+    } catch {
+      return range; // 出错时使用原范围
+    }
   }
 
   dispose(): void {
@@ -524,12 +630,22 @@ ${configEntries || '//   (using base style defaults)'}
             const active = vscode.window.activeTextEditor;
             if (active && active.document && !active.document.isClosed) { baseContent = active.document.getText(); }
           }
-          const formatResult = await this.formatService.format(baseContent, currentConfig as unknown as Record<string, unknown>);
+          const formatResult = await this.formatService.format(
+            baseContent,
+            currentConfig as unknown as Record<string, unknown>,
+            this.lastHighlightRange ?? undefined,
+          );
           const header = this.generateConfigComment(currentConfig as unknown as Record<string, unknown>);
           const updatedContent = `${header}\n\n${formatResult.success ? formatResult.formattedCode : baseContent}`;
           this.previewProvider.updateContent(previewUri, updatedContent);
         } catch (error) {
           this.logger.error('Macro preview update failed', error as Error, { module: 'PreviewManager', operation: 'macro-preview-requested' });
+        }
+      });
+      // 响应设置更新：如果包含 macroSource，则触发源切换
+      onTyped(this.context.eventBus as unknown as EventBus, 'settings-updated', ({ macroSource }) => {
+        if (macroSource) {
+          emitTyped(this.context.eventBus as unknown as EventBus, 'macro-preview-requested', { source: macroSource });
         }
       });
     }
@@ -572,3 +688,4 @@ ${configEntries || '//   (using base style defaults)'}
     };
   }
 }
+

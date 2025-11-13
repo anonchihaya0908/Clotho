@@ -104,6 +104,7 @@ export interface AppState {
     formattedCode: string;
     success: boolean;
     error?: string;
+    matchType?: MatchType;
   };
 }
 
@@ -117,6 +118,8 @@ export interface WebviewLogPayload {
 
 // Preview and highlight metadata (M2 scaffolding)
 export type MacroPreviewSource = 'demoSnippet' | 'activeFile';
+
+export type MatchType = 'anchor' | 'heuristic' | 'fallback';
 
 export interface HighlightAnchor {
   id: string; // stable id for a region or token
@@ -137,7 +140,7 @@ export type WebviewPayloadMap = {
   [WebviewMessageType.INITIALIZE]: InitializePayload;
   [WebviewMessageType.CONFIG_CHANGED]: { key: string; value: ConfigValue } | ClangFormatConfig;
   [WebviewMessageType.CONFIG_LOADED]: { config: ClangFormatConfig; source?: 'workspace' | 'file' | 'import' };
-  [WebviewMessageType.MICRO_PREVIEW_UPDATE]: { optionName: string; formattedCode: string; success: boolean; error?: string };
+  [WebviewMessageType.MICRO_PREVIEW_UPDATE]: { optionName: string; formattedCode: string; success: boolean; error?: string; matchType?: MatchType };
   [WebviewMessageType.VALIDATION_RESULT]: { isValid: boolean; errors?: string[] };
   [WebviewMessageType.GET_MICRO_PREVIEW]: { optionName: string; config: ClangFormatConfig; previewSnippet: string };
   [WebviewMessageType.GET_MACRO_PREVIEW]: { source: 'demoSnippet' | 'activeFile'; code?: string } | undefined;
@@ -146,14 +149,15 @@ export type WebviewPayloadMap = {
   [WebviewMessageType.EXPORT_CONFIG]: undefined;
   [WebviewMessageType.IMPORT_CONFIG]: { content?: string } | undefined;
   [WebviewMessageType.RESET_CONFIG]: undefined;
-  [WebviewMessageType.UPDATE_SETTINGS]: { showGuideButton?: boolean };
+  [WebviewMessageType.UPDATE_SETTINGS]: { showGuideButton?: boolean; macroSource?: MacroPreviewSource };
+  // Later, settings may include macroSource, but keep backward-compat here if not needed
   [WebviewMessageType.CONFIG_OPTION_HOVER]: { key: string };
   [WebviewMessageType.CONFIG_OPTION_FOCUS]: { key: string };
   [WebviewMessageType.CLEAR_HIGHLIGHTS]: undefined;
   [WebviewMessageType.OPEN_CLANG_FORMAT_FILE]: undefined;
   [WebviewMessageType.VALIDATION_ERROR]: { message: string } | undefined;
-  [WebviewMessageType.SETTINGS_UPDATED]: { showGuideButton: boolean };
-  [WebviewMessageType.UPDATE_MICRO_PREVIEW]: { optionName: string; formattedCode: string; success: boolean; error?: string };
+  [WebviewMessageType.SETTINGS_UPDATED]: { showGuideButton: boolean; macroSource?: MacroPreviewSource };
+  [WebviewMessageType.UPDATE_MICRO_PREVIEW]: { optionName: string; formattedCode: string; success: boolean; error?: string; matchType?: MatchType };
   [WebviewMessageType.PREVIEW_OPENED]: undefined;
   [WebviewMessageType.PREVIEW_CLOSED]: undefined;
   [WebviewMessageType.PREVIEW_REOPENED]: undefined;
@@ -202,6 +206,7 @@ export interface InitializePayload {
   currentConfig: ClangFormatConfig;
   settings: {
     showGuideButton: boolean;
+    macroSource?: MacroPreviewSource;
   };
 }
 

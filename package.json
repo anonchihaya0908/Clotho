@@ -1,436 +1,438 @@
 {
-    "name": "clotho",
-    "displayName": "%displayName%",
-    "description": "%description%",
-    "version": "1.0.20",
-    "publisher": "Togawa-Sakiko",
-    "private": true,
-    "l10n": "./l10n",
-    "workspaces": [
-        "webviews/visual-editor/clang-format"
+  "name": "clotho",
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "version": "1.0.20",
+  "publisher": "Togawa-Sakiko",
+  "private": true,
+  "l10n": "./l10n",
+  "workspaces": [
+    "webviews/visual-editor/clang-format"
+  ],
+  "engines": {
+    "vscode": "^1.99.3"
+  },
+  "extensionDependencies": [
+    "llvm-vs-code-extensions.vscode-clangd"
+  ],
+  "categories": [
+    "Other",
+    "Snippets"
+  ],
+  "keywords": [
+    "c",
+    "cpp",
+    "c++",
+    "header",
+    "source",
+    "file",
+    "pair",
+    "template",
+    "clangd"
+  ],
+  "activationEvents": [
+    "onLanguage:c",
+    "onLanguage:cpp",
+    "onLanguage:objective-c",
+    "onLanguage:objective-cpp",
+    "workspaceContains:**/.clang-format",
+    "workspaceContains:**/_clang-format"
+  ],
+  "main": "./out/bundle.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "clotho.newSourcePair",
+        "title": "%command.newSourcePair.title%",
+        "category": "%command.newSourcePair.category%"
+      },
+      {
+        "command": "clotho.switchHeaderSource",
+        "title": "%command.switchHeaderSource.title%",
+        "category": "%command.switchHeaderSource.category%"
+      },
+      {
+        "command": "clotho.configureRules",
+        "title": "%command.configureRules.title%",
+        "category": "%command.configureRules.category%"
+      },
+      {
+        "command": "clotho.configureHeaderGuard",
+        "title": "%command.configureHeaderGuard.title%",
+        "category": "%command.configureHeaderGuard.category%"
+      },
+      {
+        "command": "clotho.openClangFormatEditor",
+        "title": "%command.openClangFormatEditor.title%",
+        "category": "%command.openClangFormatEditor.category%",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "clotho.debug.dumpSwitchMetrics",
+        "title": "%command.debug.dumpSwitchMetrics.title%",
+        "category": "Clotho"
+      },
+      {
+        "command": "clotho.debug.selfTest.strategies",
+        "title": "%command.debug.selfTest.strategies.title%",
+        "category": "Clotho"
+      },
+      {
+        "command": "clotho.debug.clearAllCaches",
+        "title": "Clotho: Clear All Caches",
+        "category": "Clotho"
+      },
+      {
+        "command": "clotho.debug.dumpSwitchReport",
+        "title": "Clotho: Dump Switch Performance Report",
+        "category": "Clotho"
+      }
     ],
-    "engines": {
-        "vscode": "^1.99.3"
-    },
-    "extensionDependencies": [
-        "llvm-vs-code-extensions.vscode-clangd"
-    ],
-    "categories": [
-        "Other",
-        "Snippets"
-    ],
-    "keywords": [
-        "c",
-        "cpp",
-        "c++",
-        "header",
-        "source",
-        "file",
-        "pair",
-        "template",
-        "clangd"
-    ],
-    "activationEvents": [
-        "onLanguage:c",
-        "onLanguage:cpp",
-        "onLanguage:objective-c",
-        "onLanguage:objective-cpp",
-        "workspaceContains:**/.clang-format",
-        "workspaceContains:**/_clang-format"
-    ],
-    "main": "./out/bundle.js",
-    "contributes": {
-        "commands": [
-            {
-                "command": "clotho.newSourcePair",
-                "title": "%command.newSourcePair.title%",
-                "category": "%command.newSourcePair.category%"
-            },
-            {
-                "command": "clotho.switchHeaderSource",
-                "title": "%command.switchHeaderSource.title%",
-                "category": "%command.switchHeaderSource.category%"
-            },
-            {
-                "command": "clotho.configureRules",
-                "title": "%command.configureRules.title%",
-                "category": "%command.configureRules.category%"
-            },
-            {
-                "command": "clotho.configureHeaderGuard",
-                "title": "%command.configureHeaderGuard.title%",
-                "category": "%command.configureHeaderGuard.category%"
-            },
-            {
-                "command": "clotho.openClangFormatEditor",
-                "title": "%command.openClangFormatEditor.title%",
-                "category": "%command.openClangFormatEditor.category%",
-                "icon": "$(edit)"
-            },
-            {
-                "command": "clotho.debug.dumpSwitchMetrics",
-                "title": "%command.debug.dumpSwitchMetrics.title%",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.debug.selfTest.strategies",
-                "title": "%command.debug.selfTest.strategies.title%",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.debug.clearAllCaches",
-                "title": "Clotho: Clear All Caches",
-                "category": "Clotho"
-            },
-            {
-                "command": "clotho.debug.dumpSwitchReport",
-                "title": "Clotho: Dump Switch Performance Report",
-                "category": "Clotho"
-            }
-        ],
-        "menus": {
-            "explorer/context": [
-                {
-                    "command": "clotho.newSourcePair",
-                    "when": "explorerResourceIsFolder",
-                    "group": "2_workspace"
-                }
-            ],
-            "editor/title": [
-                {
-                    "command": "clotho.openClangFormatEditor",
-                    "when": "clotho.isClangFormatFile",
-                    "group": "navigation",
-                    "alt": "clotho.openClangFormatEditor"
-                }
-            ],
-            "editor/context": [
-                {
-                    "command": "clotho.switchHeaderSource",
-                    "when": "resourceExtname == .h || resourceExtname == .hpp || resourceExtname == .hh || resourceExtname == .hxx || resourceExtname == .c || resourceExtname == .cpp || resourceExtname == .cc || resourceExtname == .cxx",
-                    "group": "navigation"
-                }
-            ],
-            "commandPalette": [
-                {
-                    "command": "clotho.newSourcePair",
-                    "when": "workspaceFolderCount > 0"
-                },
-                {
-                    "command": "clotho.switchHeaderSource"
-                },
-                {
-                    "command": "clotho.configureRules"
-                },
-                {
-                    "command": "clotho.openClangFormatEditor"
-                },
-                {
-                    "command": "clotho.debug.dumpSwitchMetrics"
-                },
-                {
-                    "command": "clotho.debug.selfTest.strategies"
-                }
-            ]
-        },
-        "keybindings": [
-            {
-                "command": "clotho.switchHeaderSource",
-                "key": "alt+o",
-                "when": "editorTextFocus && (editorLangId == c || editorLangId == cpp)"
-            },
-            {
-                "command": "clotho.newSourcePair",
-                "key": "ctrl+alt+n",
-                "when": "workspaceFolderCount > 0"
-            }
-        ],
-        "configuration": {
-            "title": "Clotho",
-            "properties": {
-                "clotho.webview.allowUnsafeEval": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Allow 'unsafe-eval' in webview CSP (set false to harden CSP; may break some libraries)."
-                },
-                "clotho.switch.indexMaxFiles": {
-                    "type": "number",
-                    "default": 20000,
-                    "minimum": 100,
-                    "description": "Maximum number of files to scan when building search index."
-                },
-                "clotho.cache.fileExistsMax": {
-                    "type": "number",
-                    "default": 100,
-                    "minimum": 10,
-                    "description": "Capacity of FileSystemService file-exists cache."
-                },
-                "clotho.cache.fileContentMax": {
-                    "type": "number",
-                    "default": 50,
-                    "minimum": 10,
-                    "description": "Capacity of FileSystemService file-content cache."
-                },
-                "clotho.switch.ranking.sameDirBoost": {
-                    "type": "number",
-                    "default": 10,
-                    "minimum": 0,
-                    "description": "%config.switch.ranking.sameDirBoost.description%"
-                },
-                "clotho.switch.ranking.includeSrcBoost": {
-                    "type": "number",
-                    "default": 5,
-                    "minimum": 0,
-                    "description": "%config.switch.ranking.includeSrcBoost.description%"
-                },
-                "clotho.switch.ranking.workspaceRootBoost": {
-                    "type": "number",
-                    "default": 2,
-                    "minimum": 0,
-                    "description": "%config.switch.ranking.workspaceRootBoost.description%"
-                },
-                "clotho.switch.ranking.extOrderBase": {
-                    "type": "number",
-                    "default": 3,
-                    "minimum": 0,
-                    "description": "%config.switch.ranking.extOrderBase.description%"
-                },
-                "clotho.switch.ranking.depthBonusBase": {
-                    "type": "number",
-                    "default": 3,
-                    "minimum": 0,
-                    "description": "%config.switch.ranking.depthBonusBase.description%"
-                },
-                "clotho.performance.slowOperationThreshold": {
-                    "type": "number",
-                    "default": 1000,
-                    "minimum": 1,
-                    "description": "%config.performance.slowOperationThreshold.description%"
-                },
-                "clotho.fs.enableWatcher": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "%config.fs.enableWatcher.description%"
-                },
-                "clotho.fs.watchGlobs": {
-                    "type": "array",
-                    "default": [],
-                    "items": {
-                        "type": "string"
-                    },
-                    "description": "%config.fs.watchGlobs.description%"
-                },
-                "clotho.switch.cacheTTLms": {
-                    "type": "number",
-                    "default": 60000,
-                    "minimum": 0,
-                    "description": "%config.switch.cacheTTLms.description%"
-                },
-                "clotho.logLevel": {
-                    "type": "string",
-                    "enum": [
-                        "silly",
-                        "trace",
-                        "debug",
-                        "info",
-                        "warn",
-                        "error",
-                        "fatal"
-                    ],
-                    "default": "info",
-                    "description": "%config.logLevel.description%"
-                },
-                "clotho.createPair.rules": {
-                    "type": "array",
-                    "default": [],
-                    "description": "Custom pairing rules for C/C++ file extensions",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "key": {
-                                "type": "string",
-                                "description": "Unique identifier for the rule"
-                            },
-                            "label": {
-                                "type": "string",
-                                "description": "Display name for the rule"
-                            },
-                            "description": {
-                                "type": "string",
-                                "description": "Description of what the rule does"
-                            },
-                            "language": {
-                                "type": "string",
-                                "enum": [
-                                    "c",
-                                    "cpp"
-                                ],
-                                "description": "Target programming language"
-                            },
-                            "headerExt": {
-                                "type": "string",
-                                "description": "Header file extension (e.g., .h, .hpp)"
-                            },
-                            "sourceExt": {
-                                "type": "string",
-                                "description": "Source file extension (e.g., .c, .cpp)"
-                            },
-                            "isClass": {
-                                "type": "boolean",
-                                "description": "Whether this rule creates class templates"
-                            },
-                            "isStruct": {
-                                "type": "boolean",
-                                "description": "Whether this rule creates struct templates"
-                            }
-                        },
-                        "required": [
-                            "key",
-                            "label",
-                            "description",
-                            "language",
-                            "headerExt",
-                            "sourceExt"
-                        ]
-                    }
-                },
-                "clotho.switch.sourceDirs": {
-                    "type": "array",
-                    "default": [
-                        "src",
-                        "source",
-                        "lib"
-                    ],
-                    "description": "Directory names to search for source files",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "clotho.switch.headerDirs": {
-                    "type": "array",
-                    "default": [
-                        "include",
-                        "inc",
-                        "headers",
-                        "api"
-                    ],
-                    "description": "Directory names to search for header files",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "clotho.switch.testDirs": {
-                    "type": "array",
-                    "default": [
-                        "test",
-                        "tests",
-                        "spec",
-                        "unittest"
-                    ],
-                    "description": "Directory names to search for test files",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "clotho.clangFormat.showGuideButton": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Show guide button in status bar when editing .clang-format files"
-                },
-                "clotho.switch.searchPaths": {
-                    "type": "array",
-                    "default": [
-                        ".",
-                        "../include",
-                        "../src",
-                        "./include",
-                        "./src"
-                    ],
-                    "description": "Additional paths to search for corresponding header/source files",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "clotho.newSourcePair",
+          "when": "explorerResourceIsFolder",
+          "group": "2_workspace"
         }
+      ],
+      "editor/title": [
+        {
+          "command": "clotho.openClangFormatEditor",
+          "when": "clotho.isClangFormatFile",
+          "group": "navigation",
+          "alt": "clotho.openClangFormatEditor"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "clotho.switchHeaderSource",
+          "when": "resourceExtname == .h || resourceExtname == .hpp || resourceExtname == .hh || resourceExtname == .hxx || resourceExtname == .c || resourceExtname == .cpp || resourceExtname == .cc || resourceExtname == .cxx",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "clotho.newSourcePair",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "clotho.switchHeaderSource"
+        },
+        {
+          "command": "clotho.configureRules"
+        },
+        {
+          "command": "clotho.openClangFormatEditor"
+        },
+        {
+          "command": "clotho.debug.dumpSwitchMetrics"
+        },
+        {
+          "command": "clotho.debug.selfTest.strategies"
+        }
+      ]
     },
-    "scripts": {
-        "esbuild": "node ./esbuild.config.mjs",
-        "esbuild:watch": "node ./esbuild.config.mjs --watch",
-        "vscode:prepublish": "npm run build:production",
-        "compile": "npm run build",
-        "compile:tsc": "tsc -p ./",
-        "pretest": "npm run build && npm run lint",
-        "lint": "eslint src --ext ts",
-        "lint:fix": "eslint src --ext ts --fix",
-        "test": "npm run compile:tsc && node ./out/test/runTest.js",
-        "package": "node scripts/vsix-toolkit.js package",
-        "package:quick": "npx @vscode/vsce package --no-dependencies",
-        "package:old": "npm run build:production && npx @vscode/vsce package",
-        "diagnose": "node scripts/vsix-toolkit.js diagnose",
-        "fix-packaging": "node scripts/vsix-toolkit.js fix",
-        "format": "npx prettier --write \"src/**/*.ts\"",
-        "clean": "rimraf out && npm run clean:webview",
-        "clean:safe": "node -e \"const fs=require('fs');const path='out';if(fs.existsSync(path)){fs.rmSync(path,{recursive:true,force:true})}\" && npm run clean:webview",
-        "clean:webview": "npm run clean --workspace=webviews/visual-editor/clang-format",
-        "clean:all": "npm run clean && rimraf node_modules/.cache && rimraf *.vsix",
-        "package:safe": "npm run build:production && npx @vscode/vsce package --no-dependencies",
-        "build": "npm run build:extension && npm run build:webview",
-        "build:parallel": "npm run build:extension & npm run build:webview & wait",
-        "build:production": "npm run clean:safe && npm run build:extension:production && npm run build:webview:production",
-        "build:extension": "npm run esbuild",
-        "build:extension:production": "npm run esbuild -- --production",
-        "build:webview": "npm run build --workspace=webviews/visual-editor/clang-format",
-        "build:webview:production": "npm run build --workspace=webviews/visual-editor/clang-format",
-        "watch": "npm run watch:extension & npm run watch:webview",
-        "watch:extension": "npm run esbuild:watch",
-        "watch:webview": "npm run dev --workspace=webviews/visual-editor/clang-format",
-        "dev": "npm run build && code --extensionDevelopmentPath=. --new-window",
-        "dev:f5": "node scripts/dev-quick.js",
-        "dev:f5:quick": "npm run esbuild",
-        "dev:check": "npm run lint && npm run build",
-        "dev:watch": "npm run watch",
-        "build:fast": "npm run esbuild && npm run build:webview",
-        "prebuild": "npm run lint",
-        "postbuild": "echo \"Build completed successfully!\"",
-        "prepackage": "echo \"Starting package process...\"",
-        "postpackage": "echo \"Package created successfully! Check for .vsix file in the root directory.\""
-    },
-    "devDependencies": {
-        "@eslint/js": "^9.36.0",
-        "@types/mocha": "^10.0.10",
-        "@types/node": "^20.19.0",
-        "@types/react": "^18.3.25",
-        "@types/react-dom": "^18.3.7",
-        "@types/vscode": "~1.99.0",
-        "@typescript-eslint/eslint-plugin": "^8.45.0",
-        "@typescript-eslint/parser": "^8.45.0",
-        "@vscode/test-electron": "^2.5.2",
-        "@vscode/vsce": "^3.6.0",
-        "css-loader": "^7.1.2",
-        "esbuild": "^0.25.10",
-        "eslint": "^9.36.0",
-        "glob": "^11.0.3",
-        "html-webpack-plugin": "^5.6.4",
-        "mini-css-extract-plugin": "^2.9.4",
-        "mocha": "^10.8.2",
-        "sharp": "^0.34.3",
-        "style-loader": "^4.0.0",
-        "ts-loader": "^9.5.4",
-        "typescript": "^5.9.2",
-        "webpack": "^5.102.0",
-        "webpack-cli": "^6.0.1"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/anonchihaya0908/Clotho.git"
-    },
-    "bugs": {
-        "url": "https://github.com/anonchihaya0908/Clotho/issues"
-    },
-    "homepage": "https://github.com/anonchihaya0908/Clotho#readme",
-    "license": "Apache-2.0",
-    "dependencies": {
-        "tslog": "^4.9.3"
+    "keybindings": [
+      {
+        "command": "clotho.switchHeaderSource",
+        "key": "alt+o",
+        "when": "editorTextFocus && (editorLangId == c || editorLangId == cpp)"
+      },
+      {
+        "command": "clotho.newSourcePair",
+        "key": "ctrl+alt+n",
+        "when": "workspaceFolderCount > 0"
+      }
+    ],
+    "configuration": {
+      "title": "Clotho",
+      "properties": {
+        "clotho.webview.allowUnsafeEval": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow 'unsafe-eval' in webview CSP (set false to harden CSP; may break some libraries)."
+        },
+        "clotho.switch.indexMaxFiles": {
+          "type": "number",
+          "default": 20000,
+          "minimum": 100,
+          "description": "Maximum number of files to scan when building search index."
+        },
+        "clotho.cache.fileExistsMax": {
+          "type": "number",
+          "default": 100,
+          "minimum": 10,
+          "description": "Capacity of FileSystemService file-exists cache."
+        },
+        "clotho.cache.fileContentMax": {
+          "type": "number",
+          "default": 50,
+          "minimum": 10,
+          "description": "Capacity of FileSystemService file-content cache."
+        },
+        "clotho.switch.ranking.sameDirBoost": {
+          "type": "number",
+          "default": 10,
+          "minimum": 0,
+          "description": "%config.switch.ranking.sameDirBoost.description%"
+        },
+        "clotho.switch.ranking.includeSrcBoost": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0,
+          "description": "%config.switch.ranking.includeSrcBoost.description%"
+        },
+        "clotho.switch.ranking.workspaceRootBoost": {
+          "type": "number",
+          "default": 2,
+          "minimum": 0,
+          "description": "%config.switch.ranking.workspaceRootBoost.description%"
+        },
+        "clotho.switch.ranking.extOrderBase": {
+          "type": "number",
+          "default": 3,
+          "minimum": 0,
+          "description": "%config.switch.ranking.extOrderBase.description%"
+        },
+        "clotho.switch.ranking.depthBonusBase": {
+          "type": "number",
+          "default": 3,
+          "minimum": 0,
+          "description": "%config.switch.ranking.depthBonusBase.description%"
+        },
+        "clotho.performance.slowOperationThreshold": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 1,
+          "description": "%config.performance.slowOperationThreshold.description%"
+        },
+        "clotho.fs.enableWatcher": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.fs.enableWatcher.description%"
+        },
+        "clotho.fs.watchGlobs": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "%config.fs.watchGlobs.description%"
+        },
+        "clotho.switch.cacheTTLms": {
+          "type": "number",
+          "default": 60000,
+          "minimum": 0,
+          "description": "%config.switch.cacheTTLms.description%"
+        },
+        "clotho.logLevel": {
+          "type": "string",
+          "enum": [
+            "silly",
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error",
+            "fatal"
+          ],
+          "default": "info",
+          "description": "%config.logLevel.description%"
+        },
+        "clotho.createPair.rules": {
+          "type": "array",
+          "default": [],
+          "description": "Custom pairing rules for C/C++ file extensions",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "Unique identifier for the rule"
+              },
+              "label": {
+                "type": "string",
+                "description": "Display name for the rule"
+              },
+              "description": {
+                "type": "string",
+                "description": "Description of what the rule does"
+              },
+              "language": {
+                "type": "string",
+                "enum": [
+                  "c",
+                  "cpp"
+                ],
+                "description": "Target programming language"
+              },
+              "headerExt": {
+                "type": "string",
+                "description": "Header file extension (e.g., .h, .hpp)"
+              },
+              "sourceExt": {
+                "type": "string",
+                "description": "Source file extension (e.g., .c, .cpp)"
+              },
+              "isClass": {
+                "type": "boolean",
+                "description": "Whether this rule creates class templates"
+              },
+              "isStruct": {
+                "type": "boolean",
+                "description": "Whether this rule creates struct templates"
+              }
+            },
+            "required": [
+              "key",
+              "label",
+              "description",
+              "language",
+              "headerExt",
+              "sourceExt"
+            ]
+          }
+        },
+        "clotho.switch.sourceDirs": {
+          "type": "array",
+          "default": [
+            "src",
+            "source",
+            "lib"
+          ],
+          "description": "Directory names to search for source files",
+          "items": {
+            "type": "string"
+          }
+        },
+        "clotho.switch.headerDirs": {
+          "type": "array",
+          "default": [
+            "include",
+            "inc",
+            "headers",
+            "api"
+          ],
+          "description": "Directory names to search for header files",
+          "items": {
+            "type": "string"
+          }
+        },
+        "clotho.switch.testDirs": {
+          "type": "array",
+          "default": [
+            "test",
+            "tests",
+            "spec",
+            "unittest"
+          ],
+          "description": "Directory names to search for test files",
+          "items": {
+            "type": "string"
+          }
+        },
+        "clotho.visualEditor.macroSource": {
+          "type": "string",
+          "enum": ["demoSnippet", "activeFile"],
+          "default": "demoSnippet",
+          "description": "Macro preview source selection for Clang-Format Visual Editor"
+        },
+        "clotho.switch.searchPaths": {
+          "type": "array",
+          "default": [
+            ".",
+            "../include",
+            "../src",
+            "./include",
+            "./src"
+          ],
+          "description": "Additional paths to search for corresponding header/source files",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     }
+  },
+  "scripts": {
+    "esbuild": "node ./esbuild.config.mjs",
+    "esbuild:watch": "node ./esbuild.config.mjs --watch",
+    "vscode:prepublish": "npm run build:production",
+    "compile": "npm run build",
+    "compile:tsc": "tsc -p ./",
+    "pretest": "npm run build && npm run lint",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "test": "npm run compile:tsc && node ./out/test/runTest.js",
+    "package": "node scripts/vsix-toolkit.js package",
+    "package:quick": "npx @vscode/vsce package --no-dependencies",
+    "package:old": "npm run build:production && npx @vscode/vsce package",
+    "diagnose": "node scripts/vsix-toolkit.js diagnose",
+    "fix-packaging": "node scripts/vsix-toolkit.js fix",
+    "format": "npx prettier --write \"src/**/*.ts\"",
+    "clean": "rimraf out && npm run clean:webview",
+    "clean:safe": "node -e \"const fs=require('fs');const path='out';if(fs.existsSync(path)){fs.rmSync(path,{recursive:true,force:true})}\" && npm run clean:webview",
+    "clean:webview": "npm run clean --workspace=webviews/visual-editor/clang-format",
+    "clean:all": "npm run clean && rimraf node_modules/.cache && rimraf *.vsix",
+    "package:safe": "npm run build:production && npx @vscode/vsce package --no-dependencies",
+    "build": "npm run build:extension && npm run build:webview",
+    "build:parallel": "npm run build:extension & npm run build:webview & wait",
+    "build:production": "npm run clean:safe && npm run build:extension:production && npm run build:webview:production",
+    "build:extension": "npm run esbuild",
+    "build:extension:production": "npm run esbuild -- --production",
+    "build:webview": "npm run build --workspace=webviews/visual-editor/clang-format",
+    "build:webview:production": "npm run build --workspace=webviews/visual-editor/clang-format",
+    "watch": "npm run watch:extension & npm run watch:webview",
+    "watch:extension": "npm run esbuild:watch",
+    "watch:webview": "npm run dev --workspace=webviews/visual-editor/clang-format",
+    "dev": "npm run build && code --extensionDevelopmentPath=. --new-window",
+    "dev:f5": "node scripts/dev-quick.js",
+    "dev:f5:quick": "npm run esbuild",
+    "dev:check": "npm run lint && npm run build",
+    "dev:watch": "npm run watch",
+    "build:fast": "npm run esbuild && npm run build:webview",
+    "prebuild": "npm run lint",
+    "postbuild": "echo \"Build completed successfully!\"",
+    "prepackage": "echo \"Starting package process...\"",
+    "postpackage": "echo \"Package created successfully! Check for .vsix file in the root directory.\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.19.0",
+    "@types/react": "^18.3.25",
+    "@types/react-dom": "^18.3.7",
+    "@types/vscode": "~1.99.0",
+    "@typescript-eslint/eslint-plugin": "^8.45.0",
+    "@typescript-eslint/parser": "^8.45.0",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.6.0",
+    "css-loader": "^7.1.2",
+    "esbuild": "^0.25.10",
+    "eslint": "^9.36.0",
+    "glob": "^11.0.3",
+    "html-webpack-plugin": "^5.6.4",
+    "mini-css-extract-plugin": "^2.9.4",
+    "mocha": "^10.8.2",
+    "sharp": "^0.34.3",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.2",
+    "webpack": "^5.102.0",
+    "webpack-cli": "^6.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anonchihaya0908/Clotho.git"
+  },
+  "bugs": {
+    "url": "https://github.com/anonchihaya0908/Clotho/issues"
+  },
+  "homepage": "https://github.com/anonchihaya0908/Clotho#readme",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "tslog": "^4.9.3"
+  }
 }
+

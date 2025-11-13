@@ -510,3 +510,19 @@
     max-height: 200px;
     overflow-y: auto;
 }
+
+/* Option description + affected area badge */
+.option-description {
+    margin-top: 6px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.affected-area-badge {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 0 6px;
+    border-radius: 3px;
+    background: rgba(127,127,127,0.15);
+    color: var(--vscode-foreground);
+    font-size: 12px;
+}

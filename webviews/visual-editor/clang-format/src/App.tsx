@@ -152,10 +152,10 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                     sendMessage(WebviewMessageType.OPEN_CLANG_FORMAT_FILE);
                     break;
                 case 'previewSourceDemo':
-                    sendMessage(WebviewMessageType.GET_MACRO_PREVIEW, { source: 'demoSnippet' });
+                    sendMessage(WebviewMessageType.GET_MACRO_PREVIEW, { source: 'demoSnippet' }); sendMessage(WebviewMessageType.UPDATE_SETTINGS, { macroSource: 'demoSnippet' });
                     break;
                 case 'previewSourceActive':
-                    sendMessage(WebviewMessageType.GET_MACRO_PREVIEW, { source: 'activeFile' });
+                    sendMessage(WebviewMessageType.GET_MACRO_PREVIEW, { source: 'activeFile' }); sendMessage(WebviewMessageType.UPDATE_SETTINGS, { macroSource: 'activeFile' });
                     break;
                 default:
                     webviewLog.warn('Unknown toolbar action', { action });
@@ -409,5 +409,6 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
         </ErrorBoundary>
     );
 };
+
 
 

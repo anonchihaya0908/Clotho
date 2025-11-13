@@ -105,6 +105,8 @@ export class ClangFormatEditorManager implements BaseManager {
       // 获取设置
       const config = vscode.workspace.getConfiguration('clotho.clangFormat');
       const showGuideButton = config.get<boolean>('showGuideButton', true);
+      const veCfg = vscode.workspace.getConfiguration('clotho.visualEditor');
+      const macroSource = veCfg.get<'demoSnippet'|'activeFile'>('macroSource', 'demoSnippet');
 
       const currentConfig: ClangFormatConfig = currentState.currentConfig || (DEFAULT_CLANG_FORMAT_CONFIG as unknown as ClangFormatConfig);
 
@@ -114,7 +116,7 @@ export class ClangFormatEditorManager implements BaseManager {
           options: CLANG_FORMAT_OPTIONS,
           categories: Object.values(ConfigCategories),
           currentConfig,
-          settings: { showGuideButton },
+          settings: { showGuideButton, macroSource },
         },
       };
 
