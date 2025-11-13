@@ -18,7 +18,7 @@
     border: 1px solid var(--vscode-button-border, transparent);
     color: var(--vscode-button-secondaryForeground);
     padding: 10px 20px;
-    border-radius: 12px;
+    border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -41,7 +41,7 @@
     background: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
     border-color: var(--vscode-focusBorder);
-    border-radius: 12px;
+    border-radius: 8px;
 }
 
 /* remove decorative underline to keep pill shape clean */
@@ -98,5 +98,5 @@
 .mode-tab:focus {
     outline: none;
     box-shadow: 0 0 0 2px var(--vscode-focusBorder);
-    border-radius: 12px;
+    border-radius: 8px;
 }

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { VirtualList } from '../VirtualList';
 import { ClangFormatOption, SearchConfigProps, OptionFilters } from '../../types';
 import './style.css';
 
@@ -220,8 +221,48 @@ export const SearchConfig: React.FC<SearchConfigProps> = ({
                 </div>
             )}
 
-            <div className="search-results">
-                {filteredOptions.map((option: ClangFormatOption) => {
+            <div className="search-results" role="list">
+                {(filteredOptions.length > 80) ? (
+                    <VirtualList
+                        itemCount={filteredOptions.length}
+                        itemHeight={240}
+                        height={(typeof window !== 'undefined' ? Math.max(240, window.innerHeight - 260) : 480)}
+                        role="list"
+                        renderItem={(idx) => {
+                            const option = filteredOptions[idx]!;
+                            const isDisabled = false;
+                            return (
+                                <div key={option.key} className={`search-result-item ${isDisabled ? 'disabled' : ''}`}>
+                                    <div className="result-header">
+                                        <div className="result-title">
+                                            <span className="result-icon">{getSearchResultIcon(option)}</span>
+                                            <span className="result-name">{option.name || option.key}</span>
+                                            <span className="result-type">{option.type}</span>
+                                            <span className="result-category">{option.category}</span>
+                                        </div>
+                                        <div className="result-value">
+                                            {renderOptionValue(option)}
+                                        </div>
+                                    </div>
+                                    {option.description && (
+                                        <div className="result-description">{option.description}</div>
+                                    )}
+                                    {searchQuery.trim() && (
+                                        <div className="result-keywords">
+                                            <span className="keywords-label">相关关键词:</span>
+                                            {(CONFIG_SEARCH_MAP[option.key] || [])
+                                                .filter(keyword => keyword.toLowerCase().includes(searchQuery.toLowerCase()))
+                                                .slice(0, 3)
+                                                .map((keyword, index) => (
+                                                    <span key={index} className="keyword-tag">{keyword}</span>
+                                                ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }}
+                    />
+                ) : filteredOptions.map((option: ClangFormatOption) => {
                     // 所有选项都支持，因为只使用 C++
                     const isDisabled = false;
 

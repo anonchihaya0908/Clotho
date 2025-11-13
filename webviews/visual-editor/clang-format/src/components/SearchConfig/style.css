@@ -90,16 +90,16 @@
 }
 
 .search-result-item {
-    background: var(--vscode-editor-inactiveSelectionBackground);
-    border: 1px solid var(--vscode-widget-border);
+    background: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border);
     border-radius: 8px;
     padding: 16px;
     transition: all 0.2s ease;
+    margin-bottom: 8px;
 }
 
 .search-result-item:hover {
     border-color: var(--vscode-focusBorder);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     background: var(--vscode-list-hoverBackground);
 }
 

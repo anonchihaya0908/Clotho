@@ -1,4 +1,5 @@
 import React, { useState, memo, useMemo, useCallback } from 'react';
+import { VirtualList } from '../VirtualList';
 import { ClangFormatOption, QuickSetupProps } from '../../types';
 import './style.css';
 
@@ -465,6 +466,12 @@ const QuickSetupComponent: React.FC<QuickSetupProps> = ({ options, config, onCha
         }
     }, [config, onChange, generateDefaultPreview]); // 添加依赖
 
+    // 计算虚拟列表高度（根据视口），避免双滚动条
+    const listHeight = useMemo(() => {
+        const base = typeof window !== 'undefined' ? window.innerHeight : 800;
+        return Math.max(240, base - 260);
+    }, []);
+
     return (
         <div className="quick-setup">
             <div className="quick-setup-header">
@@ -476,41 +483,45 @@ const QuickSetupComponent: React.FC<QuickSetupProps> = ({ options, config, onCha
                 </div>
             </div>
 
-            <div className="quick-categories">
-                {QUICK_CONFIG_CATEGORIES.map((category) => {
-                    const isExpanded = expandedCategories.has(category.category);
-
-                    return (
-                        <div key={category.category} className="quick-category">
-                            <div
-                                className="category-header"
-                                onClick={() => toggleCategory(category.category)}
-                            >
-                                <span className="category-icon">{category.icon}</span>
-                                <h4 className="category-title">{category.category}</h4>
-                                <span className={`expand-arrow ${isExpanded ? 'expanded' : ''}`}>
-                                    ▼
-                                </span>
-                            </div>
-
-                            {isExpanded && (
-                                <div className="category-items">
-                                    {category.keys.map((key) => {
-                                        const option = getQuickConfigItem(options, key);
-                                        // 所有选项都支持，因为只使用 C++
-                                        const isDisabled = false;
-
-                                        return option ? (
-                                            <div key={key} className={isDisabled ? 'disabled-option' : ''}>
-                                                {renderConfigItem(option)}
-                                            </div>
-                                        ) : null;
-                                    })}
+            <div className="quick-categories" role="list">
+                <VirtualList
+                    itemCount={QUICK_CONFIG_CATEGORIES.length}
+                    itemHeight={320}
+                    height={listHeight}
+                    role="list"
+                    renderItem={(idx) => {
+                        const category = QUICK_CONFIG_CATEGORIES[idx]!;
+                        const isExpanded = expandedCategories.has(category.category);
+                        return (
+                            <div className="quick-category">
+                                <div
+                                    className="category-header"
+                                    onClick={() => toggleCategory(category.category)}
+                                >
+                                    <span className="category-icon">{category.icon}</span>
+                                    <h4 className="category-title">{category.category}</h4>
+                                    <span className={`expand-arrow ${isExpanded ? 'expanded' : ''}`}>
+                                        ▼
+                                    </span>
                                 </div>
-                            )}
-                        </div>
-                    );
-                })}
+
+                                {isExpanded && (
+                                    <div className="category-items">
+                                        {category.keys.map((key) => {
+                                            const option = getQuickConfigItem(options, key);
+                                            const isDisabled = false;
+                                            return option ? (
+                                                <div key={key} className={isDisabled ? 'disabled-option' : ''}>
+                                                    {renderConfigItem(option)}
+                                                </div>
+                                            ) : null;
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    }}
+                />
             </div>
         </div>
     );

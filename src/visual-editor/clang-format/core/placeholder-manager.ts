@@ -203,15 +203,11 @@ export class PlaceholderWebviewManager implements BaseManager {
       this.disposePanel();
     });
 
-    // 【重新设计】监听主编辑器可见性变化事件 - 真正的收起/恢复
+    // 监听主编辑器可见性变化：仅在变为不可见时隐藏占位符
+    // 不再自动在“变为可见”时打开预览，避免误触（点击任意位置导致预览恢复）
     if (this.context.eventBus) {
       onTyped(this.context.eventBus as unknown as EventBus, 'editor-visibility-changed', ({ isVisible }) => {
-        if (isVisible) {
-          emitTyped(this.context.eventBus as unknown as EventBus, 'open-preview-requested', {
-            source: 'editor-visibility-restored',
-            forceReopen: true,
-          });
-        } else {
+        if (!isVisible) {
           this.hidePlaceholder();
         }
       });
