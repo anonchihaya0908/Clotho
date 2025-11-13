@@ -312,6 +312,33 @@ function registerCommands(context: vscode.ExtensionContext): void {
     },
   );
 
+  // Visual Editor – Validate current config
+  const validateClangFormatConfigCommand = register(
+    'clotho.clangFormat.validate',
+    async () => {
+      const coordinator = serviceContainer.get('clangFormatEditorCoordinator');
+      await coordinator.validateCurrentConfig();
+    }
+  );
+
+  // Visual Editor – Rollback to last saved config
+  const rollbackClangFormatConfigCommand = register(
+    'clotho.clangFormat.rollbackLastSaved',
+    async () => {
+      const coordinator = serviceContainer.get('clangFormatEditorCoordinator');
+      await coordinator.rollbackLastSaved();
+    }
+  );
+
+  // Visual Editor – Apply active .clang-format text to preview (dry run)
+  const applyTextToPreviewCommand = register(
+    'clotho.clangFormat.applyTextToPreview',
+    async () => {
+      const coordinator = serviceContainer.get('clangFormatEditorCoordinator');
+      await coordinator.applyActiveTextToPreview();
+    }
+  );
+
   // Developer/Debug commands
   const dumpSwitchMetricsCommand = register(
     'clotho.debug.dumpSwitchMetrics',
@@ -372,6 +399,9 @@ function registerCommands(context: vscode.ExtensionContext): void {
     configureHeaderGuardCommand,
     switchHeaderSourceCommand,
     openClangFormatEditorCommand,
+    validateClangFormatConfigCommand,
+    rollbackClangFormatConfigCommand,
+    applyTextToPreviewCommand,
     dumpSwitchMetricsCommand,
     clearAllCachesCommand,
     dumpSwitchReportCommand,

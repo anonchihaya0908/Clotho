@@ -30,6 +30,16 @@ export interface VisualEditorEventMap extends Record<string, readonly unknown[]>
   'search-options': [SearchOptionsRequest];
   'get-all-options': [];
 
+  // Text mode (M3)
+  'request-text-config': [];
+  'text-config-response': [{ content: string }];
+  'apply-text-config-requested': [{ content: string }];
+  'apply-text-config-result': [{ success: boolean; errors?: string[] }];
+
+  // M4: Toolbar requests from webview
+  'validate-current-config-requested': [];
+  'apply-active-text-preview-requested': [];
+
   // Config action requests from UI
   'load-workspace-config-requested': [];
   'save-config-requested': [];

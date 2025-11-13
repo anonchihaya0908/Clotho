@@ -77,6 +77,14 @@ export enum WebviewMessageType {
   GET_OPTIONS_BY_CATEGORY = 'getOptionsByCategory',
   SEARCH_OPTIONS = 'searchOptions',
   GET_ALL_OPTIONS = 'getAllOptions',
+  // Text mode (M3)
+  REQUEST_TEXT_CONFIG = 'requestTextConfig',
+  TEXT_CONFIG_RESPONSE = 'textConfigResponse',
+  APPLY_TEXT_CONFIG = 'applyTextConfig',
+  APPLY_TEXT_CONFIG_RESULT = 'applyTextConfigResult',
+  // M4: Toolbar quick actions
+  VALIDATE_REQUEST = 'validateRequest',
+  APPLY_ACTIVE_TEXT_PREVIEW = 'applyActiveTextPreview',
 }
 
 // Application state interface
@@ -168,6 +176,13 @@ export type WebviewPayloadMap = {
   [WebviewMessageType.GET_OPTIONS_BY_CATEGORY]: GetOptionsByCategoryRequest;
   [WebviewMessageType.SEARCH_OPTIONS]: SearchOptionsRequest;
   [WebviewMessageType.GET_ALL_OPTIONS]: undefined;
+  // Text mode
+  [WebviewMessageType.REQUEST_TEXT_CONFIG]: undefined;
+  [WebviewMessageType.TEXT_CONFIG_RESPONSE]: { content: string };
+  [WebviewMessageType.APPLY_TEXT_CONFIG]: { content: string };
+  [WebviewMessageType.APPLY_TEXT_CONFIG_RESULT]: { success: boolean; errors?: string[] };
+  [WebviewMessageType.VALIDATE_REQUEST]: undefined;
+  [WebviewMessageType.APPLY_ACTIVE_TEXT_PREVIEW]: undefined;
 };
 
 export type WebviewMessage = {

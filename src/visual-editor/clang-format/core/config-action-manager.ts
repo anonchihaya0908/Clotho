@@ -11,6 +11,8 @@ import { DEFAULT_CLANG_FORMAT_CONFIG } from '../data/clang-format-options-databa
 import { EventBus } from '../messaging/event-bus';
 import { onTyped, emitTyped } from '../messaging/typed-event-bus';
 import { ClangFormatService } from '../format-service';
+import { getStateOrDefault } from '../types/state';
+import { BoundedHistory } from '../../../common/utils/memory';
 
 /**
  * 负责处理所有与用户配置操作相关的业务逻辑，
@@ -23,6 +25,8 @@ export class ConfigActionManager implements BaseManager {
 
   private context!: ManagerContext;
   private formatService: ClangFormatService;
+  private disposables: vscode.Disposable[] = [];
+  private configHistory = new BoundedHistory<import('../../../common/types/clang-format-shared').ClangFormatConfig>(20);
 
   constructor() {
     // 由于 ClangFormatService 的构造函数是私有的，这里应通过其提供的静态方法获取实例
@@ -43,7 +47,8 @@ export class ConfigActionManager implements BaseManager {
   }
 
   dispose(): void {
-    // No complex resources to dispose for now
+    this.disposables.forEach(d => d.dispose());
+    this.disposables.length = 0;
   }
 
   getStatus(): ManagerStatus {
@@ -74,6 +79,27 @@ export class ConfigActionManager implements BaseManager {
 
     // 监听生命周期事件以触发自动加载
     onTyped(eventBus, 'editor-fully-ready', () => { void this.autoLoadWorkspaceConfig(); });
+
+    // 显式保存触发：当用户保存 .clang-format 文件时，解析并应用到状态
+    const saveListener = vscode.workspace.onDidSaveTextDocument(async (doc) => {
+      try {
+        const base = (doc.uri.path.split('/')?.pop() || '').toLowerCase();
+        if (base === '.clang-format' || base === '_clang-format') {
+          const content = doc.getText();
+          const newConfig = this.formatService.parse(content) as unknown as import('../../../common/types/clang-format-shared').ClangFormatConfig;
+          await this.updateConfigState(newConfig, 'config-loaded-from-file');
+          await this.validateAndPublish(newConfig as unknown as Record<string, unknown>, 'editor-save');
+          this.logger.info('Applied configuration from saved .clang-format', { module: 'ConfigActionManager', operation: 'onDidSaveTextDocument' });
+        }
+      } catch (error) {
+        this.logger.error('Failed to apply configuration from saved .clang-format', error as Error, { module: 'ConfigActionManager', operation: 'onDidSaveTextDocument' });
+      }
+    });
+    this.disposables.push(saveListener);
+
+    // 文本模式（M3）
+    onTyped(eventBus, 'request-text-config', () => { void this.handleRequestTextConfig(); });
+    onTyped(eventBus, 'apply-text-config-requested', ({ content }) => { void this.handleApplyTextConfig(content); });
   }
 
   // --- 配置操作处理方法 ---
@@ -139,6 +165,7 @@ export class ConfigActionManager implements BaseManager {
       const fileContent = Buffer.from(fileContentBytes).toString('utf-8');
       const newConfig = this.formatService.parse(fileContent) as unknown as import('../../../common/types/clang-format-shared').ClangFormatConfig;
       await this.updateConfigState(newConfig, 'config-loaded-from-file');
+      await this.validateAndPublish(newConfig as unknown as Record<string, unknown>, 'config-loaded-from-file');
 
       if (!silent) {
         // 手动加载时显示信息弹窗
@@ -189,7 +216,7 @@ export class ConfigActionManager implements BaseManager {
       if (!this.context.stateManager) {
         throw new Error('StateManager is not available');
       }
-      const currentConfig = this.context.stateManager.getState()['currentConfig'];
+      const currentConfig = getStateOrDefault(this.context.stateManager.getState()).currentConfig;
       const fileContent = this.formatService.stringify(currentConfig as Record<string, unknown>);
       await vscode.workspace.fs.writeFile(
         fileUri,
@@ -201,6 +228,8 @@ export class ConfigActionManager implements BaseManager {
           'config-saved',
         );
       }
+      await this.validateAndPublish(currentConfig as unknown as Record<string, unknown>, 'config-saved');
+      this.configHistory.push(currentConfig as unknown as import('../../../common/types/clang-format-shared').ClangFormatConfig);
       vscode.window.showInformationMessage(
         `Configuration saved to ${vscode.workspace.asRelativePath(fileUri)}.`,
       );
@@ -231,6 +260,12 @@ export class ConfigActionManager implements BaseManager {
   private async handleSaveConfig(): Promise<void> {
     const fileUri = await this.getWorkspaceClangFormatUri();
     if (fileUri) {
+      // 覆盖确认
+      try {
+        await vscode.workspace.fs.stat(fileUri);
+        const confirm = await vscode.window.showWarningMessage('Overwrite existing .clang-format in workspace?', { modal: true }, 'Overwrite', 'Cancel');
+        if (confirm !== 'Overwrite') { return; }
+      } catch { /* file not exists */ }
       await this.writeConfigToFile(fileUri);
     }
   }
@@ -292,6 +327,137 @@ export class ConfigActionManager implements BaseManager {
     }
 
     await vscode.window.showTextDocument(fileUri);
+  }
+
+  // ====== Validation and utilities ======
+  private async validateAndPublish(config: Record<string, unknown>, source: string): Promise<void> {
+    try {
+      const result = await this.formatService.validateConfig(config);
+      if (this.context.eventBus) {
+        emitTyped(this.context.eventBus as unknown as EventBus, 'post-message-to-webview', {
+          type: WebviewMessageType.VALIDATION_RESULT,
+          payload: { isValid: !!result.isValid, errors: result.errors ?? [] },
+        });
+      }
+      const msg = result.isValid ? 'Clang-Format configuration is valid.' : `Configuration has errors: ${result.errors?.[0] ?? 'Unknown error'}`;
+      vscode.window.setStatusBarMessage(`Validate (${source}): ${msg}`, UI_CONSTANTS.NOTIFICATION_DISPLAY_TIME);
+      if (!result.isValid) {
+        vscode.window.showWarningMessage('Clang-Format configuration validation failed. See status bar for details.');
+      }
+    } catch (error) {
+      if (this.context.eventBus) {
+        emitTyped(this.context.eventBus as unknown as EventBus, 'post-message-to-webview', {
+          type: WebviewMessageType.VALIDATION_RESULT,
+          payload: { isValid: false, errors: [error instanceof Error ? error.message : 'Unknown error'] },
+        });
+      }
+      vscode.window.showErrorMessage(`Validation failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  // Exposed operations for command handlers
+  public async validateCurrentConfigCommand(): Promise<void> {
+    const state = getStateOrDefault(this.context.stateManager?.getState());
+    await this.validateAndPublish(state.currentConfig as unknown as Record<string, unknown>, 'manual-validate');
+  }
+
+  public async rollbackToLastSavedCommand(): Promise<void> {
+    const last = this.configHistory.pop();
+    if (!last) {
+      vscode.window.showInformationMessage('No saved configuration snapshot to rollback.');
+      return;
+    }
+    await this.updateConfigState(last, 'rollback-to-last-saved');
+    await this.validateAndPublish(last as unknown as Record<string, unknown>, 'rollback-to-last-saved');
+    vscode.window.showInformationMessage('Rolled back to last saved configuration.');
+  }
+
+  public async applyActiveTextToPreviewCommand(): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showWarningMessage('No active editor. Open .clang-format to apply text.');
+      return;
+    }
+    const base = (editor.document.uri.path.split('/')?.pop() || '').toLowerCase();
+    if (base !== '.clang-format' && base !== '_clang-format') {
+      vscode.window.showWarningMessage('Active document is not a .clang-format file.');
+      return;
+    }
+    try {
+      const content = editor.document.getText();
+      const parsed = this.formatService.parse(content) as unknown as import('../../../common/types/clang-format-shared').ClangFormatConfig;
+      await this.validateAndPublish(parsed as unknown as Record<string, unknown>, 'apply-text-to-preview');
+      // 仅更新预览，不落库
+      if (this.context.eventBus) {
+        emitTyped(this.context.eventBus as unknown as EventBus, 'config-updated-for-preview', { newConfig: parsed });
+      }
+      vscode.window.setStatusBarMessage('Applied current .clang-format text to preview (dry run).', UI_CONSTANTS.NOTIFICATION_DISPLAY_TIME);
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to apply text to preview: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  // ====== M3: Text Mode ======
+  private async handleRequestTextConfig(): Promise<void> {
+    try {
+      if (!this.context.stateManager || !this.context.eventBus) { return; }
+      const state = getStateOrDefault(this.context.stateManager.getState());
+      const currentConfig = (state.currentConfig ?? {}) as unknown as Record<string, unknown>;
+      const content = this.formatService.stringify(currentConfig);
+      emitTyped(this.context.eventBus as unknown as EventBus, 'post-message-to-webview', {
+        type: WebviewMessageType.TEXT_CONFIG_RESPONSE,
+        payload: { content },
+      });
+    } catch (error) {
+      this.logger.error('Failed to stringify current config', error as Error, {
+        module: 'ConfigActionManager',
+        operation: 'handleRequestTextConfig',
+      });
+      if (this.context.eventBus) {
+        emitTyped(this.context.eventBus as unknown as EventBus, 'post-message-to-webview', {
+          type: WebviewMessageType.TEXT_CONFIG_RESPONSE,
+          payload: { content: '# Error: failed to generate YAML from current config' },
+        });
+      }
+    }
+  }
+
+  private async handleApplyTextConfig(content: string): Promise<void> {
+    try {
+      // 1) Parse YAML-like content
+      const parsed = this.formatService.parse(content) as unknown as import('../../../common/types/clang-format-shared').ClangFormatConfig;
+
+      // 2) Validate by attempting a format pass
+      const validation = await this.formatService.validateConfig(parsed as unknown as Record<string, unknown>);
+      if (!validation.isValid) {
+        if (this.context.eventBus) {
+          emitTyped(this.context.eventBus as unknown as EventBus, 'post-message-to-webview', {
+            type: WebviewMessageType.APPLY_TEXT_CONFIG_RESULT,
+            payload: { success: false, errors: validation.errors ?? ['Invalid configuration'] },
+          });
+        }
+        return;
+      }
+
+      // 3) Apply to state (and mark dirty)
+      await this.updateConfigState(parsed, 'text-config-applied');
+      if (this.context.eventBus) {
+        emitTyped(this.context.eventBus as unknown as EventBus, 'post-message-to-webview', {
+          type: WebviewMessageType.APPLY_TEXT_CONFIG_RESULT,
+          payload: { success: true },
+        });
+      }
+    } catch (error) {
+      this.logger.error('Failed to apply text config', error as Error, {
+        module: 'ConfigActionManager',
+        operation: 'handleApplyTextConfig',
+      });
+      if (this.context.eventBus) {
+        emitTyped(this.context.eventBus as unknown as EventBus, 'post-message-to-webview', {
+          type: WebviewMessageType.APPLY_TEXT_CONFIG_RESULT,
+          payload: { success: false, errors: [error instanceof Error ? error.message : 'Unknown error'] },
+        });
+      }
+    }
   }
 
   private async updateConfigState(

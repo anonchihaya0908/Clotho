@@ -128,6 +128,12 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                 case 'export':
                     sendMessage(WebviewMessageType.EXPORT_CONFIG);
                     break;
+                case 'validate':
+                    sendMessage(WebviewMessageType.VALIDATE_REQUEST);
+                    break;
+                case 'dryRun':
+                    sendMessage(WebviewMessageType.APPLY_ACTIVE_TEXT_PREVIEW);
+                    break;
                 case 'import':
                     sendMessage(WebviewMessageType.IMPORT_CONFIG);
                     break;

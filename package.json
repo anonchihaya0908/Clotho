@@ -68,6 +68,21 @@
         "icon": "$(edit)"
       },
       {
+        "command": "clotho.clangFormat.validate",
+        "title": "Clotho: Validate Clang-Format Config",
+        "category": "Clotho"
+      },
+      {
+        "command": "clotho.clangFormat.rollbackLastSaved",
+        "title": "Clotho: Rollback to Last Saved Config",
+        "category": "Clotho"
+      },
+      {
+        "command": "clotho.clangFormat.applyTextToPreview",
+        "title": "Clotho: Apply .clang-format Text to Preview (Dry Run)",
+        "category": "Clotho"
+      },
+      {
         "command": "clotho.debug.dumpSwitchMetrics",
         "title": "%command.debug.dumpSwitchMetrics.title%",
         "category": "Clotho"

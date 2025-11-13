@@ -65,6 +65,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onAction }) => {
             <div className="toolbar-group">
                 <button
                     className="toolbar-button"
+                    onClick={() => onAction('validate')}
+                    title="Validate current configuration"
+                >
+                    Validate
+                </button>
+                <button
+                    className="toolbar-button"
+                    onClick={() => onAction('dryRun')}
+                    title="Apply active .clang-format text to preview (dry run)"
+                >
+                    Dry Run
+                </button>
+            </div>
+
+            <div className="toolbar-group">
+                <button
+                    className="toolbar-button"
                     onClick={() => onAction('previewSourceDemo')}
                     title="Use built-in demo snippet for macro preview"
                 >

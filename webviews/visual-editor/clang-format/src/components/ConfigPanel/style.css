@@ -16,7 +16,7 @@
 /* Full Configuration Styles */
 .full-configuration {
     height: 100%;
-    overflow-y: auto;
+    overflow: hidden; /* 由虚拟列表负责滚动 */
     padding: 16px;
 }
 
@@ -170,9 +170,7 @@
 
 /* Config options list */
 .config-options-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    display: block;
 }
 
 .config-option {
@@ -180,11 +178,17 @@
     border: 1px solid var(--vscode-widget-border);
     border-radius: 8px;
     padding: 16px;
+    margin-bottom: 16px;
     transition: all 0.2s ease;
     outline: none;
     /* 移除默认焦点轮廓 */
     cursor: pointer;
     /* 添加指针光标 */
+}
+
+.empty-state {
+    padding: 24px;
+    color: var(--vscode-descriptionForeground);
 }
 
 .config-option:hover {

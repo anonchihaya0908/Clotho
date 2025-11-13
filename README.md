@@ -14,6 +14,8 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 - **Import/Export**: Load existing configurations or save custom presets
 - **Workspace Integration**: Seamlessly manage `.clang-format` files in your projects
 - **Live Validation**: Instant feedback on configuration validity
+ - **Sticky Toolbar + Virtualized List (M4)**: Toolbar stays visible; large option sets remain smooth with a lightweight virtual list
+ - Optional GIF: see `docs/m4-toolbar-virtualization.gif` for a quick glance (add your own recording)
 
 ### 🎯 Smart File Pair Creation
 - **Intelligent Language Detection**: Automatically detects C vs C++ context from your current workspace
@@ -69,6 +71,13 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 - **Import/Export**: Use "📥 Import" and "📤 Export" for configuration files
 - **Reset**: Click "🔄 Reset" to restore default settings
 - **Validate**: Click "✓ Validate" to check configuration syntax
+
+#### Save, Validate, and Rollback
+- Explicit Save: Toolbar Save writes to `.clang-format`. If the file already exists, you’ll be asked to confirm overwrite.
+- Native Editor Save: Editing `.clang-format` in a VS Code tab and saving also applies the configuration with validation and refreshes the preview.
+- Validate: Run "Clotho: Validate Clang-Format Config" from the Command Palette to validate the current configuration; results appear in the webview and status bar.
+- Rollback: Run "Clotho: Rollback to Last Saved Config" to revert to the last saved snapshot (bounded history).
+- Dry Run: Run "Clotho: Apply .clang-format Text to Preview (Dry Run)" to parse the active `.clang-format` and update the preview without writing to disk.
 
 #### Security (CSP) Note
 - The webview uses a strict Content Security Policy by default.

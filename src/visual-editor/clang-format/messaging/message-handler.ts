@@ -57,6 +57,27 @@ export class MessageHandler implements BaseManager {
 
     try {
       switch (message.type) {
+        case WebviewMessageType.REQUEST_TEXT_CONFIG: {
+          this.context.eventBus?.emit('request-text-config');
+          break;
+        }
+        case WebviewMessageType.APPLY_TEXT_CONFIG: {
+          const p = message.payload as { content?: unknown };
+          if (!p || typeof p !== 'object' || typeof (p as { content?: unknown }).content !== 'string') {
+            this.logger.warn('APPLY_TEXT_CONFIG payload malformed', { payload: message.payload });
+          } else {
+            this.context.eventBus?.emit('apply-text-config-requested', { content: (p as { content: string }).content });
+          }
+          break;
+        }
+        case WebviewMessageType.VALIDATE_REQUEST: {
+          this.context.eventBus?.emit('validate-current-config-requested');
+          break;
+        }
+        case WebviewMessageType.APPLY_ACTIVE_TEXT_PREVIEW: {
+          this.context.eventBus?.emit('apply-active-text-preview-requested');
+          break;
+        }
         case WebviewMessageType.WEBVIEW_READY: {
           this.logger.info('Webview is ready, triggering editor initialization sequence', {
             module: 'MessageHandler',

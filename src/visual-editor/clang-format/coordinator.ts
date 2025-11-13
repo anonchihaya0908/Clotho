@@ -113,6 +113,41 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
     });
   }
 
+  // Expose helper commands through coordinator for bootstrap
+  public async validateCurrentConfig(): Promise<void> {
+    await this.ensureInitialized();
+    const mgr = await this.managerRegistry.getOrCreateInstance<ConfigActionManager>('configActionManager');
+    if (!mgr) {
+      this.logger.warn('ConfigActionManager not available', { module: 'ClangFormatEditorCoordinator', operation: 'validateCurrentConfig' });
+      return;
+    }
+    await mgr.validateCurrentConfigCommand();
+  }
+
+  public async rollbackLastSaved(): Promise<void> {
+    await this.ensureInitialized();
+    const mgr = await this.managerRegistry.getOrCreateInstance<ConfigActionManager>('configActionManager');
+    if (!mgr) {
+      this.logger.warn('ConfigActionManager not available', { module: 'ClangFormatEditorCoordinator', operation: 'rollbackLastSaved' });
+      return;
+    }
+    await mgr.rollbackToLastSavedCommand();
+  }
+
+  public async applyActiveTextToPreview(): Promise<void> {
+    await this.ensureInitialized();
+    const mgr = await this.managerRegistry.getOrCreateInstance<ConfigActionManager>('configActionManager');
+    if (!mgr) {
+      this.logger.warn('ConfigActionManager not available', { module: 'ClangFormatEditorCoordinator', operation: 'applyActiveTextToPreview' });
+      return;
+    }
+    await mgr.applyActiveTextToPreviewCommand();
+  }
+
+  private async ensureInitialized(): Promise<void> {
+    if (!this.isInitialized) { await this.initializeOnce(); }
+  }
+
   /**
    * 确保只初始化一次的私有方法
    */
@@ -273,6 +308,14 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
           operation: 'config-updated-for-preview',
         });
       });
+    });
+
+    // M4: Validate and Dry Run requests from webview toolbar
+    this.eventBus.on('validate-current-config-requested', async () => {
+      await this.validateCurrentConfig();
+    });
+    this.eventBus.on('apply-active-text-preview-requested', async () => {
+      await this.applyActiveTextToPreview();
     });
 
     // Handle micro preview requests

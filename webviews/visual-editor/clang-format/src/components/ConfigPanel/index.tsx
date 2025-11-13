@@ -8,6 +8,7 @@ import { QuickSetup } from '../QuickSetup';
 import { SearchConfig } from '../SearchConfig';
 import DynamicMicroPreview from '../DynamicMicroPreview';
 import { ClangFormatOption, ConfigPanelProps } from '../../types';
+import { VirtualList, VirtualListHandle } from '../VirtualList';
 import './style.css';
 import { getAffectedAreaLabel } from '../../utils/affected-area';
 
@@ -172,7 +173,16 @@ const ConfigPanelComponent: React.FC<ConfigPanelProps> = ({
         }
     };
 
-    // 渲染完整配置界面
+    // 计算虚拟列表高度（根据视口），避免双滚动条
+    const listHeight = React.useMemo(() => {
+        const base = typeof window !== 'undefined' ? window.innerHeight : 800;
+        // 估算顶部工具/标题等占用后可用高度
+        return Math.max(240, base - 260);
+    }, []);
+
+    const listRef = React.useRef<VirtualListHandle | null>(null);
+
+    // 渲染完整配置界面（使用虚拟列表）
     const renderFullConfiguration = () => (
         <div className="full-configuration">
             <div className="full-config-header">
@@ -200,8 +210,20 @@ const ConfigPanelComponent: React.FC<ConfigPanelProps> = ({
                 </div>
             </div>
 
-            <div className="config-options-list">
-                {filteredOptions.map(renderConfigOption)}
+            {/* 将完整配置渲染路径直接复用搜索页面的稳定卡片布局与样式 */}
+            <div className="config-options-list" aria-label="Clang-Format Options">
+                {filteredOptions.length === 0 ? (
+                    <div className="empty-state" aria-live="polite">没有匹配的配置项</div>
+                ) : (
+                    <div style={{ maxHeight: listHeight, overflowY: 'auto' }}>
+                        <SearchConfig
+                            options={filteredOptions as unknown as any}
+                            searchQuery={''}
+                            config={currentConfig as unknown as Record<string, any>}
+                            onChange={(key, value) => onConfigChange(key, value)}
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );
