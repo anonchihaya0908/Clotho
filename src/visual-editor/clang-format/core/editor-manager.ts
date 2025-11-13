@@ -296,7 +296,7 @@ export class ClangFormatEditorManager implements BaseManager {
 
     const nonce = getNonce();
     const cfg = vscode.workspace.getConfiguration('clotho');
-    const allowUnsafeEval = cfg.get<boolean>('webview.allowUnsafeEval', true);
+    const allowUnsafeEval = cfg.get<boolean>('webview.allowUnsafeEval', false);
 
     // 2. 【核心】构建一个更完善的、允许动态加载的内容安全策略
     return `<!DOCTYPE html>

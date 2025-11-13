@@ -82,6 +82,11 @@ const ConfigPanelComponent: React.FC<ConfigPanelProps> = ({
                 <div className="option-description">
                     {option.description}
                     <span className="affected-area-badge">影响区域：{getAffectedAreaLabel(option.key)}</span>
+                    {dynamicPreviewResult?.optionName === option.key && dynamicPreviewResult?.matchType && (
+                        <span className={`match-type-badge match-${dynamicPreviewResult.matchType}`}>
+                            命中：{dynamicPreviewResult.matchType === 'anchor' ? 'Anchor' : dynamicPreviewResult.matchType === 'heuristic' ? 'Heuristic' : 'Fallback'}
+                        </span>
+                    )}
                 </div>
 
                 {/* 预览始终显示 */}

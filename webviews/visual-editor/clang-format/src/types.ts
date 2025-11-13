@@ -52,6 +52,7 @@ export interface AppState {
     formattedCode: string;
     success: boolean;
     error?: string;
+    matchType?: MatchType;
   };
   isConfigReset: boolean; // 标识配置是否刚被重置
 }
@@ -82,6 +83,7 @@ export interface ConfigPanelProps {
     formattedCode: string;
     success: boolean;
     error?: string;
+    matchType?: MatchType;
   };
   currentConfig: Record<string, any>;
   onConfigOptionHover?: (optionName: string) => void;
@@ -115,6 +117,7 @@ export interface MainConfigInterfaceProps {
     formattedCode: string;
     success: boolean;
     error?: string;
+    matchType?: MatchType;
   };
   showGuide?: boolean;
   selectedCategory?: string;
@@ -130,6 +133,7 @@ export interface QuickSetupPanelProps {
     formattedCode: string;
     success: boolean;
     error?: string;
+    matchType?: MatchType;
   };
   showGuide?: boolean;
 }
@@ -144,3 +148,4 @@ export interface DataService {
 
 // 重新导入类型以便使用
 import type { ClangFormatOption } from '../../../../src/common/types/clang-format-shared';
+import type { MatchType } from '../../../../src/common/types/clang-format-shared';

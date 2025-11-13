@@ -150,8 +150,8 @@
       "properties": {
         "clotho.webview.allowUnsafeEval": {
           "type": "boolean",
-          "default": true,
-          "description": "Allow 'unsafe-eval' in webview CSP (set false to harden CSP; may break some libraries)."
+          "default": false,
+          "description": "Allow 'unsafe-eval' in webview CSP. Default is false for security; enable only if required by specific libraries."
         },
         "clotho.switch.indexMaxFiles": {
           "type": "number",

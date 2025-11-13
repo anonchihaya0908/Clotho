@@ -460,39 +460,77 @@ ${configEntries || '//   (using base style defaults)'}
   private computeHeuristicRange(text: string, optionKey: string): { startLine: number; endLine: number } | null {
     const lines = text.split(/\r?\n/);
     const findFirst = (re: RegExp) => {
-      for (let i = 0; i < lines.length; i++) if (re.test(String(lines[i]))) return i; return -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (re.test(String(lines[i]))) {
+          return i;
+        }
+      }
+      return -1;
     };
 
     const key = optionKey;
     // 类与结构体相关：class/struct 位置
-    if (key.includes('Brace') || key === 'BreakBeforeBraces' || key === 'AlignConsecutiveDeclarations' || key === 'AccessModifierOffset' || key === 'UseTab' || key === 'IndentWidth') {
+    if (
+      key.includes('Brace') ||
+      key === 'BreakBeforeBraces' ||
+      key === 'AlignConsecutiveDeclarations' ||
+      key === 'AccessModifierOffset' ||
+      key === 'UseTab' ||
+      key === 'IndentWidth'
+    ) {
       const i = findFirst(/^\s*(class|struct)\s+/);
-      if (i >= 0) return { startLine: Math.max(0, i - 1), endLine: Math.min(lines.length - 1, i + 5) };
+      if (i >= 0) {
+        return { startLine: Math.max(0, i - 1), endLine: Math.min(lines.length - 1, i + 5) };
+      }
     }
-    // 函数声明：返回类型 + 名称 + (...) ;
+    // 函数声明：返回类型 + 名称 + (...)
     if (key === 'BreakAfterReturnType' || key === 'BinPackParameters' || key.includes('ReturnType')) {
       const i = findFirst(/^\s*[\w:<>\*&\s]+\s+[A-Za-z_][\w:]*\s*\(.*\)\s*;?\s*$/);
-      if (i >= 0) return { startLine: i, endLine: Math.min(lines.length - 1, i + 2) };
+      if (i >= 0) {
+        return { startLine: i, endLine: Math.min(lines.length - 1, i + 2) };
+      }
     }
     // 函数调用：存在逗号的调用行
-    if (key === 'BinPackArguments' || key === 'AlignAfterOpenBracket' || key === 'SpacesInParentheses' || key === 'ColumnLimit') {
+    if (
+      key === 'BinPackArguments' ||
+      key === 'AlignAfterOpenBracket' ||
+      key === 'SpacesInParentheses' ||
+      key === 'ColumnLimit'
+    ) {
       const i = findFirst(/\w+\s*\(.*,.+\)/);
-      if (i >= 0) return { startLine: Math.max(0, i - 1), endLine: Math.min(lines.length - 1, i + 1) };
+      if (i >= 0) {
+        return { startLine: Math.max(0, i - 1), endLine: Math.min(lines.length - 1, i + 1) };
+      }
     }
     // 指针/运算符：包含 * 或复杂二元运算
-    if (key === 'PointerAlignment' || key === 'BreakBeforeBinaryOperators' || key === 'SpaceBeforeAssignmentOperators') {
+    if (
+      key === 'PointerAlignment' ||
+      key === 'BreakBeforeBinaryOperators' ||
+      key === 'SpaceBeforeAssignmentOperators'
+    ) {
       const i = findFirst(/\*\s*\w|\w\s*=[^=]|\w\s*[+\-*]\s*\w/);
-      if (i >= 0) return { startLine: i, endLine: Math.min(lines.length - 1, i + 1) };
+      if (i >= 0) {
+        return { startLine: i, endLine: Math.min(lines.length - 1, i + 1) };
+      }
     }
     // 控制流：if/for/while/switch
-    if (key === 'AllowShortIfStatementsOnASingleLine' || key === 'IndentCaseBlocks' || key === 'IndentCaseLabels' || key === 'SpaceBeforeParens') {
+    if (
+      key === 'AllowShortIfStatementsOnASingleLine' ||
+      key === 'IndentCaseBlocks' ||
+      key === 'IndentCaseLabels' ||
+      key === 'SpaceBeforeParens'
+    ) {
       const i = findFirst(/^(\s*)(if|for|while|switch)\b/);
-      if (i >= 0) return { startLine: i, endLine: Math.min(lines.length - 1, i + 3) };
+      if (i >= 0) {
+        return { startLine: i, endLine: Math.min(lines.length - 1, i + 3) };
+      }
     }
     // Include：#include 开头
     if (key.startsWith('Include') || key === 'SortIncludes' || key === 'IncludeBlocks') {
       const i = findFirst(/^\s*#\s*include\b/);
-      if (i >= 0) return { startLine: i, endLine: Math.min(lines.length - 1, i + 6) };
+      if (i >= 0) {
+        return { startLine: i, endLine: Math.min(lines.length - 1, i + 6) };
+      }
     }
     return null;
   }
@@ -531,14 +569,22 @@ ${configEntries || '//   (using base style defaults)'}
           const line = lines[j] ?? '';
           // 简易括号计数（忽略字符串/注释，仅近似）
           for (const ch of line) {
-            if (ch === '{') depth++;
-            else if (ch === '}') {
+            if (ch === '{') {
+              depth++;
+            } else if (ch === '}') {
               depth--;
-              if (depth === 0) { closeIdx = j; break; }
+              if (depth === 0) {
+                closeIdx = j;
+                break;
+              }
             }
           }
-          if (closeIdx >= 0) break;
-          if (j - openIdx > maxSpan) break; // 安全上限
+          if (closeIdx >= 0) {
+            break;
+          }
+          if (j - openIdx > maxSpan) {
+            break; // 安全上限
+          }
         }
         if (closeIdx >= 0) {
           startIdx = Math.min(startIdx, openIdx);
@@ -630,10 +676,13 @@ ${configEntries || '//   (using base style defaults)'}
             const active = vscode.window.activeTextEditor;
             if (active && active.document && !active.document.isClosed) { baseContent = active.document.getText(); }
           }
+          const effectiveRange = this.lastHighlightRange
+            ? this.expandRangeToBoundaries(this.lastHighlightRange, baseContent)
+            : undefined;
           const formatResult = await this.formatService.format(
             baseContent,
             currentConfig as unknown as Record<string, unknown>,
-            this.lastHighlightRange ?? undefined,
+            effectiveRange,
           );
           const header = this.generateConfigComment(currentConfig as unknown as Record<string, unknown>);
           const updatedContent = `${header}\n\n${formatResult.success ? formatResult.formattedCode : baseContent}`;

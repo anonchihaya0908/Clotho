@@ -70,6 +70,11 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 - **Reset**: Click "🔄 Reset" to restore default settings
 - **Validate**: Click "✓ Validate" to check configuration syntax
 
+#### Security (CSP) Note
+- The webview uses a strict Content Security Policy by default.
+- Setting `clotho.webview.allowUnsafeEval` now defaults to `false` (more secure).
+- Only set it to `true` if a specific library requires `'unsafe-eval'`. Change via VS Code Settings → Extensions → Clotho.
+
 ### Creating New File Pairs
 
 #### Method 1: Command Palette

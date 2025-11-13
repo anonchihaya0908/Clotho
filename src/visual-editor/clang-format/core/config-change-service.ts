@@ -5,6 +5,7 @@
 
 import { ErrorRecoveryManager } from '../error/error-recovery-manager';
 import { EventBus } from '../messaging/event-bus';
+import { emitTyped } from '../messaging/typed-event-bus';
 import { EditorStateManager } from '../state/editor-state-manager';
 import { ConfigValue, ClangFormatConfig } from '../../../common/types/clang-format-shared';
 
@@ -82,22 +83,22 @@ export class ConfigChangeService {
         'config-changed'
       );
 
-      // 2. Emit events for components to react
-      this.eventBus.emit('config-changed', {
+      // 2a. Emit raw detailed event for backward compatibility / diagnostics
+      const detailedPayload = {
         key,
         value,
         oldConfig,
         newConfig,
         timestamp: Date.now(),
-      });
+      } as const;
+      this.eventBus.emit('config-changed', detailedPayload);
 
-      // 3. Trigger preview update if needed
+      // 2a'. Emit typed event for consumers migrating to typed bus
+      emitTyped(this.eventBus, 'config-changed', detailedPayload);
+
+      // 2b. Emit typed minimal event for preview update
       if (this.shouldUpdatePreview(key)) {
-        this.eventBus.emit('config-updated-for-preview', {
-          newConfig,
-          reason: 'config-change',
-          key,
-        });
+        emitTyped(this.eventBus, 'config-updated-for-preview', { newConfig });
       }
 
       return {

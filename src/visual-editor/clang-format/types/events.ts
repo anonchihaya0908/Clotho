@@ -17,6 +17,7 @@ export interface VisualEditorEventMap extends Record<string, readonly unknown[]>
   'ensure-config-manager-ready': [];
   // Config change always carries explicit key/value
   'config-change-requested': [{ key: string; value: ConfigValue }];
+  'config-changed': [{ key: string; value: ConfigValue; oldConfig: ClangFormatConfig; newConfig: ClangFormatConfig; timestamp: number }];
   'config-updated-for-preview': [{ newConfig: ClangFormatConfig }];
   'webview-message-received': [WebviewMessage];
   'micro-preview-requested': [{ optionName: string; config: ClangFormatConfig; previewSnippet: string }];

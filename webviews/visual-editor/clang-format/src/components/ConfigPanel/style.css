@@ -526,3 +526,17 @@
     color: var(--vscode-foreground);
     font-size: 12px;
 }
+
+/* Match type badge */
+.match-type-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 0 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    border: 1px solid var(--vscode-widget-border);
+    opacity: 0.85;
+}
+.match-anchor { background: rgba(0, 128, 255, 0.15); color: var(--vscode-foreground); }
+.match-heuristic { background: rgba(255, 165, 0, 0.15); color: var(--vscode-foreground); }
+.match-fallback { background: rgba(127, 127, 127, 0.15); color: var(--vscode-foreground); }

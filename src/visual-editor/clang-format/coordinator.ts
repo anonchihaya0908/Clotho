@@ -11,6 +11,8 @@ import { PlaceholderWebviewManager } from './core/placeholder-manager';
 import { PreviewEditorManager } from './core/preview-manager';
 import { ErrorRecoveryManager } from './error/error-recovery-manager';
 import { ClangFormatService } from './format-service';
+import { getOptionSnippet } from './data/snippets-metadata';
+import type { MatchType } from '../../common/types/clang-format-shared';
 import { EventBus } from './messaging/event-bus';
 import { GenericEventBus } from './messaging/typed-event-bus';
 import type { VisualEditorEventMap } from './types/events';
@@ -279,10 +281,17 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
         try {
           const formatService = ClangFormatService.getInstance();
           const formatResult = await formatService.format(previewSnippet, config);
+          // 预估 matchType：如该选项存在锚点，则为 anchor，否则标记为 heuristic（保守策略）
+          let matchType: MatchType | undefined;
+          const sn = getOptionSnippet(optionName);
+          if (sn && Array.isArray(sn.anchors) && sn.anchors.length > 0) { matchType = 'anchor'; }
+          else { matchType = 'heuristic'; }
+
           const basePayload: WebviewPayloadMap[WebviewMessageType.UPDATE_MICRO_PREVIEW] = {
             optionName,
             formattedCode: formatResult.formattedCode,
             success: formatResult.success,
+            matchType,
           };
           if (typeof formatResult.error === 'string') { basePayload.error = formatResult.error; }
           this.eventBus.emit('post-message-to-webview', { type: WebviewMessageType.UPDATE_MICRO_PREVIEW, payload: basePayload });

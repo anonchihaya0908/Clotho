@@ -96,12 +96,13 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
     // 处理配置项hover事件
     const handleConfigOptionHover = useCallback((optionName: string) => {
-        sendMessage(WebviewMessageType.CONFIG_OPTION_HOVER, { optionName });
+        // 与 Host 侧契约保持一致：使用 key 字段
+        sendMessage(WebviewMessageType.CONFIG_OPTION_HOVER, { key: optionName });
     }, [sendMessage]);
 
     // 处理配置项focus事件
     const handleConfigOptionFocus = useCallback((optionName: string) => {
-        sendMessage(WebviewMessageType.CONFIG_OPTION_FOCUS, { optionName });
+        sendMessage(WebviewMessageType.CONFIG_OPTION_FOCUS, { key: optionName });
     }, [sendMessage]);
 
     // 处理清除高亮
@@ -175,6 +176,10 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
             }
 
             const message = event.data;
+            if (!message || typeof message !== 'object' || typeof message.type !== 'string') {
+                webviewLog.warn('Malformed message from host, ignoring', { message });
+                return;
+            }
             webviewLog.debug('Received message from VS Code', {
                 messageType: message.type,
                 message
@@ -202,19 +207,31 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                         break;
 
                     case WebviewMessageType.MICRO_PREVIEW_UPDATE:
+                        // 轻量校验
+                        if (!message?.payload || typeof message.payload.optionName !== 'string') {
+                            webviewLog.warn('MICRO_PREVIEW_UPDATE payload malformed', { payload: message?.payload });
+                            break;
+                        }
                         setState((prev: WebviewAppState) => ({
                             ...prev,
                             microPreviews: {
                                 ...prev.microPreviews,
-                                [message.payload.key]: message.payload.formattedCode
+                                [message.payload.optionName]: message.payload.formattedCode
                             }
                         }));
                         break;
 
                     case WebviewMessageType.VALIDATION_RESULT:
+                        if (!message?.payload || typeof message.payload.isValid !== 'boolean') {
+                            webviewLog.warn('VALIDATION_RESULT payload malformed', { payload: message?.payload });
+                            break;
+                        }
                         setState((prev: WebviewAppState) => ({
                             ...prev,
-                            validationState: message.payload
+                            validationState: {
+                                isValid: !!message.payload.isValid,
+                                errors: Array.isArray(message.payload.errors) ? message.payload.errors : []
+                            }
                         }));
                         break;
 
@@ -229,6 +246,10 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                         break;
 
                     case WebviewMessageType.SETTINGS_UPDATED:
+                        if (!message?.payload || typeof message.payload !== 'object') {
+                            webviewLog.warn('SETTINGS_UPDATED payload malformed', { payload: message?.payload });
+                            break;
+                        }
                         setState((prev: WebviewAppState) => ({
                             ...prev,
                             settings: {
@@ -245,7 +266,8 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                                 optionName: message.payload.optionName,
                                 formattedCode: message.payload.formattedCode,
                                 success: message.payload.success,
-                                error: message.payload.error
+                                error: message.payload.error,
+                                matchType: message.payload.matchType
                             }
                         }));
                         break;
