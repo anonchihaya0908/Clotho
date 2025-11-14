@@ -2,7 +2,7 @@
   "name": "clotho",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "publisher": "Togawa-Sakiko",
   "private": true,
   "l10n": "./l10n",
@@ -349,7 +349,10 @@
         },
         "clotho.visualEditor.macroSource": {
           "type": "string",
-          "enum": ["demoSnippet", "activeFile"],
+          "enum": [
+            "demoSnippet",
+            "activeFile"
+          ],
           "default": "demoSnippet",
           "description": "Macro preview source selection for Clang-Format Visual Editor"
         },
@@ -450,4 +453,3 @@
     "tslog": "^4.9.3"
   }
 }
-
