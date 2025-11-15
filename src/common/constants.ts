@@ -51,6 +51,8 @@ export const COMMANDS = {
   CONFIGURE_HEADER_GUARD: 'clotho.configureHeaderGuard',
 
   OPEN_CLANG_FORMAT_EDITOR: 'clotho.openClangFormatEditor',
+
+  QT_NEW_PROJECT: 'clotho.qt.newProject',
 } as const;
 
 // ===============================

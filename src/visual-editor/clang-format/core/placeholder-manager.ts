@@ -11,7 +11,7 @@ import {
 import { WebviewMessage, WebviewMessageType } from '../../../common/types/clang-format-shared';
 import { getNonce } from '../../../common/utils';
 import { EventBus } from '../messaging/event-bus';
-import { onTyped, emitTyped } from '../messaging/typed-event-bus';
+import { onTyped } from '../messaging/typed-event-bus';
 
 /**
  * 占位符 Webview 管理器

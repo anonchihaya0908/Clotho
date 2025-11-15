@@ -339,6 +339,15 @@ function registerCommands(context: vscode.ExtensionContext): void {
     }
   );
 
+  // Qt project template wizard
+  const newQtProjectCommand = register(
+    COMMANDS.QT_NEW_PROJECT,
+    async () => {
+      const { runQtProjectWizard } = await import('./qt/qt-project-wizard');
+      await runQtProjectWizard();
+    }
+  );
+
   // Developer/Debug commands
   const dumpSwitchMetricsCommand = register(
     'clotho.debug.dumpSwitchMetrics',
@@ -402,6 +411,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
     validateClangFormatConfigCommand,
     rollbackClangFormatConfigCommand,
     applyTextToPreviewCommand,
+    newQtProjectCommand,
     dumpSwitchMetricsCommand,
     clearAllCachesCommand,
     dumpSwitchReportCommand,

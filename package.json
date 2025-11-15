@@ -2,7 +2,7 @@
   "name": "clotho",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "publisher": "Togawa-Sakiko",
   "private": true,
   "l10n": "./l10n",
@@ -13,7 +13,8 @@
     "vscode": "^1.99.3"
   },
   "extensionDependencies": [
-    "llvm-vs-code-extensions.vscode-clangd"
+    "llvm-vs-code-extensions.vscode-clangd",
+    "ms-vscode.cmake-tools"
   ],
   "categories": [
     "Other",
@@ -68,18 +69,23 @@
         "icon": "$(edit)"
       },
       {
+        "command": "clotho.qt.newProject",
+        "title": "%command.qt.newProject.title%",
+        "category": "Clotho"
+      },
+      {
         "command": "clotho.clangFormat.validate",
-        "title": "Clotho: Validate Clang-Format Config",
+        "title": "%command.clangFormat.validate.title%",
         "category": "Clotho"
       },
       {
         "command": "clotho.clangFormat.rollbackLastSaved",
-        "title": "Clotho: Rollback to Last Saved Config",
+        "title": "%command.clangFormat.rollbackLastSaved.title%",
         "category": "Clotho"
       },
       {
         "command": "clotho.clangFormat.applyTextToPreview",
-        "title": "Clotho: Apply .clang-format Text to Preview (Dry Run)",
+        "title": "%command.clangFormat.applyTextToPreview.title%",
         "category": "Clotho"
       },
       {
@@ -94,12 +100,12 @@
       },
       {
         "command": "clotho.debug.clearAllCaches",
-        "title": "Clotho: Clear All Caches",
+        "title": "%command.debug.clearAllCaches.title%",
         "category": "Clotho"
       },
       {
         "command": "clotho.debug.dumpSwitchReport",
-        "title": "Clotho: Dump Switch Performance Report",
+        "title": "%command.debug.dumpSwitchReport.title%",
         "category": "Clotho"
       }
     ],
@@ -139,6 +145,9 @@
         },
         {
           "command": "clotho.openClangFormatEditor"
+        },
+        {
+          "command": "clotho.qt.newProject"
         },
         {
           "command": "clotho.debug.dumpSwitchMetrics"
@@ -369,6 +378,22 @@
           "items": {
             "type": "string"
           }
+        },
+        "clotho.qt.prefixPaths": {
+          "type": "object",
+          "default": {},
+          "description": "Cached Qt CMake prefix paths per major version (keys: '5' or '6')."
+        },
+        "clotho.qt.defaultCppStandard": {
+          "type": "string",
+          "enum": [
+            "17",
+            "20",
+            "23",
+            "26"
+          ],
+          "default": "20",
+          "description": "Default C++ standard suggestion when creating new Qt projects."
         }
       }
     }
