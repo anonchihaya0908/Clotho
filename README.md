@@ -40,6 +40,12 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 - **Cross-platform Support**: Works on Windows, macOS, and Linux
 - **Minimal Resource Usage**: Simplified monitoring with low overhead
 
+### 🧩 Qt CMake Project Wizard
+- **Command Palette**: Run `Clotho: New Qt CMake Project` to scaffold a minimal Qt + CMake project (Widgets or Console).
+- **Guided Choices**: Choose project type, C++ standard (17/20/23/26), Qt major version (5/6), and Qt CMake prefix path with auto-detected recommendations.
+- **Ready-to-Build CMake**: Generates `CMakeLists.txt` and `main.cpp` consistent with your choices, including Windows-only DLL copy helpers and optional `windeployqt` auto-deploy.
+- **CMake Tools Integration**: After project creation, Clotho triggers a `cmake.configure` so the `build` directory is ready without reloading the window.
+
 ## 📦 Installation
 
 1. Open Visual Studio Code
@@ -114,6 +120,19 @@ Clotho is a powerful Visual Studio Code extension that simplifies C/C++ developm
 #### Developer Tools
 - "Clotho: Dump Switch Performance Metrics" — prints a performance report to the Clotho output channel
 - "Clotho: Run Strategy Self-Tests" — runs internal tests for matcher/strategies and logs a pass/fail summary
+
+### 🧩 Using the Qt CMake Project Wizard
+
+1. Open Command Palette (`Ctrl+Shift+P`).
+2. Run `Clotho: New Qt CMake Project`.
+3. Follow the prompts to choose:
+   - Project name and target folder (can use the current workspace root or a subfolder).
+   - Qt project type (Widgets or Console).
+   - C++ standard (17/20/23/26).
+   - Qt major version (5 or 6).
+   - Qt CMake prefix path (picked from settings, environment, or auto-scanned candidates, with manual override).
+4. A read-only preview of the generated `CMakeLists.txt` is opened; confirm to create the project files.
+5. If the official **CMake Tools** extension is installed, Clotho triggers `cmake.configure` so the `build` directory and configuration are set up automatically.
 
 ### Configuration
 

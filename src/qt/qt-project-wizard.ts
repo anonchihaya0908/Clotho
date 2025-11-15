@@ -59,6 +59,11 @@ export async function runQtProjectWizard(): Promise<void> {
     qtPrefixPath,
   };
 
+  const confirmed = await showCMakePreviewAndConfirm(state);
+  if (!confirmed) {
+    return;
+  }
+
   await createQtProject(state, logger);
 }
 
@@ -370,6 +375,26 @@ async function createQtProject(state: QtWizardState, logger: ReturnType<typeof c
     });
     void vscode.window.showErrorMessage(`创建 Qt 项目失败: ${error instanceof Error ? error.message : String(error)}`);
   }
+}
+
+async function showCMakePreviewAndConfirm(state: QtWizardState): Promise<boolean> {
+  const cmakeContent = buildCMakeLists(state);
+
+  // 在内存中打开一个只读的预览文档（不会写入磁盘）
+  const doc = await vscode.workspace.openTextDocument({
+    language: 'cmake',
+    content: cmakeContent,
+  });
+  await vscode.window.showTextDocument(doc, { preview: true });
+
+  const selection = await vscode.window.showInformationMessage(
+    '已生成 CMakeLists.txt 预览，是否创建 Qt 项目？',
+    { modal: true },
+    '创建项目',
+    '取消',
+  );
+
+  return selection === '创建项目';
 }
 
 function buildCMakeLists(state: QtWizardState): string {
