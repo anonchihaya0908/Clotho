@@ -351,6 +351,18 @@ async function createQtProject(state: QtWizardState, logger: ReturnType<typeof c
     const cmakeUri = vscode.Uri.file(path.join(state.targetDir, 'CMakeLists.txt'));
     const doc = await vscode.workspace.openTextDocument(cmakeUri);
     await vscode.window.showTextDocument(doc);
+
+    // Best-effort: 触发一次 CMake Tools 的配置，让用户无需手动重新加载窗口
+    try {
+      const cmakeExt = vscode.extensions.getExtension('ms-vscode.cmake-tools');
+      if (cmakeExt) {
+        await vscode.commands.executeCommand('cmake.configure');
+      }
+    } catch (cmakeError) {
+      logger.warn('Failed to trigger CMake Tools configure after project creation', {
+        metadata: { error: String(cmakeError) },
+      });
+    }
   } catch (error) {
     logger.error('Failed to create Qt project', error instanceof Error ? error : new Error(String(error)), {
       module: 'QtProjectWizard',
