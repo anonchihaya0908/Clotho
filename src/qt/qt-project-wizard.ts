@@ -389,10 +389,20 @@ async function showCMakePreviewAndConfirm(state: QtWizardState): Promise<boolean
 
   const selection = await vscode.window.showInformationMessage(
     '已生成 CMakeLists.txt 预览，是否创建 Qt 项目？',
-    { modal: true },
     '创建项目',
     '取消',
   );
+
+  // 尝试以“还原并关闭”的方式关闭预览文档，避免出现“是否保存更改”的提示
+  try {
+    const editor = vscode.window.visibleTextEditors.find((e) => e.document === doc);
+    if (editor) {
+      await vscode.window.showTextDocument(editor.document, editor.viewColumn);
+      await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+    }
+  } catch {
+    // 如果关闭失败，忽略即可（只是一个临时预览）
+  }
 
   return selection === '创建项目';
 }
