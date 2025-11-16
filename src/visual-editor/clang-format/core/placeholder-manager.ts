@@ -358,183 +358,238 @@ export class PlaceholderWebviewManager implements BaseManager {
                     }
                 }
 
-                .placeholder-icon {
-                    width: 256px; /* 用户指定尺寸 */
-                    height: 256px; /* 用户指定尺寸 */
-                    margin: 0 auto 30px auto;
-                    border-radius: 16px; /* 圆角正方形 */
+                .placeholder-title {
+                    font-size: 18px;
+                    font-weight: 600;
+                    margin-bottom: 12px;
+                }
+
+                .placeholder-subtitle {
+                    font-size: 13px;
+                    color: var(--vscode-descriptionForeground);
+                    margin-bottom: 16px;
+                }
+
+                .character-card {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    background-color: rgba(255, 255, 255, ${dark ? '0.02' : '0.9'});
+                    border-radius: 12px;
+                    padding: 16px;
+                    box-shadow: 0 8px 24px rgba(0, 0, 0, ${dark ? '0.35' : '0.18'});
+                    border: 1px solid rgba(255, 255, 255, ${dark ? '0.04' : '0.8'});
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    margin-bottom: 16px;
+                    position: relative;
                     overflow: hidden;
                 }
 
-                .placeholder-icon img {
+                .character-image-wrapper {
+                    width: 240px;
+                    height: 135px;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    margin-bottom: 12px;
+                    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+                    position: relative;
+                    background: radial-gradient(circle at top, rgba(255,255,255,0.2), transparent 60%), 
+                                radial-gradient(circle at bottom, rgba(0,0,0,0.25), transparent 60%);
+                }
+
+                .character-image {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
-                    display: block;
+                    transform: scale(1.02);
+                    transition: transform 0.3s ease-out, filter 0.3s ease-out;
                 }
 
-                .placeholder-title {
-                    font-size: 22px;
-                    font-weight: 600;
-                    margin-bottom: 15px;
-                    color: var(--vscode-foreground);
+                .character-card:hover .character-image {
+                    transform: scale(1.06);
+                    filter: brightness(1.02) contrast(1.03);
                 }
 
-                .placeholder-description {
-                    font-size: 14px;
+                .character-caption {
+                    font-size: 13px;
                     color: var(--vscode-descriptionForeground);
-                    margin-bottom: 30px;
-                    line-height: 1.6;
-                    max-width: 380px;
-                    margin-left: auto;
-                    margin-right: auto;
+                    margin-bottom: 12px;
+                    line-height: 1.5;
+                    text-align: left;
+                    max-height: 140px;
+                    overflow-y: auto;
+                    padding-right: 4px;
                 }
 
-                .placeholder-description kbd {
-                    background-color: rgba(128, 128, 128, 0.15);
-                    border-radius: 4px;
-                    padding: 2px 5px;
-                    border: 1px solid rgba(128, 128, 128, 0.1);
-                    font-family: var(--vscode-font-family);
+                .placeholder-actions {
+                    display: flex;
+                    justify-content: center;
+                    gap: 8px;
                 }
 
-                .reopen-button {
+                .primary-button {
                     background-color: var(--vscode-button-background);
-                    color: var(--vscode-button-foreground);
+                    color: white;
                     border: none;
-                    padding: 10px 24px;
-                    font-size: 14px;
-                    font-family: var(--vscode-font-family);
-                    font-weight: 500;
-                    border-radius: 5px;
+                    border-radius: 4px;
+                    padding: 6px 16px;
                     cursor: pointer;
-                    transition: background-color 0.2s ease;
-                    min-width: 180px;
+                    font-size: 13px;
+                    font-weight: 500;
+                    transition: background-color 0.2s ease, transform 0.1s ease;
                 }
 
-                .reopen-button:hover {
+                .primary-button:hover {
                     background-color: var(--vscode-button-hoverBackground);
+                    transform: translateY(-1px);
                 }
 
-                .reopen-button:disabled {
-                    background-color: #555;
-                    color: #999;
-                    cursor: not-allowed;
+                .primary-button:active {
+                    transform: translateY(0);
+                }
+
+                .footer-text {
+                    margin-top: 12px;
+                    font-size: 11px;
+                    color: var(--vscode-descriptionForeground);
+                    line-height: 1.5;
+                    text-align: left;
+                    max-height: 110px;
+                    overflow-y: auto;
+                    padding-right: 4px;
+                    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+                    padding-top: 8px;
+                    white-space: pre-wrap;
+                }
+
+                .scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+
+                .scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+
+                .scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 4px;
+                }
+
+                .scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.35);
+                }
+
+                .meta-badge {
+                    position: absolute;
+                    top: 12px;
+                    right: 16px;
+                    background-color: rgba(0, 0, 0, 0.35);
+                    padding: 3px 8px;
+                    border-radius: 999px;
+                    font-size: 10px;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: rgba(255, 255, 255, 0.85);
+                }
+
+                .background-ornament {
+                    position: absolute;
+                    width: 220px;
+                    height: 220px;
+                    border-radius: 50%;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    top: -60px;
+                    left: -80px;
+                    pointer-events: none;
+                    opacity: 0.4;
+                }
+
+                .background-ornament.secondary {
+                    top: auto;
+                    bottom: -70px;
+                    left: auto;
+                    right: -60px;
+                    opacity: 0.25;
+                }
+
+                .brand-mark {
+                    font-size: 10px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.12em;
+                    margin-bottom: 8px;
+                    opacity: 0.75;
+                }
+
+                .brand-mark span {
                     opacity: 0.7;
                 }
 
-                .placeholder-footer {
-                    margin-top: 35px;
-                    font-size: 12px;
-                    color: var(--vscode-descriptionForeground);
-                    opacity: 0.6;
+                .separator {
+                    height: 1px;
+                    background: linear-gradient(
+                        to right,
+                        rgba(255,255,255,0.0),
+                        rgba(255,255,255,0.4),
+                        rgba(255,255,255,0.0)
+                    );
+                    margin: 8px 0 10px 0;
+                    opacity: 0.7;
                 }
 
-                .status-indicator {
-                    display: inline-block;
-                    width: 7px;
-                    height: 7px;
-                    background-color: var(--vscode-button-background);
-                    border-radius: 50%;
-                    margin-right: 7px;
-                    animation: blink 1.8s infinite ease-in-out;
-                }
-
-                @keyframes blink {
-                    0%, 100% {
-                        opacity: 1;
-                    }
-                    50% {
-                        opacity: 0.3;
-                    }
-                }
             </style>
         </head>
-        <body data-vscode-theme="${dark ? 'dark' : 'light'}">
+        <body>
             <div class="placeholder-container">
-                <div class="placeholder-icon">
-                    <img src="${randomImageUri}" 
-                         alt="Picture" 
-                         onerror="this.style.display='none'; this.parentElement.innerHTML='';" />
+                <div class="placeholder-title">实时代码预览已关闭</div>
+                <div class="placeholder-subtitle">
+                    Clotho 已安全关闭了预览窗口。你可以继续在左侧调整配置，或稍后重新打开预览。
                 </div>
-                
-                <h2 class="placeholder-title">实时代码预览已关闭</h2>
-                
-                <p class="placeholder-description">
-                    您可以在左侧调整配置，然后点击下方按钮\n（或按 <kbd id="shortcut-hint"></kbd>）以查看格式化效果。
-                </p>
-                
-                <button class="reopen-button" id="reopenButton">
-                    重新打开实时预览
-                </button>
-                
-                <div class="placeholder-footer">
-                    ${this.getRandomFooterText()}
+
+                <div class="character-card">
+                    <div class="background-ornament"></div>
+                    <div class="background-ornament secondary"></div>
+                    
+                    <div class="brand-mark">Clotho <span>Visual Editor</span></div>
+                    <div class="separator"></div>
+
+                    <div class="character-image-wrapper">
+                        ${randomImageUri
+                          ? `<img src="${randomImageUri}" alt="Clotho Character" class="character-image" />`
+                          : ''
+                        }
+                    </div>
+
+                    <div class="character-caption scrollbar">
+                        在这一刻，代码的喧嚣悄然退去。  
+                        预览窗口合上，像舞台谢幕后的灯光渐暗——  
+                        并不是终结，只是下一段演出的间隙。
+                    </div>
+
+                    <div class="placeholder-actions">
+                        <button class="primary-button" id="reopen-preview">重新打开预览</button>
+                    </div>
+
+                    <div class="footer-text scrollbar" id="footer-text">
+                        ${this.getRandomFooterText()}
+                    </div>
+
+                    <div class="meta-badge">
+                        CLOTHO / PREVIEW SESSION
+                    </div>
                 </div>
             </div>
 
             <script nonce="${nonce}">
-                // 获取 VS Code API
                 const vscode = acquireVsCodeApi();
-                let messageCount = 0;
 
-                // 页面加载完成后的初始化
-                document.addEventListener('DOMContentLoaded', function() {
-                    // 智能显示快捷键
-                    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
-                    const shortcutHint = document.getElementById('shortcut-hint');
-                    if (shortcutHint) {
-                        shortcutHint.textContent = isMac ? '⌘ R' : 'Ctrl + R';
-                    }
-
-                    // 添加按钮点击事件监听器
-                    const reopenButton = document.getElementById('reopenButton');
-                    if (reopenButton) {
-                        reopenButton.addEventListener('click', reopenPreview);
-                    }
-                    
-                    // 添加键盘快捷键支持
-                    document.addEventListener('keydown', function(event) {
-                        // Ctrl/Cmd + R 重新打开预览
-                        if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
-                            event.preventDefault();
-                            reopenPreview();
-                        }
-                        
-                        // Enter 键重新打开预览
-                        if (event.key === 'Enter') {
-                            event.preventDefault();
-                            reopenPreview();
-                        }
+                const reopenButton = document.getElementById('reopen-preview');
+                if (reopenButton) {
+                    reopenButton.addEventListener('click', () => {
+                        vscode.postMessage({
+                            type: '${WebviewMessageType.REOPEN_PREVIEW}'
+                        });
                     });
-                });
-
-                // 重新打开预览功能
-                function reopenPreview() {
-                    const messageId = ++messageCount;
-                    // 使用logger记录用户点击事件
-                    
-                    // 禁用按钮，防止重复点击
-                    const button = document.getElementById('reopenButton');
-                    if(button) {
-                        button.disabled = true;
-                        button.textContent = '正在打开预览...';
-                    }
-                    
-                    // 发送消息到扩展
-                    vscode.postMessage({
-                        type: 'reopen-preview',
-                        payload: {
-                            timestamp: Date.now(),
-                            messageId: messageId
-                        }
-                    });
-                    
-                    // 添加视觉反馈
-                    const title = document.querySelector('.placeholder-title');
-                    if(title) {
-                       title.textContent = '正在打开预览...';
-                    }
                 }
 
                 // 监听主题变化
@@ -662,3 +717,4 @@ export class PlaceholderWebviewManager implements BaseManager {
     };
   }
 }
+
