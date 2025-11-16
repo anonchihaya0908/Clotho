@@ -23,10 +23,11 @@ export interface InitializePayload {
 export type HostMessage =
   | { type: 'qtWizard/initialize'; payload: InitializePayload }
   | { type: 'qtWizard/prefixCandidates'; payload: { qtMajor: QtMajorVersion; candidates: QtPrefixCandidate[] } }
-  | { type: 'qtWizard/createResult'; payload: { success: boolean; error?: string } };
+  | { type: 'qtWizard/createResult'; payload: { success: boolean; error?: string } }
+  | { type: 'qtWizard/pickPrefixFolderResult'; payload: { canceled: boolean; path?: string } };
 
 export type WebviewMessage =
   | { type: 'qtWizard/requestRegeneratePreview'; state: QtWizardState }
   | { type: 'qtWizard/requestDetectPrefix'; qtMajor: QtMajorVersion }
-  | { type: 'qtWizard/requestCreateProject'; state: QtWizardState };
-
+  | { type: 'qtWizard/requestCreateProject'; state: QtWizardState }
+  | { type: 'qtWizard/requestPickPrefixFolder' };

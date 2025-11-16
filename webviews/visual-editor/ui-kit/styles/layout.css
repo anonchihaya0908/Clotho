@@ -1,0 +1,23 @@
+.ve-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--ve-page-background);
+  color: var(--ve-page-foreground);
+  font-family: var(--vscode-font-family, system-ui, sans-serif);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+.ve-page-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.ve-page--wizard {
+  padding: var(--ve-space-md) var(--ve-space-lg);
+}
+
+.ve-page--editor {
+  /* clang-format editor specific tweaks can be applied with this modifier */
+}
+

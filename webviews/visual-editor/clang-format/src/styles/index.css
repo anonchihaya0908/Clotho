@@ -2,7 +2,12 @@
  * Main styles for Clang-Format Editor
  */
 
-/* Import utility classes */
+/* Shared Visual Editor UI Kit */
+@import '../../../ui-kit/styles/tokens.css';
+@import '../../../ui-kit/styles/layout.css';
+@import '../../../ui-kit/styles/components.css';
+
+/* Import utility classes specific to clang-format editor */
 @import './utils.css';
 
 /* Reset and base styles */

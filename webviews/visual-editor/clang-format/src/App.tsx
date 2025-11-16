@@ -381,7 +381,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
     if (state.isLoading) {
         return (
-            <div className="app loading">
+            <div className="app ve-page ve-page--editor loading">
                 <div className="loading-spinner">Loading...</div>
             </div>
         );
@@ -389,7 +389,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
 
     if (state.error) {
         return (
-            <div className="app error">
+            <div className="app ve-page ve-page--editor error">
                 <div className="error-message">{state.error}</div>
             </div>
         );
@@ -401,7 +401,7 @@ export const App: React.FC<AppProps> = ({ vscode }) => {
                 webviewLog.error('React Error Boundary caught error', { error, errorInfo });
             }}
         >
-            <div className={`app ${state.previewState.showPlaceholder ? '' : ''}`}>
+            <div className={`app ve-page ve-page--editor ${state.previewState.showPlaceholder ? '' : ''}`}>
                 <ErrorBoundary fallback={<div className="toolbar-error">工具栏加载失败</div>}>
                     <Toolbar onAction={handleToolbarAction} />
                 </ErrorBoundary>

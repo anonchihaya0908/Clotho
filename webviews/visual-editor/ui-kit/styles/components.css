@@ -1,0 +1,112 @@
+/* Cards */
+.ve-card {
+  background: var(--ve-surface-card);
+  border: 1px solid var(--ve-surface-border);
+  border-radius: var(--ve-radius-card);
+  padding: var(--ve-space-lg);
+  box-shadow: var(--ve-shadow-card);
+  margin-bottom: var(--ve-space-lg);
+}
+
+.ve-card-header {
+  margin-bottom: var(--ve-space-md);
+}
+
+.ve-card-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 var(--ve-space-sm);
+}
+
+.ve-card-subtitle {
+  font-size: 12px;
+  color: var(--ve-text-secondary);
+}
+
+.ve-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ve-space-sm);
+}
+
+/* Form fields */
+.ve-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ve-field + .ve-field {
+  margin-top: var(--ve-space-sm);
+}
+
+.ve-field-label {
+  font-size: 12px;
+  color: var(--ve-text-secondary);
+}
+
+.ve-field-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ve-field-control input,
+.ve-field-control select {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 12px;
+  background-color: var(--ve-input-bg);
+  color: var(--ve-input-fg);
+  border: 1px solid var(--ve-input-border);
+  border-radius: var(--ve-radius-control);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ve-field-control input:focus,
+.ve-field-control select:focus {
+  border-color: var(--ve-input-border-focus);
+  box-shadow: 0 0 0 1px var(--ve-input-border-focus);
+}
+
+.ve-field-help {
+  font-size: 11px;
+  color: var(--ve-text-muted);
+}
+
+/* Buttons */
+.ve-button {
+  padding: 6px 14px;
+  font-size: 12px;
+  border-radius: var(--ve-radius-control);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.ve-button-primary {
+  background-color: var(--ve-button-primary-bg);
+  color: var(--ve-button-primary-fg);
+  border-color: var(--ve-button-border);
+}
+
+.ve-button-primary:hover {
+  background-color: var(--ve-button-primary-bg-hover);
+}
+
+.ve-button-secondary {
+  background-color: var(--ve-button-secondary-bg);
+  color: var(--ve-button-secondary-fg);
+  border-color: var(--ve-button-border);
+}
+
+.ve-button-secondary:hover {
+  background-color: var(--ve-button-secondary-bg-hover);
+}
+
+.ve-button[disabled],
+.ve-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

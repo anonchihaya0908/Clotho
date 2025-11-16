@@ -1,0 +1,47 @@
+:root {
+  /* Page */
+  --ve-page-background: var(--vscode-editor-background);
+  --ve-page-foreground: var(--vscode-foreground);
+
+  /* Surfaces */
+  --ve-surface-muted: var(--vscode-editor-inactiveSelectionBackground);
+  --ve-surface-card: var(--vscode-editor-inactiveSelectionBackground);
+  --ve-surface-border: var(--vscode-widget-border);
+
+  /* Text */
+  --ve-text-primary: var(--vscode-foreground);
+  --ve-text-secondary: var(--vscode-descriptionForeground);
+  --ve-text-muted: var(--vscode-descriptionForeground);
+
+  /* Spacing scale */
+  --ve-space-xs: 4px;
+  --ve-space-sm: 8px;
+  --ve-space-md: 12px;
+  --ve-space-lg: 16px;
+  --ve-space-xl: 24px;
+
+  /* Radius */
+  --ve-radius-card: 8px;
+  --ve-radius-pill: 999px;
+  --ve-radius-control: 4px;
+
+  /* Shadows */
+  --ve-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  /* Buttons */
+  --ve-button-primary-bg: var(--vscode-button-background);
+  --ve-button-primary-bg-hover: var(--vscode-button-hoverBackground);
+  --ve-button-primary-fg: var(--vscode-button-foreground);
+  --ve-button-border: var(--vscode-button-border, transparent);
+
+  --ve-button-secondary-bg: var(--vscode-button-secondaryBackground);
+  --ve-button-secondary-bg-hover: var(--vscode-button-secondaryHoverBackground);
+  --ve-button-secondary-fg: var(--vscode-button-secondaryForeground);
+
+  /* Inputs */
+  --ve-input-bg: var(--vscode-input-background);
+  --ve-input-fg: var(--vscode-input-foreground);
+  --ve-input-border: var(--vscode-input-border);
+  --ve-input-border-focus: var(--vscode-focusBorder);
+}
+
