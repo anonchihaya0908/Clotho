@@ -7,7 +7,8 @@
   "private": true,
   "l10n": "./l10n",
   "workspaces": [
-    "webviews/visual-editor/clang-format"
+    "webviews/visual-editor/clang-format",
+    "webviews/qt-project-wizard"
   ],
   "engines": {
     "vscode": "^1.99.3"
@@ -424,11 +425,11 @@
     "build:production": "npm run clean:safe && npm run build:extension:production && npm run build:webview:production",
     "build:extension": "npm run esbuild",
     "build:extension:production": "npm run esbuild -- --production",
-    "build:webview": "npm run build --workspace=webviews/visual-editor/clang-format",
-    "build:webview:production": "npm run build --workspace=webviews/visual-editor/clang-format",
+    "build:webview": "npm run build --workspace=webviews/visual-editor/clang-format && npm run build --workspace=webviews/qt-project-wizard",
+    "build:webview:production": "npm run build --workspace=webviews/visual-editor/clang-format && npm run build --workspace=webviews/qt-project-wizard",
     "watch": "npm run watch:extension & npm run watch:webview",
     "watch:extension": "npm run esbuild:watch",
-    "watch:webview": "npm run dev --workspace=webviews/visual-editor/clang-format",
+    "watch:webview": "npm run dev --workspace=webviews/visual-editor/clang-format && npm run dev --workspace=webviews/qt-project-wizard",
     "dev": "npm run build && code --extensionDevelopmentPath=. --new-window",
     "dev:f5": "node scripts/dev-quick.js",
     "dev:f5:quick": "npm run esbuild",

@@ -344,7 +344,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
     COMMANDS.QT_NEW_PROJECT,
     async () => {
       const { runQtProjectWizard } = await import('./qt/qt-project-wizard');
-      await runQtProjectWizard();
+      await runQtProjectWizard(context.extensionUri);
     }
   );
 
