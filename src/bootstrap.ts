@@ -36,6 +36,7 @@ import { ClangFormatEditorCoordinator } from './visual-editor/clang-format/coord
 
 import { ClangFormatGuideService } from './visual-editor/clang-format/guide-service';
 import { ClangFormatPreviewProvider } from './visual-editor/clang-format/preview-provider';
+import { QtCMakePreviewProvider } from './visual-editor/qt/qt-cmake-preview-provider';
 import { SwitchStatusBar } from './switch-header-source/status-bar';
 import { FileSystemService } from './common/utils/file-system-service';
 
@@ -80,6 +81,24 @@ export async function bootstrap(
       }
     );
     // Don't throw error, allow extension to continue running
+  }
+
+  // Register Qt CMake preview provider for Qt project wizard
+  try {
+    QtCMakePreviewProvider.register(context);
+    logger.info('QtCMakePreviewProvider registered successfully', {
+      module: 'Bootstrap',
+      operation: 'registerQtPreviewProvider'
+    });
+  } catch (error) {
+    logger.error(
+      'Failed to register QtCMakePreviewProvider',
+      error as Error,
+      {
+        module: 'Bootstrap',
+        operation: 'registerQtPreviewProvider'
+      }
+    );
   }
 
   // Initialize main coordinators
@@ -343,7 +362,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
   const newQtProjectCommand = register(
     COMMANDS.QT_NEW_PROJECT,
     async () => {
-      const { runQtProjectWizard } = await import('./qt/qt-project-wizard');
+      const { runQtProjectWizard } = await import('./visual-editor/qt/qt-project-wizard');
       await runQtProjectWizard(context.extensionUri);
     }
   );

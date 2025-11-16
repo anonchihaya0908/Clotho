@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { createModuleLogger } from '../common/logger/unified-logger';
+import { createModuleLogger } from '../../common/logger/unified-logger';
 
 export type QtMajorVersion = 5 | 6;
 export type QtProjectType = 'widgets' | 'console';
@@ -253,10 +253,13 @@ export async function persistQtPrefixPath(
   await config.update('qt.prefixPaths', map, vscode.ConfigurationTarget.Global);
 }
 
-export async function createQtProjectOnDisk(state: QtWizardState): Promise<void> {
+export async function createQtProjectOnDisk(
+  state: QtWizardState,
+  cmakeOverride?: string,
+): Promise<void> {
   fs.mkdirSync(state.targetDir, { recursive: true });
 
-  const cmakeContent = buildCMakeLists(state);
+  const cmakeContent = cmakeOverride ?? buildCMakeLists(state);
   const mainContent = buildMainCpp(state);
 
   fs.writeFileSync(path.join(state.targetDir, 'CMakeLists.txt'), cmakeContent, 'utf8');

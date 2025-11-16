@@ -1,15 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import type { HostMessage, QtWizardState, QtPrefixCandidate, WebviewMessage, QtMajorVersion, QtProjectType } from '../types';
+import type {
+  HostMessage,
+  QtWizardState,
+  QtPrefixCandidate,
+  WebviewMessage,
+  QtMajorVersion,
+  QtProjectType,
+} from '../types';
 
 declare const acquireVsCodeApi: () => {
   postMessage(message: WebviewMessage): void;
 };
 
-const vscodeApi = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : { postMessage: () => undefined };
+const vscodeApi =
+  typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : { postMessage: () => undefined };
 
 export const App: React.FC = () => {
   const [state, setState] = useState<QtWizardState | null>(null);
-  const [cmakePreview, setCmakePreview] = useState('');
   const [prefixCandidates, setPrefixCandidates] = useState<QtPrefixCandidate[]>([]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,10 +28,6 @@ export const App: React.FC = () => {
         case 'qtWizard/initialize':
           setState(msg.payload.state);
           setPrefixCandidates(msg.payload.prefixCandidates);
-          vscodeApi.postMessage({ type: 'qtWizard/requestPreview', state: msg.payload.state });
-          break;
-        case 'qtWizard/previewUpdated':
-          setCmakePreview(msg.payload.cmakeContent);
           break;
         case 'qtWizard/prefixCandidates':
           setPrefixCandidates(msg.payload.candidates);
@@ -48,7 +51,7 @@ export const App: React.FC = () => {
     setState((prev) => {
       if (!prev) return prev;
       const next = { ...prev, ...partial };
-      vscodeApi.postMessage({ type: 'qtWizard/requestPreview', state: next });
+      vscodeApi.postMessage({ type: 'qtWizard/requestRegeneratePreview', state: next });
       return next;
     });
     setError(null);
@@ -59,7 +62,7 @@ export const App: React.FC = () => {
     const next: QtWizardState = { ...state, qtMajor: value };
     setState(next);
     vscodeApi.postMessage({ type: 'qtWizard/requestDetectPrefix', qtMajor: value });
-    vscodeApi.postMessage({ type: 'qtWizard/requestPreview', state: next });
+    vscodeApi.postMessage({ type: 'qtWizard/requestRegeneratePreview', state: next });
   };
 
   const onCreate = () => {
@@ -102,7 +105,9 @@ export const App: React.FC = () => {
             C++ Standard
             <select
               value={state.cppStandard}
-              onChange={(e) => updateState({ cppStandard: Number(e.target.value) as QtWizardState['cppStandard'] })}
+              onChange={(e) =>
+                updateState({ cppStandard: Number(e.target.value) as QtWizardState['cppStandard'] })
+              }
             >
               <option value={17}>C++17</option>
               <option value={20}>C++20</option>
@@ -160,11 +165,7 @@ export const App: React.FC = () => {
           </label>
         </section>
 
-        {error && (
-          <div className="qt-error-banner">
-            {error}
-          </div>
-        )}
+        {error && <div className="qt-error-banner">{error}</div>}
 
         <div className="qt-footer">
           <button onClick={onCreate} disabled={creating}>
@@ -173,12 +174,7 @@ export const App: React.FC = () => {
         </div>
       </div>
 
-      <div className="qt-wizard-right">
-        <h3>CMakeLists.txt Preview</h3>
-        <pre className="qt-cmake-preview">
-          {cmakePreview || '# Preview will appear here…'}
-        </pre>
-      </div>
+      <div className="qt-wizard-right" />
     </div>
   );
 };

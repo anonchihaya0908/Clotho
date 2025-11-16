@@ -5,11 +5,12 @@ import {
   QtMajorVersion,
   detectQtPrefixCandidates,
   ensureTargetDirAvailable,
-  createQtProjectOnDisk,
   persistQtPrefixPath,
   buildCMakeLists,
+  createQtProjectOnDisk,
 } from './qt-project-service';
-import { createModuleLogger } from '../common/logger/unified-logger';
+import { createModuleLogger } from '../../common/logger/unified-logger';
+import { QtCMakePreviewProvider } from './qt-cmake-preview-provider';
 
 export async function runQtProjectWizard(extensionUri: vscode.Uri): Promise<void> {
   const logger = createModuleLogger('QtProjectWizardWebview');
@@ -19,6 +20,16 @@ export async function runQtProjectWizard(extensionUri: vscode.Uri): Promise<void
     void vscode.window.showErrorMessage('Please open a workspace folder before creating a Qt project.');
     return;
   }
+
+  // Setup native preview document
+  const previewProvider = QtCMakePreviewProvider.getInstance();
+  const previewUri = previewProvider.createPreviewUri('CMakeLists.txt');
+  const initialState = await createInitialState(workspaceFolder);
+  const initialCmake = buildCMakeLists(initialState.state);
+  previewProvider.updateContent(previewUri, initialCmake);
+
+  const previewDoc = await vscode.workspace.openTextDocument(previewUri);
+  await vscode.window.showTextDocument(previewDoc, vscode.ViewColumn.Two);
 
   const panel = vscode.window.createWebviewPanel(
     'clothoQtWizard',
@@ -34,7 +45,6 @@ export async function runQtProjectWizard(extensionUri: vscode.Uri): Promise<void
 
   const disposables: vscode.Disposable[] = [];
 
-  const initialState = await createInitialState(workspaceFolder);
   panel.webview.postMessage({ type: 'qtWizard/initialize', payload: initialState });
 
   disposables.push(
@@ -42,15 +52,6 @@ export async function runQtProjectWizard(extensionUri: vscode.Uri): Promise<void
       try {
         if (!msg || typeof msg !== 'object') { return; }
         switch (msg.type) {
-          case 'qtWizard/requestPreview': {
-            const state = msg.state as QtWizardState;
-            const cmakeContent = buildCMakeLists(state);
-            panel.webview.postMessage({
-              type: 'qtWizard/previewUpdated',
-              payload: { cmakeContent },
-            });
-            break;
-          }
           case 'qtWizard/requestDetectPrefix': {
             const major = msg.qtMajor as QtMajorVersion;
             const candidates = await detectQtPrefixCandidates(major);
@@ -73,7 +74,9 @@ export async function runQtProjectWizard(extensionUri: vscode.Uri): Promise<void
 
             try {
               await persistQtPrefixPath(state.qtMajor, state.qtPrefixPath);
-              await createQtProjectOnDisk(state);
+              const doc = await vscode.workspace.openTextDocument(previewUri);
+              const cmakeContent = doc.getText();
+              await createQtProjectOnDisk(state, cmakeContent);
               panel.webview.postMessage({
                 type: 'qtWizard/createResult',
                 payload: { success: true },
@@ -92,6 +95,12 @@ export async function runQtProjectWizard(extensionUri: vscode.Uri): Promise<void
                 },
               });
             }
+            break;
+          }
+          case 'qtWizard/requestRegeneratePreview': {
+            const state = msg.state as QtWizardState;
+            const cmakeContent = buildCMakeLists(state);
+            previewProvider.updateContent(previewUri, cmakeContent);
             break;
           }
           default:
@@ -143,9 +152,6 @@ async function createInitialState(
 }
 
 function chooseDefaultTargetDirectory(workspacePath: string, projectName: string): string {
-  const entries = vscode.workspace.fs; // just to keep style; actual check via fs below
-  void entries; // avoid unused
-
   if (!workspacePath) {
     return projectName;
   }
@@ -163,6 +169,7 @@ function chooseDefaultTargetDirectory(workspacePath: string, projectName: string
 }
 
 function fsReaddirNonHidden(dir: string): string[] {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const fs = require('fs') as typeof import('fs');
   if (!fs.existsSync(dir)) {
     return [];
@@ -195,10 +202,24 @@ interface QtPrefixCandidatePayload {
 
 function buildWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
   const scriptUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, 'webviews', 'qt-project-wizard', 'dist', 'index.js'),
+    vscode.Uri.joinPath(
+      extensionUri,
+      'webviews',
+      'visual-editor',
+      'qt-project-wizard',
+      'dist',
+      'index.js',
+    ),
   );
   const styleUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, 'webviews', 'qt-project-wizard', 'dist', 'index.css'),
+    vscode.Uri.joinPath(
+      extensionUri,
+      'webviews',
+      'visual-editor',
+      'qt-project-wizard',
+      'dist',
+      'index.css',
+    ),
   );
 
   const cspSource = webview.cspSource;
@@ -219,3 +240,4 @@ function buildWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
   </body>
 </html>`;
 }
+

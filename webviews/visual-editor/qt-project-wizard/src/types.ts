@@ -22,12 +22,11 @@ export interface InitializePayload {
 
 export type HostMessage =
   | { type: 'qtWizard/initialize'; payload: InitializePayload }
-  | { type: 'qtWizard/previewUpdated'; payload: { cmakeContent: string } }
   | { type: 'qtWizard/prefixCandidates'; payload: { qtMajor: QtMajorVersion; candidates: QtPrefixCandidate[] } }
   | { type: 'qtWizard/createResult'; payload: { success: boolean; error?: string } };
 
 export type WebviewMessage =
-  | { type: 'qtWizard/requestPreview'; state: QtWizardState }
+  | { type: 'qtWizard/requestRegeneratePreview'; state: QtWizardState }
   | { type: 'qtWizard/requestDetectPrefix'; qtMajor: QtMajorVersion }
   | { type: 'qtWizard/requestCreateProject'; state: QtWizardState };
 
