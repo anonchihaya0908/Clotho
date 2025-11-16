@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import {
   QtWizardState,
   QtMajorVersion,
@@ -169,8 +170,6 @@ function chooseDefaultTargetDirectory(workspacePath: string, projectName: string
 }
 
 function fsReaddirNonHidden(dir: string): string[] {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const fs = require('fs') as typeof import('fs');
   if (!fs.existsSync(dir)) {
     return [];
   }
@@ -240,4 +239,3 @@ function buildWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
   </body>
 </html>`;
 }
-

@@ -2,7 +2,7 @@
   "name": "clotho",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "publisher": "Togawa-Sakiko",
   "private": true,
   "l10n": "./l10n",
