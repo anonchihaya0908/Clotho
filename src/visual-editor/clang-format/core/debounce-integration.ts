@@ -8,9 +8,7 @@ import { createModuleLogger } from '../../../common/logger/unified-logger';
 import { BaseManager, ManagerContext, ManagerStatus } from '../../../common/types';
 import { UI_CONSTANTS } from '../../../common/constants';
 import { DebounceManager } from './debounce-manager';
-import { PlaceholderWebviewManager } from './placeholder-manager';
 import { PreviewEditorManager } from './preview-manager';
-import { TransitionManager, TransitionState } from './transition-manager';
 
 /**
  * 防抖集成器
@@ -21,7 +19,6 @@ export class DebounceIntegration implements BaseManager {
   readonly name = 'DebounceIntegration';
 
   private debounceManager: DebounceManager;
-  private transitionManager: TransitionManager;
   private isEnabled: boolean = true;
   private context!: ManagerContext;
 
@@ -31,10 +28,8 @@ export class DebounceIntegration implements BaseManager {
 
   constructor(
     private previewManagerGetter: (() => PreviewEditorManager) | PreviewEditorManager,
-    private placeholderManagerGetter: (() => PlaceholderWebviewManager) | PlaceholderWebviewManager,
   ) {
     this.debounceManager = new DebounceManager();
-    this.transitionManager = new TransitionManager();
   }
 
   // Lazy getters for dependencies
@@ -42,12 +37,6 @@ export class DebounceIntegration implements BaseManager {
     return typeof this.previewManagerGetter === 'function'
       ? this.previewManagerGetter()
       : this.previewManagerGetter;
-  }
-
-  private get placeholderManager(): PlaceholderWebviewManager {
-    return typeof this.placeholderManagerGetter === 'function'
-      ? this.placeholderManagerGetter()
-      : this.placeholderManagerGetter;
   }
 
   getStatus(): ManagerStatus {
@@ -72,33 +61,6 @@ export class DebounceIntegration implements BaseManager {
         'preview-close-handler',
         async () => {
           await this.previewManager.closePreview();
-
-          // Only create placeholder when editor is visible and initialized
-          const state = this.context?.stateManager?.getState();
-          if (!state?.['isVisible'] || !state?.['isInitialized']) {
-            this.logger.debug('Editor is not visible or not initialized, skipping placeholder creation', {
-              module: 'DebounceIntegration',
-              operation: 'createDebouncedPreviewCloseHandler',
-              isVisible: state?.['isVisible'],
-              isInitialized: state?.['isInitialized'],
-            });
-            return;
-          }
-
-          if (!this.isEnabled) {
-            await this.placeholderManager.createPlaceholder();
-            return;
-          }
-
-          try {
-            await this.transitionManager.switchToEasterEgg(async () => {
-              await this.placeholderManager.createPlaceholder();
-              return this.placeholderManager.getPlaceholderPanel()!;
-            });
-          } catch {
-            // 降级处理：直接创建占位符
-            await this.placeholderManager.createPlaceholder();
-          }
         },
         {
           delay: UI_CONSTANTS.QUICK_DEBOUNCE_DELAY, // Use centralized quick debounce delay
@@ -136,20 +98,8 @@ export class DebounceIntegration implements BaseManager {
             return;
           }
 
-          // Additional concurrency check
-          if (this.transitionManager.getCurrentState() !== TransitionState.IDLE) {
-            this.logger.debug('Transition already in progress, skipping operation', {
-              module: 'DebounceIntegration',
-              operation: 'createDebouncedPreviewReopenHandler',
-              currentState: this.transitionManager.getCurrentState(),
-            });
-            return;
-          }
-
-          this.placeholderManager.disposePanel();
-
           try {
-            await this.transitionManager.switchToPreview(() => this.previewManager.openPreview());
+            await this.previewManager.openPreview();
           } catch (error) {
             this.logger.error('Transition manager failed, using fallback', error as Error, {
               module: 'DebounceIntegration',
@@ -185,10 +135,9 @@ export class DebounceIntegration implements BaseManager {
   /**
    * 获取统计信息
    */
-  getStats(): { debounceManager: unknown; transitionManager: unknown; isEnabled: boolean } {
+  getStats(): { debounceManager: unknown; isEnabled: boolean } {
     return {
       debounceManager: this.debounceManager.getStatus(),
-      transitionManager: this.transitionManager.getStats(),
       isEnabled: this.isEnabled,
     };
   }
@@ -198,6 +147,5 @@ export class DebounceIntegration implements BaseManager {
    */
   dispose(): void {
     this.debounceManager.dispose();
-    this.transitionManager.dispose();
   }
 }

@@ -7,7 +7,6 @@ import { ConfigChangeService } from './core/config-change-service';
 import { DebounceIntegration } from './core/debounce-integration';
 import { ClangFormatEditorManager } from './core/editor-manager';
 import { ManagerRegistry } from './core/manager-registry';
-import { PlaceholderWebviewManager } from './core/placeholder-manager';
 import { PreviewEditorManager } from './core/preview-manager';
 import { ErrorRecoveryManager } from './error/error-recovery-manager';
 import { ClangFormatService } from './format-service';
@@ -73,14 +72,12 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
     this.managerRegistry.registerFactory('editorManager', () => new ClangFormatEditorManager());
     this.managerRegistry.registerFactory('previewManager', () => new PreviewEditorManager());
     this.managerRegistry.registerFactory('configActionManager', () => new ConfigActionManager());
-    this.managerRegistry.registerFactory('placeholderManager', () => new PlaceholderWebviewManager());
 
     // DebounceIntegration 延迟依赖注入，避免循环依赖
     this.managerRegistry.registerFactory('debounceIntegration', () => {
       // 创建一个延迟依赖解析的DebounceIntegration
       return new DebounceIntegration(
         () => this.managerRegistry.getInstance<PreviewEditorManager>('previewManager')!,
-        () => this.managerRegistry.getInstance<PlaceholderWebviewManager>('placeholderManager')!
       );
     });
 
@@ -209,16 +206,20 @@ export class ClangFormatEditorCoordinator extends BaseCoordinator {
       }
     });
 
-    // 监听预览关闭事件
+    // 监听预览关闭事件：当用户手动关闭右侧预览时，整体编辑器一并关闭
     this.eventBus.on('preview-closed', async () => {
       try {
-        const debounceIntegration = await this.managerRegistry.getOrCreateInstance<DebounceIntegration>('debounceIntegration');
-        const handler = debounceIntegration?.createDebouncedPreviewCloseHandler();
-        if (handler) {
-          handler();
+        const editorManager = await this.managerRegistry.getOrCreateInstance<ClangFormatEditorManager>('editorManager');
+        if (!editorManager) {
+          this.logger.warn('EditorManager not available for preview-closed event', {
+            module: 'ClangFormatEditorCoordinator',
+            operation: 'preview-closed',
+          });
+          return;
         }
+        await editorManager.closeEditor();
       } catch (error) {
-        this.logger.error('Failed to get DebounceIntegration for preview close', error as Error, {
+        this.logger.error('Failed to close editor on preview-closed', error as Error, {
           module: 'ClangFormatEditorCoordinator',
           operation: 'preview-closed',
         });

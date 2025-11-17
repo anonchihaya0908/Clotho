@@ -32,7 +32,11 @@ export class PreviewSession {
     const column = this.config.preferredColumn ?? vscode.ViewColumn.Two;
     try {
       const doc = await vscode.workspace.openTextDocument(this.config.previewUri);
-      await vscode.window.showTextDocument(doc, column);
+      await vscode.window.showTextDocument(doc, {
+        viewColumn: column,
+        preserveFocus: false,
+        preview: false,
+      });
       this.config.onPreviewReopened?.();
     } catch {
       // Let callers handle logging; keep core minimal.
@@ -89,4 +93,3 @@ export class PreviewSession {
     this.disposables.length = 0;
   }
 }
-

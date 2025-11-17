@@ -13,7 +13,6 @@ import {
 import { createModuleLogger } from '../../common/logger/unified-logger';
 import { QtCMakePreviewProvider } from './qt-cmake-preview-provider';
 import { PreviewSession } from '../shared/preview-session-manager';
-import { PreviewPlaceholderManager } from '../shared/placeholder-manager';
 
 export async function runQtProjectWizard(extensionUri: vscode.Uri): Promise<void> {
   const logger = createModuleLogger('QtProjectWizardWebview');
@@ -31,35 +30,6 @@ export async function runQtProjectWizard(extensionUri: vscode.Uri): Promise<void
   const initialCmake = buildCMakeLists(initialState.state);
   previewProvider.updateContent(previewUri, initialCmake);
 
-  const placeholderManager = new PreviewPlaceholderManager();
-  const sessionId = `qt-wizard-${Date.now()}`;
-  const previewSession = new PreviewSession({
-    id: sessionId,
-    previewUri,
-    preferredColumn: vscode.ViewColumn.Two,
-    onPreviewClosedByUser: () => {
-      placeholderManager.showPlaceholder(
-        sessionId,
-        vscode.ViewColumn.Two,
-        {
-          title: 'Qt CMake Preview Closed',
-          description:
-            '你可以继续在左侧调整向导选项。若需要重新查看预览，请点击下方按钮重新打开 CMakeLists.txt 预览。',
-          buttonLabel: 'Reopen Preview',
-        },
-        () => {
-          void previewSession.ensurePreviewVisible();
-          placeholderManager.hidePlaceholder(sessionId);
-        },
-      );
-    },
-    onPreviewReopened: () => {
-      placeholderManager.hidePlaceholder(sessionId);
-    },
-  });
-
-  await previewSession.ensurePreviewVisible();
-
   const panel = vscode.window.createWebviewPanel(
     'clothoQtWizard',
     'Clotho: Qt Project Wizard',
@@ -70,9 +40,19 @@ export async function runQtProjectWizard(extensionUri: vscode.Uri): Promise<void
     },
   );
 
+  const sessionId = `qt-wizard-${Date.now()}`;
+  const previewSession = new PreviewSession({
+    id: sessionId,
+    previewUri,
+    preferredColumn: vscode.ViewColumn.Two,
+  });
+
+  await previewSession.ensurePreviewVisible();
+
   panel.webview.html = buildWebviewHtml(panel.webview, extensionUri);
 
   const disposables: vscode.Disposable[] = [];
+  let isDisposing = false;
 
   panel.webview.postMessage({ type: 'qtWizard/initialize', payload: initialState });
 
@@ -164,6 +144,26 @@ export async function runQtProjectWizard(extensionUri: vscode.Uri): Promise<void
     }),
   );
 
+  // 当用户手动关闭右侧 CMake 预览标签页时，同步关闭左侧 Qt 向导面板
+  const tabChangeDisposable = vscode.window.tabGroups.onDidChangeTabs((event) => {
+    if (isDisposing) {
+      return;
+    }
+    const hasOpened = event.opened.length > 0;
+
+    for (const tab of event.closed) {
+      const input = tab.input;
+      if (input instanceof vscode.TabInputText && input.uri.toString() === previewUri.toString()) {
+        // 只有在“纯关闭”场景（没有新的 tab 打开）下，才认为是显式关闭预览
+        if (!hasOpened) {
+          panel.dispose();
+        }
+        break;
+      }
+    }
+  });
+  disposables.push(tabChangeDisposable);
+
   panel.onDidChangeViewState(
     async (e) => {
       if (e.webviewPanel.active) {
@@ -178,8 +178,8 @@ export async function runQtProjectWizard(extensionUri: vscode.Uri): Promise<void
 
   panel.onDidDispose(
     () => {
+      isDisposing = true;
       disposables.forEach((d) => d.dispose());
-      placeholderManager.disposeAll();
       previewSession.dispose();
       void previewSession.closePreviewEditors();
       previewProvider.clearContent(previewUri);

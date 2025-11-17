@@ -154,6 +154,17 @@ export class ClangFormatEditorManager implements BaseManager {
     this.panel?.dispose();
   }
 
+  /**
+   * Close the editor panel if it is open.
+   * Used when the preview tab is closed by the user and we want
+   * the entire visual editor session to end.
+   */
+  async closeEditor(): Promise<void> {
+    if (this.panel) {
+      this.panel.dispose();
+    }
+  }
+
   private setupEventListeners() {
     if (this.context.eventBus) {
       onTyped(this.context.eventBus as unknown as EventBus, 'create-editor-requested', (source) => {
